@@ -10,7 +10,7 @@ using Catlab.WiringDiagrams
 config = Dict{String,String}()
 if !(haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "GITLAB_CI"))
   config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/AlgebraicJulia/Decapods.jl/blob/gh-pages/dev"
-  config["repo_root_url"] = "https://github.com/AlgebraicJulia/Decapods.jl/blob/master/docs"
+  config["repo_root_url"] = "https://github.com/AlgebraicJulia/Decapods.jl/blob/main/docs"
 end
 
 #const literate_dir = joinpath(@__DIR__, "..", "examples")
