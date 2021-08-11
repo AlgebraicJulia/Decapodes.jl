@@ -6,7 +6,6 @@ version = "0.1.0"
 [deps]
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 CombinatorialSpaces = "b1c52339-7909-45ad-8b6a-6e388f7c67f2"
-DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 
 [compat]
 Catlab = "0.11, 0.12"
