@@ -51,5 +51,6 @@ makedocs(
 deploydocs(
   target = "build",
   repo   = "github.com/AlgebraicJulia/Decapods.jl.git",
-  branch = "gh-pages"
+  branch = "gh-pages",
+  devbranch = "main"
 )
