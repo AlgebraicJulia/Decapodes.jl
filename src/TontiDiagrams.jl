@@ -20,7 +20,6 @@ using Catlab.Programs
 using Catlab.WiringDiagrams
 using CombinatorialSpaces
 using CombinatorialSpaces: ⋆
-using DifferentialEquations
 
 export TheoryTontiDiagram, TontiDiagram, Space,
         add_variable!, add_variables!,
