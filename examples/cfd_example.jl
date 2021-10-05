@@ -62,19 +62,19 @@ add_transition!(td, [:∑ϕ], (x,y)->(x.=sp.hodge[2,3]*y) ,[:∂C])
 
 add_transition!(td, [:C, :v], (Cv,C,v)->(Cv .= ∧(Tuple{0,1},sd,C,v)) ,[:Cv])
 add_transition!(td, [:Cv], (x,y)->(x.=sp.hodge[1,2]*y) ,[:ϕ])
+add_bc!(td, :∂C, ∂C ->(∂C[vcat(left_v, right_v)] .= 0))
 
 # Flow
 add_variables!(td, (:u,1,false),(:∂u,1,false), (:∂v,1,true))
 add_transition!(td, [:v], (u,v)->(u .= sp.hodge[1,2]*v) ,[:u])
 add_transition!(td, [:u,:v],
-  (∂u,u,v)->( (sp.hodge[1,2]*∧(Tuple{1,0},sd,v,sp.hodge[2,3]*sp.boundary[2,2]*u) .+ sp.boundary[2,1]*sp.hodge[1,3]*∧(Tuple{1,1},sd,v,sp.hodge[2,2]*u)))
-  ,[:∂u])
-add_transition!(td, [:∂u], (∂v, ∂u)->(∂v .= sp.hodge[2,2]*∂u) ,[:∂v])
-lap_arr = sp.boundary[1,1]*sp.hodge[2,3]*sp.boundary[2,2]*sp.hodge[1,2] + sp.hodge[2,2]*sp.boundary[2,1]*sp.hodge[1,3]*sp.boundary[1,2]
-add_laplacian!(td, sp, :v, :∂v; coef = 1)
+  (∂v,u,v)->(∂v .= (∧(Tuple{1,0},sd,v,sp.hodge[2,3]*sp.boundary[2,2]*u)))
+  ,[:∂v])
+lap_arr = sp.boundary[1,1]*sp.hodge[2,3]*sp.boundary[2,2]*sp.hodge[1,2]
+add_laplacian!(td, sp, :v, :∂v; coef = 2)
 add_time_dep!(td, :∂v, :v)
 
-add_bc!(td, :∂v, v->(v[vcat(left_e,right_e)].=0))
+add_bc!(td, :∂v, v->(v[right_e].=0))
 add_bc!(td, :v, v->(v[vcat(top_e,bot_e, obj_e)].=0))
 
 # Pressure
@@ -83,9 +83,9 @@ add_variables!(td, (:p,0,true),(:∂p,0,true))
 add_time_dep!(td, :∂p, :p)
 pressure_op = 30 * sp.hodge[2,3] * sp.boundary[2,2]
 add_transition!(td, [:u],  (∂p,u)->(∂p .= pressure_op*u), [:∂p])
-depress_op = -1 .* sp.hodge[1,2]*sp.boundary[1,1]
-add_transition!(td, [:p],  (∂u,p)->(∂u .= depress_op*p), [:∂u])
-
+depress_op = sp.boundary[1,1]
+add_transition!(td, [:p],  (∂u,p)->(∂u .= depress_op*p), [:∂v])
+add_bc!(td, :∂p, ∂p->(∂p[vcat(left_v, right_v)] .= 0))
 
 data, sim = vectorfield(td, sp);
 @show data
@@ -95,11 +95,12 @@ v_range = range(data[:v]...,step=1)
 p_range = range(data[:p]...,step=1)
 u = zeros(Float64,maximum(last.(values(data))))
 
-c = gen_form(s, x->pdf(MultivariateNormal([-25,0],[4.0,2.0]),[x[1],0]))
-p = gen_form(s, x->0.0)
+c = gen_form(s, x-> x[1] < -50 + 1e-1 ? max(0,cos(x[2])) : 0.0)#pdf(MultivariateNormal([-25,0],[4.0,2.0]),[x[1],0]))
+p_src = 1.0e1
+p = gen_form(s, x->(25.0 - x[1])/50.0 * p_src)
 
 velocity(x) = begin
-  amp = 2.0
+  amp = 5.0
   amp * Point{3,Float64}(-1,0,0)
 end
 v = ♭(sd, DualVectorField(velocity.(sd[triangle_center(sd),:dual_point])))
@@ -110,7 +111,7 @@ u[p_range] .= p
 
 tspan=(0.0,15.0)
 prob = ODEProblem(sim, u, tspan)
-sol = solve(prob, Tsit5(), progress=true, progress_steps=1);
+sol = solve(prob, progress=true, progress_steps=1);
 
 fig, ax, ob = mesh(s, color=sol(1)[1:nv(s)])
 save("res.svg",fig)
@@ -119,8 +120,8 @@ t = tspan[2]
 times = range(0,tspan[2], length=150)
 colors = [sol(t)[c_range] for t in times]
 figure, axis, scatter_thing = mesh(s, color=colors[1],
-                                   colorrange=(minimum(vcat(colors...)),
-                                               maximum(vcat(colors...))))
+                                   colorrange=(minimum(colors[1]),maximum(colors[1])))#minimum(vcat(colors...)),
+                                               #maximum(vcat(colors...))))
 axis.aspect = AxisAspect(100.0/30.0)
 framerate = 30
 

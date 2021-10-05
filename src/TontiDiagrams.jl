@@ -113,8 +113,13 @@ function Space(s::EmbeddedDeltaSet2D{O, P}) where {O, P}
   boundary = Array{typeof(d(0,s)), 2}(undef, 2,2)
   boundary[[1,2,3,4]] .= [d(0,s), dual_derivative(0,sd), d(1,s), dual_derivative(1,sd)]
 
-  hodge = Array{typeof(⋆(0,sd)), 2}(undef, 2,3)
-  hodge[[1,2,3,4,5,6]] .= [⋆(0,sd), inv(⋆(2,sd)), ⋆(1,sd), -1 .* inv(⋆(1,sd)), ⋆(2,sd), inv(⋆(0,sd))]
+  hodge = Array{Any, 2}(undef, 2,3)
+  hodge[[1,2,3,4,5,6]] .= [⋆(0,sd#=; hodge=DiagonalHodge()=#),
+                           inv(⋆(2,sd#=; hodge=DiagonalHodge()=#)),#CombinatorialSpaces.DiscreteExteriorCalculus.inv_hodge_star(2,sd#=; hodge=DiagonalHodge()=#),
+                           ⋆(1,sd#=; hodge=DiagonalHodge()=#), -1 .*
+                           inv(⋆(1,sd; hodge=DiagonalHodge())),#CombinatorialSpaces.DiscreteExteriorCalculus.inv_hodge_star(1,sd#=; hodge=DiagonalHodge()=#),
+                           ⋆(2,sd#=; hodge=DiagonalHodge()=#),
+                           inv(⋆(0,sd#=; hodge=DiagonalHodge()=#))#=CombinatorialSpaces.DiscreteExteriorCalculus.inv_hodge_star(0,sd#=; hodge=DiagonalHodge()=#)=#]
 
   # TODO:
   # Add Laplacian and Lie operators here
@@ -127,7 +132,7 @@ function Space(s::EmbeddedDeltaSet2D{O, P}) where {O, P}
 
   lie_op = [hodge[2,3]*boundary[2,2]*hodge[1,2], hodge[2,2]*boundary[2,1]*hodge[1,3]]
   lie = [(∂s,s,v)->(∂s .= boundary[1,2]*∧(Tuple{0,1},sd,s,bound[2,1]*v)),
-         (∂u,u,v)->(∂u .= (star_1*∧(Tuple{1,0},sd,v,inv_star_0*cobound_1_2*u) .+ cobound_0_1*star_2*∧(Tuple{1,1},sd,v,inv_star_1*u))),
+         (∂u,u,v)->(∂u .= (star_1*∧(Tuple{1,0},sd,v,inv_star_0*cobound_1_2*u))),
 
         ]
   Space(s, sd, boundary, hodge, laplacian, nothing)
