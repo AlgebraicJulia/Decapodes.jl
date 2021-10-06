@@ -44,6 +44,7 @@ end
     dplus2::Hom(DForm2⊗DForm2, DForm2)
     prod0::Hom(Form0⊗Form0, Form0)
     prod1::Hom(Form1⊗Form1, Form1)
+    scale0::Hom(Scalar⊗Form0, Form0)
     scale1::Hom(Scalar⊗Form1, Form1)
     ∂0::Hom(munit(), Form0)
     ∂1::Hom(munit(), Form1)
@@ -52,37 +53,32 @@ end
     z1::Hom(munit(), Form2)
     k::Hom(munit(), Scalar)
     ℒ::Hom(Form1⊗DForm2, DForm2)
+    Δ::Hom(Form0, Form0)
 end
 
-sym2func(sd, k) = begin
+sym2func(sd, k, ν) = begin
   ∂1_inds = findall(x -> x != 0, boundary(Val{2},sd) * fill(1,ntriangles(sd)))
   ∂0_inds = unique(vcat(sd[∂1_inds,:src],sd[∂1_inds,:tgt]))
   ∂1_mask = ones(Int64, ne(sd))
   ∂1_mask[∂1_inds] .= 0
   ∂0_mask = ones(Int64, nv(sd))
   ∂0_mask[∂0_inds] .= 0
-  Dict(:d0=>Dict(:operator => d(Val{0}, sd), :type => MatrixFunc()),
-       :d1=>Dict(:operator => d(Val{1}, sd), :type => MatrixFunc()),
-       :d̃0=>Dict(:operator => dual_derivative(Val{0}, sd), :type => MatrixFunc()),
-       :d̃1=>Dict(:operator => dual_derivative(Val{1}, sd), :type => MatrixFunc()),
-       :star0=>Dict(:operator => hodge_star(Val{0}, sd), :type => MatrixFunc()),
-       :star1=>Dict(:operator => hodge_star(Val{1}, sd), :type => MatrixFunc()),
-       :star_inv0=>Dict(:operator => inv_hodge_star(Val{0}, sd), :type => MatrixFunc()),
-       :star_inv1=>Dict(:operator => inv_hodge_star(Val{1}, sd), :type => MatrixFunc()),
-       :star_inv2=>Dict(:operator => inv_hodge_star(Val{2}, sd), :type => MatrixFunc()),
-       :plus0 => Dict(:operator => (x,y)->(x+y), :type => ElementwiseFunc()),
-       :plus1 => Dict(:operator => (x,y)->(x+y), :type => ElementwiseFunc()),
-       :dplus1 => Dict(:operator => (x,y)->(x+y), :type => ElementwiseFunc()),
-       :dplus2 => Dict(:operator => (x,y)->(x+y), :type => ElementwiseFunc()),
-       :prod0 => Dict(:operator => (x,y)->(x*y), :type => ElementwiseFunc()),
-       :prod1 => Dict(:operator => (x,y)->(x*y), :type => ElementwiseFunc()),
-       :z0 => Dict(:operator => zeros(Float64, nv(sd)), :type => ConstantFunc()),
-       :z1 => Dict(:operator => zeros(Float64, ne(sd)), :type => ConstantFunc()),
-       :z2 => Dict(:operator => zeros(Float64, ntriangles(sd)), :type => ConstantFunc()),
-       :scale1 => Dict(:operator => (k,x)->(k .* x), :type => ArbitraryFunc()),
-       :k => Dict(:operator => k, :type => ConstantFunc()),
-       :ℒ => Dict(:operator => (v,u)->(lie_derivative_flat(Val{2}, sd, v, u)), :type => ArbitraryFunc()),
-       :∂1 => Dict(:operator => ∂1_mask, :type=>ConstantFunc()),
-       :∂0 => Dict(:operator => ∂0_mask, :type=>ConstantFunc()))
+  Dict(:d₀=>Dict(:operator => d(Val{0}, sd), :type => MatrixFunc()),
+       :d₁=>Dict(:operator => d(Val{1}, sd), :type => MatrixFunc()),
+       :dual_d₀=>Dict(:operator => dual_derivative(Val{0}, sd), :type => MatrixFunc()),
+       :dual_d₁=>Dict(:operator => dual_derivative(Val{1}, sd), :type => MatrixFunc()),
+       :⋆₀=>Dict(:operator => hodge_star(Val{0}, sd), :type => MatrixFunc()),
+       :⋆₁=>Dict(:operator => hodge_star(Val{1}, sd), :type => MatrixFunc()),
+       :⋆₂=>Dict(:operator => hodge_star(Val{2}, sd), :type => MatrixFunc()),
+       :⋆₀⁻¹=>Dict(:operator => inv_hodge_star(Val{0}, sd), :type => MatrixFunc()),
+       :⋆₁⁻¹=>Dict(:operator => inv_hodge_star(Val{1}, sd; hodge=DiagonalHodge()), :type => MatrixFunc()),
+       :⋆₂⁻¹=>Dict(:operator => inv_hodge_star(Val{2}, sd), :type => MatrixFunc()),
+       :plus => Dict(:operator => (x,y)->(x+y), :type => ElementwiseFunc()),
+       :k => Dict(:operator => (x)->(k*x), :type => ElementwiseFunc()),
+       :ν => Dict(:operator => (x)->(ν*x), :type => ElementwiseFunc()),
+       :L₀ => Dict(:operator => (v,u)->(lie_derivative_flat(Val{2}, sd, v, u)), :type => ArbitraryFunc()),
+       :Δ=>Dict(:operator => Δ(Val{0}, sd), :type => MatrixFunc()),
+       :∂₁ => Dict(:operator => ∂1_mask, :type=>ConstantFunc()),
+       :∂₀ => Dict(:operator => (x, y) -> x .= (∂0_mask .* y), :type=>InPlaceFunc()))
 end
 end

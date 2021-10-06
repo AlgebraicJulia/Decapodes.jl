@@ -1,6 +1,7 @@
 module Decapods
 
-include("TontiDiagrams.jl")
+#include("TontiDiagrams.jl")
+include("Diagrams.jl")
 include("Schedules.jl")
 include("Simulations.jl")
 include("Examples.jl")

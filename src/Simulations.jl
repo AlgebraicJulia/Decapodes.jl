@@ -4,31 +4,39 @@ using CombinatorialSpaces
 using Catlab
 using Catlab.WiringDiagrams
 using Catlab.CategoricalAlgebra
+using Catlab.Theories
 
 export gen_sim,
-       BoxFunc, MatrixFunc, ElementwiseFunc, ArbitraryFunc, ConstantFunc
+       BoxFunc, MatrixFunc, ElementwiseFunc, ArbitraryFunc, InPlaceFunc,
+       ConstantFunc
 
 abstract type BoxFunc end
 struct MatrixFunc <: BoxFunc end
 struct ElementwiseFunc <: BoxFunc end
 struct ArbitraryFunc <: BoxFunc end
 struct ConstantFunc <: BoxFunc end
+struct InPlaceFunc <: BoxFunc end
 
 form2dim = Dict(:Scalar => x->1,
-        				:Form0 => nv,
-        				:Form1 => ne,
-        				:Form2 => ntriangles,
-        				:DForm2 => nv,
-        				:DForm1 => ne,
-        				:DForm0 => ntriangles)
+                :Form0 => nv,
+                :Form1 => ne,
+                :Form2 => ntriangles,
+                :DualForm2 => nv,
+                :DualForm1 => ne,
+                :DualForm0 => ntriangles)
+dims(x) = begin
+  k = filter(i -> x[:type] isa ObExpr{i}, keys(form2dim))
+  length(k) == 1 || error("Object $x has multiple keys in `form2dim`")
+  form2dim[first(k)]
+end
 
-function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim)
+function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[])
   check_consistency(dwd)
   d = dwd.diagram
 
   # Generate cached memory. These variables are indexed by their respective
   # output ports
-  mem = [zeros(Float64, form2dim[f](s)) for f in d[:out_port_type]]
+  mem = [zeros(Float64, dims(f)(s)) for f in d[:out_port_type]]
   tgt2src = Dict{Int64, Int64}()
   for w in 1:nparts(d, :Wire)
     d[w, :tgt] ∈ keys(tgt2src) && error("Two wires input to port $(d[w, :src])")
@@ -36,18 +44,24 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim)
   end
 
   # Get the indices in input/output arrays for specific input/output forms
-  input_inds = Vector{Tuple{Int64, Int64}}()
+  input_inds = Vector{Tuple{Int64, Int64, Bool}}()
   output_inds = Vector{Tuple{Int64, Int64}}()
 
   cur_ind = 0
+  cur_param = 0
   for ft in d[:outer_in_port_type]
-    mag = form2dim[ft](s)
-    push!(input_inds, (cur_ind+1, mag + cur_ind))
-    cur_ind += mag
+    mag = dims(ft)(s)
+    if ft[:name] ∈ params
+      push!(input_inds, (cur_param+1, mag + cur_param, true))
+      cur_param += mag
+    else
+      push!(input_inds, (cur_ind+1, mag + cur_ind, false))
+      cur_ind += mag
+    end
   end
   cur_ind = 0
   for ft in d[:outer_out_port_type]
-    mag = form2dim[ft](s)
+    mag = dims(ft)(s)
     push!(output_inds, (cur_ind+1, mag + cur_ind))
     cur_ind += mag
   end
@@ -76,22 +90,24 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim)
 
   exec_dwd = map(execution_order) do b
     iw = in_wires(dwd, b)
-    ow = out_wires(dwd, b)
 
     input_args = map(iw) do w
       p = w.source
       if p.box == -2
-        :(u[$(input_inds[p.port][1]):$(input_inds[p.port][2])])
+        if input_inds[p.port][3]
+          :(p[$(input_inds[p.port][1]):$(input_inds[p.port][2])])
+        else
+          :(u[$(input_inds[p.port][1]):$(input_inds[p.port][2])])
+        end
       else
         :(mem[$(incident(d, p.box, :out_port_box)[p.port])])
       end
     end
     input_args[[w.target.port for w in iw]] .= input_args
 
-    output_args = map(ow) do w
-      :(mem[$(incident(d, b, :out_port_box)[w.source.port])])
+    output_args = map(incident(d, b, :out_port_box)) do p
+      :(mem[$p])
     end
-    output_args[[w.source.port for w in ow]] .= output_args
 
     gen_func(input_args, output_args, n2f[d[b, :value]])
   end
@@ -108,10 +124,14 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim)
   end
   append!(body.args, du_set)
 
-  res = :(f!(du, u, p, t, mem, matrices, funcs) = $body)
+  # Currently this generates a function at the module (can be accessed from the module)
+  # Is this alright, or is this going to just lead to memory problems?
+  fname = gensym()
+  res = :($fname(du, u, p, t, mem, matrices, funcs) = $body)
   eval(res)
+  f_local = deepcopy(eval(fname))
   function sim_func(du, u, p, t)
-    f!(du, u, p, t, mem, matrices, funcs)
+    f_local(du, u, p, t, mem, matrices, funcs)
   end, res
 end
 
@@ -129,6 +149,12 @@ function _gen_func(::ArbitraryFunc, input_args, output_args, func)
 
   length(output_args) == 0 && error("Length of output for Arbitrary function is $(length(output_args))")
   :($(Meta.parse(join(output_args, ","))) = $(Expr(:call, func, input_args...)))
+end
+
+function _gen_func(::InPlaceFunc, input_args, output_args, func)
+
+  length(output_args) == 0 && error("Length of output for Arbitrary function is $(length(output_args))")
+  :($(Expr(:call, func, vcat(output_args, input_args)...)))
 end
 
 function _gen_func(::ConstantFunc, input_args, output_args, func)
@@ -163,5 +189,7 @@ function check_consistency(dwd::WiringDiagram)
             This wire is between box $(sb)($(d[sb, :value])) and box $(tb)($(d[tb, :value]))""")
   end
 end
+
+
 
 end
