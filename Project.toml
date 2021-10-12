@@ -8,7 +8,7 @@ Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 CombinatorialSpaces = "b1c52339-7909-45ad-8b6a-6e388f7c67f2"
 
 [compat]
-Catlab = "0.11, 0.12"
+Catlab = "0.13"
 CombinatorialSpaces = "0.2.0"
 julia = "1.0"
 
