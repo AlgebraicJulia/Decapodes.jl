@@ -50,17 +50,24 @@ function m_proj_n(syntax, n, expr)
 end
 
 function add_term!(ce, in_els::Vector{Int}, term, syntax; h=head(term), a=args(term))
-  if h == :compose
-    cur_obs = in_els
-    for arg in a
-      cur_obs = add_term!(ce, cur_obs, arg, syntax)
-    end
-    cur_obs
-  elseif h == :otimes
+  add_term!(Val{h}, ce, in_els, term, syntax; h=h, a=a)
+end
+
+function add_term!(::Type{Val{:compose}}, ce, in_els::Vector{Int}, term, syntax; h=head(term), a=args(term))
+  cur_obs = in_els
+  for arg in a
+    cur_obs = add_term!(ce, cur_obs, arg, syntax)
+  end
+  cur_obs
+end
+
+function add_term!(::Type{Val{:otimes}}, ce, in_els::Vector{Int}, term, syntax; h=head(term), a=args(term))
     new_obs = [add_els!(ce, ce[ce[in_els, :πₑ], :nameo]) for i in 1:length(a)]
     map(i -> add_arrs!(ce, syntax.mcopy.(ce[ce[in_els, :πₑ], :nameo]), in_els, new_obs[i]), 1:length(a))
     up_obs = vcat(map(i -> add_term!(ce, collect(new_obs[i]), a[i], syntax), 1:length(a))...)
-  elseif h ∈ [:plus, :minus, :mult]
+end
+
+function add_term!(::Type{Val{:plus}}, ce, in_els::Vector{Int}, term, syntax; h=head(term), a=args(term))
     new_obs = add_term!(ce, in_els, term, syntax; h=:otimes)
     op_types = sp_otimes(codom(first(a)), syntax)
     doub_types = op_types .⊗ op_types
@@ -70,7 +77,9 @@ function add_term!(ce, in_els::Vector{Int}, term, syntax; h=head(term), a=args(t
     out_obs = add_els!(ce, op_types)
     add_arrs!(ce, [syntax.plus(o) for o in op_types], comb_els, out_obs)
     out_obs
-  elseif term isa syntax.Hom
+end
+
+function add_term!(::Type{<:Val}, ce, in_els::Vector{Int}, term, syntax; h=head(term), a=args(term))
     d_args = sp_otimes(dom(term), syntax)
     c_args = sp_otimes(codom(term), syntax)
     inp = first(in_els)
@@ -86,10 +95,9 @@ function add_term!(ce, in_els::Vector{Int}, term, syntax; h=head(term), a=args(t
       add_arrs!(ce, [m_proj_n(syntax, i, ce[ce[otp, :πₑ], :nameo]) for i in 1:length(in_els)], fill(otp, length(otps)), otps)
     end
     otps
-  else
-    error("$h is not an implemented operator.")
-  end
 end
+
+
 
 function rem_units!(ce, syntax)
   munits = findall(x -> x isa syntax.Ob{:munit}, ce[:nameo])

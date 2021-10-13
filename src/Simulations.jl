@@ -5,6 +5,7 @@ using Catlab
 using Catlab.WiringDiagrams
 using Catlab.CategoricalAlgebra
 using Catlab.Theories
+using PreallocationTools
 
 export gen_sim,
        BoxFunc, MatrixFunc, ElementwiseFunc, ArbitraryFunc, InPlaceFunc,
@@ -30,13 +31,16 @@ dims(x) = begin
   form2dim[first(k)]
 end
 
-function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[])
+function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[], autodiff=false)
   check_consistency(dwd)
   d = dwd.diagram
 
   # Generate cached memory. These variables are indexed by their respective
   # output ports
   mem = [zeros(Float64, dims(f)(s)) for f in d[:out_port_type]]
+  if autodiff
+    mem = [dualcache(zeros(Float64, dims(f)(s))) for f in d[:out_port_type]]
+  end
   tgt2src = Dict{Int64, Int64}()
   for w in 1:nparts(d, :Wire)
     d[w, :tgt] ∈ keys(tgt2src) && error("Two wires input to port $(d[w, :src])")
@@ -88,6 +92,15 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[])
   body = quote
   end
 
+  # Assign variables for each dual memory location
+  # Allows for get_tmp to be called for each cached memory location
+  if autodiff
+    dual_init = map(1:length(mem)) do i
+      :($(Symbol("d_$i")) = get_tmp(mem[$i], u))
+    end
+    append!(body.args, dual_init)
+  end
+
   exec_dwd = map(execution_order) do b
     iw = in_wires(dwd, b)
 
@@ -100,13 +113,21 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[])
           :(u[$(input_inds[p.port][1]):$(input_inds[p.port][2])])
         end
       else
-        :(mem[$(incident(d, p.box, :out_port_box)[p.port])])
+        if autodiff
+          :($(Symbol("d_$(incident(d, p.box, :out_port_box)[p.port])")))
+        else
+          :(mem[$(incident(d, p.box, :out_port_box)[p.port])])
+        end
       end
     end
     input_args[[w.target.port for w in iw]] .= input_args
 
     output_args = map(incident(d, b, :out_port_box)) do p
-      :(mem[$p])
+      if autodiff
+        :($(Symbol("d_$p")))
+      else
+        :(mem[$p])
+      end
     end
 
     gen_func(input_args, output_args, n2f[d[b, :value]])
@@ -120,7 +141,11 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[])
     w = first(iw)
     pt = d[w, :out_tgt]
     ps = d[w, :out_src]
-    :(du[$(output_inds[pt][1]):$(output_inds[pt][2])] .= mem[$ps])
+    if autodiff
+      :(du[$(output_inds[pt][1]):$(output_inds[pt][2])] .= $(Symbol("d_$ps")))
+    else
+      :(du[$(output_inds[pt][1]):$(output_inds[pt][2])] .= mem[$ps])
+    end
   end
   append!(body.args, du_set)
 
