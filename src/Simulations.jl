@@ -85,6 +85,17 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[],
     end
   end
 
+  # Compute composed matrices
+  for v in d[:value]
+    ops = split("$v", "⋅")
+    if length(ops) > 1
+      @show v
+      mat_val = foldl(*, map(o->name2func[Symbol(o)][:operator], ops))
+      push!(matrices, mat_val)
+      n2f[v] = Dict(:operator => :(matrices[$(length(matrices))]), :type => MatrixFunc())
+    end
+  end
+
   # Topological sort of DWD for scheduling
   execution_order = topological_sort(internal_graph(dwd))
 
@@ -214,7 +225,5 @@ function check_consistency(dwd::WiringDiagram)
             This wire is between box $(sb)($(d[sb, :value])) and box $(tb)($(d[tb, :value]))""")
   end
 end
-
-
 
 end
