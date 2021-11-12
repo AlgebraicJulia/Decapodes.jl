@@ -1,4 +1,4 @@
-In order to run these examples, within this directory run:
+In order to run this example, within this directory run:
 ```bash
 julia --project init.jl
 ```
