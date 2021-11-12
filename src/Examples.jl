@@ -1,6 +1,7 @@
 module Examples
 
 using CombinatorialSpaces
+using CombinatorialSpaces.ExteriorCalculus
 using Catlab
 using Catlab.Present
 using Catlab.Programs
@@ -8,6 +9,8 @@ using Catlab.WiringDiagrams
 using Catlab.Graphics
 using Catlab.CategoricalAlgebra
 using Decapods.Simulations
+using Decapods.Diagrams
+using Decapods.Schedules
 using CombinatorialSpaces: ∧
 
 using LinearAlgebra
@@ -15,7 +18,7 @@ using LinearAlgebra
 import Catlab.Programs: @program
 import Catlab.Graphics: to_graphviz
 
-export dual, DWD_Funcs, sym2func, @program, to_graphviz
+export dual, DWD_Funcs, sym2func, @program, to_graphviz, gen_dec_rules
 
 function dual(s::EmbeddedDeltaSet2D{O, P}) where {O, P}
   sd = EmbeddedDeltaDualComplex2D{O, eltype(P), P}(s)
@@ -165,5 +168,115 @@ function adj_edges(s, ∂₀)
   te = vcat(incident(s, ∂₀, :tgt)...)
   se = vcat(incident(s, ∂₀, :src)...)
   unique(vcat(te, se))
+end
+
+function gen_dec_rules()
+  @present ExtendedOperators(FreeExtCalc2D) begin
+    X::Space
+    F0::Hom(munit(), Form0(X))
+    F1::Hom(munit(), Form1(X))
+    F2::Hom(munit(), Form2(X))
+    dF0::Hom(munit(), DualForm0(X))
+    dF1::Hom(munit(), DualForm1(X))
+    dF2::Hom(munit(), DualForm2(X))
+    neg::Hom(DualForm1(X), DualForm1(X)) # negative
+    half::Hom(DualForm1(X), DualForm1(X)) # half
+    L₀::Hom(Form1(X)⊗DualForm2(X), DualForm2(X))
+    L₁::Hom(Form1(X)⊗DualForm1(X), DualForm1(X))
+    i₀::Hom(Form1(X)⊗DualForm2(X), DualForm1(X))
+    i₁::Hom(Form1(X)⊗DualForm1(X), DualForm0(X))
+  end
+
+  @present Lie0Imp <: ExtendedOperators begin
+    dF2 ⋅ ∂ₜ(DualForm2(X)) == (F1 ⊗ dF2) ⋅i₀ ⋅ dual_d₁(X)
+  end
+
+  @present Lie1Imp <: ExtendedOperators begin
+    dF1 ⋅ ∂ₜ(DualForm1(X)) == (F1 ⊗ (dF1 ⋅ dual_d₁(X))) ⋅ i₀ + (F1 ⊗ dF1) ⋅ i₁ ⋅ dual_d₀(X)
+  end
+
+  @present I0Imp <: ExtendedOperators begin
+    dF1 ⋅ ∂ₜ(DualForm1(X)) == (F1 ⊗ (dF2 ⋅ ⋆₀⁻¹(X))) ⋅ ∧₁₀(X) ⋅ ⋆₁(X)
+  end
+
+  @present I1Imp <: ExtendedOperators begin
+    dF0 ⋅ ∂ₜ(DualForm0(X)) == (F1 ⊗ (dF1 ⋅ ⋆₁⁻¹(X))) ⋅ ∧₁₁(X) ⋅ ⋆₂(X)
+  end
+
+  @present δ₁Imp <: ExtendedOperators begin
+    F0 ⋅ ∂ₜ(Form0(X)) == F1 ⋅ ⋆₁(X) ⋅ dual_d₁(X) ⋅ ⋆₀⁻¹(X)
+  end
+
+  @present δ₂Imp <: ExtendedOperators begin
+    F1 ⋅ ∂ₜ(Form1(X)) == F2 ⋅ ⋆₂(X) ⋅ dual_d₀(X) ⋅ ⋆₁⁻¹(X)
+  end
+
+  @present Δ0Imp <: ExtendedOperators begin
+    F0 ⋅ ∂ₜ(Form0(X)) == F0 ⋅ d₀(X) ⋅ δ₁(X)
+  end
+
+  @present Δ1Imp <: ExtendedOperators begin
+    F1 ⋅ ∂ₜ(Form1(X)) == F1 ⋅ (d₁(X) ⋅ δ₂(X) + δ₁(X) ⋅ d₀(X))
+  end
+
+  # L₀
+
+  lie0_imp_diag = eq_to_diagrams(Lie0Imp)
+  lie0_imp = diag2dwd(lie0_imp_diag)
+  tmp = lie0_imp.diagram[1, :outer_in_port_type]
+  lie0_imp.diagram[1, :outer_in_port_type] = lie0_imp.diagram[2, :outer_in_port_type]
+  lie0_imp.diagram[2, :outer_in_port_type] = tmp
+  tmp = lie0_imp.diagram[1, :in_src]
+  lie0_imp.diagram[1, :in_src] = lie0_imp.diagram[2, :in_src]
+  lie0_imp.diagram[2, :in_src] = tmp
+
+  # L₁
+
+  lie1_imp_diag = eq_to_diagrams(Lie1Imp)
+  lie1_imp = diag2dwd(lie1_imp_diag)
+  tmp = lie1_imp.diagram[1, :outer_in_port_type]
+  lie1_imp.diagram[1, :outer_in_port_type] = lie1_imp.diagram[2, :outer_in_port_type]
+  lie1_imp.diagram[2, :outer_in_port_type] = tmp
+  lie1_imp.diagram[1, :in_src] = 2
+  lie1_imp.diagram[2, :in_src] = 1
+  lie1_imp.diagram[3, :in_src] = 1
+  lie1_imp.diagram[4, :in_src] = 2
+
+  # i₀
+
+  i0_imp_diag = eq_to_diagrams(I0Imp)
+  i0_imp = diag2dwd(i0_imp_diag)
+  rem_part!(i0_imp.diagram, :OuterInPort, 1)
+
+  # i₁
+
+  i1_imp_diag = eq_to_diagrams(I1Imp)
+  i1_imp = diag2dwd(i1_imp_diag)
+  rem_part!(i1_imp.diagram, :OuterInPort, 1)
+
+  # δ₁
+
+  δ₁_imp_diag = eq_to_diagrams(δ₁Imp)
+  δ₁_imp = diag2dwd(δ₁_imp_diag)
+  rem_part!(δ₁_imp.diagram, :OuterInPort, 1)
+
+  # δ₂
+
+  δ₂_imp_diag = eq_to_diagrams(δ₂Imp)
+  δ₂_imp = diag2dwd(δ₂_imp_diag)
+  rem_part!(δ₂_imp.diagram, :OuterInPort, 1)
+
+  # Δ₀
+
+  Δ0_imp_diag = eq_to_diagrams(Δ0Imp)
+  Δ0_imp = diag2dwd(Δ0_imp_diag)
+
+  # Δ₁
+
+  Δ1_imp_diag = eq_to_diagrams(Δ1Imp)
+  Δ1_imp = diag2dwd(Δ1_imp_diag)
+
+  Dict(:L₀ => lie0_imp, :i₀ => i0_imp, :L₁ => lie1_imp, :i₁ => i1_imp,
+       :δ₁ => δ₁_imp, :δ₂ => δ₂_imp, :Δ₀ => Δ0_imp, :Δ₁ => Δ1_imp)
 end
 end

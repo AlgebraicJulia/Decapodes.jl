@@ -43,6 +43,11 @@ function eval_deps!(dwd, diagram, el, w2b, el2p; in_els = Dict{Int, Int}(), boun
     end
   end
 
+  if el in keys(el2p)
+    return el2p[el]
+  end
+
+  # Evaluate Boundary Conditions
   bcs = incident(diagram, el, :src)
   filter!(a->"$(diagram[a, :namea])"[1] == '∂', bcs)
   for bc in bcs
@@ -98,8 +103,9 @@ function diag2dwd(d; clean = false, calc_states = [])
                         [Dict(:type=>op) for op in out_ports]))
     end
   end
+  el2p = Dict{Int, Vector}()
   in_ps = vcat(map(out_els) do el
-    eval_deps!(dwd, diagram, el, w2b, Dict{Int, Vector}(); in_els=Dict(in_els[i] => i for i in 1:length(in_els)))
+    eval_deps!(dwd, diagram, el, w2b, el2p; in_els=Dict(in_els[i] => i for i in 1:length(in_els)))
   end...)
 
   wires = map(enumerate(in_ps)) do (ip, op)

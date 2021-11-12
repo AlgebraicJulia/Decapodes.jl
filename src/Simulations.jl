@@ -9,7 +9,7 @@ using PreallocationTools
 
 export gen_sim,
        BoxFunc, MatrixFunc, ElementwiseFunc, ArbitraryFunc, InPlaceFunc,
-       ConstantFunc
+       ConstantFunc, TDInPlaceFunc
 
 abstract type BoxFunc end
 struct MatrixFunc <: BoxFunc end
@@ -17,6 +17,7 @@ struct ElementwiseFunc <: BoxFunc end
 struct ArbitraryFunc <: BoxFunc end
 struct ConstantFunc <: BoxFunc end
 struct InPlaceFunc <: BoxFunc end
+struct TDInPlaceFunc <: BoxFunc end
 
 form2dim = Dict(:Scalar => x->1,
                 :Form0 => nv,
@@ -89,7 +90,6 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[],
   for v in d[:value]
     ops = split("$v", "⋅")
     if length(ops) > 1
-      @show v
       mat_val = foldl(*, map(o->name2func[Symbol(o)][:operator], ops))
       push!(matrices, mat_val)
       n2f[v] = Dict(:operator => :(matrices[$(length(matrices))]), :type => MatrixFunc())
@@ -188,9 +188,12 @@ function _gen_func(::ArbitraryFunc, input_args, output_args, func)
 end
 
 function _gen_func(::InPlaceFunc, input_args, output_args, func)
-
   length(output_args) == 0 && error("Length of output for Arbitrary function is $(length(output_args))")
   :($(Expr(:call, func, vcat(output_args, input_args)...)))
+end
+
+function _gen_func(::TDInPlaceFunc, input_args, output_args, func)
+  _gen_func(InPlaceFunc(), vcat(input_args, [:t]), output_args, func)
 end
 
 function _gen_func(::ConstantFunc, input_args, output_args, func)
