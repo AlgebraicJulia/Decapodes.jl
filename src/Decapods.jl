@@ -4,6 +4,7 @@ using Requires
 
 #include("TontiDiagrams.jl")
 include("Diagrams.jl")
+include("OpenDiagrams.jl")
 include("Schedules.jl")
 include("Simulations.jl")
 include("Examples.jl")
