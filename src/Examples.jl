@@ -18,11 +18,12 @@ using LinearAlgebra
 import Catlab.Programs: @program
 import Catlab.Graphics: to_graphviz
 
-export dual, DWD_Funcs, sym2func, @program, to_graphviz, gen_dec_rules
+export dual, DWD_Funcs, sym2func, @program, to_graphviz, gen_dec_rules,
+       gen_leapfrog
 
-function dual(s::EmbeddedDeltaSet2D{O, P}) where {O, P}
+function dual(s::EmbeddedDeltaSet2D{O, P}; subdiv=Barycenter()) where {O, P}
   sd = EmbeddedDeltaDualComplex2D{O, eltype(P), P}(s)
-  subdivide_duals!(sd, Barycenter())
+  subdivide_duals!(sd, subdiv)
   sd
 end
 
@@ -63,6 +64,7 @@ end
 end
 =#
 sym2func(sd) = begin
+  hod1_lu = lu(⋆(Val{1}, sd))
   Dict(:d₀=>Dict(:operator => d(Val{0}, sd), :type => MatrixFunc()),
        :d₁=>Dict(:operator => d(Val{1}, sd), :type => MatrixFunc()),
        :dual_d₀=>Dict(:operator => dual_derivative(Val{0}, sd),
@@ -73,8 +75,8 @@ sym2func(sd) = begin
        :⋆₁=>Dict(:operator => hodge_star(Val{1}, sd), :type => MatrixFunc()),
        :⋆₂=>Dict(:operator => hodge_star(Val{2}, sd), :type => MatrixFunc()),
        :⋆₀⁻¹=>Dict(:operator => inv_hodge_star(Val{0}, sd), :type => MatrixFunc()),
-       :⋆₁⁻¹=>Dict(:operator => inv_hodge_star(Val{1}, sd; hodge=DiagonalHodge()),
-                   :type => MatrixFunc()),
+       :⋆₁⁻¹=>Dict(:operator => (x′,x) -> (x′ .= -1 * (hod1_lu \ x)),
+                   :type => InPlaceFunc()),
        :⋆₂⁻¹=>Dict(:operator => inv_hodge_star(Val{2}, sd), :type => MatrixFunc()),
        :∧₁₀=>Dict(:operator => (γ, α,β)->(γ .= ∧(Tuple{1,0}, sd, α, β)),
                   :type=>InPlaceFunc()),
@@ -278,5 +280,40 @@ function gen_dec_rules()
 
   Dict(:L₀ => lie0_imp, :i₀ => i0_imp, :L₁ => lie1_imp, :i₁ => i1_imp,
        :δ₁ => δ₁_imp, :δ₂ => δ₂_imp, :Δ₀ => Δ0_imp, :Δ₁ => Δ1_imp)
+end
+
+function gen_leapfrog(diagram, funcs, sd, variables)
+  length(variables) == 2 || error("This function does not currently support more than two variables")
+  dwd1 = diag2dwd(diagram, calc_states=[variables[1]], clean=true)
+  dwd2 = diag2dwd(diagram, calc_states=[variables[2]], clean=true)
+
+  dwd1_exp = expand_dwd(dwd1, gen_dec_rules())
+  dwd2_exp = expand_dwd(dwd2, gen_dec_rules())
+
+  dwd1_cont = deepcopy(dwd1_exp)
+  dwd2_cont = deepcopy(dwd2_exp)
+  contract_matrices!(dwd1_cont, funcs)
+  contract_matrices!(dwd2_cont, funcs)
+
+  func1, _ = gen_sim(dwd1_cont, funcs, sd; autodiff=false);
+  func2, _ = gen_sim(dwd2_cont, funcs, sd; autodiff=false);
+
+  if dwd1_cont.diagram[1, :outer_in_port_type][:name] == variables[1]
+    lf_func1(dv, v, u, p, t) = begin
+      func1(dv, vcat(v,u), p, t)
+    end
+    lf_func2(du, v, u, p, t) = begin
+      func2(du, vcat(v,u), p, t)
+    end
+    lf_func1, lf_func2, dwd1_exp, dwd2_exp
+  else
+    lf_func_flip1(dv, v, u, p, t) = begin
+      func1(dv, vcat(u,v), p, t)
+    end
+    lf_func_flip2(du, v, u, p, t) = begin
+      func2(du, vcat(u,v), p, t)
+    end
+    lf_func_flip1, lf_func_flip2, dwd1_exp, dwd2_exp
+  end
 end
 end

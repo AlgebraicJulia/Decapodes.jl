@@ -201,7 +201,6 @@ function _gen_func(::ConstantFunc, input_args, output_args, func)
   :($(Meta.parse(join(output_args, ","))) .= $(func))
 end
 
-
 function _gen_func(::ElementwiseFunc, input_args, output_args, func)
 
   length(output_args) == 0 && error("Length of output for Arbitrary function is $(length(output_args))")

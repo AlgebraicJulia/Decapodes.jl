@@ -115,10 +115,17 @@ function diag2dwd(d; clean = false, calc_states = [])
 
   # Remove any boxes without any connecting wires
   if clean
-
+    to_rem = Vector{Int64}()
+    for b in 1:nparts(dwd.diagram, :Box)
+      if isempty(vcat(incident(dwd.diagram, b, [:tgt, :in_port_box]),
+                      incident(dwd.diagram, b, [:in_tgt, :in_port_box]))) &&
+         isempty(vcat(incident(dwd.diagram, b, [:src, :out_port_box]),
+                      incident(dwd.diagram, b, [:out_src, :out_port_box])))
+         push!(to_rem, b)
+      end
+    end
+    rem_boxes!(dwd, to_rem)
   end
-
   dwd
 end
-
 end
