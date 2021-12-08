@@ -63,7 +63,7 @@ module Debug
     plot(ObExpr{:Form2}, s, sd, vals, colorrange, xlim, ylim, axisaspect; kw...)
   end
 
-  function plot(::Type{ObExpr{:Form1}}, s, sd, vals, colorrange, xlim, ylim, axisaspect; use_arrows=false, n_arrows = 100, kw...)
+  function plot(::Type{ObExpr{:Form1}}, s, sd, vals, colorrange, xlim, ylim, axisaspect; use_arrows=false, n_arrows = 100, arrowsize = 0.3, linewidth = 0.05, kw...)
     vals ./= [volume(Val{1},sd,e) for e in 1:ne(s)]
     if isnothing(colorrange)
       colorrange = (0.0, maximum(abs.(vals)))
@@ -83,7 +83,7 @@ module Debug
       end
       inds = inds[1:min(n_arrows, length(inds))]
 
-      arrows(fig[1,1], locs[inds], mag[inds], color=abs.(vals[inds]), colorrange=colorrange)
+      arrows(fig[1,1], locs[inds], mag[inds], color=abs.(vals[inds]), colorrange=colorrange, arrowsize=arrowsize, linewidth=linewidth)
     else
       linesegments(fig[1,1], s, color=abs.(vals), colorrange=colorrange)
     end
