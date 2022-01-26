@@ -18,6 +18,18 @@ export diag2dwd
 sp_otimes(expr) = expr isa ObExpr{:otimes} ? expr.args : [expr]
 n_args(expr) = length(sp_otimes(expr))
 
+isa_proj(hom) = startswith(string(hom), "proj")
+proj_ind(hom) = unsub(split(string(hom), "_")[1][5:end])
+
+super2int = Dict(
+  '⁰'=>'0', '¹'=>'1', '²'=>'2', '³'=>'3', '⁴'=>'4', '⁵'=>'5',
+  '⁶'=>'6', '⁷'=>'7', '⁸'=>'8', '⁹'=>'9'
+)
+
+unsub(str) = begin
+  parse(Int64, join([super2int[a] for a in str]))
+end
+
 function eval_deps!(dwd, graph, el, w2b, el2p, obs; in_els = Dict{Int, Int}(), boundaries = [])
   if el in keys(el2p)
     return el2p[el]
@@ -28,19 +40,23 @@ function eval_deps!(dwd, graph, el, w2b, el2p, obs; in_els = Dict{Int, Int}(), b
   labels = graph[:ename]
   el_types = sp_otimes(obs[el])
   outp = if length(inputs) > 1
-    sort!(inputs, by = i->parse(Int, "$(labels[i])"[2:end]))
+    sort!(inputs, by = i->proj_ind(labels[i]))
     vcat(map(w -> eval_deps!(dwd, graph, graph[w, :src], w2b, el2p, obs; in_els = in_els), inputs)...)
   elseif length(inputs) == 0
     el ∈ keys(in_els) || error("Element $el has no dependencies, but is not defined in `in_els`")
     [(input_id(dwd), in_els[el])]
   else
     in_ps = eval_deps!(dwd, graph, graph[inputs[1], :src], w2b, el2p, obs; in_els = in_els)
-    wires = map(enumerate(in_ps)) do (ip, op)
-      Wire(port_value(dwd, Port(op[1], OutputPort, op[2])), op, (w2b[inputs[1]], ip))
-    end
-    add_wires!(dwd, wires)
-    map(1:length(output_ports(dwd, w2b[inputs[1]]))) do p
-      (w2b[inputs[1]], p)
+    if isa_proj(graph[inputs[1], :ename])
+      [in_ps[proj_ind(graph[inputs[1], :ename])]]
+    else
+      wires = map(enumerate(in_ps)) do (ip, op)
+        Wire(port_value(dwd, Port(op[1], OutputPort, op[2])), op, (w2b[inputs[1]], ip))
+      end
+      add_wires!(dwd, wires)
+      map(1:length(output_ports(dwd, w2b[inputs[1]]))) do p
+        (w2b[inputs[1]], p)
+      end
     end
   end
 
@@ -66,9 +82,9 @@ end
 
 name(a::HomExpr) = head(a) == :generator ? args(a)[1] : head(a)
 
-function diag2dwd(diagram; clean = false, calc_states = [])
-  homs = diagram.hom_map
-  obs = diagram.ob_map
+function diag2dwd(diagram; clean = false, calc_states = [], arg_order=[])
+  homs = copy(diagram.hom_map)
+  obs = copy(diagram.ob_map)
   graph = NamedGraph{Any, Any}()
   copy_parts!(graph, dom(diagram).graph)
   graph[:ename] .= homs
@@ -80,7 +96,7 @@ function diag2dwd(diagram; clean = false, calc_states = [])
     if h_name isa HomExpr{:compose}
       args = h_name.args
       rem_part!(graph, :E, h)
-      verts = add_parts!(graph, :V, length(args) - 1, vname = :anon)
+      verts = add_parts!(graph, :V, length(args) - 1, vname = [Symbol("anon_", gensym()) for i in 1:(length(args)-1)])
       append!(obs, codom.(args)[1:(end-1)])
       add_parts!(graph, :E, length(args), ename = args,
                           src = vcat([elsrc], verts),
@@ -88,18 +104,44 @@ function diag2dwd(diagram; clean = false, calc_states = [])
     end
   end
 
+  flipped = fill(false, ne(graph))
+  # Flip projections for graph eval
+  for (i, h) in enumerate(homs)
+    if isa_proj(h) && !flipped[i]
+      iw = copy(incident(graph, graph[i, :src], :tgt))
+      ow = copy(incident(graph, graph[i, :src], :src))
+      if isempty(iw)
+        for w in ow
+          if isa_proj(homs[w]) && !flipped[w]
+            wsrc = graph[w, :src]
+            graph[w, :src] = graph[w, :tgt]
+            graph[w, :tgt] = wsrc
+            flipped[w] = true
+          end
+        end
+      end
+    end
+  end
+
   pres = presentation(codom(diagram))
   time_arrs = findall(h-> h isa HomExpr{:∂ₜ}, graph[:ename])
-
-  # TODO: Flip projection arrows for computation
 
   params = findall(e -> isempty(incident(graph, e, :tgt)), parts(graph, :V))
 
   state_vals = graph[time_arrs, :src]
+
+  # Ensure the order is correct
+
   in_els = unique(vcat(state_vals, params))
   out_els = copy(graph[time_arrs, :tgt])
   out_names = [Symbol(:∂ₜ, graph[v, :vname]) for v in state_vals]
 
+  if !isempty(arg_order)
+    new_inds = [findfirst(v -> graph[v, :vname] == a, state_vals) for a in arg_order]
+    in_els .= in_els[new_inds]
+    out_els .= out_els[new_inds]
+    out_names .= out_names[new_inds]
+  end
   if !isempty(calc_states)
     calc_inds = findall(v->graph[v, :vname] ∈ calc_states, state_vals)
     out_els = out_els[calc_inds]
@@ -124,7 +166,7 @@ function diag2dwd(diagram; clean = false, calc_states = [])
     w_type = graph[a, :ename]
     # Fix this if-case. This was meant for times when multiple arguments would
     # go into a single box
-    if w_type isa Symbol
+    if isa_proj(w_type)
       nothing
     elseif w_type isa HomExpr
       src_el = graph[a, :src]
@@ -151,7 +193,16 @@ function diag2dwd(diagram; clean = false, calc_states = [])
 
   # Remove any boxes without any connecting wires
   if clean
-
+    to_rem = Vector{Int64}()
+    for b in 1:nparts(dwd.diagram, :Box)
+      if isempty(vcat(incident(dwd.diagram, b, [:tgt, :in_port_box]),
+                      incident(dwd.diagram, b, [:in_tgt, :in_port_box]))) &&
+         isempty(vcat(incident(dwd.diagram, b, [:src, :out_port_box]),
+                      incident(dwd.diagram, b, [:out_src, :out_port_box])))
+         push!(to_rem, b)
+      end
+    end
+    rem_boxes!(dwd, to_rem)
   end
 
   dwd
