@@ -83,8 +83,8 @@ end
 name(a::HomExpr) = head(a) == :generator ? args(a)[1] : head(a)
 
 function diag2dwd(diagram; clean = false, calc_states = [], arg_order=[])
-  homs = copy(diagram.hom_map)
-  obs = copy(diagram.ob_map)
+  homs = Vector{Any}(copy(diagram.hom_map))
+  obs = Vector{Any}(copy(diagram.ob_map))
   graph = NamedGraph{Any, Any}()
   copy_parts!(graph, dom(diagram).graph)
   graph[:ename] .= homs
@@ -152,7 +152,7 @@ function diag2dwd(diagram; clean = false, calc_states = [], arg_order=[])
                    :type => obs[v])
               for v in in_els]
   out_types = [Dict(:name => out_names[v],
-                    :type => obs[v])
+                    :type => obs[out_els[v]])
                for v in 1:length(out_els)]
 
   # FIXME: Hacky solution to ensuring time_arrs aren't included later
