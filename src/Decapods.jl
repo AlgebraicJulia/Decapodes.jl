@@ -2,7 +2,6 @@ module Decapods
 
 using Requires
 
-#include("TontiDiagrams.jl")
 include("Diagrams.jl")
 include("OpenDiagrams.jl")
 include("Schedules.jl")

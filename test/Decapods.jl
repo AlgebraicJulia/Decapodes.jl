@@ -13,7 +13,6 @@ module DecapodsTest
 	using Decapods.Diagrams
 	using Decapods.Schedules
 	using Decapods.OpenDiagrams
-	using Decapods.PetriNets
 	using Decapods.Examples
   using Random
 
