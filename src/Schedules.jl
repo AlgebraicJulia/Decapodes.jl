@@ -137,10 +137,11 @@ function diag2dwd(diagram; clean = false, calc_states = [], arg_order=[])
   out_names = [Symbol(:∂ₜ, graph[v, :vname]) for v in state_vals]
 
   if !isempty(arg_order)
-    new_inds = [findfirst(v -> graph[v, :vname] == a, state_vals) for a in arg_order]
+    new_inds = [findfirst(v -> graph[v, :vname] == a, in_els) for a in arg_order]
+    non_param_inds = filter(i -> in_els[i] in state_vals , new_inds)
     in_els .= in_els[new_inds]
-    out_els .= out_els[new_inds]
-    out_names .= out_names[new_inds]
+    out_els .= out_els[non_param_inds]
+    out_names .= out_names[non_param_inds]
   end
   if !isempty(calc_states)
     calc_inds = findall(v->graph[v, :vname] ∈ calc_states, state_vals)
