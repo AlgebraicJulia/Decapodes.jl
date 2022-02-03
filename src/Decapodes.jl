@@ -1,4 +1,4 @@
-module Decapods
+module Decapodes
 
 using Requires
 

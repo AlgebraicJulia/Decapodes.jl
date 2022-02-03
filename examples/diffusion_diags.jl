@@ -26,16 +26,16 @@ DiffusionConservation2D = @free_diagram DiffusionSpace2D begin
   Ċ == ⋆₀⁻¹{X}(dϕ)
 end;
 
-using Decapods
+using Decapodes
 
 compose_diffusion = @relation (C, Ċ, ϕ) begin
   ficks_law(C, ϕ)
   mass_conservation(C, Ċ, ϕ)
 end
 
-Decapods.OpenDiagrams.draw(compose_diffusion)
+Decapodes.OpenDiagrams.draw(compose_diffusion)
 
-using Decapods.OpenDiagrams
+using Decapodes.OpenDiagrams
 
 composed_diffusion = oapply(compose_diffusion, [
     OpenDiagram(FicksLaw2D, [:C, :J]),

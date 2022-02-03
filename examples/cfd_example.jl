@@ -12,7 +12,7 @@ using CombinatorialSpaces: ∧
 using Distributions
 using CairoMakie
 using DifferentialEquations
-using Decapods.TontiDiagrams
+using Decapodes.TontiDiagrams
 
 using Logging: global_logger
 using TerminalLoggers: TerminalLogger

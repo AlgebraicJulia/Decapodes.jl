@@ -2,6 +2,6 @@
 
 ## Tonti Diagrams
 ```@autodocs
-Modules = [ Decapods.TontiDiagrams ]
+Modules = [ Decapodes.TontiDiagrams ]
 Private = false
 ```

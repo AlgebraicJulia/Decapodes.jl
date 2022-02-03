@@ -1,4 +1,4 @@
-module DecapodsTest
+module DecapodesTest
 
   using Catlab
 	using Catlab.Present
@@ -9,11 +9,11 @@ module DecapodsTest
   using LinearAlgebra
   using Test
 
-	using Decapods.Simulations
-	using Decapods.Diagrams
-	using Decapods.Schedules
-	using Decapods.OpenDiagrams
-	using Decapods.Examples
+	using Decapodes.Simulations
+	using Decapodes.Diagrams
+	using Decapodes.Schedules
+	using Decapodes.OpenDiagrams
+	using Decapodes.Examples
   using Random
 
 	@present DiffusionSpace2D(FreeExtCalc2D) begin

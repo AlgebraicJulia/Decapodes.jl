@@ -1,5 +1,5 @@
 using Test
 
-@testset "Decapods" begin
-  include("Decapods.jl")
+@testset "Decapodes" begin
+  include("Decapodes.jl")
 end
