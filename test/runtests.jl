@@ -1,5 +1,5 @@
 using Test
 
-@testset "Tonti Diagrams" begin
-  include("TontiDiagrams.jl")
+@testset "Decapods" begin
+  include("Decapods.jl")
 end
