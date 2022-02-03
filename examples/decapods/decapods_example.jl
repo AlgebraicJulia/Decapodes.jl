@@ -8,15 +8,15 @@ using Catlab.Graphics
 using Catlab.CategoricalAlgebra
 using LinearAlgebra
 
-using Decapods.Simulations
-using Decapods.Examples
-using Decapods.Diagrams
-using Decapods.Schedules
+using Decapodes.Simulations
+using Decapodes.Examples
+using Decapodes.Diagrams
+using Decapodes.Schedules
 
 # Julia community libraries
 using MeshIO
 using CairoMakie
-using Decapods.Debug
+using Decapodes.Debug
 using DifferentialEquations
 using Logging: global_logger
 using TerminalLoggers: TerminalLogger

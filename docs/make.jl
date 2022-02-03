@@ -1,16 +1,16 @@
 using Documenter
 using Literate
 
-@info "Loading Decapods"
-using Decapods
+@info "Loading Decapodes"
+using Decapodes
 using Catlab
 using Catlab.WiringDiagrams
 
 # Set Literate.jl config if not being compiled on recognized service.
 config = Dict{String,String}()
 if !(haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "GITLAB_CI"))
-  config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/AlgebraicJulia/Decapods.jl/blob/gh-pages/dev"
-  config["repo_root_url"] = "https://github.com/AlgebraicJulia/Decapods.jl/blob/main/docs"
+  config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/AlgebraicJulia/Decapodes.jl/blob/gh-pages/dev"
+  config["repo_root_url"] = "https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs"
 end
 
 #const literate_dir = joinpath(@__DIR__, "..", "examples")
@@ -31,15 +31,15 @@ end
 
 @info "Building Documenter.jl docs"
 makedocs(
-  modules   = [Decapods],
+  modules   = [Decapodes],
   format    = Documenter.HTML(
     assets = ["assets/analytics.js"],
   ),
-  sitename  = "Decapods.jl",
+  sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
   pages     = Any[
-    "Decapods.jl" => "index.md",
+    "Decapodes.jl" => "index.md",
 #    "Examples" => Any[
 #      "examples/cfd_example.md"
 #    ],
@@ -50,7 +50,7 @@ makedocs(
 @info "Deploying docs"
 deploydocs(
   target = "build",
-  repo   = "github.com/AlgebraicJulia/Decapods.jl.git",
+  repo   = "github.com/AlgebraicJulia/Decapodes.jl.git",
   branch = "gh-pages",
   devbranch = "main"
 )

@@ -1,6 +1,6 @@
-# Decapods.jl
+# Decapodes.jl
 
-Decapods are a graphical tool for the composition of physical systems.
+Decapodes are a graphical tool for the composition of physical systems.
 Ultimately, this library will include tooling which takes advantage of the
 formalization of physical theories described by DEC provided by
 [CombinatorialSpaces.jl](https://algebraicjulia.github.io/CombinatorialSpaces.jl/dev/).

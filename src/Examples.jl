@@ -8,9 +8,9 @@ using Catlab.Programs
 using Catlab.WiringDiagrams
 using Catlab.Graphics
 using Catlab.CategoricalAlgebra
-using Decapods.Simulations
-using Decapods.Diagrams
-using Decapods.Schedules
+using Decapodes.Simulations
+using Decapodes.Diagrams
+using Decapodes.Schedules
 using CombinatorialSpaces: ∧
 
 using LinearAlgebra
