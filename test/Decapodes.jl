@@ -44,7 +44,7 @@ module DecapodesTest
 
 	composed_diff = oapply(compose_diff, [OpenDiagram(Diffusion, [:C, :Ċ]), OpenDiagram(Dynamics, [:C, :Ċ])]);
 
-	res = diag2dwd(composed_diff.functor, arg_order = [:C])
+  res = diag2dwd(composed_diff.functor, in_vars = [:C], out_vars = [:Ċ])
 
 	s = EmbeddedDeltaSet2D{Bool, Point{3,Float64}}()
 	points = [(0,0,0),(0,0,1),(0,1,0),(0,1,1)]

@@ -25,9 +25,13 @@ super2int = Dict(
   '⁰'=>'0', '¹'=>'1', '²'=>'2', '³'=>'3', '⁴'=>'4', '⁵'=>'5',
   '⁶'=>'6', '⁷'=>'7', '⁸'=>'8', '⁹'=>'9'
 )
+sub2int = Dict(
+  '₀'=>'0', '₁'=>'1', '₂'=>'2', '₃'=>'3', '₄'=>'4', '₅'=>'5',
+  '₆'=>'6', '₇'=>'7', '₈'=>'8', '₉'=>'9'
+)
 
 unsub(str) = begin
-  parse(Int64, join([super2int[a] for a in str]))
+  parse(Int64, join([sub2int[a] for a in str]))
 end
 
 function eval_deps!(dwd, graph, el, w2b, el2p, obs; in_els = Dict{Int, Int}(), boundaries = [])
@@ -82,7 +86,7 @@ end
 
 name(a::HomExpr) = head(a) == :generator ? args(a)[1] : head(a)
 
-function diag2dwd(diagram; clean = false, calc_states = [], arg_order=[])
+function diag2dwd(diagram; clean = false, calc_states = [], out_vars=[], in_vars=[])
   homs = Vector{Any}(copy(diagram.hom_map))
   obs = Vector{Any}(copy(diagram.ob_map))
   graph = NamedGraph{Any, Any}()
@@ -124,24 +128,33 @@ function diag2dwd(diagram; clean = false, calc_states = [], arg_order=[])
   end
 
   pres = presentation(codom(diagram))
+
+  # Decide on State and Parameter variables
   time_arrs = findall(h-> h isa HomExpr{:∂ₜ}, graph[:ename])
-
   params = findall(e -> isempty(incident(graph, e, :tgt)), parts(graph, :V))
-
   state_vals = graph[time_arrs, :src]
 
-  # Ensure the order is correct
-
+  # Mix State and Parameters into single in_els (need to ensure alignment between input and outputs
   in_els = unique(vcat(state_vals, params))
   out_els = copy(graph[time_arrs, :tgt])
   out_names = [Symbol(:∂ₜ, graph[v, :vname]) for v in state_vals]
 
-  if !isempty(arg_order)
-    new_inds = [findfirst(v -> graph[v, :vname] == a, in_els) for a in arg_order]
+
+  # TODO: Establish some kind of consistency expectations here
+  if !isempty(in_vars) && !isempty(out_vars)
+    in_els = [incident(graph, a, :vname) for a in in_vars]
+    out_els = [incident(graph, a, :vname) for a in out_vars]
+    out_names = graph[out_els, :vname]
+  elseif !isempty(in_vars)
+    # This ensures that the output values are in-order with input values
+    new_inds = [findfirst(v -> graph[v, :vname] == a, in_els) for a in in_vars]
     non_param_inds = filter(i -> in_els[i] in state_vals , new_inds)
     in_els .= in_els[new_inds]
     out_els .= out_els[non_param_inds]
     out_names .= out_names[non_param_inds]
+  elseif !isempty(out_vars)
+    out_els = [incident(graph, a, :vname) for a in out_vars]
+    out_names = graph[out_els, out_els]
   end
   if !isempty(calc_states)
     calc_inds = findall(v->graph[v, :vname] ∈ calc_states, state_vals)
