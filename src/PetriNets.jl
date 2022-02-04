@@ -81,7 +81,7 @@ function bin_exp!(graph, obs, homs, prs, exp, vals::Int64...)
                 ename =[nothing, nothing, nothing],
                 tgt=[vals[i+1], cur_val, bin_res[i]],
                 src=[bin_int[i], bin_int[i], bin_int[i]])
-      append!(homs, [prs[:proj¹_⁰⁰₀], prs[:proj²_⁰⁰₀], prs[exp]])
+      append!(homs, [prs[:proj₁_⁰⁰₀], prs[:proj₂_⁰⁰₀], prs[exp]])
       cur_val = bin_res[i]
     end
     cur_val
@@ -118,9 +118,8 @@ function pn2dec(prs, pn::LabelledReactionNet)
 
   set_subparts!(graph, res_s,
     vname=[length("$name") > 1 ?
-            Symbol("∂ₜ", "$name") : Symbol(Unicode.normalize("$name"* "̇"))
+            Symbol("∂ₜ", "$name") : Symbol(Unicode.normalize("$name"* '̇'))
             for name in snames(pn)])
-  @show incident(graph, :Ṙ, :vname)
   FinFunctor(obs, homs, FinCat(graph), FinCat(prs))
 end
 
@@ -131,8 +130,8 @@ function expand_pres!(pres, pn::LabelledReactionNet)
   gens = Dict(:neg₀ => synt.Hom(:neg₀, form0, form0),
               :sum₀ => synt.Hom(:sum₀, form0x0, form0),
               :prod₀ => synt.Hom(:prod₀, form0x0, form0),
-              :proj¹_⁰⁰₀ => synt.Hom(:proj¹_⁰⁰₀, form0x0, form0),
-              :proj²_⁰⁰₀ => synt.Hom(:proj²_⁰⁰₀, form0x0, form0))
+              :proj₁_⁰⁰₀ => synt.Hom(:proj₁_⁰⁰₀, form0x0, form0),
+              :proj₂_⁰⁰₀ => synt.Hom(:proj₂_⁰⁰₀, form0x0, form0))
   for t in tnames(pn)
     gens[t] = synt.Hom(Symbol("k_$t"), form0, form0)
   end

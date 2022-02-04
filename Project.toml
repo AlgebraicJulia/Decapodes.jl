@@ -18,9 +18,10 @@ CombinatorialSpaces = "0.3"
 julia = "1.0"
 
 [extras]
+AlgebraicPetri = "4f99eebe-17bf-4e98-b6a1-2c4f205a959b"
 GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "Random", "GeometryBasics"]
+test = ["AlgebraicPetri", "Test", "Random", "GeometryBasics"]

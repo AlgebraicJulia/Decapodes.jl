@@ -1,4 +1,4 @@
-module DecapodesTest
+module ExamplesTest
 
   using Catlab
 	using Catlab.Present
