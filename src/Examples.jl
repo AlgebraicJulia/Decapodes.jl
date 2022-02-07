@@ -15,10 +15,9 @@ using CombinatorialSpaces: ∧
 
 using LinearAlgebra
 
-import Catlab.Programs: @program
 import Catlab.Graphics: to_graphviz
 
-export dual, DWD_Funcs, sym2func, @program, to_graphviz, gen_dec_rules
+export dual, sym2func, to_graphviz, gen_dec_rules
 
 function dual(s::EmbeddedDeltaSet2D{O, P}) where {O, P}
   sd = EmbeddedDeltaDualComplex2D{O, eltype(P), P}(s)
@@ -26,42 +25,6 @@ function dual(s::EmbeddedDeltaSet2D{O, P}) where {O, P}
   sd
 end
 
-#=
-@present DWD_Funcs(FreeSymmetricMonoidalCategory) begin
-    Scalar::Ob
-    Form0::Ob
-    Form1::Ob
-    Form2::Ob
-    DForm0::Ob
-    DForm1::Ob
-    DForm2::Ob
-    d0::Hom(Form0, Form1)
-    d1::Hom(Form1, Form2)
-    d̃0::Hom(DForm0, DForm1)
-    d̃1::Hom(DForm1, DForm2)
-    star0::Hom(Form0, DForm2)
-    star1::Hom(Form1, DForm1)
-    star_inv0::Hom(DForm2, Form0)
-    star_inv1::Hom(DForm1, Form1)
-    star_inv2::Hom(DForm0, Form2)
-    plus0::Hom(Form0⊗Form0, Form0)
-    plus1::Hom(Form1⊗Form1, Form1)
-    dplus1::Hom(DForm1⊗DForm1, DForm1)
-    dplus2::Hom(DForm2⊗DForm2, DForm2)
-    prod0::Hom(Form0⊗Form0, Form0)
-    prod1::Hom(Form1⊗Form1, Form1)
-    scale0::Hom(Scalar⊗Form0, Form0)
-    scale1::Hom(Scalar⊗Form1, Form1)
-    ∂0::Hom(munit(), Form0)
-    ∂1::Hom(munit(), Form1)
-    z0::Hom(munit(), Form0)
-    z1::Hom(munit(), Form1)
-    z1::Hom(munit(), Form2)
-    k::Hom(munit(), Scalar)
-    ℒ::Hom(Form1⊗DForm2, DForm2)
-    Δ::Hom(Form0, Form0)
-end
-=#
 sym2func(sd) = begin
   Dict(:d₀=>Dict(:operator => d(Val{0}, sd), :type => MatrixFunc()),
        :d₁=>Dict(:operator => d(Val{1}, sd), :type => MatrixFunc()),
@@ -173,108 +136,84 @@ end
 function gen_dec_rules()
   @present ExtendedOperators(FreeExtCalc2D) begin
     X::Space
-    F0::Hom(munit(), Form0(X))
-    F1::Hom(munit(), Form1(X))
-    F2::Hom(munit(), Form2(X))
-    dF0::Hom(munit(), DualForm0(X))
-    dF1::Hom(munit(), DualForm1(X))
-    dF2::Hom(munit(), DualForm2(X))
-    neg::Hom(DualForm1(X), DualForm1(X)) # negative
-    half::Hom(DualForm1(X), DualForm1(X)) # half
+    neg₁̃::Hom(DualForm1(X), DualForm1(X)) # negative
+    half₁̃::Hom(DualForm1(X), DualForm1(X)) # half
+    proj₁_¹⁰₁::Hom(Form1(X) ⊗ Form0(X), Form1(X))
+    proj₂_¹⁰₀::Hom(Form1(X) ⊗ Form0(X), Form0(X))
+    proj₁_¹²₁::Hom(Form1(X) ⊗ Form2(X), Form1(X))
+    proj₂_¹²₂::Hom(Form1(X) ⊗ Form2(X), Form2(X))
+    proj₁_¹²̃₁::Hom(Form1(X) ⊗ DualForm2(X), Form1(X))
+    proj₂_¹²̃₂̃::Hom(Form1(X) ⊗ DualForm2(X), DualForm2(X))
+    proj₁_¹¹̃₁::Hom(Form1(X) ⊗ DualForm1(X), Form1(X))
+    proj₂_¹¹̃₁̃::Hom(Form1(X) ⊗ DualForm1(X), DualForm1(X))
+    proj₁_¹̃¹̃₁̃::Hom(DualForm1(X) ⊗ DualForm1(X), DualForm1(X))
+    proj₂_¹̃¹̃₁̃::Hom(DualForm1(X) ⊗ DualForm1(X), DualForm1(X))
+    proj₁_¹¹₁::Hom(Form1(X)⊗Form1(X), Form1(X))
+    proj₂_¹¹₁::Hom(Form1(X)⊗Form1(X), Form1(X))
+    sum₁̃::Hom(DualForm1(X)⊗DualForm1(X), DualForm1(X))
+    sum₁::Hom(Form1(X)⊗Form1(X), Form1(X))
     L₀::Hom(Form1(X)⊗DualForm2(X), DualForm2(X))
     L₁::Hom(Form1(X)⊗DualForm1(X), DualForm1(X))
     i₀::Hom(Form1(X)⊗DualForm2(X), DualForm1(X))
     i₁::Hom(Form1(X)⊗DualForm1(X), DualForm0(X))
   end
 
-  @present Lie0Imp <: ExtendedOperators begin
-    dF2 ⋅ ∂ₜ(DualForm2(X)) == (F1 ⊗ dF2) ⋅i₀ ⋅ dual_d₁(X)
+  Lie0Imp = @decapode ExtendedOperators begin
+    (dḞ2, dF2)::DualForm2{X}
+    F1::Form1{X}
+
+    dḞ2 ==  dual_d₁{X}(i₀(F1, dF2))
   end
+  lie0_imp = diag2dwd(Lie0Imp, in_vars = [:F1, :dF2], out_vars = [:dḞ2])
 
-  @present Lie1Imp <: ExtendedOperators begin
-    dF1 ⋅ ∂ₜ(DualForm1(X)) == (F1 ⊗ (dF1 ⋅ dual_d₁(X))) ⋅ i₀ + (F1 ⊗ dF1) ⋅ i₁ ⋅ dual_d₀(X)
+  Lie1Imp = @decapode ExtendedOperators begin
+    (dḞ1, dF1)::DualForm1{X}
+    F1::Form1{X}
+    dḞ1 == i₀(F1, dual_d₁{X}(dF1)) + dual_d₀{X}(i₁(F1, dF1))
   end
+  lie1_imp = diag2dwd(Lie1Imp, in_vars = [:F1, :dF1], out_vars = [:dḞ1])
 
-  @present I0Imp <: ExtendedOperators begin
-    dF1 ⋅ ∂ₜ(DualForm1(X)) == (F1 ⊗ (dF2 ⋅ ⋆₀⁻¹(X))) ⋅ ∧₁₀(X) ⋅ ⋆₁(X)
+  I0Imp = @decapode ExtendedOperators begin
+    F1::Form1{X}
+    dF1::DualForm1{X}
+    dF2::DualForm2{X}
+    dF1 == ⋆₁{X}(∧₁₀{X}(F1, ⋆₀⁻¹{X}(dF2)))
   end
+  i0_imp = diag2dwd(I0Imp, in_vars = [:F1, :dF2], out_vars = [:dF1])
 
-  @present I1Imp <: ExtendedOperators begin
-    dF0 ⋅ ∂ₜ(DualForm0(X)) == (F1 ⊗ (dF1 ⋅ ⋆₁⁻¹(X))) ⋅ ∧₁₁(X) ⋅ ⋆₂(X)
+  I1Imp = @decapode ExtendedOperators begin
+    F1::Form1{X}
+    dF1::DualForm1{X}
+    dF0::DualForm0{X}
+    dF0 == ⋆₂{X}(∧₁₁{X}(F1, ⋆₁⁻¹{X}(dF1)))
   end
+  i1_imp = diag2dwd(I1Imp, in_vars = [:F1, :dF1], out_vars = [:dF0])
 
-  @present δ₁Imp <: ExtendedOperators begin
-    F0 ⋅ ∂ₜ(Form0(X)) == F1 ⋅ ⋆₁(X) ⋅ dual_d₁(X) ⋅ ⋆₀⁻¹(X)
+  δ₁Imp = @decapode ExtendedOperators begin
+    F1::Form1{X}
+    F0::Form0{X}
+    F0 == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(F1)))
   end
+  δ₁_imp = diag2dwd(δ₁Imp, in_vars = [:F1], out_vars = [:F0])
 
-  @present δ₂Imp <: ExtendedOperators begin
-    F1 ⋅ ∂ₜ(Form1(X)) == F2 ⋅ ⋆₂(X) ⋅ dual_d₀(X) ⋅ ⋆₁⁻¹(X)
+  δ₂Imp = @decapode ExtendedOperators begin
+    F1::Form1{X}
+    F2::Form2{X}
+    F1 == ⋆₁⁻¹{X}(dual_d₀{X}(⋆₂{X}(F2)))
   end
+  δ₂_imp = diag2dwd(δ₂Imp, in_vars = [:F2], out_vars = [:F1])
 
-  @present Δ0Imp <: ExtendedOperators begin
-    F0 ⋅ ∂ₜ(Form0(X)) == F0 ⋅ d₀(X) ⋅ δ₁(X)
+  Δ0Imp = @decapode ExtendedOperators begin
+    (F0, Ḟ0)::Form0{X}
+    Ḟ0 == δ₁{X}(d₀{X}(F0))
   end
+  Δ0_imp = diag2dwd(Δ0Imp, in_vars = [:F0], out_vars = [:Ḟ0])
 
-  @present Δ1Imp <: ExtendedOperators begin
-    F1 ⋅ ∂ₜ(Form1(X)) == F1 ⋅ (d₁(X) ⋅ δ₂(X) + δ₁(X) ⋅ d₀(X))
+  Δ1Imp = @decapode ExtendedOperators begin
+    (F1, Ḟ1)::Form1{X}
+    Ḟ1 == δ₂{X}(d₁{X}(F1)) + d₀{X}(δ₁{X}(F1))
   end
-
-  # L₀
-
-  lie0_imp_diag = eq_to_diagrams(Lie0Imp)
-  lie0_imp = diag2dwd(lie0_imp_diag)
-  tmp = lie0_imp.diagram[1, :outer_in_port_type]
-  lie0_imp.diagram[1, :outer_in_port_type] = lie0_imp.diagram[2, :outer_in_port_type]
-  lie0_imp.diagram[2, :outer_in_port_type] = tmp
-  tmp = lie0_imp.diagram[1, :in_src]
-  lie0_imp.diagram[1, :in_src] = lie0_imp.diagram[2, :in_src]
-  lie0_imp.diagram[2, :in_src] = tmp
-
-  # L₁
-
-  lie1_imp_diag = eq_to_diagrams(Lie1Imp)
-  lie1_imp = diag2dwd(lie1_imp_diag)
-  tmp = lie1_imp.diagram[1, :outer_in_port_type]
-  lie1_imp.diagram[1, :outer_in_port_type] = lie1_imp.diagram[2, :outer_in_port_type]
-  lie1_imp.diagram[2, :outer_in_port_type] = tmp
-  lie1_imp.diagram[1, :in_src] = 2
-  lie1_imp.diagram[2, :in_src] = 1
-  lie1_imp.diagram[3, :in_src] = 1
-  lie1_imp.diagram[4, :in_src] = 2
-
-  # i₀
-
-  i0_imp_diag = eq_to_diagrams(I0Imp)
-  i0_imp = diag2dwd(i0_imp_diag)
-  rem_part!(i0_imp.diagram, :OuterInPort, 1)
-
-  # i₁
-
-  i1_imp_diag = eq_to_diagrams(I1Imp)
-  i1_imp = diag2dwd(i1_imp_diag)
-  rem_part!(i1_imp.diagram, :OuterInPort, 1)
-
-  # δ₁
-
-  δ₁_imp_diag = eq_to_diagrams(δ₁Imp)
-  δ₁_imp = diag2dwd(δ₁_imp_diag)
-  rem_part!(δ₁_imp.diagram, :OuterInPort, 1)
-
-  # δ₂
-
-  δ₂_imp_diag = eq_to_diagrams(δ₂Imp)
-  δ₂_imp = diag2dwd(δ₂_imp_diag)
-  rem_part!(δ₂_imp.diagram, :OuterInPort, 1)
-
-  # Δ₀
-
-  Δ0_imp_diag = eq_to_diagrams(Δ0Imp)
-  Δ0_imp = diag2dwd(Δ0_imp_diag)
-
-  # Δ₁
-
-  Δ1_imp_diag = eq_to_diagrams(Δ1Imp)
-  Δ1_imp = diag2dwd(Δ1_imp_diag)
+  Δ1_imp = diag2dwd(Δ1Imp, in_vars = [:F1], out_vars = [:Ḟ1])
 
   Dict(:L₀ => lie0_imp, :i₀ => i0_imp, :L₁ => lie1_imp, :i₁ => i1_imp,
        :δ₁ => δ₁_imp, :δ₂ => δ₂_imp, :Δ₀ => Δ0_imp, :Δ₁ => Δ1_imp)
