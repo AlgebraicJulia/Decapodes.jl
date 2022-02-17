@@ -91,10 +91,10 @@ module PetriNetsTest
   du = zeros(Float64,nv(s)*4)
 
 	tempu = copy(u)
-  dt = 0.001
-  for i in 10000
+  dt = 0.01
+  for i in 1:1000
     sim(du, tempu, [],0)
-    tempu .+= du
+    tempu .+= du * dt
     # Check that population is conserved
   end
   @test all(tempu .!= u)
