@@ -76,24 +76,31 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[],
   n2f = deepcopy(name2func)
   matrices = Vector{Any}()
   funcs = Vector{Function}()
-  for (k,v) in name2func
-    if(v[:type] isa MatrixFunc)
-      push!(matrices, v[:operator])
-      n2f[k] = Dict(:operator => :(matrices[$(length(matrices))]), :type => v[:type])
-    elseif(v[:type] isa Union{ElementwiseFunc, ArbitraryFunc})
-      push!(funcs, v[:operator])
-      n2f[k] = Dict(:operator => :(funcs[$(length(funcs))]),:type => v[:type])
+
+  # First develop a list of needed functions/matrices
+  used_funcs = unique(d[:value])
+
+  for k in used_funcs
+    ops = split("$k", "⋅")
+    if length(ops) > 1
+      mat_val = foldl(*, map(o->name2func[Symbol(o)][:operator], ops))
+      push!(matrices, mat_val)
+      n2f[k] = Dict(:operator => :(matrices[$(length(matrices))]), :type => MatrixFunc())
+    else
+      v = name2func[k]
+      if(v[:type] isa MatrixFunc)
+        push!(matrices, v[:operator])
+        n2f[k] = Dict(:operator => :(matrices[$(length(matrices))]), :type => v[:type])
+      elseif(v[:type] isa Union{ElementwiseFunc, ArbitraryFunc, InPlaceFunc, TDInPlaceFunc})
+        push!(funcs, v[:operator])
+        n2f[k] = Dict(:operator => :(funcs[$(length(funcs))]),:type => v[:type])
+      end
     end
   end
 
   # Compute composed matrices
   for v in d[:value]
-    ops = split("$v", "⋅")
-    if length(ops) > 1
-      mat_val = foldl(*, map(o->name2func[Symbol(o)][:operator], ops))
-      push!(matrices, mat_val)
-      n2f[v] = Dict(:operator => :(matrices[$(length(matrices))]), :type => MatrixFunc())
-    end
+
   end
 
   # Topological sort of DWD for scheduling
