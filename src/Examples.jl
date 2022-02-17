@@ -109,7 +109,7 @@ end
 
 function boundary_inds(::Type{Val{0}}, s)
   ∂1_inds = boundary_inds(Val{1}, s)
-  unique(vcat(s[∂1_inds,:src],s[∂1_inds,:tgt]))
+  unique(vcat(s[∂1_inds,:∂v0],s[∂1_inds,:∂v1]))
 end
 
 function boundary_inds(::Type{Val{2}}, s)
@@ -122,14 +122,14 @@ end
 
 
 function bound_edges(s, ∂₀)
-  te = vcat(incident(s, ∂₀, :tgt)...)
-  se = vcat(incident(s, ∂₀, :src)...)
+  te = vcat(incident(s, ∂₀, :∂v1)...)
+  se = vcat(incident(s, ∂₀, :∂v0)...)
   intersect(te, se)
 end
 
 function adj_edges(s, ∂₀)
-  te = vcat(incident(s, ∂₀, :tgt)...)
-  se = vcat(incident(s, ∂₀, :src)...)
+  te = vcat(incident(s, ∂₀, :∂v1)...)
+  se = vcat(incident(s, ∂₀, :∂v0)...)
   unique(vcat(te, se))
 end
 

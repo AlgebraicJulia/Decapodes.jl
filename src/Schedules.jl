@@ -93,20 +93,6 @@ function diag2dwd(diagram; clean = false, calc_states = [], out_vars=[], in_vars
   copy_parts!(graph, dom(diagram).graph)
   graph[:ename] .= homs
 
-  # Expand homs which are composition
-  for h in parts(graph, :E)
-    h_name = graph[h, :ename]
-    elsrc, eltgt = graph[h, :src], graph[h, :tgt]
-    if h_name isa HomExpr{:compose}
-      args = h_name.args
-      rem_part!(graph, :E, h)
-      verts = add_parts!(graph, :V, length(args) - 1, vname = [Symbol("anon_", gensym()) for i in 1:(length(args)-1)])
-      append!(obs, codom.(args)[1:(end-1)])
-      add_parts!(graph, :E, length(args), ename = args,
-                          src = vcat([elsrc], verts),
-                          tgt = vcat(verts, [eltgt]))
-    end
-  end
 
   flipped = fill(false, ne(graph))
   # Flip projections for graph eval
@@ -126,6 +112,24 @@ function diag2dwd(diagram; clean = false, calc_states = [], out_vars=[], in_vars
       end
     end
   end
+
+  # Expand homs which are composition
+  comp_to_remove = []
+  for h in parts(graph, :E)
+    h_name = graph[h, :ename]
+    elsrc, eltgt = graph[h, :src], graph[h, :tgt]
+    if h_name isa HomExpr{:compose}
+      args = h_name.args
+      push!(comp_to_remove, h)
+      verts = add_parts!(graph, :V, length(args) - 1, vname = [Symbol("anon_", gensym()) for i in 1:(length(args)-1)])
+      append!(obs, codom.(args)[1:(end-1)])
+      add_parts!(graph, :E, length(args), ename = args,
+                          src = vcat([elsrc], verts),
+                          tgt = vcat(verts, [eltgt]))
+    end
+  end
+  rem_parts!(graph, :E, comp_to_remove)
+
 
   pres = presentation(codom(diagram))
 
