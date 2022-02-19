@@ -26,7 +26,7 @@ function dual(s::EmbeddedDeltaSet2D{O, P}) where {O, P}
 end
 
 sym2func(sd) = begin
-  Dict(:d₀=>Dict(:operator => d(Val{0}, sd), :type => MatrixFunc()),
+  s2f = Dict(:d₀=>Dict(:operator => d(Val{0}, sd), :type => MatrixFunc()),
        :d₁=>Dict(:operator => d(Val{1}, sd), :type => MatrixFunc()),
        :dual_d₀=>Dict(:operator => dual_derivative(Val{0}, sd),
                       :type => MatrixFunc()),
@@ -43,11 +43,13 @@ sym2func(sd) = begin
                   :type=>InPlaceFunc()),
        :∧₁₁=>Dict(:operator => (γ, α,β)->(γ .= ∧(Tuple{1,1}, sd, α, β)),
                   :type=>InPlaceFunc()),
+       :plus => Dict(:operator => (x,y)->(x′ .= x .+ y), :type => InPlaceFunc()),
        :plus => Dict(:operator => (x,y)->(x+y), :type => ElementwiseFunc()),
        :L₀ => Dict(:operator => (v,u)->(lie_derivative_flat(Val{2}, sd, v, u)),
                    :type => ArbitraryFunc()))
-#       :Δ₀=>Dict(:operator => Δ(Val{0}, sd), :type => MatrixFunc()),
-#       :Δ₁=>Dict(:operator => Δ(Val{1}, sd), :type => MatrixFunc()),
+  for s in [:sum₀, :sum₁, :sum₂, :sum₀̃, :sum₁̃, :sum₂̃]
+    s2f[s] = Dict(:operator => (x,y)->(x′ .= x .+ y), :type => InPlaceFunc())
+  end
 end
 
 function expand_dwd(dwd_orig, patterns)
