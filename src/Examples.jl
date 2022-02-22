@@ -50,6 +50,7 @@ sym2func(sd) = begin
   for s in [:sum₀, :sum₁, :sum₂, :sum₀̃, :sum₁̃, :sum₂̃]
     s2f[s] = Dict(:operator => (x,y)->(x′ .= x .+ y), :type => InPlaceFunc())
   end
+  s2f
 end
 
 function expand_dwd(dwd_orig, patterns)

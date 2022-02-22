@@ -6,6 +6,7 @@ using Catlab.WiringDiagrams
 using Catlab.CategoricalAlgebra
 using Catlab.Theories
 using PreallocationTools
+using LinearAlgebra
 
 export gen_sim,
        BoxFunc, MatrixFunc, ElementwiseFunc, ArbitraryFunc, InPlaceFunc,
@@ -126,9 +127,9 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[],
       p = w.source
       if p.box == -2
         if input_inds[p.port][3]
-          :(p[$(input_inds[p.port][1]):$(input_inds[p.port][2])])
+          :(view(p, $(input_inds[p.port][1]):$(input_inds[p.port][2])))
         else
-          :(u[$(input_inds[p.port][1]):$(input_inds[p.port][2])])
+          :(view(u, $(input_inds[p.port][1]):$(input_inds[p.port][2])))
         end
       else
         if autodiff
@@ -160,9 +161,9 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[],
     pt = d[w, :out_tgt]
     ps = d[w, :out_src]
     if autodiff
-      :(du[$(output_inds[pt][1]):$(output_inds[pt][2])] .= $(Symbol("d_$ps")))
+      :(setindex!(du, Symbol("d_$ps"), $(collect(output_inds[pt][1]:output_inds[pt][2]))))
     else
-      :(du[$(output_inds[pt][1]):$(output_inds[pt][2])] .= mem[$ps])
+      :(setindex!(du, mem[$ps], $(collect(output_inds[pt][1]:output_inds[pt][2]))))
     end
   end
   append!(body.args, du_set)
@@ -185,7 +186,7 @@ end
 function _gen_func(::MatrixFunc, input_args, output_args, func)
   length(input_args) == 1 || error("Length of input for Matrix function is $(length(input_args)) ≠ 1")
   length(output_args) == 1 || error("Length of output for Matrix function is $(length(output_args)) ≠ 1")
-  :($(output_args[1]) .= $(func) * $(input_args[1]))
+  :(mul!($(output_args[1]), $(func), $(input_args[1])))
 end
 
 function _gen_func(::ArbitraryFunc, input_args, output_args, func)
