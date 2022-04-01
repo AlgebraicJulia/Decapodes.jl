@@ -42,7 +42,7 @@ module PetriNetsTest
   Superposition = @decapode DiffusionSpace2D begin
     (C, Ċ₁, Ċ₂)::Form0{X}
 
-    ∂ₜ{Form0{X}}(C) == Ċ₁ + Ċ₂ 
+    ∂ₜ{Form0{X}}(C) == Ċ₁ + Ċ₂
   end
 
 
@@ -91,15 +91,15 @@ module PetriNetsTest
   du = zeros(Float64,nv(s)*4)
 
   tempu = copy(u)
-  dt = 0.001
-  for i in 10000
+  dt = 0.01
+  for i in 1:1000
     sim(du, tempu, [],0)
-    tempu .+= du
+    tempu .+= du * dt
     # Check that population is conserved
   end
   @test all(tempu .!= u)
 
-  mass_diff = sum(vcat([⋆(Val{0}, sd)*(tempu[(1:nv(s)) .+ (i-1) * nv(s)]) for i in 1:4]...)) - 
+  mass_diff = sum(vcat([⋆(Val{0}, sd)*(tempu[(1:nv(s)) .+ (i-1) * nv(s)]) for i in 1:4]...)) -
               sum(vcat([⋆(Val{0}, sd)*(u[(1:nv(s)) .+ (i-1) * nv(s)]) for i in 1:4]...))
   @test mass_diff < 1e-6
 end

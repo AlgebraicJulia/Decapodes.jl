@@ -17,7 +17,7 @@ using LinearAlgebra
 
 import Catlab.Graphics: to_graphviz
 
-export dual, sym2func, to_graphviz, gen_dec_rules
+export dual, sym2func, to_graphviz, gen_dec_rules, contract_matrices, expand_dwd, zip_dwd
 
 function dual(s::EmbeddedDeltaSet2D{O, P}) where {O, P}
   sd = EmbeddedDeltaDualComplex2D{O, eltype(P), P}(s)
@@ -26,7 +26,7 @@ function dual(s::EmbeddedDeltaSet2D{O, P}) where {O, P}
 end
 
 sym2func(sd) = begin
-  Dict(:d₀=>Dict(:operator => d(Val{0}, sd), :type => MatrixFunc()),
+  s2f = Dict(:d₀=>Dict(:operator => d(Val{0}, sd), :type => MatrixFunc()),
        :d₁=>Dict(:operator => d(Val{1}, sd), :type => MatrixFunc()),
        :dual_d₀=>Dict(:operator => dual_derivative(Val{0}, sd),
                       :type => MatrixFunc()),
@@ -43,11 +43,14 @@ sym2func(sd) = begin
                   :type=>InPlaceFunc()),
        :∧₁₁=>Dict(:operator => (γ, α,β)->(γ .= ∧(Tuple{1,1}, sd, α, β)),
                   :type=>InPlaceFunc()),
+       :plus => Dict(:operator => (x,y)->(x′ .= x .+ y), :type => InPlaceFunc()),
        :plus => Dict(:operator => (x,y)->(x+y), :type => ElementwiseFunc()),
        :L₀ => Dict(:operator => (v,u)->(lie_derivative_flat(Val{2}, sd, v, u)),
                    :type => ArbitraryFunc()))
-#       :Δ₀=>Dict(:operator => Δ(Val{0}, sd), :type => MatrixFunc()),
-#       :Δ₁=>Dict(:operator => Δ(Val{1}, sd), :type => MatrixFunc()),
+  for s in [:sum₀, :sum₁, :sum₂, :sum₀̃, :sum₁̃, :sum₂̃]
+    s2f[s] = Dict(:operator => (x,y)->(x′ .= x .+ y), :type => InPlaceFunc())
+  end
+  s2f
 end
 
 function expand_dwd(dwd_orig, patterns)
@@ -98,7 +101,77 @@ function contract_matrices!(dwd, s2f)
         end
       end
     end
-    rem_boxes!(dwd, findall(b -> dwd.diagram[b, :value] == :remove, 1:nboxes(dwd)))
+    rem_boxes_boot!(dwd, findall(b -> dwd.diagram[b, :value] == :remove, 1:nboxes(dwd)))
+  end
+end
+
+""" rem_boxes_boot!
+
+This function removes boxes from a DWD in a way that preserves port ordering.
+This is only a temporary fix, and is dependent on [this
+issue](https://github.com/AlgebraicJulia/Catlab.jl/issues/530) in the upstream
+dependency Catlab
+"""
+function rem_boxes_boot!(dwd, box_to_rem)
+  if isempty(box_to_rem)
+    return
+  end
+  boxes = collect(parts(dwd.diagram, :Box))
+  filter!(b -> !(b ∈ box_to_rem), boxes)
+  append!(boxes, box_to_rem)
+  in_ports = incident(dwd.diagram, boxes, :in_port_box)
+  out_ports = incident(dwd.diagram, boxes, :out_port_box)
+
+  in_port_trans = fill(1, nparts(dwd.diagram, :InPort))
+  out_port_trans = fill(1, nparts(dwd.diagram, :OutPort))
+  in_port_trans[vcat(in_ports...)] .= parts(dwd.diagram, :InPort)
+  out_port_trans[vcat(out_ports...)] .= parts(dwd.diagram, :OutPort)
+
+  set_subparts!(dwd.diagram, parts(dwd.diagram, :InPort),
+                in_port_box = copy(dwd.diagram[vcat(in_ports...), :in_port_box]),
+                in_port_type= copy(dwd.diagram[vcat(in_ports...), :in_port_type]))
+  set_subparts!(dwd.diagram, parts(dwd.diagram, :OutPort),
+                out_port_box = copy(dwd.diagram[vcat(out_ports...), :out_port_box]),
+                out_port_type= copy(dwd.diagram[vcat(out_ports...), :out_port_type]))
+
+  set_subparts!(dwd.diagram, parts(dwd.diagram, :Wire);
+                src = out_port_trans[dwd.diagram[:src]],
+                tgt = in_port_trans[dwd.diagram[:tgt]])
+  set_subparts!(dwd.diagram, parts(dwd.diagram, :InWire),
+                in_tgt = in_port_trans[dwd.diagram[:in_tgt]])
+  set_subparts!(dwd.diagram, parts(dwd.diagram, :OutWire),
+                out_src = out_port_trans[dwd.diagram[:out_src]])
+
+  rem_boxes!(dwd, box_to_rem)
+end
+
+function zip_dwd!(dwd)
+  updated = true
+  while updated
+    updated = false
+    box_inputs = map(parts(dwd.diagram, :Box)) do b
+      [dwd.diagram[b, :value], [(w.source.box, w.source.port) for w in in_wires(dwd, b)]]
+    end
+    for b1 in 1:length(box_inputs)
+      for b2 in (b1+1):length(box_inputs)
+        if box_inputs[b1] == box_inputs[b2]
+          b1_oports = incident(dwd.diagram, b1, :out_port_box)
+          b2_oports = incident(dwd.diagram, b2, :out_port_box)
+          for p in 1:length(b1_oports)
+            b2wires = incident(dwd.diagram, b2_oports[p], :src)
+            set_subparts!(dwd.diagram, b2wires, src=b1_oports[p])
+            b2outwires = incident(dwd.diagram, b2_oports[p], :out_src)
+            set_subparts!(dwd.diagram, b2outwires, out_src=b1_oports[p])
+          end
+          rem_boxes_boot!(dwd, [b2])
+          updated = true
+          break
+        end
+      end
+      if updated
+        break
+      end
+    end
   end
 end
 
@@ -109,7 +182,7 @@ end
 
 function boundary_inds(::Type{Val{0}}, s)
   ∂1_inds = boundary_inds(Val{1}, s)
-  unique(vcat(s[∂1_inds,:src],s[∂1_inds,:tgt]))
+  unique(vcat(s[∂1_inds,:∂v0],s[∂1_inds,:∂v1]))
 end
 
 function boundary_inds(::Type{Val{2}}, s)
@@ -122,14 +195,14 @@ end
 
 
 function bound_edges(s, ∂₀)
-  te = vcat(incident(s, ∂₀, :tgt)...)
-  se = vcat(incident(s, ∂₀, :src)...)
+  te = vcat(incident(s, ∂₀, :∂v1)...)
+  se = vcat(incident(s, ∂₀, :∂v0)...)
   intersect(te, se)
 end
 
 function adj_edges(s, ∂₀)
-  te = vcat(incident(s, ∂₀, :tgt)...)
-  se = vcat(incident(s, ∂₀, :src)...)
+  te = vcat(incident(s, ∂₀, :∂v1)...)
+  se = vcat(incident(s, ∂₀, :∂v0)...)
   unique(vcat(te, se))
 end
 
