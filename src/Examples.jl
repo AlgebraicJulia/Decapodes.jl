@@ -48,7 +48,7 @@ sym2func(sd) = begin
        :L₀ => Dict(:operator => (v,u)->(lie_derivative_flat(Val{2}, sd, v, u)),
                    :type => ArbitraryFunc()))
   for s in [:sum₀, :sum₁, :sum₂, :sum₀̃, :sum₁̃, :sum₂̃]
-    s2f[s] = Dict(:operator => (x,y)->(x′ .= x .+ y), :type => InPlaceFunc())
+    s2f[s] = Dict(:operator => (x′,x,y)->(x′ .= x .+ y), :type => InPlaceFunc())
   end
   s2f
 end
