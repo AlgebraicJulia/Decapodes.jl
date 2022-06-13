@@ -117,9 +117,10 @@ using CombinatorialSpaces, CombinatorialSpaces.DiscreteExteriorCalculus
 using CairoMakie
 using JSON
 
-periodic_mesh = read_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, "../assets/meshes/periodic_mesh.json")
-plot_mesh = read_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, "../assets/meshes/plot_mesh.json")
-point_map = JSON.parsefile("../assets/meshes/point_map.json")
+@show pwd() #hide
+periodic_mesh = read_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, "../../assets/meshes/periodic_mesh.json")
+plot_mesh = read_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, "../../assets/meshes/plot_mesh.json")
+point_map = JSON.parsefile("../../assets/meshes/point_map.json")
 
 fig, ax, ob = wireframe(plot_mesh)
 ax.aspect = AxisAspect(3.0)
