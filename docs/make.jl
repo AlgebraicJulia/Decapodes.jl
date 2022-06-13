@@ -32,6 +32,7 @@ end
 #end
 
 @info "Building Documenter.jl docs"
+@info pwd()
 makedocs(
   modules   = [Decapodes],
   format    = Documenter.HTML(
