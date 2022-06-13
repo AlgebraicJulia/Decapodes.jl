@@ -5,6 +5,8 @@ using Literate
 using Decapodes
 using Catlab
 using Catlab.WiringDiagrams
+using AlgebraicPetri
+using CairoMakie
 
 # Set Literate.jl config if not being compiled on recognized service.
 config = Dict{String,String}()

@@ -1,3 +1,11 @@
+""" Provides helper functions for generating and optimizing Decapode simulations
+
+
+*TODO*: This module was originally intended to be "an example of open diagrams
+applied to DEC", but this should be given a new name as its methods have become
+more critical
+"""
+
 module Examples
 
 using CombinatorialSpaces
@@ -19,6 +27,12 @@ import Catlab.Graphics: to_graphviz
 
 export dual, sym2func, to_graphviz, gen_dec_rules, contract_matrices, expand_dwd, zip_dwd
 
+"""dual(s::EmbeddedDeltaSet2D{O, P})
+
+Generates a dual mesh for the provided delta set `s`.
+
+*TODO*: This tooling should be upstreamed to CombinatorialSpaces
+"""
 function dual(s::EmbeddedDeltaSet2D{O, P}) where {O, P}
   sd = EmbeddedDeltaDualComplex2D{O, eltype(P), P}(s)
   subdivide_duals!(sd, Barycenter())
@@ -53,6 +67,13 @@ sym2func(sd) = begin
   s2f
 end
 
+
+""" expand_dwd(dwd_orig::WiringDiagram, patterns::Dict{Symbol, WiringDiagram})
+
+Replaces any boxes in `dwd_orig` which map to a key in `patterns` with their
+corresponding diagram in `patterns`. This allows for replacement of complex
+operations with their definition.
+"""
 function expand_dwd(dwd_orig, patterns)
   dwd = deepcopy(dwd_orig)
   has_updated = true
@@ -71,6 +92,12 @@ function expand_dwd(dwd_orig, patterns)
   end
   dwd
 end
+
+""" contract_matrices(dwd::WiringDiagram, s2f::Dict)
+
+Pre-computes matrix products when two matrix multiplication operations
+immediately follow each other.
+"""
 
 function contract_matrices!(dwd, s2f)
   has_updated = true
@@ -144,6 +171,15 @@ function rem_boxes_boot!(dwd, box_to_rem)
 
   rem_boxes!(dwd, box_to_rem)
 end
+
+""" zip_dwd!(dwd::WiringDiagram)
+
+This function optimizes the wiring diagram by removing redundant operations.
+Takes advantage of the fact that in a deterministic wiring diagram, the
+identical operation being performed on the same value will result in the same
+value. This means that parallel computations of the same operation can be
+"zipped" into a single execution of the operation.
+"""
 
 function zip_dwd!(dwd)
   updated = true

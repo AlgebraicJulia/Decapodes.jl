@@ -1,3 +1,6 @@
+""" Provides the tooling for defining Decapodes conveniently with symbolic
+expressions
+"""
 module Diagrams
 
 using CombinatorialSpaces.ExteriorCalculus
@@ -9,6 +12,19 @@ using Unicode
 
 export @decapode, Decapodes2D
 
+""" decapode(cat, body)
+
+This macro is called as:
+```
+@decapode presentation begin
+  expressions
+end
+```
+where `presentation` is a Presentation containing the syntax for the Decapode
+(operators and form types), and `expressions` is symbolic expressions of the
+relations within the Decapode.
+
+"""
 macro decapode(cat, body)
   :(parse_exp_diagram($(esc(cat)), $(Meta.quot(body)), free=true))
 end

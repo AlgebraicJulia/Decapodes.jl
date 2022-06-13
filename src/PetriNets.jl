@@ -1,3 +1,9 @@
+""" Generating Decapodes from Petri nets
+
+This module provides support for generating a simulatable Decapode from Petri
+nets generated in the AlgebraicPetri library.
+"""
+
 module PetriNets
 
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphics, Catlab.Programs
@@ -88,6 +94,11 @@ function bin_exp!(graph, obs, homs, prs, exp, vals::Int64...)
   end
 end
 
+""" pn2dec(prs::Presentation, pn::LabelledReactionNet)
+
+Generates a Decapode diagram which represents the law of mass action applied to
+the petri net `pn` with the syntax from the presentation `prs`.
+"""
 function pn2dec(prs, pn::LabelledReactionNet)
   synt = prs.syntax
 
@@ -123,6 +134,10 @@ function pn2dec(prs, pn::LabelledReactionNet)
   FinFunctor(obs, homs, FinCat(graph), FinCat(prs))
 end
 
+""" expand_pres!(pres::Presentation, pn::LabelledReactionNet)
+
+Expands the syntax of the presentation `pres` to include the necessary operators for expressing mass action on the Petri net `pn`.
+"""
 function expand_pres!(pres, pn::LabelledReactionNet)
   synt = pres.syntax
   form0 = synt.Form0(pres[:X])
@@ -143,6 +158,11 @@ function expand_pres!(pres, pn::LabelledReactionNet)
   end
 end
 
+""" gen_functions(pn::LabelledReactionNet, s::EmbeddedDeltaDualComplex2D)
+
+Generates the functions necessary for executing the Petri net after it has been
+converted to a Decapode.
+"""
 function gen_functions(pn::LabelledReactionNet, s)
   funcs = Dict{Symbol, Any}()
   funcs[:sum₀] = Dict(:operator => (s,a,b) -> (s .= a .+ b), :type => InPlaceFunc())
