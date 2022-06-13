@@ -81,58 +81,6 @@ graph_attrs=Dict(:start => "2", :overlap=>"scale"), port_labels=true)
 
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
-function to_graph(J::FinCat)
-    g = BasicGraphs.Graph()
-    copy_parts!(g, graph(J))
-    return g
-end
-
-Graphics.to_graphviz(F::FinFunctor; kw...) =
-to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; kw...))
-
-function GraphvizGraphs.to_graphviz_property_graph(F::FinFunctor; kw...)
-    simplify_vname(s) = begin
-      table = Dict(
-    "Form0(X)" => "Ω₀",
-    "Form1(X)" => "Ω₁",
-    "Form2(X)" => "Ω₂",
-    "DualForm0(X)" => "Ω̃₀",
-    "DualForm1(X)" => "Ω̃₁",
-    "DualForm2(X)" => "Ω̃₂",
-    "otimes(Form0(X),Form0(X))" => "Ω₀²",
-    "otimes(Form1(X),Form1(X))" => "Ω₁²",
-    "otimes(Form1(X),DualForm2(X))" => "Ω₁×Ω̃₂",
-    "otimes(Form1(X),Form1(X),Form1(X))" => "Ω₁³",
-    "otimes(Form1(X),Form1(X),Form1(X),Form1(X))" => "Ω₁⁴"
-    )
-    if string(s) in keys(table)
-        return table[string(s)]
-    else
-        println(string(s))
-        return string(s)
-    end
-    end
-
-    simplify_ename(s) = begin
-        b = IOBuffer()
-        show_unicode(b, s)
-        return replace(String(take!(b)), r"{X}"=>"")
-    end
-
-    J = dom(F)
-    G = graph(J)
-    pg = GraphvizGraphs.to_graphviz_property_graph(to_graph(J); kw...)
-    for v in vertices(G)
-        lᵥ = G[v, :vname]
-        tᵥ = simplify_vname(F.ob_map[v])
-        set_vprops!(pg, v, Dict(:label => "$(lᵥ):$tᵥ"))
-    end
-    for e in edges(G)
-        tₑ = F.hom_map[e]
-        set_eprops!(pg, e, Dict(:label => "$(simplify_ename(tₑ))"))
-    end
-    pg
-end
 
 
 Graphics.to_graphviz(cosp::OpenDiagram; kw...) =
