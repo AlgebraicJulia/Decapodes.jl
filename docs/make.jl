@@ -42,6 +42,7 @@ makedocs(
   checkdocs = :none,
   pages     = Any[
     "Decapodes.jl" => "index.md",
+    "Overview" => "overview.md",
 #    "Examples" => Any[
 #      "examples/cfd_example.md"
 #    ],
