@@ -1,3 +1,11 @@
+""" Generating simulation functions from directed wiring diagrams
+
+This module currently provides support for generating a simple explicit
+time-stepping function based on a directed wiring diagram. The generated
+function is compatible with the DifferentialEquations.jl interface, which is
+used in demo execution.
+"""
+
 module Simulations
 
 using CombinatorialSpaces
@@ -13,11 +21,42 @@ export gen_sim,
        ConstantFunc, TDInPlaceFunc
 
 abstract type BoxFunc end
+
+""" MatrixFunc
+
+Linear operator applied through matrix multiplication.
+"""
 struct MatrixFunc <: BoxFunc end
+
+""" ElementwiseFunc
+
+Function applied to each element of one or more vectors.
+"""
 struct ElementwiseFunc <: BoxFunc end
+
+""" ArbitraryFunc
+
+Out of place function which applies to any number of arguments.
+"""
 struct ArbitraryFunc <: BoxFunc end
+
+""" ConstantFunc
+
+Function which always returns the same value.
+"""
 struct ConstantFunc <: BoxFunc end
+
+""" InPlaceFunc
+
+Function which operates on arguments in-place, not returning a value.
+"""
 struct InPlaceFunc <: BoxFunc end
+
+""" TDInPlaceFunc
+
+Function which accepts the current time as the last argument. Used to set up
+time-dependent physics or boundary conditions.
+"""
 struct TDInPlaceFunc <: BoxFunc end
 
 form2dim = Dict(:Scalar => x->1,
@@ -33,6 +72,16 @@ dims(x) = begin
   form2dim[first(k)]
 end
 
+""" gen_sim(dwd::WiringDiagram, name2func::Dict{Symbol, <:BoxFunc},
+            s::EmbeddedDeltaDualComplex2D;
+            form2dim=form2dim, params=[], autodiff=false)
+
+This function generates a function which evaluates the acylcic directed wiring
+diagram `dwd`, using the functions in `name2func` for operators to execute
+corresonding to each box and information from the mesh `s` to pre-allocate
+necessary memory. This operator can generate a function which is compatible
+with the autodifferentiation solvers in DifferentialEquations.jl.
+"""
 function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[], autodiff=false)
   check_consistency(dwd)
   d = dwd.diagram

@@ -1,8 +1,9 @@
 """ Schedules
 
-This module will contain the tooling which converts diagrams to DWDs. This will
-also include optimization tooling relating to DWD schedules (compressing matrix
-operations, pre-computing constant values, moving addition to reduce linear).
+This module contains the tooling which converts diagrams to DWDs.
+
+*TODO* This module will also include optimization tooling relating to DWD
+schedules (compressing matrix operations, pre-computing constant values, etc).
 """
 module Schedules
 using Catlab.Syntax
@@ -86,6 +87,17 @@ end
 
 name(a::HomExpr) = head(a) == :generator ? args(a)[1] : head(a)
 
+""" diag2dwd(diagram; clean = false, calc_states = [], out_vars=[], in_vars=[])
+
+Generates a directed wiring diagram (DWD) from a Decapode `diagram`. This
+method generates a DWD which represents a single explicit time step of the
+system, computed by the dependency graph of each time derivative within the
+system. This does not necessarily work for all Decapodes, and only generates
+an explicit time-step solution.
+
+*TODO*: Functions like this can be created to generate other solution styles,
+like implicit solutions.
+"""
 function diag2dwd(diagram; clean = false, calc_states = [], out_vars=[], in_vars=[])
   homs = Vector{Any}(copy(diagram.hom_map))
   obs = Vector{Any}(copy(diagram.ob_map))
