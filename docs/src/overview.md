@@ -116,11 +116,14 @@ using Catlab.CategoricalAlgebra
 using CombinatorialSpaces, CombinatorialSpaces.DiscreteExteriorCalculus
 using CairoMakie
 using JSON
+using HTTP: get
 
-@show pwd() #hide
-periodic_mesh = read_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, "../../assets/meshes/periodic_mesh.json")
-plot_mesh = read_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, "../../assets/meshes/plot_mesh.json")
-point_map = JSON.parsefile("../../assets/meshes/point_map.json")
+@info pwd() #hide
+periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}},
+                                 String(get("https://raw.githubusercontent.com/AlgebraicJulia/Decapodes.jl/main/docs/assets/meshes/periodic_mesh.json").body))
+plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}},
+                                 String(get("https://raw.githubusercontent.com/AlgebraicJulia/Decapodes.jl/main/docs/assets/meshes/plot_mesh.json").body))
+point_map = JSON.parse(String(get("https://raw.githubusercontent.com/AlgebraicJulia/Decapodes.jl/main/docs/assets/meshes/point_map.json").body))
 
 fig, ax, ob = wireframe(plot_mesh)
 ax.aspect = AxisAspect(3.0)
