@@ -59,14 +59,14 @@ time-dependent physics or boundary conditions.
 """
 struct TDInPlaceFunc <: BoxFunc end
 
-form2dim = Dict(:Scalar => x->1,
+form2dim_def = Dict(:Scalar => x->1,
                 :Form0 => nv,
                 :Form1 => ne,
                 :Form2 => ntriangles,
                 :DualForm2 => nv,
                 :DualForm1 => ne,
                 :DualForm0 => ntriangles)
-dims(x) = begin
+dims(x, form2dim) = begin
   k = filter(i -> x[:type] isa ObExpr{i}, keys(form2dim))
   length(k) == 1 || error("Object $x has multiple keys in `form2dim`")
   form2dim[first(k)]
@@ -82,15 +82,15 @@ corresonding to each box and information from the mesh `s` to pre-allocate
 necessary memory. This operator can generate a function which is compatible
 with the autodifferentiation solvers in DifferentialEquations.jl.
 """
-function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[], autodiff=false)
+function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim_def, params=[], autodiff=false)
   check_consistency(dwd)
   d = dwd.diagram
 
   # Generate cached memory. These variables are indexed by their respective
   # output ports
-  mem = [zeros(Float64, dims(f)(s)) for f in d[:out_port_type]]
+  mem = [zeros(Float64, dims(f, form2dim)(s)) for f in d[:out_port_type]]
   if autodiff
-    mem = [dualcache(zeros(Float64, dims(f)(s))) for f in d[:out_port_type]]
+    mem = [dualcache(zeros(Float64, dims(f, form2dim)(s))) for f in d[:out_port_type]]
   end
   tgt2src = Dict{Int64, Int64}()
   for w in 1:nparts(d, :Wire)
@@ -105,7 +105,7 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[],
   cur_ind = 0
   cur_param = 0
   for ft in d[:outer_in_port_type]
-    mag = dims(ft)(s)
+    mag = dims(ft, form2dim)(s)
     if ft[:name] ∈ params
       push!(input_inds, (cur_param+1, mag + cur_param, true))
       cur_param += mag
@@ -116,7 +116,7 @@ function gen_sim(dwd::WiringDiagram, name2func, s; form2dim=form2dim, params=[],
   end
   cur_ind = 0
   for ft in d[:outer_out_port_type]
-    mag = dims(ft)(s)
+    mag = dims(ft, form2dim)(s)
     push!(output_inds, (cur_ind+1, mag + cur_ind))
     cur_ind += mag
   end
