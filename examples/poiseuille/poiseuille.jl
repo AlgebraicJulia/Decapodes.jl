@@ -114,7 +114,7 @@ end;
 
 Poise = @decapode Poiseuille begin
   (∇P)::Form1{X}
-  (q, q̇, Δq)::DualForm1{X}
+  (q, q̇, Δq)::Form1{X}
   P::Form0{X}
 
   Δq == d₀{X}(⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(q))))
@@ -125,8 +125,7 @@ end;
 
 ##
 function create_funcs(ds)
-  Dict{Symbol, Dict}()
-  subdivide_duals!(ds, Circumcenter())
+  funcs = Dict{Symbol, Dict}()
   funcs[:⋆₁] = Dict(:operator => ⋆(Val{1}, ds, hodge=DiagonalHodge()),
                     :type => MatrixFunc());
   funcs[:⋆₀] = Dict(:operator => ⋆(Val{0}, ds, hodge=DiagonalHodge()),
@@ -137,7 +136,7 @@ function create_funcs(ds)
                     :type => MatrixFunc());
   funcs[:d₀] = Dict(:operator => d(Val{0}, ds), :type => MatrixFunc());
   funcs[:dual_d₀] = Dict(:operator => dual_derivative(Val{0}, ds), :type => MatrixFunc());
-  funcs[:μ̃] = Dict(:operator => 0.5 * diagm(vcat([0,ones(Int,ne(ds)-2)...,0])), :type => MatrixFunc())
+  funcs[:μ̃] = Dict(:operator => 0.5 * ne(ds) < 2 ? I : diagm(vcat([0,ones(Int,max(0, ne(ds)-2))...,0])), :type => MatrixFunc())
   funcs[:sum₁] = Dict(:operator => (x′, x, y)->(x′ .= x .+ y), :type => InPlaceFunc())
   funcs[:R] = Dict(:operator => -0.1 * I(ne(ds)), :type => MatrixFunc())
   return funcs
@@ -156,6 +155,8 @@ add_vertices!(s, 2, point=[Point3D(-1, 0, 0), Point3D(+1, 0, 0)])
 add_edge!(s, 1, 2, edge_orientation=true)
 
 ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+subdivide_duals!(ds, Circumcenter())
+ds
 funcs = create_funcs(ds)
 func, code = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P]);
 prob = ODEProblem(func, [2.], (0.0, 10000.0), [1.,11.])
@@ -169,6 +170,7 @@ function linear_pipe(n::Int)
   add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
   orient!(s)
   ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(ds, Circumcenter())
   funcs = create_funcs(ds)
   func, code = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
   return func
@@ -178,7 +180,3 @@ func = linear_pipe(10)
 prob = ODEProblem(func, [5,3,4,2,5,2,8,4,3], (0.0, 10000.0), [10. *i for i in 1:10])
 sol = solve(prob, Tsit5(); progress=true);
 sol.u
-
-
-
-end
