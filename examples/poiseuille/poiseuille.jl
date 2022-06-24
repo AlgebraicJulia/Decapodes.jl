@@ -125,6 +125,7 @@ end;
 
 ##
 function create_funcs(ds)
+
   funcs = Dict{Symbol, Dict}()
   funcs[:⋆₁] = Dict(:operator => ⋆(Val{1}, ds, hodge=DiagonalHodge()),
                     :type => MatrixFunc());
@@ -136,11 +137,20 @@ function create_funcs(ds)
                     :type => MatrixFunc());
   funcs[:d₀] = Dict(:operator => d(Val{0}, ds), :type => MatrixFunc());
   funcs[:dual_d₀] = Dict(:operator => dual_derivative(Val{0}, ds), :type => MatrixFunc());
-  funcs[:μ̃] = Dict(:operator => 0.5 * ne(ds) < 2 ? I : diagm(vcat([0,ones(Int,max(0, ne(ds)-2))...,0])), :type => MatrixFunc())
+
+  D = ones(Int, ne(ds))
+  bpoints = findall(x -> x == 1, boundary(Val{1},ds) * fill(1,ne(ds)))
+  sedges = vcat(incident(ds,bpoints,:∂v0)...)
+  tedges = vcat(incident(ds,bpoints,:∂v1)...)
+  bedges = collect(union(sedges, tedges))
+  D[bedges] .= 0
+
+  funcs[:μ̃] = Dict(:operator => 0.5 *  diagm(D), :type => MatrixFunc())
   funcs[:sum₁] = Dict(:operator => (x′, x, y)->(x′ .= x .+ y), :type => InPlaceFunc())
   funcs[:R] = Dict(:operator => -0.1 * I(ne(ds)), :type => MatrixFunc())
   return funcs
 end
+
 
 form2dim = Dict(:Scalar => x->1,
                 :Form0 => nv,
@@ -172,11 +182,43 @@ function linear_pipe(n::Int)
   ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
   subdivide_duals!(ds, Circumcenter())
   funcs = create_funcs(ds)
-  func, code = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
-  return func
+  func, _ = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
+  return func, funcs
 end
 
-func = linear_pipe(10)
+func, funcs = linear_pipe(10)
 prob = ODEProblem(func, [5,3,4,2,5,2,8,4,3], (0.0, 10000.0), [10. *i for i in 1:10])
+sol = solve(prob, Tsit5(); progress=true);
+sol.u
+
+#####
+function binary_pipe(depth::Int)
+  s = EmbeddedDeltaSet1D{Bool,Point3D}()
+  add_vertex!(s, point=Point3D(0, 0, 0))
+  for n in 1:depth
+    for prev_v in vertices(s)[end-2^(n-1)+1:end]
+      x, y, _ = s[:point][prev_v]
+      vs = add_vertices!(s, 2, point=[Point3D(sgn*3^0.5 + x, y+1, 0)
+                                 for sgn in [1,-1]])
+      add_edges!(s, vs, [prev_v,prev_v], edge_orientation=true)
+    end
+  end
+  v = add_vertex!(s, point=Point3D(3^0.5, -1, 0))
+  add_edge!(s, 1, v, edge_orientation=true)
+  orient!(s)
+  ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(ds, Circumcenter())
+  funcs = create_funcs(ds)
+  func, _ = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
+  return ds, func
+
+end
+ds, func = binary_pipe(2);
+
+prob = ODEProblem(func,
+                 [5. for _ in 1:ne(ds)],
+                 (0.0, 10000.0),
+                 Float64[2^(7-p[2]) for p in ds[:point]])
+
 sol = solve(prob, Tsit5(); progress=true);
 sol.u
