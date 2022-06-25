@@ -161,27 +161,44 @@ function mask_boundary_edges(ds)
   return D
 end
 
-##
-function create_funcs(ds)
+
+opbind(f, T) = Dict(:operator=>f, :type=>T)
+
+function create_funcs(ds, hodge=DiagonalHodge())
   funcs = Dict{Symbol, Dict}()
-  funcs[:⋆₁] = Dict(:operator => ⋆(Val{1}, ds, hodge=DiagonalHodge()),
+  funcs[:⋆₁] = opbind(⋆(Val{1}, ds, hodge=hodge), MatrixFunc())
+  funcs[:⋆₁] = Dict(:operator => ⋆(Val{1}, ds, hodge=hodge),
                     :type => MatrixFunc());
-  funcs[:⋆₀] = Dict(:operator => ⋆(Val{0}, ds, hodge=DiagonalHodge()),
+  funcs[:⋆₀] = Dict(:operator => ⋆(Val{0}, ds, hodge=hodge),
                     :type => MatrixFunc());
-  funcs[:⋆₀⁻¹] = Dict(:operator => inv(⋆(Val{0}, ds, hodge=DiagonalHodge())), #I(nv(ds)), #
+  funcs[:⋆₀⁻¹] = Dict(:operator => inv(⋆(Val{0}, ds, hodge=hodge)), #I(nv(ds)), #
                     :type => MatrixFunc());
-  funcs[:⋆₁⁻¹] = Dict(:operator => inv(⋆(Val{1}, ds, hodge=DiagonalHodge())),
+  funcs[:⋆₁⁻¹] = Dict(:operator => inv(⋆(Val{1}, ds, hodge=hodge)),
                     :type => MatrixFunc());
   funcs[:d₀] = Dict(:operator => d(Val{0}, ds), :type => MatrixFunc());
   funcs[:dual_d₀] = Dict(:operator => dual_derivative(Val{0}, ds), :type => MatrixFunc());
-  funcs[:μ̃] = Dict(:operator => 0.5 *  Diagonal(mask_boundary_edges(ds)), :type => MatrixFunc())
   funcs[:sum₁] = Dict(:operator => (x′, x, y)->(x′ .= x .+ y), :type => InPlaceFunc())
-  funcs[:R] = Dict(:operator => -0.1 * I(ne(ds)), :type => MatrixFunc())
-  funcs[:¬] = Dict(:operator => -I(ne(ds)), :type => MatrixFunc())
-  funcs[:k] = Dict(:operator => 1.0 * I(nv(ds)), :type => MatrixFunc())
   funcs[:∧₀₁] = Dict(:operator => (r, c, v) -> r .= -∧(Tuple{0,1}, ds, c, v), :type => InPlaceFunc())
-  funcs[:∂ρ] = Dict(:operator => (ρᵇ, ρ) -> begin ρᵇ .= ρ; ρᵇ[1] = 0; ρᵇ[end] = 0; return ρᵇ end, :type => InPlaceFunc())
   return funcs
+end
+
+##
+function create_funcs(ds, operators, boundaries, hodge=DiagonalHodge())
+  funcs = create_funcs(ds; hodge=hodge)
+  merge_dict(funcs, operators, boundaries)
+  return funcs
+end
+
+function operator_funcs(ds)
+  F = Dict(
+    :μ̃ => Dict(:operator => 0.5 *  Diagonal(mask_boundary_edges(ds)), :type => MatrixFunc()),
+    :R => Dict(:operator => -0.1 * I(ne(ds)), :type => MatrixFunc()),
+    :¬ => Dict(:operator => -I(ne(ds)), :type => MatrixFunc()),
+    :k => Dict(:operator => 1.0 * I(nv(ds)), :type => MatrixFunc()))
+  B = Dict(
+    :∂ρ => Dict(:operator => (ρᵇ, ρ) -> begin ρᵇ .= ρ; ρᵇ[1] = 0; ρᵇ[end] = 0; return ρᵇ end, :type => InPlaceFunc())
+  )
+  create_funcs(ds, F, B)
 end
 
 form2dim = Dict(:Scalar => x->1,
