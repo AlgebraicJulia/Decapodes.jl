@@ -251,7 +251,14 @@ end
 
 begin
   ds, func, funcs = linear_pipe(100)
-  prob = ODEProblem(func, vcat(ones(100), 10, ones(99)), (0.0, 10000.0), [10. *i for i in 1:10])
+  prob = ODEProblem(func, vcat(ones(99), 3, 2ones(99)), (0.0, 10000.0), [10. *i for i in 1:10])
   sol = solve(prob, Tsit5(); progress=true);
   sol.u
+  sol.u[end][97:102]
 end
+
+# plot(sol.u[end][1:99])
+# plot(sol.u[end][100:end])
+
+# using Plots
+# Plots.plot(sol.u[end])
