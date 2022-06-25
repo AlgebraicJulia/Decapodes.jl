@@ -70,7 +70,7 @@ shows how they are related by the discrete derivative.
 Now that we've seen how to construct a simple equation, it's time to move on to
 some actual PDE systems! One classic PDE example is the diffusion equation.
 This equation states that the change of concentration at each point is
-proportional to the laplacian of the concentration. One issue that we run into
+proportional to the Laplacian of the concentration. One issue that we run into
 here, though, is that there isn't a "proportionality" operator in the default
 DECAPODEs syntax `Decapodes2D`. Thus, in this next example, we will first
 extend the `Decapodes2D` syntax and then define the DECAPODE for diffusion.
@@ -118,7 +118,6 @@ using CairoMakie
 using JSON
 using HTTP: get
 
-@info pwd() #hide
 periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}},
                                  String(get("https://raw.githubusercontent.com/AlgebraicJulia/Decapodes.jl/main/docs/assets/meshes/periodic_mesh.json").body))
 plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}},
@@ -181,7 +180,7 @@ fig
 Finally, we solve this PDE problem using the `Tsit5()` solver and generate an animation of the result!
 
 ```@example DEC
-using DifferentialEquations
+using OrdinaryDiffEq
 
 prob = ODEProblem(func, c, (0.0, 100.0))
 sol = solve(prob, Tsit5());
