@@ -182,10 +182,11 @@ function create_funcs(ds, hodge=DiagonalHodge())
   return funcs
 end
 
+
 ##
 function create_funcs(ds, operators, boundaries, hodge=DiagonalHodge())
-  funcs = create_funcs(ds; hodge=hodge)
-  merge_dict(funcs, operators, boundaries)
+  funcs = create_funcs(ds, hodge)
+  merge!(funcs, operators, boundaries)
   return funcs
 end
 
@@ -218,7 +219,7 @@ add_edge!(s, 1, 2, edge_orientation=true)
 ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
 subdivide_duals!(ds, Circumcenter())
 ds
-funcs = create_funcs(ds)
+funcs = operator_funcs(ds)
 end
 dwd = diag2dwd(Poise, in_vars=[:q, :ρ])
 to_graphviz(dwd)
@@ -235,14 +236,22 @@ function linear_pipe(n::Int)
   orient!(s)
   ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
   subdivide_duals!(ds, Circumcenter())
-  funcs = create_funcs(ds)
+  funcs = operator_funcs(ds)
   func, _ = gen_sim(diag2dwd(Poise, in_vars=[:q, :ρ]), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
   return ds, func, funcs
 end
 
 begin
 ds, func, funcs = linear_pipe(10)
-prob = ODEProblem(func, [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,4,3,2,1], (0.0, 10000.0), [10. *i for i in 1:10])
+prob = ODEProblem(func, [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5], (0.0, 10000.0), [10. *i for i in 1:10])
 sol = solve(prob, Tsit5(); progress=true);
 sol.u
+end
+
+
+begin
+  ds, func, funcs = linear_pipe(100)
+  prob = ODEProblem(func, vcat(ones(100), 10, ones(99)), (0.0, 10000.0), [10. *i for i in 1:10])
+  sol = solve(prob, Tsit5(); progress=true);
+  sol.u
 end
