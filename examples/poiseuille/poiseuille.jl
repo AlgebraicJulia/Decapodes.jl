@@ -23,16 +23,13 @@ using TerminalLoggers: TerminalLogger
 global_logger(TerminalLogger())
 
 
-
-
-""" Decapodes2D
+""" Decapodes1D
 A schema which includes any homomorphisms that may be added by the @decapode
 macro.
 
 TODO: This should be chipped away at as more of this tooling takes advantage
 of the Catlab GAT system
 """
-
 
 @present Decapodes1D(FreeExtCalc1D) begin
   X::Space
@@ -123,6 +120,32 @@ Poise = @decapode Poiseuille begin
   ∇P == d₀{X}(P)
 end;
 
+"""    boundary_edges(ds)
+
+Compute the edges of a 1D simplicial set that are either incident to in-degree 1 or out-degree 1 nodes.
+For a graph, these are boundary vertices meaning leaf nodes. For our pipeflow problems,
+these are the edges where material can enter the pipe network.
+"""
+function boundary_edges(ds)
+  out_degree(x) = length(incident(ds, x, :∂v1))
+  in_degree(x) = length(incident(ds, x, :∂v0))
+  bpoints = findall(x -> out_degree(x) == 0 || in_degree(x) == 0, 1:nv(ds))
+  sedges = vcat(incident(ds,bpoints,:∂v0)...)
+  tedges = vcat(incident(ds,bpoints,:∂v1)...)
+  bedges = collect(union(sedges, tedges))
+  return bedges
+end
+
+"""    mask_boundary_edges(ds)
+
+Provides the `boundary_edges(ds)` as a vector of 0/1 entries to use as a mask.
+"""
+function mask_boundary_edges(ds)
+  D = ones(Int, ne(ds))
+  D[boundary_edges(ds)] .= 0
+  return D
+end
+
 ##
 function create_funcs(ds)
 
@@ -137,20 +160,11 @@ function create_funcs(ds)
                     :type => MatrixFunc());
   funcs[:d₀] = Dict(:operator => d(Val{0}, ds), :type => MatrixFunc());
   funcs[:dual_d₀] = Dict(:operator => dual_derivative(Val{0}, ds), :type => MatrixFunc());
-
-  D = ones(Int, ne(ds))
-  bpoints = findall(x -> x == 1, boundary(Val{1},ds) * fill(1,ne(ds)))
-  sedges = vcat(incident(ds,bpoints,:∂v0)...)
-  tedges = vcat(incident(ds,bpoints,:∂v1)...)
-  bedges = collect(union(sedges, tedges))
-  D[bedges] .= 0
-
-  funcs[:μ̃] = Dict(:operator => 0.5 *  diagm(D), :type => MatrixFunc())
+  funcs[:μ̃] = Dict(:operator => 0.5 *  Diagonal(mask_boundary_edges(ds)), :type => MatrixFunc())
   funcs[:sum₁] = Dict(:operator => (x′, x, y)->(x′ .= x .+ y), :type => InPlaceFunc())
   funcs[:R] = Dict(:operator => -0.1 * I(ne(ds)), :type => MatrixFunc())
   return funcs
 end
-
 
 form2dim = Dict(:Scalar => x->1,
                 :Form0 => nv,
@@ -183,13 +197,15 @@ function linear_pipe(n::Int)
   subdivide_duals!(ds, Circumcenter())
   funcs = create_funcs(ds)
   func, _ = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
-  return func, funcs
+  return ds, func, funcs
 end
 
-func, funcs = linear_pipe(10)
+begin
+ds, func, funcs = linear_pipe(10)
 prob = ODEProblem(func, [5,3,4,2,5,2,8,4,3], (0.0, 10000.0), [10. *i for i in 1:10])
 sol = solve(prob, Tsit5(); progress=true);
 sol.u
+end
 
 #####
 function binary_pipe(depth::Int)
@@ -210,10 +226,9 @@ function binary_pipe(depth::Int)
   subdivide_duals!(ds, Circumcenter())
   funcs = create_funcs(ds)
   func, _ = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
-  return ds, func
-
+  return ds, func, funcs
 end
-ds, func = binary_pipe(2);
+ds, func, funcs = binary_pipe(2);
 
 prob = ODEProblem(func,
                  [5. for _ in 1:ne(ds)],
