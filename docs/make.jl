@@ -43,6 +43,7 @@ makedocs(
   pages     = Any[
     "Decapodes.jl" => "index.md",
     "Overview" => "overview.md",
+    "Misc Features" => "bc_debug.md",
 #    "Examples" => Any[
 #      "examples/cfd_example.md"
 #    ],

@@ -72,14 +72,14 @@ module Debug
     ax, ob = if use_arrows
       orient_vals = vals .* [eo ? 1 : -1 for eo in s[:edge_orientation]]
       signs = sign.(orient_vals)
-      locs = s[s[:tgt], :point] .* (0.5 .- (signs * 0.35)) .+ s[s[:src], :point] .* (0.5 .+ (signs * 0.35))
-      mag = ((s[s[:tgt], :point] .- s[s[:src], :point]) * 0.5) .* signs
+      locs = s[s[:∂v1], :point] .* (0.5 .- (signs * 0.35)) .+ s[s[:∂v0], :point] .* (0.5 .+ (signs * 0.35))
+      mag = ((s[s[:∂v1], :point] .- s[s[:∂v0], :point]) * 0.5) .* signs
       inds = collect(1:ne(s))
       if !isnothing(xlim)
-        filter!(i -> xlim[1] <= s[s[i, :src], :point][1] <= xlim[2], inds)
+        filter!(i -> xlim[1] <= s[s[i, :∂v0], :point][1] <= xlim[2], inds)
       end
       if !isnothing(ylim)
-        filter!(i -> ylim[1] <= s[s[i, :src], :point][2] <= ylim[2], inds)
+        filter!(i -> ylim[1] <= s[s[i, :∂v0], :point][2] <= ylim[2], inds)
       end
       inds = inds[1:min(n_arrows, length(inds))]
 
