@@ -12,8 +12,6 @@ using CombinatorialSpaces
 using Catlab.CategoricalAlgebra.Categories: Functor, Cat
 using Catlab.CategoricalAlgebra.FinCats: FinCatSize, FinCatPresentation
 
-#const Diagram2D = FinFunctor{Dom, Codom} where {Ob, Hom, Dom, Codom <: FinCatPresentation{ExtCalc2D, Ob, Hom}}
-
 const Diagram2D = Functor{Dom, Codom} where
                     {Ob, Hom, Dom<:(Cat{Ob, Hom, FinCatSize} where
                       {Ob, Hom}), Codom<:FinCatPresentation{ExtCalc2D, Ob, Hom}}
@@ -104,24 +102,21 @@ to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; kw...))
 function GraphvizGraphs.to_graphviz_property_graph(F::Diagram2D; kw...)
     simplify_vname(s) = begin
       table = Dict(
-    "Form0(X)" => "Ω₀",
-    "Form1(X)" => "Ω₁",
-    "Form2(X)" => "Ω₂",
-    "DualForm0(X)" => "Ω̃₀",
-    "DualForm1(X)" => "Ω̃₁",
-    "DualForm2(X)" => "Ω̃₂",
-    "otimes(Form0(X),Form0(X))" => "Ω₀²",
-    "otimes(Form1(X),Form1(X))" => "Ω₁²",
-    "otimes(Form1(X),DualForm2(X))" => "Ω₁×Ω̃₂",
-    "otimes(Form1(X),Form1(X),Form1(X))" => "Ω₁³",
-    "otimes(Form1(X),Form1(X),Form1(X),Form1(X))" => "Ω₁⁴"
-    )
-    if string(s) in keys(table)
-        return table[string(s)]
-    else
-        println(string(s))
-        return string(s)
-    end
+        "Form0(X)" => "Ω₀",
+        "Form1(X)" => "Ω₁",
+        "Form2(X)" => "Ω₂",
+        "DualForm0(X)" => "Ω̃₀",
+        "DualForm1(X)" => "Ω̃₁",
+        "DualForm2(X)" => "Ω̃₂"
+      )
+      st = string(s)
+      m = match(r"otimes\((.*)\)", st)
+      if isnothing(m)
+        return table[st]
+      else
+        forms = only(m.captures)
+        join(map(f -> table[f], split(forms, ",")), "×")
+      end
     end
 
     simplify_ename(s) = begin
