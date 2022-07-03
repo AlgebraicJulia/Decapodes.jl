@@ -1,11 +1,20 @@
 module OpenDiagrams
-export OpenDiagram, oapply, draw
+export OpenDiagram, oapply, draw_diagram
 
 using Catlab, Catlab.CategoricalAlgebra, Catlab.WiringDiagrams, Catlab.Programs
 import Catlab.CategoricalAlgebra: apex, legs, feet
 import Catlab.WiringDiagrams: oapply
 using Catlab.Programs.DiagrammaticPrograms: NamedGraph # FIXME: Should export?
 using Catlab.Graphics
+
+using CombinatorialSpaces.ExteriorCalculus: ExtCalc2D
+using CombinatorialSpaces
+using Catlab.CategoricalAlgebra.Categories: Functor, Cat
+using Catlab.CategoricalAlgebra.FinCats: FinCatSize, FinCatPresentation
+
+const Diagram2D = Functor{Dom, Codom} where
+                    {Ob, Hom, Dom<:(Cat{Ob, Hom, FinCatSize} where
+                      {Ob, Hom}), Codom<:FinCatPresentation{ExtCalc2D, Ob, Hom}}
 
 """ Open diagram as a structured multicospan in R-form.
 
@@ -75,10 +84,10 @@ end
 # Graphics Tooling #
 ####################
 
-#TODO: Rampant type piracy in here, fix
-draw(d) = to_graphviz(d, box_labels=:name, junction_labels=:variable,
-graph_attrs=Dict(:start => "2", :overlap=>"scale"), port_labels=true)
-
+draw_diagram(d::Diagram2D) = to_graphviz(d, node_labels=true,
+                                         prog="neato",
+                                         node_attrs=Dict(:shape=>"oval"),
+                                         graph_attrs=Dict(:nodesep=>"4.0"))
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
 function to_graph(J::FinCat)
@@ -87,30 +96,27 @@ function to_graph(J::FinCat)
     return g
 end
 
-Graphics.to_graphviz(F::FinFunctor; kw...) =
+Graphics.to_graphviz(F::Diagram2D; kw...) =
 to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; kw...))
 
-function GraphvizGraphs.to_graphviz_property_graph(F::FinFunctor; kw...)
+function GraphvizGraphs.to_graphviz_property_graph(F::Diagram2D; kw...)
     simplify_vname(s) = begin
       table = Dict(
-    "Form0(X)" => "Ω₀",
-    "Form1(X)" => "Ω₁",
-    "Form2(X)" => "Ω₂",
-    "DualForm0(X)" => "Ω̃₀",
-    "DualForm1(X)" => "Ω̃₁",
-    "DualForm2(X)" => "Ω̃₂",
-    "otimes(Form0(X),Form0(X))" => "Ω₀²",
-    "otimes(Form1(X),Form1(X))" => "Ω₁²",
-    "otimes(Form1(X),DualForm2(X))" => "Ω₁×Ω̃₂",
-    "otimes(Form1(X),Form1(X),Form1(X))" => "Ω₁³",
-    "otimes(Form1(X),Form1(X),Form1(X),Form1(X))" => "Ω₁⁴"
-    )
-    if string(s) in keys(table)
-        return table[string(s)]
-    else
-        println(string(s))
-        return string(s)
-    end
+        "Form0(X)" => "Ω₀",
+        "Form1(X)" => "Ω₁",
+        "Form2(X)" => "Ω₂",
+        "DualForm0(X)" => "Ω̃₀",
+        "DualForm1(X)" => "Ω̃₁",
+        "DualForm2(X)" => "Ω̃₂"
+      )
+      st = string(s)
+      m = match(r"otimes\((.*)\)", st)
+      if isnothing(m)
+        return table[st]
+      else
+        forms = only(m.captures)
+        join(map(f -> table[f], split(forms, ",")), "×")
+      end
     end
 
     simplify_ename(s) = begin

@@ -72,7 +72,7 @@ dims(x, form2dim) = begin
   form2dim[first(k)]
 end
 
-""" gen_sim(dwd::WiringDiagram, name2func::Dict{Symbol, <:BoxFunc},
+""" gen_sim(dwd::WiringDiagram, name2func::Dict,
             s::EmbeddedDeltaDualComplex2D;
             form2dim=form2dim, params=[], autodiff=false)
 
