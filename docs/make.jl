@@ -44,6 +44,7 @@ makedocs(
     "Decapodes.jl" => "index.md",
     "Overview" => "overview.md",
     "Misc Features" => "bc_debug.md",
+    "Pipe Flow" => "poiseuille.md"
 #    "Examples" => Any[
 #      "examples/cfd_example.md"
 #    ],
