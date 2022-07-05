@@ -23,10 +23,7 @@ using Decapodes.Schedules
 
 using CairoMakie
 using Decapodes.Debug
-using DifferentialEquations
-using Logging: global_logger
-using TerminalLoggers: TerminalLogger
-global_logger(TerminalLogger())
+using OrdinaryDiffEq
 
 
 """ Decapodes1D
