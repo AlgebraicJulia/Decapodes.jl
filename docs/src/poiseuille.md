@@ -263,7 +263,6 @@ Then we solve the equation. Notice that the equilibrium flow is constant down th
 prob = ODEProblem(func, [5,3,4,2,5,2,8,4,3], (0.0, 10000.0), [10. *i for i in 1:10])
 sol = solve(prob, Tsit5(); progress=true);
 sol.u
-end
 ```
 
 ## A Distribution Network
