@@ -90,29 +90,3 @@ end
 
 end
 dp
-
-# begin
-# inputs = [D.ob_map[v] for v in vertices(J.graph)]
-# wd = WiringDiagram(inputs,[])
-# J = dom(Diffusion)
-# D = Diffusion
-
-# boxid = Vector{Int}()
-# for e in edges(J.graph)
-#     De = D.hom_map[e]
-#     Ds = D.ob_map[src(J.graph, e)]
-#     Dt = D.ob_map[src(J.graph, e)]
-#     @show (e, De)
-#     push!(boxid, add_box!(wd, Box(De, [Ds], [Dt])))
-# end
-# for v in vertices(J.graph)
-#     outdeg = length(outneighbors(J.graph, v))
-#     junc = junction_diagram(Ports([D.ob_map[v]]), outdeg, 1)
-#     juncid = add_box!(wd, junc)
-#     for e in outneighbors(J.graph, v)
-#         w = Wire(:copy, Port(D.ob_map[v], OutputPort, 1), Port(D.ob_map[v], InputPort, 1))
-#         add_wire!(wd, w)
-#     end
-# end
-# end
-# wd
