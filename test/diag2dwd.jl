@@ -197,47 +197,6 @@ function fill_names!(d::NamedDecapode)
     return d
 end
 
-# Tests
-#######
-
-# Construct roughly what the @decapode macro should return for Diffusion
-js = [Judge(Var(:C), :Form0, :X), 
-      Judge(Var(:Ċ₁), :Form0, :X),
-      Judge(Var(:Ċ₂), :Form0, :X)
-]
-# TODO: Do we need to handle the fact that all the functions are parameterized by a space?
-eqs = [Eq(Var(:Ċ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
-       Eq(Var(:Ċ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
-       Eq(Tan(Var(:C)), Plus(Var(:Ċ₁), Var(:Ċ₂)))
-]
-diffusion_d = DecaExpr(js, eqs)
-diffusion_cset = Decapode(diffusion_d)
-diffusion_cset_named = NamedDecapode(diffusion_d)
-# A test with expressions on LHS (i.e. temporary variables must be made)
-# TODO: we should be intelligent and realize that the LHS of the first two
-# equations are the same and so can share a new variable
-eqs = [Eq(Plus(Var(:Ċ₁), Var(:Ċ₂)), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
-       Eq(Plus(Var(:Ċ₁), Var(:Ċ₂)), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
-       Eq(Tan(Var(:C)), Plus(Var(:Ċ₁), Var(:Ċ₂)))    
-]
-test_d = DecaExpr(js, eqs)
-test_cset = Decapode(test_d)
-test_cset_named = NamedDecapode(test_d)
-
-all(isassigned(test_cset_named[:name], i) for i in parts(test_cset_named,:Var))
-
-sup_js = js = [Judge(Var(:C), :Form0, :X), 
-Judge(Var(:ϕ₁), :Form0, :X),
-Judge(Var(:ϕ₂), :Form0, :X)
-]
-sup_eqs = [Eq(Var(:ϕ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
-       Eq(Var(:ϕ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
-       Eq(Tan(Var(:C)), Plus(Var(:ϕ₁), Var(:ϕ₂)))    
-]
-sup_d = DecaExpr(sup_js, sup_eqs)
-sup_cset = Decapode(sup_d)
-sup_cset_named = NamedDecapode(sup_d)
-
 function compile(d::NamedDecapode, inputs::Vector)
     input_tuple = :(())
     append!(input_tuple.args, inputs)
@@ -296,6 +255,49 @@ function compile(d::NamedDecapode, inputs::Vector)
         $ret
     end; end
 end
+
+
+# Tests
+#######
+
+# Construct roughly what the @decapode macro should return for Diffusion
+js = [Judge(Var(:C), :Form0, :X), 
+      Judge(Var(:Ċ₁), :Form0, :X),
+      Judge(Var(:Ċ₂), :Form0, :X)
+]
+# TODO: Do we need to handle the fact that all the functions are parameterized by a space?
+eqs = [Eq(Var(:Ċ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
+       Eq(Var(:Ċ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
+       Eq(Tan(Var(:C)), Plus(Var(:Ċ₁), Var(:Ċ₂)))
+]
+diffusion_d = DecaExpr(js, eqs)
+diffusion_cset = Decapode(diffusion_d)
+diffusion_cset_named = NamedDecapode(diffusion_d)
+# A test with expressions on LHS (i.e. temporary variables must be made)
+# TODO: we should be intelligent and realize that the LHS of the first two
+# equations are the same and so can share a new variable
+eqs = [Eq(Plus(Var(:Ċ₁), Var(:Ċ₂)), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
+       Eq(Plus(Var(:Ċ₁), Var(:Ċ₂)), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
+       Eq(Tan(Var(:C)), Plus(Var(:Ċ₁), Var(:Ċ₂)))    
+]
+test_d = DecaExpr(js, eqs)
+test_cset = Decapode(test_d)
+test_cset_named = NamedDecapode(test_d)
+
+all(isassigned(test_cset_named[:name], i) for i in parts(test_cset_named,:Var))
+
+sup_js = js = [Judge(Var(:C), :Form0, :X), 
+Judge(Var(:ϕ₁), :Form0, :X),
+Judge(Var(:ϕ₂), :Form0, :X)
+]
+sup_eqs = [Eq(Var(:ϕ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
+       Eq(Var(:ϕ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
+       Eq(Tan(Var(:C)), Plus(Var(:ϕ₁), Var(:ϕ₂)))    
+]
+sup_d = DecaExpr(sup_js, sup_eqs)
+sup_cset = Decapode(sup_d)
+sup_cset_named = NamedDecapode(sup_d)
+
 
 compile(diffusion_cset_named, [:C,])
 compile(test_cset_named, [:C,])
