@@ -194,11 +194,6 @@ function fill_names!(d::NamedDecapode)
         @show (e, s, t)
         d[t, :name] = Symbol("$(d[s,:name])̇")
     end
-    # for s in parts(d, :TVar)
-    #     t = d[s,:incl]
-    #     d[t, :name] = gensym("∂ₜ")
-    #     incident(d, t, :tgt) ∩ 
-    # end
     return d
 end
 
@@ -267,7 +262,6 @@ function compile(d::NamedDecapode, inputs::Vector)
                 end
                 consumed1[op] = true
                 visited[t] = true
-                # @show t, visited
                 if isa(operator, AbstractArray)
                     operator = :(compose($operator))
                 end
@@ -307,60 +301,3 @@ compile(diffusion_cset_named, [:C,])
 compile(test_cset_named, [:C,])
 compile(sup_cset_named, [:C,])
 
-
-begin
-    
-end
-#     varstmt = :(@variables t)
-#     append!(varstmt.args, bnsir[:variable])
-  
-#     paramstmt = :(@parameters)
-#     append!(paramstmt.args, bnsir[:parameter])
-  
-#     diffstmt = :(D = Differential(t))
-  
-#     ϕs = map(parts(bn, :Box)) do b
-#       vars = map(incident(bn, b,:call)) do i
-#         j = bn[i, :arg]
-#         return bn[j, :variable]
-#       end
-#       p = :(*($(bn[b, :parameter])))
-#       append!(p.args, vars)
-#       return :($(Symbol("ϕ$b")) = $p)
-#     end
-  
-#     infs = map(parts(bn, :Qout)) do tv
-#       vars = map(incident(bn, tv, :infusion)) do wa
-#         j = bn[wa, :influx]
-#         return Symbol("ϕ$j")
-#       end
-#       p = :(+())
-#       append!(p.args, vars)
-  
-#       # same for the outfluxes
-#       vars = map(incident(bn, tv, :effusion)) do wn
-#         j = bn[wn, :efflux]
-#         return :(- $(Symbol("ϕ$j")))
-#       end
-#       append!(p.args, vars)
-#       return p
-#     end
-  
-#     zparts = zip(bn[:tanvar], infs)
-  
-#     eqns = [:(D($tanvar) ~ $rhs) for (tanvar, rhs) in zparts]
-#     eq = :([])
-#     append!(eq.args, eqns)
-#     eqnstmt = :(eqs = $eq)
-  
-  
-#     return quote
-#       $varstmt
-#       $paramstmt
-#       $diffstmt
-#       $(ϕs...)
-#       $eqnstmt
-#       return ODESystem(eqs, t, name=:PetriNet)
-#     end
-  
-#   end
