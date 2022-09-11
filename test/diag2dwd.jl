@@ -331,3 +331,95 @@ compile(diffusion_cset_named, [:C,])
 compile(test_cset_named, [:C,])
 compile(sup_cset_named, [:C,])
 
+
+## #DECAPODE Surface Syntax
+
+# @data Term begin
+#     Var(Symbol)
+#     Judge(Var, Symbol, Symbol) # Symbol 1: Form0 Symbol 2: X
+#     Eq(Term, Term)
+#     AppCirc1(Vector{Symbol}, Var)
+#     AppCirc2(Vector{Symbol}, Var, Var)
+#     App1(Symbol, Var)
+#     App2(Symbol, Var, Var)
+#     Plus(Var, Var)
+#     Tan(Var)
+# end
+
+term(s::Symbol) = Var(s)
+term(expr::Expr) = begin
+    @match expr begin
+        # ::Symbol => Var(expr)
+        Expr(a) => Var(a)
+        Expr(:call, :∂ₜ, b) => Tan(term(b))
+        Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, Var(b))
+        Expr(:call, a, b) => (:App1, (term(a), term(b)))
+        # Expr(:call, a::Symbol, b) => (:App1, a, b)
+        Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
+        Expr(:curly, :∂ₜ, P) => (:Tan)
+        x => error("Cannot construct term from  $x")
+    end
+end
+
+using Test
+@testset "Term Construction" begin
+    @test term(:(Ċ)) == Var(:Ċ)
+    @test term(:(∂ₜ{Form0})) == :Tan
+    @test term(Expr(:ϕ)) == Var(:ϕ)
+    @test typeof(term(:(∘(k, d₀)(C)))) == AppCirc1
+    # @test term(:(∘(k, d₀)(C))) == AppCirc1([:k, :d₀], Var(:C)) #(:App1, ((:Circ, :k, :d₀), Var(:C)))
+    # @test term(:(∘(k, d₀{X})(C))) == (:App1, ((:Circ, :k, :(d₀{X})), Var(:C)))
+    @test_throws ErrorException term(:(Ċ == ∘(⋆₀⁻¹{X}, dual_d₁{X}, ⋆₁{X})(ϕ)))
+    @test term(:(∂ₜ(C))) == Tan(Var(:C))
+    @test term(:(∂ₜ{Form0}(C))) == (:App1, (:Tan, Var(:C)))
+end
+
+function parse_decapode(expr::Expr)
+    stmts = map(expr.args) do line 
+        @match line begin
+            ::LineNumberNode => missing
+            Expr(:(::), a, b) => Judge(Var(a),b.args[1], b.args[2])
+            Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
+            x => x
+        end
+    end |> skipmissing |> collect
+    judges = []
+    eqns = []
+    for s in stmts
+        if typeof(s) == Judge
+            push!(judges, s)
+        elseif typeof(s) == Eq
+            push!(eqns, s)
+        end
+    end
+    DecaExpr(judges, eqns)
+end
+
+DiffusionExprBody =  quote
+    C::Form0{X}
+    Ċ::Form0{X}
+    ϕ::Form1{X}
+  
+    # Fick's first law
+    ϕ ==  ∘(k, d₀)(C)
+    # Diffusion equation
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+end
+
+diffExpr = parse_decapode(DiffusionExprBody)
+NamedDecapode(diffExpr)
+
+# TODO: add support for more of the decapode syntax.
+# DiffusionExprBody =  quote
+#     C::Form0{X}
+#     Ċ::Form0{X}
+#     ϕ::Form1{X}
+  
+#     # Fick's first law
+#     ϕ ==  ∘(k, d₀{X})(C)
+#     # Diffusion equation
+#     Ċ == ∘(⋆₀⁻¹{X}, dual_d₁{X}, ⋆₁{X})(ϕ)
+#     ∂ₜ{Form0{X}}(C) == Ċ
+# end
+
