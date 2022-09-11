@@ -197,6 +197,39 @@ function fill_names!(d::NamedDecapode)
     return d
 end
 
+
+abstract type AbstractCall end
+
+struct UnaryCall <: AbstractCall 
+    operator
+    input
+    output
+end
+
+Base.Expr(c::UnaryCall) = begin
+    operator = c.operator
+    if isa(c.operator, AbstractArray)
+        operator = :(compose($operator))
+    end
+    return :($(c.output) = $operator($(c.input)))
+end
+                
+
+struct BinaryCall <: AbstractCall 
+    operator
+    input1
+    input2
+    output
+end
+
+Base.Expr(c::BinaryCall) = begin
+    operator = c.operator
+    if isa(c.operator, AbstractArray)
+        operator = :(compose($(c.operator)))
+    end
+    return :($(c.output) = $operator($(c.input1), $(c.input2)))
+end
+
 function compile(d::NamedDecapode, inputs::Vector)
     input_tuple = :(())
     append!(input_tuple.args, inputs)
@@ -205,27 +238,24 @@ function compile(d::NamedDecapode, inputs::Vector)
     visited[collect(flatten(input_numbers))] .= true
     consumed1 = falses(nparts(d, :Op1))
     consumed2 = falses(nparts(d, :Op2))
-    assigns = Expr[]
     # FIXME: this is a quadratic implementation of topological_sort inlined in here.
+    op_order = []
     for iter in 1:(nparts(d, :Op1) + nparts(d,:Op2))
         for op in parts(d, :Op1)
             s = d[op, :src]
             if !consumed1[op] && visited[s]
-                t = d[op, :tgt]
-                sname = d[s, :name]
-                tname = d[t, :name]
-                operator = d[op, :op1]
                 # skip the derivative edges
+                operator = d[op, :op1]
+                t = d[op, :tgt]
                 if operator == DerivOp
                     continue
                 end
                 consumed1[op] = true
                 visited[t] = true
-                if isa(operator, AbstractArray)
-                    operator = :(compose($operator))
-                end
-                assignment = :($tname = $operator($sname))
-                push!(assigns, assignment)
+                sname = d[s, :name]
+                tname = d[t, :name]
+                c = UnaryCall(operator, sname, tname)
+                push!(op_order, c)
             end
         end
 
@@ -240,14 +270,12 @@ function compile(d::NamedDecapode, inputs::Vector)
                 operator = d[op, :op2]
                 consumed2[op] = true
                 visited[r] = true
-                if isa(operator, AbstractArray)
-                    operator = :(compose($operator))
-                end
-                assignment = :($rname = $operator($a1name, $a2name))
-                push!(assigns, assignment)
+                c = BinaryCall(operator, a1name, a2name, rname)
+                push!(op_order, c)
             end
         end
     end
+    assigns = map(Expr, op_order)
     ret = :(return)
     ret.args = d[d[:,:incl], :name]
     return quote f($(input_tuple)) = begin
