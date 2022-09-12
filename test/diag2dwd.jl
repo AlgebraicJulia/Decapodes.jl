@@ -349,29 +349,15 @@ compile(sup_cset_named, [:C,])
 term(s::Symbol) = Var(s)
 term(expr::Expr) = begin
     @match expr begin
-        # ::Symbol => Var(expr)
         Expr(a) => Var(a)
         Expr(:call, :∂ₜ, b) => Tan(term(b))
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, Var(b))
-        Expr(:call, a, b) => (:App1, (term(a), term(b)))
-        # Expr(:call, a::Symbol, b) => (:App1, a, b)
+        Expr(:call, a, b) => App1(a, term(b))
+        Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc1(f, Var(x), Var(y))
+        Expr(:call, f, x, y) => App2(f, term(x), term(y))
         Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
-        Expr(:curly, :∂ₜ, P) => (:Tan)
         x => error("Cannot construct term from  $x")
     end
-end
-
-using Test
-@testset "Term Construction" begin
-    @test term(:(Ċ)) == Var(:Ċ)
-    @test term(:(∂ₜ{Form0})) == :Tan
-    @test term(Expr(:ϕ)) == Var(:ϕ)
-    @test typeof(term(:(∘(k, d₀)(C)))) == AppCirc1
-    # @test term(:(∘(k, d₀)(C))) == AppCirc1([:k, :d₀], Var(:C)) #(:App1, ((:Circ, :k, :d₀), Var(:C)))
-    # @test term(:(∘(k, d₀{X})(C))) == (:App1, ((:Circ, :k, :(d₀{X})), Var(:C)))
-    @test_throws ErrorException term(:(Ċ == ∘(⋆₀⁻¹{X}, dual_d₁{X}, ⋆₁{X})(ϕ)))
-    @test term(:(∂ₜ(C))) == Tan(Var(:C))
-    @test term(:(∂ₜ{Form0}(C))) == (:App1, (:Tan, Var(:C)))
 end
 
 function parse_decapode(expr::Expr)
@@ -395,31 +381,106 @@ function parse_decapode(expr::Expr)
     DecaExpr(judges, eqns)
 end
 
-DiffusionExprBody =  quote
-    C::Form0{X}
-    Ċ::Form0{X}
-    ϕ::Form1{X}
-  
-    # Fick's first law
-    ϕ ==  ∘(k, d₀)(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-    ∂ₜ(C) == Ċ
+term(:(∧₀₁(C,V)))
+using Test
+@testset "Term Construction" begin
+    @test term(:(Ċ)) == Var(:Ċ)
+    @test_throws ErrorException term(:(∂ₜ{Form0}))
+    @test term(Expr(:ϕ)) == Var(:ϕ)
+    @test typeof(term(:(d₀(C)))) == App1
+    @test typeof(term(:(∘(k, d₀)(C)))) == AppCirc1
+    # @test term(:(∘(k, d₀)(C))) == AppCirc1([:k, :d₀], Var(:C)) #(:App1, ((:Circ, :k, :d₀), Var(:C)))
+    # @test term(:(∘(k, d₀{X})(C))) == (:App1, ((:Circ, :k, :(d₀{X})), Var(:C)))
+    @test_throws MethodError term(:(Ċ == ∘(⋆₀⁻¹{X}, dual_d₁{X}, ⋆₁{X})(ϕ)))
+    @test term(:(∂ₜ(C))) == Tan(Var(:C))
+    # @test term(:(∂ₜ{Form0}(C))) == App1(:Tan, Var(:C))
 end
 
-diffExpr = parse_decapode(DiffusionExprBody)
-NamedDecapode(diffExpr)
 
-# TODO: add support for more of the decapode syntax.
-# DiffusionExprBody =  quote
-#     C::Form0{X}
-#     Ċ::Form0{X}
-#     ϕ::Form1{X}
-  
-#     # Fick's first law
-#     ϕ ==  ∘(k, d₀{X})(C)
-#     # Diffusion equation
-#     Ċ == ∘(⋆₀⁻¹{X}, dual_d₁{X}, ⋆₁{X})(ϕ)
-#     ∂ₜ{Form0{X}}(C) == Ċ
-# end
+@testset "Diffusion Diagram" begin
+    DiffusionExprBody =  quote
+        C::Form0{X}
+        Ċ::Form0{X}
+        ϕ::Form1{X}
+    
+        # Fick's first law
+        ϕ ==  ∘(k, d₀)(C)
+        # Diffusion equation
+        Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+        ∂ₜ(C) == Ċ
+    end
 
+    diffExpr = parse_decapode(DiffusionExprBody)
+    ddp = NamedDecapode(diffExpr)
+
+    @test nparts(ddp, :Var) == 4
+    @test nparts(ddp, :TVar) == 1
+    @test nparts(ddp, :Op1) == 3
+    @test nparts(ddp, :Op2) == 0
+end
+
+@testset "Advection Diagram" begin
+    Advection = quote
+        C::Form0{X}
+        V::Form1{X}
+        ϕ::Form1{X}
+
+        ϕ == ∧₀₁(C,V)
+    end
+
+    advdecexpr = parse_decapode(Advection)
+    advdp = NamedDecapode(advdecexpr)
+    @test nparts(advdp, :Var) == 3
+    @test nparts(advdp, :TVar) == 0
+    @test nparts(advdp, :Op1) == 0
+    @test nparts(advdp, :Op2) == 1
+end
+
+@testset "Superposition Diagram" begin
+    Superposition = quote
+        C::Form0{X}
+        Ċ::Form0{X}
+        ϕ::Form1{X}
+        ϕ₁::Form1{X}
+        ϕ₂::Form1{X}
+
+        ϕ == ϕ₁ + ϕ₂
+        Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+        ∂ₜ(C) == Ċ
+    end
+
+    superexp = parse_decapode(Superposition)
+    supdp = NamedDecapode(superexp)
+    @test nparts(supdp, :Var) == 6
+    @test nparts(supdp, :TVar) == 1
+    @test nparts(supdp, :Op1) == 2
+    @test nparts(supdp, :Op2) == 1
+end
+
+@testset "AdvectionDiffusion Diagram" begin
+    AdvDiff = quote
+        C::Form0{X}
+        Ċ::Form0{X}
+        V::Form1{X}
+        ϕ::Form1{X}
+        ϕ₁::Form1{X}
+        ϕ₂::Form1{X}
+    
+        # Fick's first law
+        ϕ₁ ==  (k ∘ d₀)(C)
+        # Diffusion equation
+        Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+        ϕ₂ == ∧₀₁(C,V)
+
+        ϕ == ϕ₁ + ϕ₂
+        Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+        ∂ₜ(C) == Ċ
+    end
+
+    advdiff = parse_decapode(AdvDiff)
+    advdiffdp = NamedDecapode(advdiff)
+    @test nparts(advdiffdp, :Var) == 7
+    @test nparts(advdiffdp, :TVar) == 1
+    @test nparts(advdiffdp, :Op1) == 4
+    @test nparts(advdiffdp, :Op2) == 2
+end
