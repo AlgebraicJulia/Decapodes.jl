@@ -114,6 +114,7 @@ reduce_lhs!(eq::Eq, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
         return res_var
       end
       Tan(x) => begin
+        # TODO: this is creating a spurious variablbe with the same name
         txv = add_part!(d, :Var, type=:infer)
         tx = add_part!(d, :TVar, incl=txv)
         tanop = add_part!(d, :Op1, src=syms[x._1], tgt=txv, op1=DerivOp)
@@ -176,6 +177,9 @@ function NamedDecapode(e::DecaExpr)
     fill_names!(d)
     return d
 end
+
+append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
+
 """    fill_names!
 
 add new variable names to all the variables that don't have names.
@@ -191,12 +195,35 @@ function fill_names!(d::NamedDecapode)
     for e in incident(d, :∂ₜ, :op1)
         s = d[e,:src]
         t = d[e, :tgt]
-        @show (e, s, t)
-        d[t, :name] = Symbol("$(d[s,:name])̇")
+        d[t, :name] = append_dot(d[s,:name])
     end
     return d
 end
 
+function expand_operators(d::NamedDecapode)
+  e = NamedDecapode{Symbol, Symbol, Symbol}()
+  copy_parts!(e, d, (:Var, :TVar, :Op2))
+  newvar = 0
+  for op in parts(d, :Op1)
+    if !isa(d[op,:op1], AbstractArray)
+      add_part!(e, :Op1, op1=d[op,:op1], src=d[op, :src], tgt=d[op,:tgt])
+    else
+      for (i, step) in enumerate(d[op, :op1])
+        if i == 1
+          newvar = add_part!(e, :Var, type=:infer, name=Symbol("•_$(op)_$(i)"))
+          add_part!(e, :Op1, op1=step, src=d[op, :src], tgt=newvar)
+        elseif i == length(d[op, :op1])
+          add_part!(e, :Op1, op1=step, src=newvar, tgt=d[op,:tgt])
+        else
+          newvar′ = add_part!(e, :Var, type=:infer, name=Symbol("•_$(op)_$(i)"))
+          add_part!(e, :Op1, op1=step, src=newvar, tgt=newvar′)
+          newvar = newvar′
+        end
+      end
+    end
+  end
+  return e
+end
 
 abstract type AbstractCall end
 
@@ -484,3 +511,59 @@ end
     @test nparts(advdiffdp, :Op1) == 4
     @test nparts(advdiffdp, :Op2) == 2
 end
+
+
+AdvDiff = quote
+    C::Form0{X}
+    Ċ::Form0{X}
+    V::Form1{X}
+    ϕ::Form1{X}
+    ϕ₁::Form1{X}
+    ϕ₂::Form1{X}
+
+    # Fick's first law
+    ϕ₁ ==  (k ∘ d₀)(C)
+    ϕ₂ == ∧₀₁(C,V)
+    ϕ == ϕ₁ + ϕ₂
+    # Diffusion equation
+    ∂ₜ(C) == Ċ
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+end
+
+advdiff = parse_decapode(AdvDiff)
+advdiffdp = NamedDecapode(advdiff)
+
+compile(advdiffdp, [:C, :V])
+
+function compile_env(d::NamedDecapode)
+  defs = quote end
+  for op in d[:op1]
+    if op == DerivOp
+      continue
+    end
+    def = :($op = $op(mesh))
+    push!(defs.args, def)
+  end
+  for op in d[:op2]
+    if op == :+
+      continue
+    end
+    def = :($op = $op(mesh))
+    push!(defs.args, def)
+  end
+  return defs
+end
+
+function gensim(d::NamedDecapode, input_vars)
+  d′ = expand_operators(d)
+  defs = compile_env(d′)
+  rhs = compile(d′, input_vars)
+  quote
+    function simulate(mesh)
+      $defs
+      return $rhs
+    end
+  end
+end
+
+gensim(advdiffdp, [:C, :V])
