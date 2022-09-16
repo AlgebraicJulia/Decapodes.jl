@@ -54,14 +54,44 @@ function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius,
   end
   s = EmbeddedDeltaSet2D{Bool, Point3D}()
   # Add points one parallel at a time.
+  currStartingPoint = 1
+  numMeridians = length(minLong:dLong:maxLong)
   for θ in minLat:dLat:maxLat
     ρ = radius
-    add_vertices!(s, length(minLong:dLong:maxLong),
+    add_vertices!(s, numMeridians,
                   point=map(minLong:dLong:maxLong) do ϕ
                     Point3D(ρ*sind(θ)*cosd(ϕ),
                             ρ*sind(θ)*sind(ϕ),
                             ρ*cosd(θ))
                   end)
+    # Connect the points on this parallel.
+    add_sorted_edges!(s,
+               currStartingPoint:currStartingPoint+numMeridians-2,
+               currStartingPoint+1:currStartingPoint+numMeridians-1)
+    # Connect this parallel.
+    if (connectLong)
+      add_sorted_edge!(s, currStartingPoint+numMeridians-1, currStartingPoint)
+    end
+    # Don't connect to the previous parallel if there isn't one.
+    if (currStartingPoint == 1)
+      currStartingPoint += numMeridians
+      continue
+    end
+    # Connect "straight down."
+    add_sorted_edges!(s,
+               currStartingPoint:currStartingPoint+numMeridians-1,
+               currStartingPoint-numMeridians:currStartingPoint-1)
+    # Connect "diagonally."
+    add_sorted_edges!(s,
+               currStartingPoint:currStartingPoint+numMeridians-2,
+               currStartingPoint-numMeridians+1:currStartingPoint-1)
+    # Connect diagonally down.
+    if (connectLong)
+      add_sorted_edge!(s, currStartingPoint+numMeridians-1,
+                currStartingPoint-numMeridians)
+    end
+
+    currStartingPoint += numMeridians
   end
   return s
 end
