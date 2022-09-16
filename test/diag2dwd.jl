@@ -705,6 +705,3 @@ function to_graphviz(d::NamedDecapode)::Graphviz.Graph
     #Need to add user access for more customizability later
     Graphviz.Graph("G", true, "neato", stmts, Dict(), Dict(:shape=>"oval"), Dict())
 end
-
-#ddp, advdp, supdp, advdiffdp
-to_graphviz(advdp)
