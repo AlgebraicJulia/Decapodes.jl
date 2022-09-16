@@ -22,7 +22,7 @@ We say that:
 We say that:
 - (x=0,y=0,z=0) is at the center of the sphere
 - the x-axis points toward 0°,0°
-- the y-axis points toward 90°E,0° TODO: Double-check this.
+- the y-axis points toward 90°E,0°
 - the z-axis points toward the North Pole
 
 # References:
@@ -30,20 +30,28 @@ We say that:
 
 # Examples
 ```julia-repl
-# 180 points along the unit circle on the x-y plane.
-julia> s = makeSphere(90, 90, 1, 0, 175, 5, 1, true)
+# 72 points along the unit circle on the x-y plane.
+julia> s = makeSphere(90, 90, 0, 0, 355, 5, 1, true)
 ````
 ```julia-repl
-# 180 points along the equator at 0km from Earth's surface.
-julia> s = makeSphere(90, 90, 1, 0, 175, 5, 6371, true)
+# 72 points along the equator at 0km from Earth's surface.
+julia> s = makeSphere(90, 90, 1, 0, 355, 5, 6371, true)
 ````
 ```julia-repl
-# TIE-GCM grid
-julia> s = makeSphere(5, 175, 5, 0, 175, 5, 6371+90, true)
+# TIE-GCM grid at 90km altitude.
+julia> s = makeSphere(5, 175, 5, 0, 355, 5, 6371+90, true)
 ````
 """
 function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius,
     connectLong)
+  if (   !(0 ≤ minLat ≤ 180)  || !(0 ≤ maxLat ≤ 180)
+      || !(0 ≤ minLong ≤ 360) || !(0 ≤ minLong ≤ 360)
+      ||  (maxLat < minLat)   ||  (maxLong < minLong))
+    throw(ArgumentError(""))
+  end
+  if (minLat == maxLat && dLat == 0)
+    dLat = 1 # User wants a unit circle. a:0:a is not valid julia.
+  end
   s = EmbeddedDeltaSet2D{Bool, Point3D}()
   # Add points one parallel at a time.
   for θ in minLat:dLat:maxLat
