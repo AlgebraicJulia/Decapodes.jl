@@ -690,7 +690,7 @@ function to_graphviz(d::NamedDecapode)::Graphviz.Graph
         push!(stmts, Graphviz.Edge(gv_path(e), Dict(:label=>edge_name)))
     end
 
-    #For binary ops, make temp product object labelled ProjPlane, drop projections and drop result with op name
+    #For binary ops, make temp product object, drop projections and drop result with op name
     for p in parts(d, :Op2)
         proj_space_name = "Ω" * toSub(last(String(d[:type][d[:proj1][p]]))) * "×" * "Ω" * toSub(last(String(d[:type][d[:proj2][p]])))
         push!(stmts, Graphviz.Node(gp_name(p), Dict(:label=>proj_space_name)))
