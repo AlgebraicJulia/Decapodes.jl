@@ -40,24 +40,29 @@ end
 
 # Definition of the Decapodes DSL AST
 # TODO: do functions and tans need to be parameterized by a space?
-# TODO: make recursive
+# TODO: Add support for higher order functions.
+#   - This is straightforward from a language perspective but unclear the best
+#   - way to represent this in a Decapode ACSet.
 @data Term begin
   Var(Symbol)
   Judge(Var, Symbol, Symbol) # Symbol 1: Form0 Symbol 2: X
-  Eq(Term, Term)
-  AppCirc1(Vector{Symbol}, Var)
-  AppCirc2(Vector{Symbol}, Var, Var)
-  App1(Symbol, Var)
-  App2(Symbol, Var, Var)
-  Plus(Var, Var)
-  Tan(Var)
+  AppCirc1(Vector{Symbol}, Term)
+  AppCirc2(Vector{Symbol}, Term, Term)
+  App1(Symbol, Term)
+  App2(Symbol, Term, Term)
+  Plus(Term, Term)
+  Tan(Term)
+end
+
+@data Equation begin
+  Mk(Term, Term)
 end
 
 # A struct to store a complete Decapode
 # TODO: Have the decopode macro compile to a DecaExpr
 struct DecaExpr
   judgements::Vector{Judge}
-  equations::Vector{Eq}
+  equations::Vector{Equation}
 end
 
 @present SchDecapode(FreeSchema) begin
@@ -87,6 +92,58 @@ end
 
 @acset_type NamedDecapode(SchNamedDecapode,
   index=[:src, :tgt, :res, :incl, :op1, :op2, :type, :name]) <: AbstractDecapode
+
+
+reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
+  let ! = reduce_term!
+    @match t begin
+      Var(x) => syms[x]
+      App1(f, t) => begin
+        res_var = add_part!(d, :Var, type=:infer)
+        add_part!(d, :Op1, src=!(t), tgt=res_var, op1=f)
+        return res_var
+      end
+      App2(f, t1, t2) => begin
+        res_var = add_part!(d, :Var, type=:infer)
+        add_part!(d, :Op2, proj1=!(t1), proj=!(t2), res=res_var, op2=f)
+        return res_var
+      end
+      AppCirc1(fs, t) => begin
+        res_var = add_part!(d, :Var, type=:infer)
+        add_part!(d, :Op1, src=!(t), tgt=res_var, op1=fs)
+        return res_var
+      end
+      AppCirc2(f, t1, t2) => begin
+        res_var = add_part!(d, :Var, type=:infer)
+        add_part!(d, :Op2, proj1=!(t1), proj=!(t2), res=res_var, op2=fs)
+        return res_var
+      end
+      Plus(t1, t2) => begin # TODO: plus is an Op2 so just fold it into App2
+        res_var = add_part!(d, :Var, type=:infer)
+        add_part!(d, :Op2, proj1=!(t1), proj2=!(t2), res=res_var, op2=:plus)
+        return res_var
+      end
+      Tan(t) => begin 
+        # TODO: this is creating a spurious variablbe with the same name
+        txv = add_part!(d, :Var, type=:infer)
+        tx = add_part!(d, :TVar, incl=txv)
+        tanop = add_part!(d, :Op1, src=!(t), tgt=txv, op1=DerivOp)
+        return txv #syms[x._1]
+      end
+    end
+
+function eval_eq!(eq::Equality, d::AbstractDecapode, syms::Dict{Symbol, Int}) 
+  @match eq begin
+    Mk(t1, t2) => begin
+      lhs_ref = reduce_term!(t1,d,syms)
+      rhs_ref = reduce_term!(t2,d,syms)
+      # Make rhs_ref equal to lhs_ref and adjust all its incidents
+
+      
+    end
+  end
+
+end
 
 # to_decapode helper functions
 reduce_lhs!(eq::Eq, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
