@@ -4,8 +4,10 @@ authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson"]
 version = "0.1.0"
 
 [deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 CombinatorialSpaces = "b1c52339-7909-45ad-8b6a-6e388f7c67f2"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
