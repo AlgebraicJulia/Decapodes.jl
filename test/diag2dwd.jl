@@ -671,7 +671,6 @@ function to_graphviz(d::NamedDecapode)::Graphviz.Graph
 
     stmts = Graphviz.Statement[]
 
-    #Need to remove 'r' later, any way to set default val?
     reg_to_sub = Dict('0'=>'₀', '1'=>"₁", '2'=>'₂', '3'=>'₃', '4'=>'₄',
     '5'=>'₅', '6'=>'₆','7'=>'₇', '8'=>'₈', '9'=>'₉')
 
@@ -703,7 +702,7 @@ function to_graphviz(d::NamedDecapode)::Graphviz.Graph
         push!(stmts, Graphviz.Edge(gp_projRes(p), Dict(:label=>res_name)))
     end
 
-    #Need to add user access for more custmizability later
+    #Need to add user access for more customizability later
     Graphviz.Graph("G", true, "neato", stmts, Dict(), Dict(:shape=>"oval"), Dict())
 end
 
