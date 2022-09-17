@@ -602,8 +602,13 @@ function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, In
   end
 end
 
-using CairoMakie
+using GLMakie
+using JSON
+
+plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, read("./docs/assets/meshes/plot_mesh.json", String))
 periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, read("./docs/assets/meshes/periodic_mesh.json", String));
+point_map = JSON.parse(read("./docs/assets/meshes/point_map.json",String))
+
 using Distributions
 
 function run_sim_given_mesh_and_decapode(my_mesh, my_named_decapode)
@@ -624,35 +629,58 @@ function generate(sd, my_symbol)
     :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
     :plus => (+)
   end
-  return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
+#   return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
+  return (args...) ->  op(args...)
 end
 sim = eval(run_sim_given_mesh_and_decapode(periodic_mesh, advdiffdp))
-c_dist = MvNormal([7, 5], [1.5, 1.5])
-c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
 velocity(p) = [-0.5, -0.5, 0.0]
 v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
+c_dist = MvNormal([7, 5], [1.5, 1.5])
+c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
 #sim(periodic_mesh)((c,v))
 
 #prob = ODEProblem(eval(mysim), periodic_mesh, (0.0, 100.0))
 #
 
 
-DiffusionExprBody =  quote
-    C::Form0{X}
-    Ċ::Form0{X}
-    ϕ::Form1{X}
+function solve_diffusion()
+  DiffusionExprBody =  quote
+      C::Form0{X}
+      Ċ::Form0{X}
+      ϕ::Form1{X}
 
-    # Fick's first law
-    ϕ ==  ∘(d₀, k)(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
+      # Fick's first law
+      ϕ ==  ∘(d₀, k)(C)
+      # Diffusion equation
+      Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
+      ∂ₜ(C) == Ċ
+  end
+
+  diffExpr = parse_decapode(DiffusionExprBody)
+  ddp = NamedDecapode(diffExpr)
+  f = eval(gensim(expand_operators(ddp), [:C]))
+  fₘ = f(periodic_mesh)
+  c_dist = MvNormal([7, 5], [1.5, 1.5])
+  c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
+  chist = Vector{Float64}[]
+  for i in 1:5000
+    ċ = fₘ((c,))
+    c += 0.01*ċ
+    if i % 10 == 0
+      @show mean(c), var(c), norm(ċ)
+      push!(chist, c)
+    end
+  end
+  return chist
 end
 
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = NamedDecapode(diffExpr)
-f = eval(gensim(expand_operators(ddp), [:C]))
-f(periodic_mesh)((c,))
+function plotform0(plot_mesh, c)
+  fig, ax, ob = mesh(plot_mesh; color=c[point_map]);
+  ax.aspect = AxisAspect(3.0)
+  fig
+end
+chist = solve_diffusion()
+plotform0(plot_mesh, chist[250])
 
 
 import Catlab.Graphics.Graphviz
@@ -705,3 +733,7 @@ function to_graphviz(d::NamedDecapode)::Graphviz.Graph
     #Need to add user access for more customizability later
     Graphviz.Graph("G", true, "neato", stmts, Dict(), Dict(:shape=>"oval"), Dict())
 end
+
+diffExpr = parse_decapode(DiffusionExprBody)
+ddp = NamedDecapode(diffExpr)
+to_graphviz(ddp)
