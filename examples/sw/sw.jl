@@ -54,9 +54,9 @@ function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius,
   end
   s = EmbeddedDeltaSet2D{Bool, Point3D}()
   # Add points one parallel at a time.
-  currStartingPoint = 1
   numMeridians = length(minLong:dLong:maxLong)
   for θ in minLat:dLat:maxLat
+    vertexOffset = nv(s)+1
     ρ = radius
     add_vertices!(s, numMeridians,
                   point=map(minLong:dLong:maxLong) do ϕ
@@ -64,34 +64,35 @@ function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius,
                             ρ*sind(θ)*sind(ϕ),
                             ρ*cosd(θ))
                   end)
-    # Connect the points on this parallel.
-    add_sorted_edges!(s,
-               currStartingPoint:currStartingPoint+numMeridians-2,
-               currStartingPoint+1:currStartingPoint+numMeridians-1)
     # Connect this parallel.
     if (connectLong)
-      add_sorted_edge!(s, currStartingPoint+numMeridians-1, currStartingPoint)
+      add_sorted_edge!(s, vertexOffset+numMeridians-1, vertexOffset)
     end
-    # Don't connect to the previous parallel if there isn't one.
-    if (currStartingPoint == 1)
-      currStartingPoint += numMeridians
+    # Don't make triangles with the previous parallel if there isn't one.
+    if (vertexOffset == 1)
+      add_sorted_edges!(s,
+                        vertexOffset:vertexOffset+numMeridians-2,
+                        vertexOffset+1:vertexOffset+numMeridians-1)
       continue
     end
-    # Connect "straight down."
-    add_sorted_edges!(s,
-               currStartingPoint:currStartingPoint+numMeridians-1,
-               currStartingPoint-numMeridians:currStartingPoint-1)
-    # Connect "diagonally."
-    add_sorted_edges!(s,
-               currStartingPoint:currStartingPoint+numMeridians-2,
-               currStartingPoint-numMeridians+1:currStartingPoint-1)
-    # Connect diagonally down.
-    if (connectLong)
-      add_sorted_edge!(s, currStartingPoint+numMeridians-1,
-                currStartingPoint-numMeridians)
+    # Add the triangles.
+    foreach(vertexOffset  :vertexOffset+numMeridians-2,
+            vertexOffset+1:vertexOffset+numMeridians-1,
+            vertexOffset-numMeridians:vertexOffset-2) do i,j,k
+      glue_sorted_triangle!(s, i, j, k)
     end
-
-    currStartingPoint += numMeridians
+    foreach(vertexOffset+1:vertexOffset+numMeridians-1,
+            vertexOffset-numMeridians:vertexOffset-2,
+            vertexOffset-numMeridians+1:vertexOffset-1) do i,j,k
+      glue_sorted_triangle!(s, i, j, k)
+    end
+    # Connect with the previous parallel.
+    if (connectLong)
+      glue_sorted_triangle!(s, vertexOffset+numMeridians-1,
+                            vertexOffset, vertexOffset-1)
+      glue_sorted_triangle!(s, vertexOffset-numMeridians,
+                            vertexOffset, vertexOffset-1)
+    end
   end
   return s
 end
