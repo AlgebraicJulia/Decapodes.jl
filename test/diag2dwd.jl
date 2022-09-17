@@ -626,6 +626,23 @@ function gensim(d::NamedDecapode, input_vars)
   end
 end
 
+function generate(sd, my_symbol)
+  op = @match my_symbol begin
+    :k => x->x/20
+    :⋆₀ => x->⋆(0,sd)*x
+    :⋆₁ => x->⋆(1, sd)*x
+    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=DiagonalHodge())
+    :⋆₁⁻¹ => x->inv_hodge_star(1,sd)*x
+    :d₀ => x->d(0,sd)*x
+    :dual_d₀ => x->dual_derivative(0,sd)*x
+    :dual_d₁ => x->dual_derivative(1,sd)*x
+    :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
+    :plus => (+)
+  end
+#   return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
+  return (args...) ->  op(args...)
+end
+
 function closest_point(p1, p2, dims)
     p_res = collect(p2)
     for i in 1:length(dims)
@@ -659,45 +676,19 @@ function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, In
   end
 end
 
-using GLMakie
 using JSON
+using Distributions
+using GLMakie
+
+function plotform0(plot_mesh, c)
+  fig, ax, ob = mesh(plot_mesh; color=c[point_map]);
+  ax.aspect = AxisAspect(3.0)
+  fig
+end
 
 plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, read("./docs/assets/meshes/plot_mesh.json", String))
 periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, read("./docs/assets/meshes/periodic_mesh.json", String));
 point_map = JSON.parse(read("./docs/assets/meshes/point_map.json",String))
-
-using Distributions
-
-function run_sim_given_mesh_and_decapode(my_mesh, my_named_decapode)
-  return mysim = gensim(expand_operators(my_named_decapode), [:C, :V])
-  #eval(mysim)
-end
-
-function generate(sd, my_symbol)
-  op = @match my_symbol begin
-    :k => x->x/20
-    :⋆₀ => x->⋆(0,sd)*x
-    :⋆₁ => x->⋆(1, sd)*x
-    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=DiagonalHodge())
-    :⋆₁⁻¹ => x->inv_hodge_star(1,sd)*x
-    :d₀ => x->d(0,sd)*x
-    :dual_d₀ => x->dual_derivative(0,sd)*x
-    :dual_d₁ => x->dual_derivative(1,sd)*x
-    :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
-    :plus => (+)
-  end
-#   return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
-  return (args...) ->  op(args...)
-end
-sim = eval(run_sim_given_mesh_and_decapode(periodic_mesh, advdiffdp))
-velocity(p) = [-0.5, -0.5, 0.0]
-v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
-c_dist = MvNormal([7, 5], [1.5, 1.5])
-c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
-#sim(periodic_mesh)((c,v))
-
-#prob = ODEProblem(eval(mysim), periodic_mesh, (0.0, 100.0))
-#
 
 
 function solve_diffusion()
@@ -720,7 +711,7 @@ function solve_diffusion()
   c_dist = MvNormal([7, 5], [1.5, 1.5])
   c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
   chist = Vector{Float64}[]
-  for i in 1:5000
+  for i in 1:3000
     ċ = fₘ((c,))
     c += 0.01*ċ
     if i % 10 == 0
@@ -731,10 +722,22 @@ function solve_diffusion()
   return chist
 end
 
-function plotform0(plot_mesh, c)
-  fig, ax, ob = mesh(plot_mesh; color=c[point_map]);
-  ax.aspect = AxisAspect(3.0)
-  fig
+
+function solve_advection()
+  sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
+  velocity(p) = [-0.5, -0.5, 0.0]
+  v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
+  c_dist = MvNormal([7, 5], [1.5, 1.5])
+  c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
+  sim(periodic_mesh)((c,v))
 end
-chist = solve_diffusion()
-plotform0(plot_mesh, chist[250])
+
+@testset "Solvers" begin
+  @testset "Diffusion" begin
+    chist = solve_diffusion()
+    @test var(chist[end]) <= 1e-4
+  end
+end
+
+
+solve_advection()
