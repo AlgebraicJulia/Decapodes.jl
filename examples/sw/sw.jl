@@ -7,13 +7,11 @@ using Makie: Point3
 Point3D = Point3{Float64}
 
 """
-    makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius;
-      connectLong=true)
+    makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius)
 
 Construct a spherical mesh (inclusively) bounded by the given latitudes and
 longitudes, discretized at dLat and dLong intervals, at the given radius from
-Earth's center. If connectLong is true, then there are edges from the points at
-minLong to the points at maxLong.
+Earth's center.
 
 We say that:
 - 90°N is 0
@@ -33,27 +31,34 @@ We say that:
 # Examples
 ```julia-repl
 # Regular octahedron.
-julia> s, npi, spi = makeSphere(0, 180, 90, 0, 270, 90, 1)
+julia> s, npi, spi = makeSphere(0, 180, 90, 0, 360, 90, 1)
 ````
 ```julia-repl
 # 72 points along the unit circle on the x-y plane.
-julia> s, npi, spi = makeSphere(90, 90, 0, 0, 355, 5, 1)
+julia> s, npi, spi = makeSphere(90, 90, 0, 0, 360, 5, 1)
 ````
 ```julia-repl
 # 72 points along the equator at 0km from Earth's surface.
-julia> s, npi, spi = makeSphere(90, 90, 1, 0, 355, 5, 6371)
+julia> s, npi, spi = makeSphere(90, 90, 1, 0, 360, 5, 6371)
 ````
 ```julia-repl
-# TIE-GCM grid at 90km altitude (with no poles, i.e. a bulbous cylinder).
-julia> s, npi, spi = makeSphere(5, 175, 5, 0, 355, 5, 6371+90)
+# TIE-GCM grid at 90km altitude (with no poles,   i.e. a bulbous cylinder).
+julia> s, npi, spi = makeSphere(5, 175, 5, 0, 360, 5, 6371+90)
 ````
 ```julia-repl
-# TIE-GCM grid at 90km altitude (with poles, i.e. a sphere).
-julia> s, npi, spi = makeSphere(0, 180, 5, 0, 355, 5, 6371+90)
+# TIE-GCM grid at 90km altitude (with South pole, i.e. a bowl).
+julia> s, npi, spi = makeSphere(5, 180, 5, 0, 360, 5, 6371+90)
+````
+```julia-repl
+# TIE-GCM grid at 90km altitude (with poles,      i.e. a sphere).
+julia> s, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, 6371+90)
+````
+```julia-repl
+# The Northern hemisphere of the TIE-GCM grid at 90km altitude.
+julia> s, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, 6371+90)
 ````
 """
-function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius;
-    connectLong=true)
+function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius)
   if (   !(0 ≤ minLat ≤ 180)  || !(0 ≤ maxLat ≤ 180)
       || !(0 ≤ minLong ≤ 360) || !(0 ≤ minLong ≤ 360)
       ||  (maxLat < minLat)   ||  (maxLong < minLong))
@@ -80,6 +85,13 @@ function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius;
     maxLat -= dLat
     connect_south_pole = true
   end
+  connect_long = false
+  if (maxLong == 360)
+    maxLong -= dLong
+    connect_long = true
+  end
+  # TODO: Should we warn the user if the stitching edges are shorter than the
+  # rest?
   num_parallels = length(minLat:dLat:maxLat)
   num_meridians = length(minLong:dLong:maxLong)
   ρ = radius
@@ -91,7 +103,7 @@ function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius;
                     Point3D(sph2car(ρ,ϕ,θ)...)
                   end)
     # Connect this parallel.
-    if (connectLong)
+    if (connect_long)
       add_sorted_edge!(s, vertex_offset+num_meridians-1, vertex_offset)
     end
     # Don't make triangles with the previous parallel if there isn't one.
@@ -113,7 +125,7 @@ function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius;
       glue_sorted_triangle!(s, i, j, k)
     end
     # Connect with the previous parallel.
-    if (connectLong)
+    if (connect_long)
       glue_sorted_triangle!(s, vertex_offset+num_meridians-1,
                             vertex_offset, vertex_offset-1)
       glue_sorted_triangle!(s, vertex_offset-num_meridians,
@@ -123,22 +135,18 @@ function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius;
   # Add the North and South poles.
   north_pole_idx = 0
   if (connect_north_pole)
-    # Note:
-    # northmost_parallel_idxs = 1:num_meridians
     ϕ, θ = 0, 0
     add_vertex!(s, point=Point3D(sph2car(ρ,ϕ,θ)...))
     north_pole_idx = nv(s)
     foreach(1:num_meridians-1, 2:num_meridians) do i,j
       glue_sorted_triangle!(s, north_pole_idx, i, j)
     end
-    if (connectLong)
+    if (connect_long)
       glue_sorted_triangle!(s, north_pole_idx, 1, num_meridians)
     end
   end
   south_pole_idx = 0
   if (connect_south_pole)
-    # Note:
-    # southmost_parallel_idxs = num_meridians*(num_parallels-1)+1:num_meridians*num_parallels
     south_parallel_start = num_meridians*(num_parallels-1)+1
     ϕ, θ = 0, 180
     add_vertex!(s, point=Point3D(sph2car(ρ,ϕ,θ)...))
@@ -147,12 +155,11 @@ function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius;
             south_parallel_start+1:south_parallel_start+num_meridians-1) do i,j
       glue_sorted_triangle!(s, south_pole_idx, i, j)
     end
-    if (connectLong)
+    if (connect_long)
       glue_sorted_triangle!(s, south_pole_idx, south_parallel_start,
                             south_parallel_start+num_meridians-1)
     end
   end
-  # TODO: Do we return things as NamedTuples in Julia?
   return s, north_pole_idx, south_pole_idx
 end
 
