@@ -261,9 +261,26 @@ Base.Expr(c::BinaryCall) = begin
     return :($(c.output) = $operator($(c.input1), $(c.input2)))
 end
 
+function get_vars_code(d::NamedDecapode, vars::Vector{Symbol})
+    stmts = map(vars) do s
+        ssymbl = QuoteNode(s)
+        :($s = findnode(u, $ssymbl).values)
+    end
+    return quote $(stmts...) end
+end
+
+
+function set_tanvars_code(d::NamedDecapode, statevars::Vector{Symbol})
+    tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
+    stmts = map(tanvars) do (s,t)
+        ssymb = QuoteNode(s)
+        :(findnode(du, $ssymb).values .= $t)
+    end
+    return quote $(stmts...) end
+end
+
+
 function compile(d::NamedDecapode, inputs::Vector)
-    input_tuple = :(())
-    append!(input_tuple.args, inputs)
     input_numbers = incident(d, inputs, :name)
     visited = falses(nparts(d, :Var))
     visited[collect(flatten(input_numbers))] .= true
@@ -309,12 +326,13 @@ function compile(d::NamedDecapode, inputs::Vector)
     assigns = map(Expr, op_order)
     ret = :(return)
     ret.args = d[d[:,:incl], :name]
-    return quote f($(input_tuple)) = begin
+    return quote f(du, u, p, t) = begin
+        $(get_vars_code(d, inputs))
         $(assigns...)
-        #$ret
+        du .= 0.0
+        $(set_tanvars_code(d, inputs))
     end; end
 end
-
 
 # Tests
 #######
@@ -362,7 +380,38 @@ compile(diffusion_cset_named, [:C,])
 compile(test_cset_named, [:C,])
 compile(sup_cset_named, [:C,])
 
+function compile_env(d::NamedDecapode)
+  defs = quote end
+  for op in d[:op1]
+    if op == DerivOp
+      continue
+    end
+    ops = QuoteNode(op)
+    def = :($op = generate(mesh, $ops))
+    push!(defs.args, def)
+  end
+  for op in d[:op2]
+    if op == :+
+      continue
+    end
+    ops = QuoteNode(op)
+    def = :($op = generate(mesh, $ops))
+    push!(defs.args, def)
+  end
+  return defs
+end
 
+function gensim(d::NamedDecapode, input_vars)
+  d′ = expand_operators(d)
+  defs = compile_env(d′)
+  rhs = compile(d′, input_vars)
+  quote
+    function simulate(mesh)
+      $defs
+      return $rhs
+    end
+  end
+end
 ## #DECAPODE Surface Syntax
 
 # @data Term begin
@@ -596,152 +645,3 @@ to_graphviz(advdiffdp)
 
 compile(advdiffdp, [:C, :V])
 
-
-function compile_env(d::NamedDecapode)
-  defs = quote end
-  for op in d[:op1]
-    if op == DerivOp
-      continue
-    end
-    ops = QuoteNode(op)
-    def = :($op = generate(mesh, $ops))
-    push!(defs.args, def)
-  end
-  for op in d[:op2]
-    if op == :+
-      continue
-    end
-    ops = QuoteNode(op)
-    def = :($op = generate(mesh, $ops))
-    push!(defs.args, def)
-  end
-  return defs
-end
-
-function gensim(d::NamedDecapode, input_vars)
-  d′ = expand_operators(d)
-  defs = compile_env(d′)
-  rhs = compile(d′, input_vars)
-  quote
-    function simulate(mesh)
-      $defs
-      return $rhs
-    end
-  end
-end
-
-function generate(sd, my_symbol)
-  op = @match my_symbol begin
-    :k => x->x/20
-    :⋆₀ => x->⋆(0,sd)*x
-    :⋆₁ => x->⋆(1, sd)*x
-    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=DiagonalHodge())
-    :⋆₁⁻¹ => x->inv_hodge_star(1,sd)*x
-    :d₀ => x->d(0,sd)*x
-    :dual_d₀ => x->dual_derivative(0,sd)*x
-    :dual_d₁ => x->dual_derivative(1,sd)*x
-    :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
-    :plus => (+)
-  end
-#   return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
-  return (args...) ->  op(args...)
-end
-
-function closest_point(p1, p2, dims)
-    p_res = collect(p2)
-    for i in 1:length(dims)
-        if dims[i] != Inf
-            p = p1[i] - p2[i]
-            f, n = modf(p / dims[i])
-            p_res[i] += dims[i] * n
-            if abs(f) > 0.5
-                p_res[i] += sign(f) * dims[i]
-            end
-        end
-    end
-    Point3{Float64}(p_res...)
-end
-function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, Inf, Inf])
-  # XXX: Creating this lookup table shouldn't be necessary. Of course, we could
-  # index `tri_center` but that shouldn't be necessary either. Rather, we should
-  # loop over incident triangles instead of the elementary duals, which just
-  # happens to be inconvenient.
-  tri_map = Dict{Int,Int}(triangle_center(s,t) => t for t in triangles(s))
-
-  map(edges(s)) do e
-    p = closest_point(point(s, tgt(s,e)), point(s, src(s,e)), dims)
-    e_vec = (point(s, tgt(s,e)) - p) * sign(1,s,e)
-    dual_edges = elementary_duals(1,s,e)
-    dual_lengths = dual_volume(1, s, dual_edges)
-    mapreduce(+, dual_edges, dual_lengths) do dual_e, dual_length
-      X_vec = X[tri_map[s[dual_e, :D_∂v0]]]
-      dual_length * dot(X_vec, e_vec)
-    end / sum(dual_lengths)
-  end
-end
-
-using JSON
-using Distributions
-using GLMakie
-
-function plotform0(plot_mesh, c)
-  fig, ax, ob = mesh(plot_mesh; color=c[point_map]);
-  ax.aspect = AxisAspect(3.0)
-  fig
-end
-
-plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, read("./docs/assets/meshes/plot_mesh.json", String))
-periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, read("./docs/assets/meshes/periodic_mesh.json", String));
-point_map = JSON.parse(read("./docs/assets/meshes/point_map.json",String))
-
-
-function solve_diffusion()
-  DiffusionExprBody =  quote
-      C::Form0{X}
-      Ċ::Form0{X}
-      ϕ::Form1{X}
-
-      # Fick's first law
-      ϕ ==  ∘(d₀, k)(C)
-      # Diffusion equation
-      Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-      ∂ₜ(C) == Ċ
-  end
-
-  diffExpr = parse_decapode(DiffusionExprBody)
-  ddp = NamedDecapode(diffExpr)
-  f = eval(gensim(expand_operators(ddp), [:C]))
-  fₘ = f(periodic_mesh)
-  c_dist = MvNormal([7, 5], [1.5, 1.5])
-  c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
-  chist = Vector{Float64}[]
-  for i in 1:3000
-    ċ = fₘ((c,))
-    c += 0.01*ċ
-    if i % 10 == 0
-      @show mean(c), var(c), norm(ċ)
-      push!(chist, c)
-    end
-  end
-  return chist
-end
-
-
-function solve_advection()
-  sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
-  velocity(p) = [-0.5, -0.5, 0.0]
-  v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
-  c_dist = MvNormal([7, 5], [1.5, 1.5])
-  c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
-  sim(periodic_mesh)((c,v))
-end
-
-@testset "Solvers" begin
-  @testset "Diffusion" begin
-    chist = solve_diffusion()
-    @test var(chist[end]) <= 1e-4
-  end
-end
-
-
-solve_advection()
