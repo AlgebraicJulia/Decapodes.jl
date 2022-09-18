@@ -19,6 +19,9 @@ using Decapodes.Diagrams
 # using Decapodes.Simulations
 # using Decapodes.Schedules
 
+import Unicode
+normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
+normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
 DerivOp = Symbol("∂ₜ")
 
 @present DiffusionSpace2D(FreeExtCalc2D) begin
@@ -175,6 +178,7 @@ function NamedDecapode(e::DecaExpr)
       reduce_rhs!(eq, d, symbol_table, v)
     end
     fill_names!(d)
+    d[:name] = map(normalize_unicode,d[:name])
     return d
 end
 
@@ -373,10 +377,10 @@ compile(sup_cset_named, [:C,])
 #     Tan(Var)
 # end
 
-term(s::Symbol) = Var(s)
+term(s::Symbol) = Var(normalize_unicode(s))
 term(expr::Expr) = begin
     @match expr begin
-        Expr(a) => Var(a)
+        Expr(a) => Var(normalize_unicode(a))
         Expr(:call, :∂ₜ, b) => Tan(term(b))
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, Var(b))
         Expr(:call, a, b) => App1(a, term(b))
