@@ -19,6 +19,9 @@ using Decapodes.Diagrams
 # using Decapodes.Simulations
 # using Decapodes.Schedules
 
+import Unicode
+normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
+normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
 DerivOp = Symbol("∂ₜ")
 
 @present DiffusionSpace2D(FreeExtCalc2D) begin
@@ -190,6 +193,7 @@ function NamedDecapode(e::DecaExpr)
       eval_eq!(eq, d, symbol_table)
     end
     fill_names!(d)
+    d[:name] = map(normalize_unicode,d[:name])
     return d
 end
 
@@ -272,9 +276,26 @@ Base.Expr(c::BinaryCall) = begin
     return :($(c.output) = $operator($(c.input1), $(c.input2)))
 end
 
+function get_vars_code(d::NamedDecapode, vars::Vector{Symbol})
+    stmts = map(vars) do s
+        ssymbl = QuoteNode(s)
+        :($s = findnode(u, $ssymbl).values)
+    end
+    return quote $(stmts...) end
+end
+
+
+function set_tanvars_code(d::NamedDecapode, statevars::Vector{Symbol})
+    tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
+    stmts = map(tanvars) do (s,t)
+        ssymb = QuoteNode(s)
+        :(findnode(du, $ssymb).values .= $t)
+    end
+    return quote $(stmts...) end
+end
+
+
 function compile(d::NamedDecapode, inputs::Vector)
-    input_tuple = :(())
-    append!(input_tuple.args, inputs)
     input_numbers = incident(d, inputs, :name)
     visited = falses(nparts(d, :Var))
     visited[collect(flatten(input_numbers))] .= true
@@ -320,12 +341,13 @@ function compile(d::NamedDecapode, inputs::Vector)
     assigns = map(Expr, op_order)
     ret = :(return)
     ret.args = d[d[:,:incl], :name]
-    return quote f($(input_tuple)) = begin
+    return quote f(du, u, p, t) = begin
+        $(get_vars_code(d, inputs))
         $(assigns...)
-        #$ret
+        du .= 0.0
+        $(set_tanvars_code(d, inputs))
     end; end
 end
-
 
 # Tests
 #######
@@ -375,7 +397,38 @@ compile(diffusion_cset_named, [:C,])
 compile(test_cset_named, [:C,])
 compile(sup_cset_named, [:C,])
 
+function compile_env(d::NamedDecapode)
+  defs = quote end
+  for op in d[:op1]
+    if op == DerivOp
+      continue
+    end
+    ops = QuoteNode(op)
+    def = :($op = generate(mesh, $ops))
+    push!(defs.args, def)
+  end
+  for op in d[:op2]
+    if op == :+
+      continue
+    end
+    ops = QuoteNode(op)
+    def = :($op = generate(mesh, $ops))
+    push!(defs.args, def)
+  end
+  return defs
+end
 
+function gensim(d::NamedDecapode, input_vars)
+  d′ = expand_operators(d)
+  defs = compile_env(d′)
+  rhs = compile(d′, input_vars)
+  quote
+    function simulate(mesh)
+      $defs
+      return $rhs
+    end
+  end
+end
 ## #DECAPODE Surface Syntax
 
 # @data Term begin
@@ -390,10 +443,10 @@ compile(sup_cset_named, [:C,])
 #     Tan(Var)
 # end
 
-term(s::Symbol) = Var(s)
+term(s::Symbol) = Var(normalize_unicode(s))
 term(expr::Expr) = begin
     @match expr begin
-        Expr(a) => Var(a)
+        Expr(a) => Var(normalize_unicode(a))
         Expr(:call, :∂ₜ, b) => Tan(term(b))
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, Var(b))
         Expr(:call, a, b) => App1(a, term(b))
@@ -426,7 +479,62 @@ function parse_decapode(expr::Expr)
 end
 
 term(:(∧₀₁(C,V)))
+
+### Drawing of Decapodes
+
+import Catlab.Graphics.Graphviz
+
+#This could probably be made neater
+function to_graphviz(d::NamedDecapode)::Graphviz.Graph
+    #Similar to the to_graphviz in other implementations
+    gv_name(v::Int) = "n$v"
+    
+    gv_path(e::Int) = [gv_name(d[:src][e]), gv_name(d[:tgt][e])]
+
+    gp_name(p::Int) = "p$p"
+    gp_proj1(p::Int) = [gp_name(p), gv_name(d[:proj1][p])]
+    gp_proj2(p::Int) = [gp_name(p), gv_name(d[:proj2][p])]
+    gp_projRes(p::Int) = [gp_name(p), gv_name(d[:res][p])]
+
+    stmts = Graphviz.Statement[]
+
+    reg_to_sub = Dict('0'=>'₀', '1'=>"₁", '2'=>'₂', '3'=>'₃', '4'=>'₄',
+    '5'=>'₅', '6'=>'₆','7'=>'₇', '8'=>'₈', '9'=>'₉')
+
+    toSub(digit::Char) = haskey(reg_to_sub, digit) ? reg_to_sub[digit] : digit
+
+    #For variables, label grabs the stored variable name and its type and concatenate
+    #label assumes dimension is single digit
+    for v in parts(d, :Var)
+        vertex_name = String(d[:name][v]) * ":Ω" * toSub(last(String(d[:type][v])))
+        push!(stmts, Graphviz.Node(gv_name(v), Dict(:label=>vertex_name)))
+    end
+
+    #For unary ops, label mashes together all func symbol names into one string
+    for e in parts(d, :Op1)
+        #add composition symbols?
+        edge_name = join(String.(d[:op1][e]))
+        push!(stmts, Graphviz.Edge(gv_path(e), Dict(:label=>edge_name)))
+    end
+
+    #For binary ops, make temp product object, drop projections and drop result with op name
+    for p in parts(d, :Op2)
+        proj_space_name = "Ω" * toSub(last(String(d[:type][d[:proj1][p]]))) * "×" * "Ω" * toSub(last(String(d[:type][d[:proj2][p]])))
+        push!(stmts, Graphviz.Node(gp_name(p), Dict(:label=>proj_space_name)))
+
+        push!(stmts, Graphviz.Edge(gp_proj1(p), Dict(:label=>"proj₁", :style=>"dashed")))
+        push!(stmts, Graphviz.Edge(gp_proj2(p), Dict(:label=>"proj₂", :style=>"dashed")))
+
+        res_name = String(d[:op2][p])
+        push!(stmts, Graphviz.Edge(gp_projRes(p), Dict(:label=>res_name)))
+    end
+
+    #Need to add user access for more customizability later
+    Graphviz.Graph("G", true, "neato", stmts, Dict(), Dict(:shape=>"oval"), Dict())
+end
+
 using Test
+
 @testset "Term Construction" begin
     @test term(:(Ċ)) == Var(:Ċ)
     @test_throws ErrorException term(:(∂ₜ{Form0}))
@@ -486,6 +594,7 @@ rdp = NamedDecapode(recExpr)
 
     diffExpr = parse_decapode(DiffusionExprBody)
     ddp = NamedDecapode(diffExpr)
+    to_graphviz(ddp)
 
     @test nparts(ddp, :Var) == 3
     @test nparts(ddp, :TVar) == 1
@@ -580,124 +689,7 @@ end
 
 advdiff = parse_decapode(AdvDiff)
 advdiffdp = NamedDecapode(advdiff)
+to_graphviz(advdiffdp)
 
 compile(advdiffdp, [:C, :V])
 
-
-function compile_env(d::NamedDecapode)
-  defs = quote end
-  for op in d[:op1]
-    if op == DerivOp
-      continue
-    end
-    ops = QuoteNode(op)
-    def = :($op = generate(mesh, $ops))
-    push!(defs.args, def)
-  end
-  for op in d[:op2]
-    if op == :+
-      continue
-    end
-    ops = QuoteNode(op)
-    def = :($op = generate(mesh, $ops))
-    push!(defs.args, def)
-  end
-  return defs
-end
-
-function gensim(d::NamedDecapode, input_vars)
-  d′ = expand_operators(d)
-  defs = compile_env(d′)
-  rhs = compile(d′, input_vars)
-  quote
-    function simulate(mesh)
-      $defs
-      return $rhs
-    end
-  end
-end
-
-function closest_point(p1, p2, dims)
-    p_res = collect(p2)
-    for i in 1:length(dims)
-        if dims[i] != Inf
-            p = p1[i] - p2[i]
-            f, n = modf(p / dims[i])
-            p_res[i] += dims[i] * n
-            if abs(f) > 0.5
-                p_res[i] += sign(f) * dims[i]
-            end
-        end
-    end
-    Point3{Float64}(p_res...)
-end
-function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, Inf, Inf])
-  # XXX: Creating this lookup table shouldn't be necessary. Of course, we could
-  # index `tri_center` but that shouldn't be necessary either. Rather, we should
-  # loop over incident triangles instead of the elementary duals, which just
-  # happens to be inconvenient.
-  tri_map = Dict{Int,Int}(triangle_center(s,t) => t for t in triangles(s))
-
-  map(edges(s)) do e
-    p = closest_point(point(s, tgt(s,e)), point(s, src(s,e)), dims)
-    e_vec = (point(s, tgt(s,e)) - p) * sign(1,s,e)
-    dual_edges = elementary_duals(1,s,e)
-    dual_lengths = dual_volume(1, s, dual_edges)
-    mapreduce(+, dual_edges, dual_lengths) do dual_e, dual_length
-      X_vec = X[tri_map[s[dual_e, :D_∂v0]]]
-      dual_length * dot(X_vec, e_vec)
-    end / sum(dual_lengths)
-  end
-end
-
-using CairoMakie
-periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, read("./docs/assets/meshes/periodic_mesh.json", String));
-using Distributions
-
-function run_sim_given_mesh_and_decapode(my_mesh, my_named_decapode)
-  return mysim = gensim(expand_operators(my_named_decapode), [:C, :V])
-  #eval(mysim)
-end
-
-function generate(sd, my_symbol)
-  op = @match my_symbol begin
-    :k => x->x/20
-    :⋆₀ => x->⋆(0,sd)*x
-    :⋆₁ => x->⋆(1, sd)*x
-    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=DiagonalHodge())
-    :⋆₁⁻¹ => x->inv_hodge_star(1,sd)*x
-    :d₀ => x->d(0,sd)*x
-    :dual_d₀ => x->dual_derivative(0,sd)*x
-    :dual_d₁ => x->dual_derivative(1,sd)*x
-    :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
-    :plus => (+)
-  end
-  return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
-end
-sim = eval(run_sim_given_mesh_and_decapode(periodic_mesh, advdiffdp))
-c_dist = MvNormal([7, 5], [1.5, 1.5])
-c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
-velocity(p) = [-0.5, -0.5, 0.0]
-v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
-#sim(periodic_mesh)((c,v))
-
-#prob = ODEProblem(eval(mysim), periodic_mesh, (0.0, 100.0))
-#
-
-
-DiffusionExprBody =  quote
-    C::Form0{X}
-    Ċ::Form0{X}
-    ϕ::Form1{X}
-
-    # Fick's first law
-    ϕ ==  ∘(d₀, k)(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
-end
-
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = NamedDecapode(diffExpr)
-f = eval(gensim(expand_operators(ddp), [:C]))
-f(periodic_mesh)((c,))
