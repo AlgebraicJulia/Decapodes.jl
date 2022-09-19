@@ -1,24 +1,8 @@
 using MultiScaleArrays
 using OrdinaryDiffEq
 
-struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
-    values::Vector{B}
-end
-
-struct PhysicsState{T<:AbstractMultiScaleArray,B<:Number} <: AbstractMultiScaleArray{B}
-    nodes::Vector{T}
-    values::Vector{B}
-    end_idxs::Vector{Int}
-    names::Vector{Symbol}
-end
-
 C = VectorForm(ones(Float64, 10))
 V = VectorForm(ones(Float64, 100))
-
-findname(u::PhysicsState, s::Symbol) = findfirst(isequal(s), u.names)
-findnode(u::PhysicsState, s::Symbol) = u.nodes[findname(u, s)]
-
-
 
 u₀ = construct(PhysicsState, [C,V], Float64[], [:C, :V])
 @test length(findnode(u₀, :C)) == 10
@@ -30,7 +14,6 @@ dynamics(du, u, p, t) = begin
 end
 prob = ODEProblem(dynamics,u₀,(0,1))
 soln = solve(prob, Tsit5())
-
 
 function generate(sd, my_symbol)
   op = @match my_symbol begin
@@ -49,38 +32,6 @@ function generate(sd, my_symbol)
   return (args...) ->  op(args...)
 end
 
-function closest_point(p1, p2, dims)
-    p_res = collect(p2)
-    for i in 1:length(dims)
-        if dims[i] != Inf
-            p = p1[i] - p2[i]
-            f, n = modf(p / dims[i])
-            p_res[i] += dims[i] * n
-            if abs(f) > 0.5
-                p_res[i] += sign(f) * dims[i]
-            end
-        end
-    end
-    Point3{Float64}(p_res...)
-end
-function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, Inf, Inf])
-  # XXX: Creating this lookup table shouldn't be necessary. Of course, we could
-  # index `tri_center` but that shouldn't be necessary either. Rather, we should
-  # loop over incident triangles instead of the elementary duals, which just
-  # happens to be inconvenient.
-  tri_map = Dict{Int,Int}(triangle_center(s,t) => t for t in triangles(s))
-
-  map(edges(s)) do e
-    p = closest_point(point(s, tgt(s,e)), point(s, src(s,e)), dims)
-    e_vec = (point(s, tgt(s,e)) - p) * sign(1,s,e)
-    dual_edges = elementary_duals(1,s,e)
-    dual_lengths = dual_volume(1, s, dual_edges)
-    mapreduce(+, dual_edges, dual_lengths) do dual_e, dual_length
-      X_vec = X[tri_map[s[dual_e, :D_∂v0]]]
-      dual_length * dot(X_vec, e_vec)
-    end / sum(dual_lengths)
-  end
-end
 
 using JSON
 using Distributions
