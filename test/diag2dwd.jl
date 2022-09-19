@@ -139,17 +139,21 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int})
     Eq(t1, t2) => begin
       lhs_ref = reduce_term!(t1,d,syms)
       rhs_ref = reduce_term!(t2,d,syms)
+      deletions = []
       # Make rhs_ref equal to lhs_ref and adjust all its incidents
       # Case rhs_ref is a Op1
       for rhs in incident(d, rhs_ref, :tgt)
         d[rhs, :tgt] = lhs_ref
+        push!(deletions, rhs_ref)
       end
       # Case rhs_ref is a Op2
       for rhs in incident(d, rhs_ref, :res)
         d[rhs, :res] = lhs_ref
+        push!(deletions, rhs_ref)
       end
       # TODO: delete unused vars. The only thing stopping me from doing 
       # this is I don't know if CSet deletion preserves incident relations
+      rem_parts!(d, :Var, sort(deletions))
     end
   end
   return d
@@ -179,7 +183,7 @@ function NamedDecapode(e::DecaExpr)
     d = NamedDecapode{Any, Any, Symbol}()
     symbol_table = Dict{Symbol, Int}()
     for judgement in e.judgements
-      var_id = add_part!(d, :Var, type=(judgement._2, judgement._3))
+      var_id = add_part!(d, :Var, name=judgement._1._1, type=judgement._2)
       symbol_table[judgement._1._1] = var_id
     end
     for eq in e.equations
@@ -436,6 +440,36 @@ using Test
     # @test term(:(∂ₜ{Form0}(C))) == App1(:Tan, Var(:C))
 end
 
+@testset "Recursive Expr" begin
+  Recursion = quote
+    x::Form0{X}
+    y::Form0{X}
+    z::Form0{X}
+
+    ∂ₜ(k(z)) == f1(x) + ∘(g, h)(y)
+    y == F(f2(x), ρ(x,z))
+  end
+
+  recExpr = parse_decapode(Recursion)
+  rdp = NamedDecapode(recExpr)
+  show(rdp)
+
+  @test nparts(rdp, :Var) == 9
+  @test nparts(rdp, :TVar) == 1
+  @test nparts(rdp, :Op1) == 5
+  @test nparts(rdp, :Op2) == 3
+end
+Recursion = quote
+  x::Form0{X}
+  y::Form0{X}
+  z::Form0{X}
+
+  ∂ₜ(k(z)) == f1(x) + ∘(g, h)(y)
+  y == F(f2(x), ρ(x,z))
+end
+
+recExpr = parse_decapode(Recursion)
+rdp = NamedDecapode(recExpr)
 
 @testset "Diffusion Diagram" begin
     DiffusionExprBody =  quote
@@ -453,11 +487,12 @@ end
     diffExpr = parse_decapode(DiffusionExprBody)
     ddp = NamedDecapode(diffExpr)
 
-    #@test nparts(ddp, :Var) == 4 # Removed this test until we handle var deletion
+    @test nparts(ddp, :Var) == 3
     @test nparts(ddp, :TVar) == 1
     @test nparts(ddp, :Op1) == 3
     @test nparts(ddp, :Op2) == 0
 end
+
 
 @testset "Advection Diagram" begin
     Advection = quote
@@ -470,7 +505,7 @@ end
 
     advdecexpr = parse_decapode(Advection)
     advdp = NamedDecapode(advdecexpr)
-    #@test nparts(advdp, :Var) == 3
+    @test nparts(advdp, :Var) == 3
     @test nparts(advdp, :TVar) == 0
     @test nparts(advdp, :Op1) == 0
     @test nparts(advdp, :Op2) == 1
@@ -491,7 +526,7 @@ end
 
     superexp = parse_decapode(Superposition)
     supdp = NamedDecapode(superexp)
-    #@test nparts(supdp, :Var) == 6
+    @test nparts(supdp, :Var) == 5
     @test nparts(supdp, :TVar) == 1
     @test nparts(supdp, :Op1) == 2
     @test nparts(supdp, :Op2) == 1
@@ -519,7 +554,7 @@ end
 
     advdiff = parse_decapode(AdvDiff)
     advdiffdp = NamedDecapode(advdiff)
-    #@test nparts(advdiffdp, :Var) == 7
+    @test nparts(advdiffdp, :Var) == 6
     @test nparts(advdiffdp, :TVar) == 1
     @test nparts(advdiffdp, :Op1) == 4
     @test nparts(advdiffdp, :Op2) == 2
