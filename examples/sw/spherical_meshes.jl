@@ -1,6 +1,6 @@
 using Catlab, Catlab.CategoricalAlgebra
 using CombinatorialSpaces, CombinatorialSpaces.SimplicialSets
-using Makie: Point3
+using GeometryBasics: Point3
 
 # TODO: Is there an easier way to ensure compatability with Makie plotting than
 # adding this dependency now just to use their Point type?
