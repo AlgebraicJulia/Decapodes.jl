@@ -1,6 +1,10 @@
 using MultiScaleArrays
 using OrdinaryDiffEq
 using GeometryBasics
+using JSON
+using Distributions
+# using GLMakie
+
 C = VectorForm(ones(Float64, 10))
 V = VectorForm(ones(Float64, 100))
 
@@ -33,20 +37,18 @@ function generate(sd, my_symbol)
 end
 
 
-using JSON
-using Distributions
-using GLMakie
 
-function plotform0(plot_mesh, c)
-  fig, ax, ob = mesh(plot_mesh; color=c[point_map]);
-  Colorbar(fig)
-  ax.aspect = AxisAspect(3.0)
-  fig
-end
 
 plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, read("./docs/assets/meshes/plot_mesh.json", String))
 periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, read("./docs/assets/meshes/periodic_mesh.json", String));
 point_map = JSON.parse(read("./docs/assets/meshes/point_map.json",String))
+
+# function plotform0(plot_mesh, c)
+#   fig, ax, ob = mesh(plot_mesh; color=c[point_map]);
+#   Colorbar(fig)
+#   ax.aspect = AxisAspect(3.0)
+#   fig
+# end
 
 DiffusionExprBody =  quote
     C::Form0{X}
@@ -123,6 +125,7 @@ tₑ = 24
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
+@test norm(findnode(soln.u[end], :C) - findnode(soln.u[1], :C)) >= 1e-4
 @test norm(findnode(soln.u[end], :V) - findnode(soln.u[1], :V)) <= 1e-8
 
 # Plot the result
