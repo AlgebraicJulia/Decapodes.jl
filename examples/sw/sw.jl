@@ -1,165 +1,191 @@
-using Catlab, Catlab.CategoricalAlgebra
-using CombinatorialSpaces, CombinatorialSpaces.SimplicialSets
-using Makie: Point3
+using MultiScaleArrays
+using OrdinaryDiffEq
 
-# TODO: Is there an easier way to ensure compatability with Makie plotting than
-# adding this dependency now just to use their Point type?
-Point3D = Point3{Float64}
+struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
+    values::Vector{B}
+end
 
-"""
-    makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius)
+struct PhysicsState{T<:AbstractMultiScaleArray,B<:Number} <: AbstractMultiScaleArray{B}
+    nodes::Vector{T}
+    values::Vector{B}
+    end_idxs::Vector{Int}
+    names::Vector{Symbol}
+end
 
-Construct a spherical mesh (inclusively) bounded by the given latitudes and
-longitudes, discretized at dLat and dLong intervals, at the given radius from
-Earth's center.
+C = VectorForm(ones(Float64, 10))
+V = VectorForm(ones(Float64, 100))
 
-We say that:
-- 90°N is 0
-- 90°S is 180
-- Prime Meridian is 0
-- 10°W is 355
+findname(u::PhysicsState, s::Symbol) = findfirst(isequal(s), u.names)
+findnode(u::PhysicsState, s::Symbol) = u.nodes[findname(u, s)]
 
-We say that:
-- (x=0,y=0,z=0) is at the center of the sphere
-- the x-axis points toward 0°,0°
-- the y-axis points toward 90°E,0°
-- the z-axis points toward the North Pole
 
-# References:
-[List of common coordinate transformations](https://en.wikipedia.org/wiki/List_of_common_coordinate_transformations?oldformat=true#From_spherical_coordinates)
 
-# Examples
-```julia-repl
-# Regular octahedron.
-julia> s, npi, spi = makeSphere(0, 180, 90, 0, 360, 90, 1)
-````
-```julia-repl
-# 72 points along the unit circle on the x-y plane.
-julia> s, npi, spi = makeSphere(90, 90, 0, 0, 360, 5, 1)
-````
-```julia-repl
-# 72 points along the equator at 0km from Earth's surface.
-julia> s, npi, spi = makeSphere(90, 90, 1, 0, 360, 5, 6371)
-````
-```julia-repl
-# TIE-GCM grid at 90km altitude (with no poles,   i.e. a bulbous cylinder).
-julia> s, npi, spi = makeSphere(5, 175, 5, 0, 360, 5, 6371+90)
-````
-```julia-repl
-# TIE-GCM grid at 90km altitude (with South pole, i.e. a bowl).
-julia> s, npi, spi = makeSphere(5, 180, 5, 0, 360, 5, 6371+90)
-````
-```julia-repl
-# TIE-GCM grid at 90km altitude (with poles,      i.e. a sphere).
-julia> s, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, 6371+90)
-````
-```julia-repl
-# The Northern hemisphere of the TIE-GCM grid at 90km altitude.
-julia> s, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, 6371+90)
-````
-"""
-function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius)
-  if (   !(0 ≤ minLat ≤ 180)  || !(0 ≤ maxLat ≤ 180)
-      || !(0 ≤ minLong ≤ 360) || !(0 ≤ minLong ≤ 360)
-      ||  (maxLat < minLat)   ||  (maxLong < minLong))
-    throw(ArgumentError("Mins must be less than Maxs, lats must be in [0,180],"*
-                        " and longs must be in [0,360]."))
+u₀ = construct(PhysicsState, [C,V], Float64[], [:C, :V])
+@test length(findnode(u₀, :C)) == 10
+@test length(findnode(u₀, :V)) == 100
+
+dynamics(du, u, p, t) = begin
+    findnode(du, :C).values .= 0.1 * findnode(u, :C).values
+    return du
+end
+prob = ODEProblem(dynamics,u₀,(0,1))
+soln = solve(prob, Tsit5())
+
+
+function generate(sd, my_symbol)
+  op = @match my_symbol begin
+    :k => x->x/20
+    :⋆₀ => x->⋆(0,sd,hodge=DiagonalHodge())*x
+    :⋆₁ => x->⋆(1, sd, hodge=DiagonalHodge())*x
+    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=DiagonalHodge())
+    :⋆₁⁻¹ => x->inv_hodge_star(1,sd,hodge=DiagonalHodge())*x
+    :d₀ => x->d(0,sd)*x
+    :dual_d₀ => x->dual_derivative(0,sd)*x
+    :dual_d₁ => x->dual_derivative(1,sd)*x
+    :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
+    :plus => (+)
   end
-  sph2car(ρ,ϕ,θ) = (ρ*sind(θ)*cosd(ϕ),
-                    ρ*sind(θ)*sind(ϕ),
-                    ρ*cosd(θ))
-  if (minLat == maxLat && dLat == 0)
-    dLat = 1 # User wants a just one parallel. a:0:a is not valid julia.
+  # return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
+  return (args...) ->  op(args...)
+end
+
+function closest_point(p1, p2, dims)
+    p_res = collect(p2)
+    for i in 1:length(dims)
+        if dims[i] != Inf
+            p = p1[i] - p2[i]
+            f, n = modf(p / dims[i])
+            p_res[i] += dims[i] * n
+            if abs(f) > 0.5
+                p_res[i] += sign(f) * dims[i]
+            end
+        end
+    end
+    Point3{Float64}(p_res...)
+end
+function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, Inf, Inf])
+  # XXX: Creating this lookup table shouldn't be necessary. Of course, we could
+  # index `tri_center` but that shouldn't be necessary either. Rather, we should
+  # loop over incident triangles instead of the elementary duals, which just
+  # happens to be inconvenient.
+  tri_map = Dict{Int,Int}(triangle_center(s,t) => t for t in triangles(s))
+
+  map(edges(s)) do e
+    p = closest_point(point(s, tgt(s,e)), point(s, src(s,e)), dims)
+    e_vec = (point(s, tgt(s,e)) - p) * sign(1,s,e)
+    dual_edges = elementary_duals(1,s,e)
+    dual_lengths = dual_volume(1, s, dual_edges)
+    mapreduce(+, dual_edges, dual_lengths) do dual_e, dual_length
+      X_vec = X[tri_map[s[dual_e, :D_∂v0]]]
+      dual_length * dot(X_vec, e_vec)
+    end / sum(dual_lengths)
   end
-  s = EmbeddedDeltaSet2D{Bool, Point3D}()
-  # Neither pole counts as a Meridian.
-  connect_north_pole = false
-  connect_south_pole = false
-  if (minLat == 0)
-    # Don't create num_meridians points at the North pole.
-    minLat += dLat
-    connect_north_pole = true
-  end
-  if (maxLat == 180)
-    # Don't create num_meridians points at the South pole.
-    maxLat -= dLat
-    connect_south_pole = true
-  end
-  connect_long = false
-  if (maxLong == 360)
-    maxLong -= dLong
-    connect_long = true
-  end
-  # TODO: Should we warn the user if the stitching edges are shorter than the
-  # rest?
-  num_parallels = length(minLat:dLat:maxLat)
-  num_meridians = length(minLong:dLong:maxLong)
-  ρ = radius
-  # Add points one parallel at a time.
-  for θ in minLat:dLat:maxLat
-    vertex_offset = nv(s)+1
-    add_vertices!(s, num_meridians,
-                  point=map(minLong:dLong:maxLong) do ϕ
-                    Point3D(sph2car(ρ,ϕ,θ)...)
-                  end)
-    # Connect this parallel.
-    if (connect_long)
-      add_sorted_edge!(s, vertex_offset+num_meridians-1, vertex_offset)
-    end
-    # Don't make triangles with the previous parallel if there isn't one.
-    if (vertex_offset == 1)
-      add_sorted_edges!(s,
-                        vertex_offset:vertex_offset+num_meridians-2,
-                        vertex_offset+1:vertex_offset+num_meridians-1)
-      continue
-    end
-    # Add the triangles.
-    foreach(vertex_offset  :vertex_offset+num_meridians-2,
-            vertex_offset+1:vertex_offset+num_meridians-1,
-            vertex_offset-num_meridians:vertex_offset-2) do i,j,k
-      glue_sorted_triangle!(s, i, j, k)
-    end
-    foreach(vertex_offset+1:vertex_offset+num_meridians-1,
-            vertex_offset-num_meridians:vertex_offset-2,
-            vertex_offset-num_meridians+1:vertex_offset-1) do i,j,k
-      glue_sorted_triangle!(s, i, j, k)
-    end
-    # Connect with the previous parallel.
-    if (connect_long)
-      glue_sorted_triangle!(s, vertex_offset+num_meridians-1,
-                            vertex_offset, vertex_offset-1)
-      glue_sorted_triangle!(s, vertex_offset-num_meridians,
-                            vertex_offset, vertex_offset-1)
-    end
-  end
-  # Add the North and South poles.
-  north_pole_idx = 0
-  if (connect_north_pole)
-    ϕ, θ = 0, 0
-    add_vertex!(s, point=Point3D(sph2car(ρ,ϕ,θ)...))
-    north_pole_idx = nv(s)
-    foreach(1:num_meridians-1, 2:num_meridians) do i,j
-      glue_sorted_triangle!(s, north_pole_idx, i, j)
-    end
-    if (connect_long)
-      glue_sorted_triangle!(s, north_pole_idx, 1, num_meridians)
-    end
-  end
-  south_pole_idx = 0
-  if (connect_south_pole)
-    south_parallel_start = num_meridians*(num_parallels-1)+1
-    ϕ, θ = 0, 180
-    add_vertex!(s, point=Point3D(sph2car(ρ,ϕ,θ)...))
-    south_pole_idx = nv(s)
-    foreach(south_parallel_start:south_parallel_start+num_meridians-2,
-            south_parallel_start+1:south_parallel_start+num_meridians-1) do i,j
-      glue_sorted_triangle!(s, south_pole_idx, i, j)
-    end
-    if (connect_long)
-      glue_sorted_triangle!(s, south_pole_idx, south_parallel_start,
-                            south_parallel_start+num_meridians-1)
-    end
-  end
-  return s, north_pole_idx, south_pole_idx
+end
+
+using JSON
+using Distributions
+using GLMakie
+
+function plotform0(plot_mesh, c)
+  fig, ax, ob = mesh(plot_mesh; color=c[point_map]);
+  Colorbar(fig)
+  ax.aspect = AxisAspect(3.0)
+  fig
+end
+
+plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, read("./docs/assets/meshes/plot_mesh.json", String))
+periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, read("./docs/assets/meshes/periodic_mesh.json", String));
+point_map = JSON.parse(read("./docs/assets/meshes/point_map.json",String))
+
+DiffusionExprBody =  quote
+    C::Form0{X}
+    Ċ::Form0{X}
+    ϕ::Form1{X}
+
+    # Fick's first law
+    ϕ ==  ∘(d₀, k)(C)
+    # Diffusion equation
+    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
+    ∂ₜ(C) == Ċ
+end
+
+diffExpr = parse_decapode(DiffusionExprBody)
+ddp = NamedDecapode(diffExpr)
+gensim(expand_operators(ddp), [:C])
+f = eval(gensim(expand_operators(ddp), [:C]))
+fₘ = f(periodic_mesh)
+c_dist = MvNormal([5, 5], [1.5, 1.5])
+c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
+
+u₀ = construct(PhysicsState, [VectorForm(c)],Float64[], [:C])
+tₑ = 10
+prob = ODEProblem(fₘ,u₀,(0,tₑ))
+soln = solve(prob, Tsit5())
+
+soln(0.9)
+plotform0(plot_mesh, findnode((soln(1)-u₀), :C))
+plotform0(plot_mesh, findnode((soln(0.0000000000001)-u₀), :C))
+
+times = range(0.0, tₑ, length=150)
+colors = [findnode(soln(t), :C)[point_map] for t in times]
+
+# Initial frame
+fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
+ax.aspect = AxisAspect(3.0)
+Colorbar(fig[1,2], ob)
+framerate = 30
+
+# Animation
+record(fig, "diff.gif", range(0.0, tₑ; length=150); framerate = 30) do t
+    ob.color = findnode(soln(t), :C)[point_map]
+end
+
+AdvDiff = quote
+    C::Form0{X}
+    Ċ::Form0{X}
+    V::Form1{X}
+    ϕ::Form1{X}
+    ϕ₁::Form1{X}
+    ϕ₂::Form1{X}
+
+    # Fick's first law
+    ϕ₁ ==  (d₀∘k)(C)
+    ϕ₂ == ∧₀₁(C,V)
+    ϕ == ϕ₁ + ϕ₂
+    # Diffusion equation
+    Ċ == ∘(⋆₁, dual_d₁,⋆₀⁻¹)(ϕ)
+    ∂ₜ(C) == Ċ
+end
+
+advdiff = parse_decapode(AdvDiff)
+advdiffdp = NamedDecapode(advdiff)
+gensim(expand_operators(advdiffdp), [:C, :V])
+sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
+fₘ = sim(periodic_mesh)
+velocity(p) = [-0.5, -0.5, 0.0]
+v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
+c_dist = MvNormal([7, 5], [1.5, 1.5])
+c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
+
+u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(v)],Float64[], [:C, :V])
+tₑ = 24
+prob = ODEProblem(fₘ,u₀,(0,tₑ))
+soln = solve(prob, Tsit5())
+
+@test norm(findnode(soln.u[end], :V) - findnode(soln.u[1], :V)) <= 1e-8
+
+# Plot the result
+times = range(0.0, tₑ, length=150)
+colors = [findnode(soln(t), :C)[point_map] for t in times]
+
+# Initial frame
+fig, ax, ob = mesh(plot_mesh, color=colors[end], colorrange = extrema(vcat(colors...)))
+ax.aspect = AxisAspect(3.0)
+Colorbar(fig[1,2], ob)
+framerate = 30
+
+# Animation
+record(fig, "diff_adv.gif", range(0.0, tₑ; length=150); framerate = 30) do t
+    ob.color = findnode(soln(t), :C)[point_map]
 end
 
