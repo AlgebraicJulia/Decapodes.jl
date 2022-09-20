@@ -2,6 +2,7 @@ module Decapodes
 
 using Requires
 
+include("Decapodes2/decapodes.jl")
 include("Diagrams.jl")
 include("OpenDiagrams.jl")
 include("Schedules.jl")
