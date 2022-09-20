@@ -15,14 +15,15 @@ using Base.Iterators
 
 using Decapodes
 import Decapodes: DecaExpr
-@present DiffusionSpace2D(FreeExtCalc2D) begin
-  X::Space
-  k::Hom(Form1(X), Form1(X)) # diffusivity of space, usually constant (scalar multiplication)
-  proj₁_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-  proj₂_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-  sum₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-  prod₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-end
+
+# @present DiffusionSpace2D(FreeExtCalc2D) begin
+#   X::Space
+#   k::Hom(Form1(X), Form1(X)) # diffusivity of space, usually constant (scalar multiplication)
+#   proj₁_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
+#   proj₂_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
+#   sum₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
+#   prod₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
+# end
 
 
 # Diffusion = @decapode DiffusionSpace2D begin
