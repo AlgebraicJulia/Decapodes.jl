@@ -60,6 +60,8 @@ test_d = DecaExpr(js, eqs)
 test_cset = Decapode(test_d)
 test_cset_named = NamedDecapode(test_d)
 
+# TODO: Write tests for recursive expressions
+
 all(isassigned(test_cset_named[:name], i) for i in parts(test_cset_named,:Var))
 
 sup_js = js = [Judge(Var(:C), :Form0, :X), 
@@ -94,6 +96,36 @@ term(:(∧₀₁(C,V)))
     # @test term(:(∂ₜ{Form0}(C))) == App1(:Tan, Var(:C))
 end
 
+@testset "Recursive Expr" begin
+  Recursion = quote
+    x::Form0{X}
+    y::Form0{X}
+    z::Form0{X}
+
+    ∂ₜ(k(z)) == f1(x) + ∘(g, h)(y)
+    y == F(f2(x), ρ(x,z))
+  end
+
+  recExpr = parse_decapode(Recursion)
+  rdp = NamedDecapode(recExpr)
+  show(rdp)
+
+  @test nparts(rdp, :Var) == 9
+  @test nparts(rdp, :TVar) == 1
+  @test nparts(rdp, :Op1) == 5
+  @test nparts(rdp, :Op2) == 3
+end
+Recursion = quote
+  x::Form0{X}
+  y::Form0{X}
+  z::Form0{X}
+
+  ∂ₜ(k(z)) == f1(x) + ∘(g, h)(y)
+  y == F(f2(x), ρ(x,z))
+end
+
+recExpr = parse_decapode(Recursion)
+rdp = NamedDecapode(recExpr)
 
 @testset "Diffusion Diagram" begin
     DiffusionExprBody =  quote
@@ -112,11 +144,12 @@ end
     ddp = NamedDecapode(diffExpr)
     to_graphviz(ddp)
 
-    @test nparts(ddp, :Var) == 4
+    @test nparts(ddp, :Var) == 3
     @test nparts(ddp, :TVar) == 1
     @test nparts(ddp, :Op1) == 3
     @test nparts(ddp, :Op2) == 0
 end
+
 
 @testset "Advection Diagram" begin
     Advection = quote
@@ -150,7 +183,7 @@ end
 
     superexp = parse_decapode(Superposition)
     supdp = NamedDecapode(superexp)
-    @test nparts(supdp, :Var) == 6
+    @test nparts(supdp, :Var) == 5
     @test nparts(supdp, :TVar) == 1
     @test nparts(supdp, :Op1) == 2
     @test nparts(supdp, :Op2) == 1
@@ -178,7 +211,7 @@ end
 
     advdiff = parse_decapode(AdvDiff)
     advdiffdp = NamedDecapode(advdiff)
-    @test nparts(advdiffdp, :Var) == 7
+    @test nparts(advdiffdp, :Var) == 6
     @test nparts(advdiffdp, :TVar) == 1
     @test nparts(advdiffdp, :Op1) == 4
     @test nparts(advdiffdp, :Op2) == 2

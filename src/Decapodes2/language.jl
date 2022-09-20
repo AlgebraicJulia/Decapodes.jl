@@ -1,23 +1,28 @@
 # Definition of the Decapodes DSL AST
 # TODO: do functions and tans need to be parameterized by a space?
-# TODO: make recursive
+# TODO: Add support for higher order functions.
+#   - This is straightforward from a language perspective but unclear the best
+#   - way to represent this in a Decapode ACSet.
 @data Term begin
   Var(Symbol)
   Judge(Var, Symbol, Symbol) # Symbol 1: Form0 Symbol 2: X
+  AppCirc1(Vector{Symbol}, Term)
+  AppCirc2(Vector{Symbol}, Term, Term)
+  App1(Symbol, Term)
+  App2(Symbol, Term, Term)
+  Plus(Term, Term)
+  Tan(Term)
+end
+
+@data Equation begin
   Eq(Term, Term)
-  AppCirc1(Vector{Symbol}, Var)
-  AppCirc2(Vector{Symbol}, Var, Var)
-  App1(Symbol, Var)
-  App2(Symbol, Var, Var)
-  Plus(Var, Var)
-  Tan(Var)
 end
 
 # A struct to store a complete Decapode
 # TODO: Have the decopode macro compile to a DecaExpr
 struct DecaExpr
   judgements::Vector{Judge}
-  equations::Vector{Eq}
+  equations::Vector{Equation}
 end
 
 term(s::Symbol) = Var(normalize_unicode(s))
@@ -56,60 +61,71 @@ function parse_decapode(expr::Expr)
     DecaExpr(judges, eqns)
 end
 
-
 # to_decapode helper functions
-reduce_lhs!(eq::Eq, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
-  let ! = reduce_lhs! # This will be needed once we upgrade to a recursive grammar
-    @match eq._1 begin
+reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
+  let ! = reduce_term!
+    @match t begin
       Var(x) => syms[x]
-      App1(f, x) => begin
+      App1(f, t) => begin
         res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op1, src=syms[x._1], tgt=res_var, op1=f)
+        add_part!(d, :Op1, src=!(t,d,syms), tgt=res_var, op1=f)
         return res_var
       end
-      App2(f, x, y) => begin
+      App2(f, t1, t2) => begin
         res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op2, proj1=syms[x._1], proj2=syms[y._1], res=res_var, op2=f)
+        add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=f)
         return res_var
       end
-      AppCirc1(fs, x) => begin
+      AppCirc1(fs, t) => begin
         res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op1, src=syms[x._1], tgt=res_var, op1=fs)
+        add_part!(d, :Op1, src=!(t,d,syms), tgt=res_var, op1=fs)
         return res_var
       end
-      AppCirc2(fs, x, y) => begin
+      AppCirc2(f, t1, t2) => begin
         res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op2, proj1=syms[x._1], proj2=syms[y._1], res=res_var, op2=fs)
+        add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=fs)
         return res_var
       end
-      Tan(x) => begin
+      Plus(t1, t2) => begin # TODO: plus is an Op2 so just fold it into App2
+        res_var = add_part!(d, :Var, type=:infer)
+        add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=:plus)
+        return res_var
+      end
+      Tan(t) => begin 
         # TODO: this is creating a spurious variablbe with the same name
         txv = add_part!(d, :Var, type=:infer)
         tx = add_part!(d, :TVar, incl=txv)
-        tanop = add_part!(d, :Op1, src=syms[x._1], tgt=txv, op1=DerivOp)
+        tanop = add_part!(d, :Op1, src=!(t,d,syms), tgt=txv, op1=DerivOp)
         return txv #syms[x._1]
       end
-      Plus(x, y) => begin # TODO: plus is an Op2 so just fold it into App2
-        res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op2, proj1=syms[x._1], proj2=syms[y._1], res=res_var, op2=:plus)
-        return res_var
+      _ => throw("Inline type judgements not yet supported!")
+    end
+  end
+
+function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}) 
+  @match eq begin
+    Eq(t1, t2) => begin
+      lhs_ref = reduce_term!(t1,d,syms)
+      rhs_ref = reduce_term!(t2,d,syms)
+      deletions = []
+      # Make rhs_ref equal to lhs_ref and adjust all its incidents
+      # Case rhs_ref is a Op1
+      for rhs in incident(d, rhs_ref, :tgt)
+        d[rhs, :tgt] = lhs_ref
+        push!(deletions, rhs_ref)
       end
-      _ => -1 # TODO: make this throw an error or something
+      # Case rhs_ref is a Op2
+      for rhs in incident(d, rhs_ref, :res)
+        d[rhs, :res] = lhs_ref
+        push!(deletions, rhs_ref)
+      end
+      # TODO: delete unused vars. The only thing stopping me from doing 
+      # this is I don't know if CSet deletion preserves incident relations
+      rem_parts!(d, :Var, sort(deletions))
     end
   end
-# TODO: lots of code duplication between reduce_lhs! and reduce_rhs!
-# The duplicate code should be abstracted into another helper function
-reduce_rhs!(eq::Eq, d::AbstractDecapode, syms::Dict{Symbol, Int}, lhs_ref::Int) =
-  let ! = reduce_rhs! # Again only necessary once we upgrade language
-    @match eq._2 begin
-      App1(f, x) => add_part!(d, :Op1, src=syms[x._1], tgt=lhs_ref, op1=f)
-      App2(f, x, y) => add_part!(d, :Op2, proj1=syms[x._1], proj2=syms[y._1], res=lhs_ref, op2=f)
-      AppCirc1(fs, x) => add_part!(d, :Op1, src=syms[x._1], tgt=lhs_ref, op1=fs)
-      AppCirc2(fs, x, y) => add_part!(d, :Op2, proj1=syms[x._1], proj2=syms[y._1], res=lhs_ref, op2=fs)
-      Plus(x, y) => add_part!(d, :Op2, proj1=syms[x._1], proj2=syms[y._1], res=lhs_ref, op2=:plus)
-      _ => -1 # TODO: Throw an error or handle case where RHS is a raw variable or tangent
-    end
-  end
+  return d
+end
 
 """ Takes a DecaExpr (i.e. what should be constructed using the @decapode macro)
 and gives a Decapode ACSet which represents equalities as two operations with the
@@ -126,8 +142,7 @@ function Decapode(e::DecaExpr)
     symbol_table[judgement._1._1] = var_id
   end
   for eq in e.equations
-    v = reduce_lhs!(eq, d, symbol_table)
-    reduce_rhs!(eq, d, symbol_table, v)
+    eval_eq!(eq, d, symbol_table)
   end
   return d
 end
@@ -140,8 +155,7 @@ function NamedDecapode(e::DecaExpr)
       symbol_table[judgement._1._1] = var_id
     end
     for eq in e.equations
-      v = reduce_lhs!(eq, d, symbol_table)
-      reduce_rhs!(eq, d, symbol_table, v)
+      eval_eq!(eq, d, symbol_table)
     end
     fill_names!(d)
     d[:name] = map(normalize_unicode,d[:name])
