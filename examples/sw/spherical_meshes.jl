@@ -163,3 +163,22 @@ function makeSphere(minLat, maxLat, dLat, minLong, maxLong, dLong, radius)
   return s, north_pole_idx, south_pole_idx
 end
 
+## Tests
+#using Test
+#ρ = 6371+90
+#s, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, ρ)
+#magnitude = (sqrt ∘ (x -> foldl(+, x*x)))
+#
+## The definition of a discretization of a sphere of unspecified radius.
+#ρ′ = magnitude(s[:point][begin])
+#@test all(isapprox.(magnitude.(s[:point]), ρ′))
+#
+## The definition of a discretization of a sphere of radius ρ.
+#@test all(isapprox.(magnitude.(s[:point]), ρ))
+#
+## Some properties of a regular octahedron.
+#◀▶, npi, spi = makeSphere(0, 180, 90, 0, 360, 90, 1)
+#@test nv(◀▶) == 6
+#@test ne(◀▶) == 12
+#@test length(triangles(◀▶)) == 8
+
