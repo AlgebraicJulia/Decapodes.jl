@@ -1,6 +1,6 @@
 using MultiScaleArrays
 using OrdinaryDiffEq
-using GLMakie
+using GeometryBasics
 
 struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
     values::Vector{B}

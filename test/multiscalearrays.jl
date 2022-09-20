@@ -1,6 +1,6 @@
 using MultiScaleArrays
 using OrdinaryDiffEq
-
+using GeometryBasics
 C = VectorForm(ones(Float64, 10))
 V = VectorForm(ones(Float64, 100))
 
@@ -74,22 +74,22 @@ prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
 soln(0.9)
-plotform0(plot_mesh, findnode((soln(1)-u₀), :C))
-plotform0(plot_mesh, findnode((soln(0.0000000000001)-u₀), :C))
+# plotform0(plot_mesh, findnode((soln(1)-u₀), :C))
+# plotform0(plot_mesh, findnode((soln(0.0000000000001)-u₀), :C))
 
-times = range(0.0, tₑ, length=150)
-colors = [findnode(soln(t), :C)[point_map] for t in times]
+# times = range(0.0, tₑ, length=150)
+# colors = [findnode(soln(t), :C)[point_map] for t in times]
 
 # Initial frame
-fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
-ax.aspect = AxisAspect(3.0)
-Colorbar(fig[1,2], ob)
-framerate = 30
+# fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
+# ax.aspect = AxisAspect(3.0)
+# Colorbar(fig[1,2], ob)
+# framerate = 30
 
 # Animation
-record(fig, "diff.gif", range(0.0, tₑ; length=150); framerate = 30) do t
-    ob.color = findnode(soln(t), :C)[point_map]
-end
+# record(fig, "diff.gif", range(0.0, tₑ; length=150); framerate = 30) do t
+#     ob.color = findnode(soln(t), :C)[point_map]
+# end
 
 AdvDiff = quote
     C::Form0{X}
@@ -126,16 +126,16 @@ soln = solve(prob, Tsit5())
 @test norm(findnode(soln.u[end], :V) - findnode(soln.u[1], :V)) <= 1e-8
 
 # Plot the result
-times = range(0.0, tₑ, length=150)
-colors = [findnode(soln(t), :C)[point_map] for t in times]
+# times = range(0.0, tₑ, length=150)
+# colors = [findnode(soln(t), :C)[point_map] for t in times]
 
 # Initial frame
-fig, ax, ob = mesh(plot_mesh, color=colors[end], colorrange = extrema(vcat(colors...)))
-ax.aspect = AxisAspect(3.0)
-Colorbar(fig[1,2], ob)
-framerate = 30
+# fig, ax, ob = mesh(plot_mesh, color=colors[end], colorrange = extrema(vcat(colors...)))
+# ax.aspect = AxisAspect(3.0)
+# Colorbar(fig[1,2], ob)
+# framerate = 30
 
 # Animation
-record(fig, "diff_adv.gif", range(0.0, tₑ; length=150); framerate = 30) do t
-    ob.color = findnode(soln(t), :C)[point_map]
-end
+# record(fig, "diff_adv.gif", range(0.0, tₑ; length=150); framerate = 30) do t
+#     ob.color = findnode(soln(t), :C)[point_map]
+# end
