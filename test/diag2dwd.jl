@@ -222,6 +222,76 @@ end
     @test nparts(advdiffdp, :Summand) == 2
 end
 
+@testset "Compose via Structured Cospans" begin
+    DiffusionExprBody =  quote
+        C::Form0{X}
+        Ċ::Form0{X}
+        ϕ::Form1{X}
+    
+        # Fick's first law
+        ϕ ==  ∘(k, d₀)(C)
+        # Diffusion equation
+        Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+        ∂ₜ(C) == Ċ
+    end
+    AdvectionExprBody =  quote
+        C::Form0{X}
+        V::Form1{X}
+        ϕ::Form1{X}
+
+        ϕ == ∧₀₁{X}(C,V)
+    end
+
+
+    diffExpr = parse_decapode(DiffusionExprBody)
+    ddp = NamedDecapode(diffExpr)
+
+    advExpr = parse_decapode(AdvectionExprBody)
+    adp = NamedDecapode(advExpr)
+
+    NamedDecapodeOVOb, NamedDecapodeOV = OpenACSetTypes(NamedDecapode, :Var);
+    # TODO: There will have to be a translating step. i.e. the user gives the
+    # name of a Var, and we map it to the index, which we then pass to
+    # FinFunction.
+    # TODO: Fix the test cospan.
+    ddpov = NamedDecapodeOV{Any, Any, Symbol}(ddp, FinFunction([1,3], 2), FinFunction([1,3], 2))
+    adpov = NamedDecapodeOV{Any, Any, Symbol}(adp, FinFunction([1,3], 2), FinFunction([1,3], 2))
+    advdif = apex(compose(ddpov, adpov))
+
+    @test length(parts(advdif, :Var)) == 4
+    
+    # TODO: Take care of "Op duplication" and "TVar duplication", as in:
+    # f = NDOV{Any, Any, Symbol}(ddp2, FinFunction([1,2,3], 3), FinFunction([1,2,3], 3));
+    #
+    # g = NDOV{Any, Any, Symbol}(ddp, FinFunction([1,2,3], 3), FinFunction([1,2,3], 3));
+    #
+    # h = apex(compose(f,g))
+    #NamedDecapode{Any, Any, Symbol} with elements Var = 1:3, TVar = 1:2, Op1 = 1:6, Op2 = 1:0
+    #┌─────┬───────┬──────┐
+    #│ Var │  type │ name │
+    #├─────┼───────┼──────┤
+    #│   1 │ Form0 │    C │
+    #│   2 │ infer │    Ċ │
+    #│   3 │ Form1 │    ϕ │
+    #└─────┴───────┴──────┘
+    #┌──────┬──────┐
+    #│ TVar │ incl │
+    #├──────┼──────┤
+    #│    1 │    2 │
+    #│    2 │    2 │
+    #└──────┴──────┘
+    #┌─────┬─────┬─────┬────────────────────────┐
+    #│ Op1 │ src │ tgt │                    op1 │
+    #├─────┼─────┼─────┼────────────────────────┤
+    #│   1 │   1 │   3 │              [:d₀, :k] │
+    #│   2 │   3 │   2 │ [:⋆₁, :dual_d₁, :⋆₀⁻¹] │
+    #│   3 │   1 │   2 │                     ∂ₜ │
+    #│   4 │   1 │   3 │              [:d₀, :k] │
+    #│   5 │   3 │   2 │ [:⋆₁, :dual_d₁, :⋆₀⁻¹] │
+    #│   6 │   1 │   2 │                     ∂ₜ │
+    #└─────┴─────┴─────┴────────────────────────┘
+end
+
 
 AdvDiff = quote
     C::Form0{X}
