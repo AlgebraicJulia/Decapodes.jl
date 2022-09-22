@@ -248,71 +248,92 @@ end
     advExpr = parse_decapode(AdvectionExprBody)
     adp = NamedDecapode(advExpr)
 
-    NamedDecapodeOVOb, NamedDecapodeOV = OpenACSetTypes(NamedDecapode, :Var);
+    # We take as input what @relation outputs.
+    # - We do not need the state variables given after @compose_decapodes
+    # - The order in which cospans are composed matters
+    # compose_diff_adv = @relation (C,V) begin
+    #   diffusion(C, ϕ₁)
+    #   advection(C, ϕ₂, V)
+    #   superposition(ϕ₁, ϕ₂, ϕ, C)
+    # end
+    # TODO: The order in which you compose cospans matters. Is that alright?
+    # TODO: Throw an error if a user tries to identify e.g. a Form0 with a Form1.
+    # This function will replace `oapply`, but takes the output of @relation like `oapply`.
+    # TODO: Change this function signature to accept @relation's output.
+    function compose_decapodes(decapodes, mappings)
+        # Step -1: Make copies of the decapodes, and write over the name fields
+        # to be what was specified by @relation.
+	#
+	# Step 1: Convert from name to index in the Var tables. (TODO: Does
+	# @relation handle some of this bookkeeping?)
+	# TODO: Should we create all the FinFunctions at once, or inside the
+	# composition loop?
+	#
+        # Step 2: Start composing.
+        NamedDecapodeOVOb, NamedDecapodeOV = OpenACSetTypes(NamedDecapode, :Var)
+	comped_decapode = nothing
+
+	# TODO: Perhaps split the de-duplication steps into a single function,
+	# or create a function that generalizes de-duplication over all ACSets
+	# and all Objects.
+        # Step 3: De-duplicate Op1s.
+	# TODO: There is a way to automatcially generate the Homs with Op1 as domain by doing
+	# filter(x -> x.args[2].args[1] == :Op1, SchNamedDecapode.generators.Hom) 
+	# , but no automatic way to get Attrs of op1, such as op1.
+        op1_tuples = map(1:nparts(comped_decapode, :Op1)) do i
+           (comped_decapode[:src][i], advdiff[:tgt][i], advdiff[:op1][i])
+        end
+	rem_parts!(comped_decapode, :Op1,
+            setdiff(nparts(comped_decapode, :Op1), unique(i -> op1_tuples[i], 1:length(op1_tuples))))
+
+        # Step 4: De-duplicate Op2s.
+        op2_tuples = map(1:nparts(comped_decapode, :Op2)) do i
+           (comped_decapode[:proj1][i], comped_decapode[:proj2][i],
+	    comped_decapode[:res][i], comped_decapode[:op2][i])
+        end
+	rem_parts!(comped_decapode, :Op2,
+            setdiff(nparts(comped_decapode, :Op2),
+                unique(i -> op2_tuples[i], 1:length(op2_tuples))))
+    end
+
+    OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
     # TODO: There will have to be a translating step. i.e. the user gives the
     # name of a Var, and we map it to the index, which we then pass to
     # FinFunction.
-    # TODO: Fix the test cospan.
-    ddpov = NamedDecapodeOV{Any, Any, Symbol}(ddp, FinFunction([1,3], 3), FinFunction([1,3], 3))
-    adpov = NamedDecapodeOV{Any, Any, Symbol}(adp, FinFunction([1,3], 3), FinFunction([1,3], 3))
-    advdif = apex(compose(ddpov, adpov))
-
-    #┌─────┬───────┬──────┐
-    #│ Var │  type │ name │
-    #├─────┼───────┼──────┤
-    #│   1 │ Form0 │    C │
-    #│   2 │ infer │    Ċ │
-    #│   3 │ Form1 │    ϕ │
-    #│   4 │ Form1 │    V │
-    #└─────┴───────┴──────┘
-    #┌──────┬──────┐
-    #│ TVar │ incl │
-    #├──────┼──────┤
-    #│    1 │    2 │
-    #└──────┴──────┘
-    #┌─────┬─────┬─────┬────────────────────────┐
-    #│ Op1 │ src │ tgt │                    op1 │
-    #├─────┼─────┼─────┼────────────────────────┤
-    #│   1 │   1 │   3 │              [:k, :d₀] │
-    #│   2 │   3 │   2 │ [:⋆₀⁻¹, :dual_d₁, :⋆₁] │
-    #│   3 │   1 │   2 │                     ∂ₜ │
-    #└─────┴─────┴─────┴────────────────────────┘
-    #┌─────┬───────┬───────┬─────┬─────┐
-    #│ Op2 │ proj1 │ proj2 │ res │ op2 │
-    #├─────┼───────┼───────┼─────┼─────┤
-    #│   1 │     1 │     4 │   3 │ ∧₀₁ │
-    #└─────┴───────┴───────┴─────┴─────┘
-    #
-    # TODO: Why is advdif == advdif_expected false, where advdif_expected is defined like:
-    #
-    #advdif_expected = @acset NamedDecapode{Any, Any, Symbol} begin
-    #    Var = 4
-    #    type = [:Form0, :infer, :Form1, :Form1]
-    #    name = [:C, :Ċ, :ϕ, :V]
-    #    
-    #    TVar = 1
-    #    incl = [2]
-    #    
-    #    Op1 = 3
-    #    src = [1,3,1]
-    #    tgt = [3,2,2]
-    #    op1 = [[:k, :d₀], [:⋆₀⁻¹, :dual_d₁, :⋆₁], :∂ₜ]
-    #
-    #    Op2 = 1
-    #    proj1 = [1]
-    #    proj2 = [4]
-    #    res = [3]
-    #    op2 = [∧₀₁]
-    #  end
+    # TODO: We have let user specify which variable name to use if there are multiple choices.
+    # This will have to be a pre-processing step.
 
 
-    @test length(parts(advdif, :Var)) == 4
+    ddpov = OpenNamedDecapode{Any, Any, Symbol}(ddp, FinFunction([1,3], 3), FinFunction([1,3], 3))
+    adpov = OpenNamedDecapode{Any, Any, Symbol}(adp, FinFunction([1,3], 3), FinFunction([1,3], 3))
+    advdiff = apex(compose(ddpov, adpov))
+
+    advdiff_expected = @acset NamedDecapode{Any, Any, Symbol} begin
+        Var = 4
+        type = [:Form0, :infer, :Form1, :Form1]
+        name = [:C, :Ċ, :ϕ, :V]
+        
+        TVar = 1
+        incl = [2]
+        
+        Op1 = 3
+        src = [1,3,1]
+        tgt = [3,2,2]
+        op1 = [[:k, :d₀], [:⋆₀⁻¹, :dual_d₁, :⋆₁], :∂ₜ]
+    
+        Op2 = 1
+        proj1 = [1]
+        proj2 = [4]
+        res = [3]
+        op2 = [:∧₀₁]
+      end
+    @test advdiff == advdiff_expected
 
     # Note: TVars will never be duplicated, because there will only ever be one
     # instance of ∂ₜ in all of the systems we are composing.
-    
+    #
     # TODO: Take care of "Op duplication" as in the following example.
-    adpov_self = NamedDecapodeOV{Any, Any, Symbol}(adp, FinFunction([1,2,3], 3), FinFunction([1,2,3], 3))
+    adpov_self = OpenNamedDecapode{Any, Any, Symbol}(adp, FinFunction([1,2,3], 3), FinFunction([1,2,3], 3))
     adpov_self_compd = apex(compose(adpov_self, adpov_self))
     #┌─────┬───────┬──────┐
     #│ Var │  type │ name │
