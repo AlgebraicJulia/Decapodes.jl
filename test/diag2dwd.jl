@@ -280,14 +280,14 @@ end
         # In SQL: Select DISTINCT src, tgt, op1 FROM Op1;
         op1_tuples = zip(dec[:src], dec[:tgt], dec[:op1]) |> collect
         rem_parts!(dec, :Op1,
-            setdiff(nparts(dec, :Op1),
+            setdiff(parts(dec, :Op1),
                 unique(i -> op1_tuples[i], 1:length(op1_tuples))))
 
         # Step 4: De-duplicate Op2s.
         # In SQL: Select DISTINCT proj1, proj2, res, op2 FROM Op2;
         op2_tuples = zip(dec[:proj1], dec[:proj2], dec[:res], dec[:op2]) |> collect
         rem_parts!(dec, :Op2,
-            setdiff(nparts(dec, :Op2),
+            setdiff(parts(dec, :Op2),
                 unique(i -> op2_tuples[i], 1:length(op2_tuples))))
     end
 
