@@ -218,127 +218,172 @@ end
 end
 
 @testset "Compose via Structured Cospans" begin
-    DiffusionExprBody =  quote
-        C::Form0{X}
-        Ċ::Form0{X}
-        ϕ::Form1{X}
-    
-        # Fick's first law
-        ϕ ==  ∘(k, d₀)(C)
-        # Diffusion equation
-        Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-        ∂ₜ(C) == Ċ
-    end
-    AdvectionExprBody =  quote
-        C::Form0{X}
-        V::Form1{X}
-        ϕ::Form1{X}
-
-        ϕ == ∧₀₁(C,V)
-    end
-
-    diffExpr = parse_decapode(DiffusionExprBody)
-    ddp = NamedDecapode(diffExpr)
-
-    advExpr = parse_decapode(AdvectionExprBody)
-    adp = NamedDecapode(advExpr)
-
-    # We take as input what @relation outputs.
-    # - We do not need the state variables given after @compose_decapodes
-    # - The order in which cospans are composed matters
-    # compose_diff_adv = @relation (C,V) begin
-    #   diffusion(C, ϕ₁)
-    #   advection(C, ϕ₂, V)
-    #   superposition(ϕ₁, ϕ₂, ϕ, C)
-    # end
-    # TODO: The order in which you compose cospans matters. Is that alright?
-    # TODO: Throw an error if a user tries to identify e.g. a Form0 with a Form1.
-    # This function will replace `oapply`, but takes the output of @relation like `oapply`.
-    # TODO: Change this function signature to accept @relation's output.
-    function compose_decapodes(decapodes, mappings)
-        # Step -1: Make copies of the decapodes, and write over the name fields
-        # to be what was specified by @relation.
-        #
-        # Step 1: Convert from name to index in the Var tables. (TODO: Does
-        # @relation handle some of this bookkeeping?)
-        # TODO: Should we create all the FinFunctions at once, or inside the
-        # composition loop?
-        #
-        # Step 2: Start composing.
-        NamedDecapodeOVOb, NamedDecapodeOV = OpenACSetTypes(NamedDecapode, :Var)
-        dec = nothing
-
-        # TODO: Perhaps split the de-duplication steps into a single function,
-        # or create a function that generalizes de-duplication over all ACSets
-        # and all Objects.
-        # Step 3: De-duplicate Op1s.
-        # In SQL: Select DISTINCT src, tgt, op1 FROM Op1;
-        op1_tuples = zip(dec[:src], dec[:tgt], dec[:op1]) |> collect
-        rem_parts!(dec, :Op1,
-            setdiff(parts(dec, :Op1),
-                unique(i -> op1_tuples[i], 1:length(op1_tuples))))
-
-        # Step 4: De-duplicate Op2s.
-        # In SQL: Select DISTINCT proj1, proj2, res, op2 FROM Op2;
-        op2_tuples = zip(dec[:proj1], dec[:proj2], dec[:res], dec[:op2]) |> collect
-        rem_parts!(dec, :Op2,
-            setdiff(parts(dec, :Op2),
-                unique(i -> op2_tuples[i], 1:length(op2_tuples))))
-    end
-
-    OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
-    # TODO: There will have to be a translating step. i.e. the user gives the
-    # name of a Var, and we map it to the index, which we then pass to
-    # FinFunction.
-    # TODO: We have let user specify which variable name to use if there are multiple choices.
-    # This will have to be a pre-processing step.
-
-
-    ddpov = OpenNamedDecapode{Any, Any, Symbol}(ddp, FinFunction([1,3], 3), FinFunction([1,3], 3))
-    adpov = OpenNamedDecapode{Any, Any, Symbol}(adp, FinFunction([1,3], 3), FinFunction([1,3], 3))
-    advdiff = apex(compose(ddpov, adpov))
-
-    advdiff_expected = @acset NamedDecapode{Any, Any, Symbol} begin
-        Var = 4
-        type = [:Form0, :infer, :Form1, :Form1]
-        name = [:C, :Ċ, :ϕ, :V]
-        
-        TVar = 1
-        incl = [2]
-        
-        Op1 = 3
-        src = [1,3,1]
-        tgt = [3,2,2]
-        op1 = [[:k, :d₀], [:⋆₀⁻¹, :dual_d₁, :⋆₁], :∂ₜ]
-    
-        Op2 = 1
-        proj1 = [1]
-        proj2 = [4]
-        res = [3]
-        op2 = [:∧₀₁]
+  # We take as input what @relation outputs.
+  # - We do not need the state variables given after @compose_decapodes
+  # - The order in which cospans are composed matters
+  # compose_diff_adv = @relation (C,V) begin
+  #   diffusion(C, ϕ₁)
+  #   advection(C, ϕ₂, V)
+  #   superposition(ϕ₁, ϕ₂, ϕ, C)
+  # end
+  # TODO: The order in which you compose cospans matters. Is that alright?
+  # TODO: Throw an error if a user tries to identify e.g. a Form0 with a Form1.
+  # This function will replace `oapply`, but takes the output of @relation like `oapply`.
+  # TODO: Change this function signature to accept @relation's output.
+  function compose_decapodes(decapodes, relation::RelationDiagram)
+    r = relation
+    copies = copy!.(decapodes)
+    length(decapodes) == length(relation[:name]) ||
+      error("The number of decapodes given is not equal to the number of decapodes in the relation.")
+    # TODO: We should also check that the number of variables given in the
+    # relation is the same as the number of Vars in the corresponding
+    # decapodes.
+    # Step -2: Check that the types of all Vars connected by the same
+    # junction are the same.
+    # TODO: This is super dense. See if we can pull this apart. Else, test it well.
+    # Get tuples of (variable_idx, boxes that variable is in).
+    foreach([(j, r[:box][findall(==(j), r[:junction])]) for j in unique(r[:junction])]) do variable_idx, box_idxs
+      first_type = copies[box_idxs[begin]][:type][variable_idx]
+      foreach(box_idxs) do box_idx
+        # TODO: The `infer` type will never be here once the decapodes parsing
+        # is finished being refactored. So we don't check for it here.
+        # TODO: Make this error message more informative via string interpolation.
+        copies[box_idx][:type][variable_idx] == first_type || error("Types do not match.")
       end
-    @test advdiff == advdiff_expected
+    end
+    # Step -1: Make copies of the decapodes, and write over the name fields
+    # to be what was specified by @relation.
+    # TODO: We are assuming that the order of decapodes given in
+    # `decapodes` is the same as the order given in the `Box` table by
+    # @relation. Is that alright? Is this documented somewhere already?
+    # This is how the old oapply method worked. If not, we would have to do
+    # some trickery with hashmaps.
+    # This first assumption
+    # TODO: We are also assuming that the order in which the symbols are
+    # given in the @relation is the same as the order in which symbols were
+    # declared in the body of the respective decapodes. (We are also
+    # assuming that the Var table produced via parse_decapode |>
+    # NamedDecapode respects this declaration order.)
+    copies = copy!.(decapodes)
+    foreach(relation[:box], relation[:junction]) do box, junction
+      copies[box][:name][junction] = relation[:variable][junction]
+    end
 
-    # Note: TVars will never be duplicated, because there will only ever be one
-    # instance of ∂ₜ in all of the systems we are composing.
-    #
-    # TODO: Take care of "Op duplication" as in the following example.
-    adpov_self = OpenNamedDecapode{Any, Any, Symbol}(adp, FinFunction([1,2,3], 3), FinFunction([1,2,3], 3))
-    adpov_self_compd = apex(compose(adpov_self, adpov_self))
-    #┌─────┬───────┬──────┐
-    #│ Var │  type │ name │
-    #├─────┼───────┼──────┤
-    #│   1 │ Form0 │    C │
-    #│   2 │ Form1 │    V │
-    #│   3 │ Form1 │    ϕ │
-    #└─────┴───────┴──────┘
-    #┌─────┬───────┬───────┬─────┬─────┐
-    #│ Op2 │ proj1 │ proj2 │ res │ op2 │
-    #├─────┼───────┼───────┼─────┼─────┤
-    #│   1 │     1 │     2 │   3 │ ∧₀₁ │
-    #│   2 │     1 │     2 │   3 │ ∧₀₁ │
-    #└─────┴───────┴───────┴─────┴─────┘
-    @test length(parts(adpov_self_compd, :Op2)) == 1
+
+    # Step 1: Convert from name to index in the Var tables. (TODO: How much
+    # of this bookkeeping does @relation already handle?)
+    # TODO: Should we create all the FinFunctions at once, or inside the
+    # composition loop?
+
+    # Step 2: Start composing.
+    NamedDecapodeOVOb, NamedDecapodeOV = OpenACSetTypes(NamedDecapode, :Var)
+    dec = nothing
+
+      # TODO: Perhaps split the de-duplication steps into a single function,
+      # or create a function that generalizes de-duplication over all ACSets
+      # and all Objects.
+      # Step 3: De-duplicate Op1s.
+      # In SQL: Select DISTINCT src, tgt, op1 FROM Op1;
+      op1_tuples = zip(dec[:src], dec[:tgt], dec[:op1]) |> collect
+      rem_parts!(dec, :Op1,
+          setdiff(parts(dec, :Op1),
+              unique(i -> op1_tuples[i], 1:length(op1_tuples))))
+
+      # Step 4: De-duplicate Op2s.
+      # In SQL: Select DISTINCT proj1, proj2, res, op2 FROM Op2;
+      op2_tuples = zip(dec[:proj1], dec[:proj2], dec[:res], dec[:op2]) |> collect
+      rem_parts!(dec, :Op2,
+          setdiff(parts(dec, :Op2),
+              unique(i -> op2_tuples[i], 1:length(op2_tuples))))
+  end
+
+  DiffusionExprBody =  quote
+      C::Form0{X}
+      Ċ::Form0{X}
+      ϕ::Form1{X}
+  
+      # Fick's first law
+      ϕ ==  ∘(k, d₀)(C)
+      # Diffusion equation
+      Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+      ∂ₜ(C) == Ċ
+  end
+  AdvectionExprBody =  quote
+      C::Form0{X}
+      V::Form1{X}
+      ϕ::Form1{X}
+
+      ϕ == ∧₀₁(C,V)
+  end
+
+  diffExpr = parse_decapode(DiffusionExprBody)
+  ddp = NamedDecapode(diffExpr)
+
+  advExpr = parse_decapode(AdvectionExprBody)
+  adp = NamedDecapode(advExpr)
+
+  OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
+
+  # TODO: Rewrite this test by calling the compose_decapodes function when finished.
+  ddpov = OpenNamedDecapode{Any, Any, Symbol}(ddp, FinFunction([1,3], 3), FinFunction([1,3], 3))
+  adpov = OpenNamedDecapode{Any, Any, Symbol}(adp, FinFunction([1,3], 3), FinFunction([1,3], 3))
+  advdiff = apex(compose(ddpov, adpov))
+
+  advdiff_expected = @acset NamedDecapode{Any, Any, Symbol} begin
+      Var = 4
+      type = [:Form0, :infer, :Form1, :Form1]
+      name = [:C, :Ċ, :ϕ, :V]
+      
+      TVar = 1
+      incl = [2]
+      
+      Op1 = 3
+      src = [1,3,1]
+      tgt = [3,2,2]
+      op1 = [[:k, :d₀], [:⋆₀⁻¹, :dual_d₁, :⋆₁], :∂ₜ]
+  
+      Op2 = 1
+      proj1 = [1]
+      proj2 = [4]
+      res = [3]
+      op2 = [:∧₀₁]
+    end
+  @test advdiff == advdiff_expected
+
+  # TODO: Add a test that checks that there are no duplicate records in the Op1 table.
+
+  # Test that there are no duplicates in the Op2 table.
+  # TODO: Rewrite this test by calling the compose_decapodes function when finished.
+  adpov_self = OpenNamedDecapode{Any, Any, Symbol}(adp, FinFunction([1,2,3], 3), FinFunction([1,2,3], 3))
+  adpov_self_compd = apex(compose(adpov_self, adpov_self))
+  op2_tuples = zip(adpov_self_compd[:proj1], adpov_self_compd[:proj2], adpov_self_compd[:res], adpov_self_compd[:op2]) |> collect
+  rem_parts!(adpov_self_compd, :Op2,
+      setdiff(parts(adpov_self_compd, :Op2),
+          unique(i -> op2_tuples[i], 1:length(op2_tuples))))
+  #┌─────┬───────┬──────┐
+  #│ Var │  type │ name │
+  #├─────┼───────┼──────┤
+  #│   1 │ Form0 │    C │
+  #│   2 │ Form1 │    V │
+  #│   3 │ Form1 │    ϕ │
+  #└─────┴───────┴──────┘
+  #┌─────┬───────┬───────┬─────┬─────┐
+  #│ Op2 │ proj1 │ proj2 │ res │ op2 │
+  #├─────┼───────┼───────┼─────┼─────┤
+  #│   2 │     1 │     2 │   3 │ ∧₀₁ │
+  #└─────┴───────┴───────┴─────┴─────┘
+  adpox_self_expected = @acset NamedDecapode{Any, Any, Symbol} begin
+      Var = 3
+      type = [:Form0, :Form1, :Form1]
+      name = [:C, :V, :ϕ]
+  
+      Op2 = 1
+      proj1 = [1]
+      proj2 = [2]
+      res = [3]
+      op2 = [:∧₀₁]
+    end
+  @test adpov_self == adpox_self_expected
 end
 
 
