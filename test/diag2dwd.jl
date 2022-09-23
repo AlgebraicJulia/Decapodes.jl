@@ -263,36 +263,31 @@ end
     function compose_decapodes(decapodes, mappings)
         # Step -1: Make copies of the decapodes, and write over the name fields
         # to be what was specified by @relation.
-	#
-	# Step 1: Convert from name to index in the Var tables. (TODO: Does
-	# @relation handle some of this bookkeeping?)
-	# TODO: Should we create all the FinFunctions at once, or inside the
-	# composition loop?
-	#
+        #
+        # Step 1: Convert from name to index in the Var tables. (TODO: Does
+        # @relation handle some of this bookkeeping?)
+        # TODO: Should we create all the FinFunctions at once, or inside the
+        # composition loop?
+        #
         # Step 2: Start composing.
         NamedDecapodeOVOb, NamedDecapodeOV = OpenACSetTypes(NamedDecapode, :Var)
-	comped_decapode = nothing
+        dec = nothing
 
-	# TODO: Perhaps split the de-duplication steps into a single function,
-	# or create a function that generalizes de-duplication over all ACSets
-	# and all Objects.
+        # TODO: Perhaps split the de-duplication steps into a single function,
+        # or create a function that generalizes de-duplication over all ACSets
+        # and all Objects.
         # Step 3: De-duplicate Op1s.
-	# TODO: There is a way to automatcially generate the Homs with Op1 as domain by doing
-	# filter(x -> x.args[2].args[1] == :Op1, SchNamedDecapode.generators.Hom) 
-	# , but no automatic way to get Attrs of op1, such as op1.
-        op1_tuples = map(1:nparts(comped_decapode, :Op1)) do i
-           (comped_decapode[:src][i], advdiff[:tgt][i], advdiff[:op1][i])
-        end
-	rem_parts!(comped_decapode, :Op1,
-            setdiff(nparts(comped_decapode, :Op1), unique(i -> op1_tuples[i], 1:length(op1_tuples))))
+        # In SQL: Select DISTINCT src, tgt, op1 FROM Op1;
+        op1_tuples = zip(dec[:src], dec[:tgt], dec[:op1]) |> collect
+        rem_parts!(dec, :Op1,
+            setdiff(nparts(dec, :Op1),
+                unique(i -> op1_tuples[i], 1:length(op1_tuples))))
 
         # Step 4: De-duplicate Op2s.
-        op2_tuples = map(1:nparts(comped_decapode, :Op2)) do i
-           (comped_decapode[:proj1][i], comped_decapode[:proj2][i],
-	    comped_decapode[:res][i], comped_decapode[:op2][i])
-        end
-	rem_parts!(comped_decapode, :Op2,
-            setdiff(nparts(comped_decapode, :Op2),
+        # In SQL: Select DISTINCT proj1, proj2, res, op2 FROM Op2;
+        op2_tuples = zip(dec[:proj1], dec[:proj2], dec[:res], dec[:op2]) |> collect
+        rem_parts!(dec, :Op2,
+            setdiff(nparts(dec, :Op2),
                 unique(i -> op2_tuples[i], 1:length(op2_tuples))))
     end
 
