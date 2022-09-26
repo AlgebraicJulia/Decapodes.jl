@@ -259,105 +259,100 @@ end
     # each (box,junction) pair, determine whether this corresponds to the 1st
     # Var of that box, or the 2nd Var of that box, etc.)
     # tuples (box, indices of rows with that box):
-    box_rows = [(b, findall(==(b), r[:box])) for b in unique(r[:box])]
+    box_rows = [(b, incident(r, b, :box)) for b in unique(r[:box])]
     # Decrement each index by the offset of the first index of the group from
     # row 1.
     local_ports = [map(y -> y-idxs[begin]+1, idxs) for (b, idxs) in box_rows]
-    # Put into a column that one could append to the Ports table.
+    # Put into a column that one could hcat to the Ports table.
     local_ports = local_ports |> flatten |> collect
 
     # Step -3: Check that the types of all Vars connected by the same
     # junction are the same.
-    foreach(unique(r[:junction])) do j
-      j_idxs = findall(==(j), r[:junction])
-      first_box = copies[r[:box][j_idxs]][begin]
-      first_lp_idx = local_ports[j_idxs][begin]
+    # Note that this has been "pulled apart" for readability.
+    foreach(parts(r, :Junction)) do j
+      j_idxs = incident(r, j, :junction)
+      first_box = copies[r[:box][j_idxs]] |> first
+      first_lp_idx = local_ports[j_idxs] |> first
       first_type = first_box[:type][first_lp_idx]
       foreach(r[:box][j_idxs], local_ports[j_idxs]) do b_idx, lp_idx
-        # Get the index of the row with this name in the Var.
+        # Get the index of the row with this name in the box's Var table.
         name = decapodes_vars[b_idx][2][lp_idx]
-        local_name_idx = findfirst(==(name), copies[b_idx][:name])
+        local_name_idx = incident(copies[b_idx], name, [:name]) |> only
         # TODO: The `infer` type will never be here once the decapodes parsing
         # is finished being refactored. So we don't check for it here.
-        # TODO: Make this error message more informative.
-        copies[b_idx][:type][local_name_idx] == first_type || error("Types do not match $(b_idx) $(lp_idx) $(j).")
-        #println("Types do match $(b_idx) $(lp_idx) $(j).")
+        # TODO: This only returns the first type error found.
+        copies[b_idx][:type][local_name_idx] == first_type ||
+          error("The type of $(copies[b_idx][:name][local_name_idx]),
+            $(copies[b_idx][:type][local_name_idx]), in decapode
+            \"$(r[:name][b_idx])\" does not match the type of
+            $(first_box[:name][local_name_idx]), $(first_type), in decapode
+            $(r[:name][first(j_idxs)]). (Also, check that the order of the
+            decapodes you supplied matches the the order you specified in the
+            relation.)")
+        #println("The type of $(copies[b_idx][:name][local_name_idx]),
+        #   $(copies[b_idx][:type][local_name_idx]), in decapode
+        #   \"$(r[:name][b_idx])\" does match the type of
+        #   $(first_box[:name][local_name_idx]), $(first_type), in decapode
+        #   $(r[:name][first(j_idxs)]).")
       end
     end
 
-    # Step -2: Append each Var name with the name @relation gave the decapode.
+    # Step -2: Do namespacing.
+    # Append each Var name with the name @relation gave the decapode.
     for (copy_idx, box_name) in enumerate(r[:name])
-        for (name_idx, var_name) in enumerate(copies[copy_idx][:name])
-            copies[copy_idx][:name][name_idx] = Symbol(string(box_name)*"_"*string(copies[copy_idx][:name][name_idx]))
-        end
+      for (name_idx, var_name) in enumerate(copies[copy_idx][:name])
+          copies[copy_idx][:name][name_idx] = Symbol(
+            string(box_name)*"_"*string(copies[copy_idx][:name][name_idx]))
+      end
     end
 
     # Step -1: Write over the name fields to be what was specified by
-    # @relation.
+    # @relation. (oapply cannot combine objects whose attrtypes are not equal.)
     foreach(r[:box], r[:junction], local_ports) do b_idx, j_idx, lp_idx
       # Get the index of the row with this name in the Var.
       name = decapodes_vars[b_idx][2][lp_idx]
       name = Symbol(string(r[:name][b_idx])*"_"*string(name))
-      local_name_idx = findfirst(==(name), copies[b_idx][:name])
+      local_name_idx = incident(copies[b_idx], name, :name) |> only
       copies[b_idx][:name][local_name_idx] = r[:variable][j_idx]
     end
-
-    # TODO: The order in which you compose cospans matters. Take care when
-    # creating FinFunctions.
 
     # Step 2: Start composing "from left to right."
     OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
     
-    final_vars = [copies[i][:name] for i in 1:3] |> flatten |> collect
     # TODO: Call oapply here.
     #oapply(r,
     #	   OpenNamedDecapode(
-
-    # Note: the "left leg" of the decapode on the "left" does not matter.
-    # Nor does the "right leg" of the decapode on the "right."
-    #dec = copies[1]
-    #if length(copies) == 1
-    #    append!(copies[1], copies)
-    #end
-    #for right_dec, idx ∈ enumerate(copies[2:end])
-    #    left_dec_leg = FinFunction([], length(dec[:name]))
-    #    right_dec_leg = FinFunction([], length(right_dec[:name]))
-    #    open_left_dec = OpenNamedDecapode{Any, Any, Symbol}(dec, left_dec_leg, left_dec_leg)
-    #    open_right_dec = OpenNamedDecapode{Any, Any, Symbol}(right_dec, right_dec_leg, right_dec_leg)
-    #    dec = apex(compose(open_left_dec, open_right_dec))
-    #end
-
 
     # TODO: Perhaps split the de-duplication steps into a single function,
     # or create a function that generalizes de-duplication over all ACSets
     # and all Objects.
     # Step 3: De-duplicate Op1s.
     # In SQL: Select DISTINCT src, tgt, op1 FROM Op1;
-    op1_tuples = zip(dec[:src], dec[:tgt], dec[:op1]) |> collect
+    op1_rows = zip(dec[:src], dec[:tgt], dec[:op1]) |> collect
     rem_parts!(dec, :Op1,
       setdiff(parts(dec, :Op1),
-        unique(i -> op1_tuples[i], 1:length(op1_tuples))))
+        unique(i -> op1_rows[i], eachindex(op1_rows))))
 
     # Step 4: De-duplicate Op2s.
     # In SQL: Select DISTINCT proj1, proj2, res, op2 FROM Op2;
-    op2_tuples = zip(dec[:proj1], dec[:proj2], dec[:res], dec[:op2]) |> collect
+    op2_rows = zip(dec[:proj1], dec[:proj2], dec[:res], dec[:op2]) |> collect
     rem_parts!(dec, :Op2,
       setdiff(parts(dec, :Op2),
-        unique(i -> op2_tuples[i], 1:length(op2_tuples))))
+        unique(i -> op2_rows[i], eachindex(op2_rows))))
 
     # TODO: In case we have to de-duplicate tvars, this is the code. The zip |>
     # collect idiom is used here to mirror the prior de-dups.
     ## Step 5: De-duplicate TVars.
     ## In SQL: Select DISTINCT incl FROM TVar;
-    #tvar_tuples = zip(dec[:incl]) |> collect
+    #tvar_rows = zip(dec[:incl]) |> collect
     #rem_parts!(dec, :TVar,
     #  setdiff(parts(dec, :TVar),
-    #    unique(i -> tvar_tuples[i], 1:length(tvar_tuples))))
+    #    unique(i -> tvar_rows[i], eachindex(tvar_rows))))
   end
 
   # TODO: Is this the best way to get multiple dispatch to work?
   function compose_decapodes(decapode_vars, relation::RelationDiagram)
-    compose_decapodes([decapode_vars])
+    compose_decapodes([decapode_vars], relation)
   end
 
   DiffusionExprBody =  quote
