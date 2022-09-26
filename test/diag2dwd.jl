@@ -219,18 +219,15 @@ end
 
 @testset "Compose via Structured Cospans" begin
   """
-      function compose_decapodes(decapodes, relation::RelationDiagram)
+      function compose_decapodes(decapodes_vars, relation::RelationDiagram)
 
   Compose a list of decapodes as specified by the given relation diagram.
 
-  The decapodes must be given in the same order as which they were specified in
-  the relation.
-
-  The order in which the symbols are given in the relation is assumed to  match
-  the order in which they are declared in the respective decapodes.
+  The decapodes must be given in the same order as they were specified in the
+  relation.
 
   State variables (such as the (C,V) given in the head of the following
-  @relation do not affect the result of a composition.
+  @relation) do not affect the result of a composition.
 
   # Examples
   ```julia-repl
@@ -239,46 +236,46 @@ end
     advection(C, ϕ₂, V)
     superposition(ϕ₁, ϕ₂, ϕ, C)
   end
-  julia> compose_decapodes([Diffusion, Advection, Superposition], compose_diff_adv)
+  julia> compose_decapodes([(Diffusion, [:C, :ϕ]), (Advection, [:C, :ϕ, :V]),
+    (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])], compose_diff_adv)
   ````
   """
-  function compose_decapodes(decapodes, relation::RelationDiagram)
+  function compose_decapodes(decapodes_vars, relation::RelationDiagram)
     r = relation
-    copies = copy!.(decapodes)
-    length(decapodes) == length(relation[:name]) ||
-      error("The number of decapodes given is not equal to the number of decapodes in the relation.")
+    copies = map(d -> copy(d[1]), decapodes_vars)
     # TODO: We should also check that the number of variables given in the
     # relation is the same as the number of Vars in the corresponding
     # decapodes.
+    # Step -3: Determine the mapping of global ports to local ports. (i.e. for
+    # each (box,junction) pair, determine whether this corresponds to the 1st
+    # Var of that box, or the 2nd Var of that box, etc.)
+    # tuples (box, indices of rows with that box):
+    box_rows = [(b, findall(==(b), r[:box])) for b in unique(r[:box])]
+    # Decrement each index by the offset of the first index of the group from
+    # row 1.
+    local_ports = [map(y -> y-idxs[begin]+1, idxs) for (b, idxs) in box_rows]
+    # Put into a column that one could append to the Ports table.
+    local_ports = local_ports |> flatten |> collect
+
     # Step -2: Check that the types of all Vars connected by the same
     # junction are the same.
-    # TODO: This is super dense. See if we can pull this apart. Else, test it well.
-    # Get tuples of (variable_idx, boxes that variable is in).
-    foreach([(j, r[:box][findall(==(j), r[:junction])]) for j in unique(r[:junction])]) do variable_idx, box_idxs
-      first_type = copies[box_idxs[begin]][:type][variable_idx]
-      foreach(box_idxs) do box_idx
+    foreach(unique(r[:junction])) do j
+      j_idxs = findall(==(j), r[:junction])
+      first_var_idx = copies[r[:box][j_idxs]][begin]
+      first_lp_idx = local_ports[j_idxs][begin]
+      first_type = first_var_idx[:type][first_lp_idx]
+      foreach(r[:box][j_idxs], local_ports[j_idxs]) do b_idx, lp_idx
         # TODO: The `infer` type will never be here once the decapodes parsing
         # is finished being refactored. So we don't check for it here.
         # TODO: Make this error message more informative via string interpolation.
-        copies[box_idx][:type][variable_idx] == first_type || error("Types do not match.")
+        copies[b_idx][:type][lp_idx] == first_type || error("Types do not match.")
       end
     end
+
     # Step -1: Make copies of the decapodes, and write over the name fields
     # to be what was specified by @relation.
-    # TODO: We are assuming that the order of decapodes given in
-    # `decapodes` is the same as the order given in the `Box` table by
-    # @relation. Is that alright? Is this documented somewhere already?
-    # This is how the old oapply method worked. If not, we would have to do
-    # some trickery with hashmaps.
-    # This first assumption
-    # TODO: We are also assuming that the order in which the symbols are
-    # given in the @relation is the same as the order in which symbols were
-    # declared in the body of the respective decapodes. (We are also
-    # assuming that the Var table produced via parse_decapode |>
-    # NamedDecapode respects this declaration order.)
-    copies = copy!.(decapodes)
-    foreach(relation[:box], relation[:junction]) do box, junction
-      copies[box][:name][junction] = relation[:variable][junction]
+    foreach(r[:box], r[:junction], local_ports) do b_idx, j_idx, lp_idx
+      copies[b_idx][:name][lp_idx] = relation[:variable][j_idx]
     end
 
     # Step 1: Convert from name to index in the Var tables. (TODO: How much
@@ -286,9 +283,6 @@ end
     # TODO: We should create the FinFunctions inside the composition loop?
     # TODO: The order in which you compose cospans matters. Take care when
     # creating FinFunctions.
-
-
-
 
     # Step 2: Start composing.
     NamedDecapodeOVOb, NamedDecapodeOV = OpenACSetTypes(NamedDecapode, :Var)
@@ -312,7 +306,8 @@ end
       setdiff(parts(dec, :Op2),
         unique(i -> op2_tuples[i], 1:length(op2_tuples))))
 
-    # TODO: In case we have to de-duplicate tvars, this is the code:
+    # TODO: In case we have to de-duplicate tvars, this is the code. The zip |>
+    # collect idiom is just use to mirror the prior calls de-dups.
     ## Step 5: De-duplicate TVars.
     ## In SQL: Select DISTINCT incl FROM TVar;
     #tvar_tuples = zip(dec[:incl]) |> collect
@@ -372,6 +367,9 @@ end
     res = [3]
     op2 = [:∧₀₁]
   end
+  # TODO: This should really be a test for equality between canonical forms
+  # (since order within tables does not matter save for preserving mappings
+  # between tables.)
   @test advdiff == advdiff_expected
 
   # TODO: Add a test that checks that there are no duplicate records in the Op1 table.
@@ -396,7 +394,7 @@ end
   #├─────┼───────┼───────┼─────┼─────┤
   #│   2 │     1 │     2 │   3 │ ∧₀₁ │
   #└─────┴───────┴───────┴─────┴─────┘
-  adpox_self_expected = @acset NamedDecapode{Any, Any, Symbol} begin
+  adpov_self_expected = @acset NamedDecapode{Any, Any, Symbol} begin
     Var = 3
     type = [:Form0, :Form1, :Form1]
     name = [:C, :V, :ϕ]
@@ -406,8 +404,11 @@ end
     proj2 = [2]
     res = [3]
     op2 = [:∧₀₁]
-    end
-  @test adpov_self == adpox_self_expected
+  end
+  # TODO: This should really be a test for equality between canonical forms
+  # (since order within tables does not matter save for preserving mappings
+  # between tables.)
+  @test adp == adpov_self_expected
 end
 
 
