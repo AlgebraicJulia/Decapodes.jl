@@ -240,13 +240,22 @@ end
     (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])], compose_diff_adv)
   ````
   """
-  function compose_decapodes(decapodes_vars, relation::RelationDiagram)
+  function compose_decapodes(decapodes_vars::Vector{Any}, relation::RelationDiagram)
+    # TODO: Use better type hints than Vector{Any}.
+    # TODO: Replace calls to findall and findnext with incident.
+    # TODO: Calling this function "compose" is something of a misnomer.  e.g.
+    # You could very well give a vector containing a single decapode. Then the
+    # effect of applying the relation would be something like renaming
+    # variables. So this function should really be called oapply_decapodes (or
+    # just oapply if you are willing to import oapply from
+    # Catlab.WiringDiagrams).
     r = relation
-    copies = map(d -> copy(d[1]), decapodes_vars)
+    # TODO: Rename this variable something more precise.
+    copies = decapodes_vars .|> first .|> copy
     # TODO: We should also check that the number of variables given in the
     # relation is the same as the number of Vars in the corresponding
     # decapodes.
-    # Step -3: Determine the mapping of global ports to local ports. (i.e. for
+    # Step -4: Determine the mapping of global ports to local ports. (i.e. for
     # each (box,junction) pair, determine whether this corresponds to the 1st
     # Var of that box, or the 2nd Var of that box, etc.)
     # tuples (box, indices of rows with that box):
@@ -257,37 +266,67 @@ end
     # Put into a column that one could append to the Ports table.
     local_ports = local_ports |> flatten |> collect
 
-    # Step -2: Check that the types of all Vars connected by the same
+    # Step -3: Check that the types of all Vars connected by the same
     # junction are the same.
     foreach(unique(r[:junction])) do j
       j_idxs = findall(==(j), r[:junction])
-      first_var_idx = copies[r[:box][j_idxs]][begin]
+      first_box = copies[r[:box][j_idxs]][begin]
       first_lp_idx = local_ports[j_idxs][begin]
-      first_type = first_var_idx[:type][first_lp_idx]
+      first_type = first_box[:type][first_lp_idx]
       foreach(r[:box][j_idxs], local_ports[j_idxs]) do b_idx, lp_idx
+        # Get the index of the row with this name in the Var.
+        name = decapodes_vars[b_idx][2][lp_idx]
+        local_name_idx = findfirst(==(name), copies[b_idx][:name])
         # TODO: The `infer` type will never be here once the decapodes parsing
         # is finished being refactored. So we don't check for it here.
-        # TODO: Make this error message more informative via string interpolation.
-        copies[b_idx][:type][lp_idx] == first_type || error("Types do not match.")
+        # TODO: Make this error message more informative.
+        copies[b_idx][:type][local_name_idx] == first_type || error("Types do not match $(b_idx) $(lp_idx) $(j).")
+        #println("Types do match $(b_idx) $(lp_idx) $(j).")
       end
     end
 
-    # Step -1: Make copies of the decapodes, and write over the name fields
-    # to be what was specified by @relation.
-    foreach(r[:box], r[:junction], local_ports) do b_idx, j_idx, lp_idx
-      copies[b_idx][:name][lp_idx] = relation[:variable][j_idx]
+    # Step -2: Append each Var name with the name @relation gave the decapode.
+    for (copy_idx, box_name) in enumerate(r[:name])
+        for (name_idx, var_name) in enumerate(copies[copy_idx][:name])
+            copies[copy_idx][:name][name_idx] = Symbol(string(box_name)*"_"*string(copies[copy_idx][:name][name_idx]))
+        end
     end
 
-    # Step 1: Convert from name to index in the Var tables. (TODO: How much
-    # of this bookkeeping does @relation already handle?)
-    # TODO: We should create the FinFunctions inside the composition loop?
+    # Step -1: Write over the name fields to be what was specified by
+    # @relation.
+    foreach(r[:box], r[:junction], local_ports) do b_idx, j_idx, lp_idx
+      # Get the index of the row with this name in the Var.
+      name = decapodes_vars[b_idx][2][lp_idx]
+      name = Symbol(string(r[:name][b_idx])*"_"*string(name))
+      local_name_idx = findfirst(==(name), copies[b_idx][:name])
+      copies[b_idx][:name][local_name_idx] = r[:variable][j_idx]
+    end
+
     # TODO: The order in which you compose cospans matters. Take care when
     # creating FinFunctions.
 
-    # Step 2: Start composing.
-    NamedDecapodeOVOb, NamedDecapodeOV = OpenACSetTypes(NamedDecapode, :Var)
-    # TODO: dec is a placeholder variable so we can do steps 3 and 4.
-    dec = nothing
+    # Step 2: Start composing "from left to right."
+    OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
+    
+    final_vars = [copies[i][:name] for i in 1:3] |> flatten |> collect
+    # TODO: Call oapply here.
+    #oapply(r,
+    #	   OpenNamedDecapode(
+
+    # Note: the "left leg" of the decapode on the "left" does not matter.
+    # Nor does the "right leg" of the decapode on the "right."
+    #dec = copies[1]
+    #if length(copies) == 1
+    #    append!(copies[1], copies)
+    #end
+    #for right_dec, idx ∈ enumerate(copies[2:end])
+    #    left_dec_leg = FinFunction([], length(dec[:name]))
+    #    right_dec_leg = FinFunction([], length(right_dec[:name]))
+    #    open_left_dec = OpenNamedDecapode{Any, Any, Symbol}(dec, left_dec_leg, left_dec_leg)
+    #    open_right_dec = OpenNamedDecapode{Any, Any, Symbol}(right_dec, right_dec_leg, right_dec_leg)
+    #    dec = apex(compose(open_left_dec, open_right_dec))
+    #end
+
 
     # TODO: Perhaps split the de-duplication steps into a single function,
     # or create a function that generalizes de-duplication over all ACSets
@@ -307,13 +346,18 @@ end
         unique(i -> op2_tuples[i], 1:length(op2_tuples))))
 
     # TODO: In case we have to de-duplicate tvars, this is the code. The zip |>
-    # collect idiom is just use to mirror the prior calls de-dups.
+    # collect idiom is used here to mirror the prior de-dups.
     ## Step 5: De-duplicate TVars.
     ## In SQL: Select DISTINCT incl FROM TVar;
     #tvar_tuples = zip(dec[:incl]) |> collect
     #rem_parts!(dec, :TVar,
     #  setdiff(parts(dec, :TVar),
     #    unique(i -> tvar_tuples[i], 1:length(tvar_tuples))))
+  end
+
+  # TODO: Is this the best way to get multiple dispatch to work?
+  function compose_decapodes(decapode_vars, relation::RelationDiagram)
+    compose_decapodes([decapode_vars])
   end
 
   DiffusionExprBody =  quote
@@ -409,6 +453,60 @@ end
   # (since order within tables does not matter save for preserving mappings
   # between tables.)
   @test adp == adpov_self_expected
+
+
+  # This is the example from the "Overview" page in the docs.
+  DiffusionExprBody =  quote
+    C::Form0{X}
+    ϕ::Form1{X}
+                             
+    # Fick's first law
+    ϕ ==  ∘(k, d₀)(C)
+  end
+
+  AdvectionExprBody = quote
+    C::Form0{X}
+    V::Form1{X}
+    ϕ::Form1{X}
+    
+    ϕ == ∧₀₁(C,V)
+  end
+
+  SuperpositionExprBody = quote
+    C::Form0{X}
+    Ċ::Form0{X}
+    ϕ::Form1{X}
+    ϕ₁::Form1{X}
+    ϕ₂::Form1{X}
+                                 
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+
+  diffExpr = parse_decapode(DiffusionExprBody)
+  Diffusion = NamedDecapode(diffExpr)
+
+  advExpr = parse_decapode(AdvectionExprBody)
+  Advection = NamedDecapode(advExpr)
+
+  sdvExpr = parse_decapode(SuperpositionExprBody)
+  Superposition = NamedDecapode(sdvExpr)
+
+  using Catlab.Programs
+  compose_diff_adv = @relation (C,V) begin
+    diffusion(C, ϕ₁)
+    advection(C, ϕ₂, V)
+    superposition(ϕ₁, ϕ₂, ϕ, C)
+  end
+
+  ddpov = OpenNamedDecapode{Any, Any, Symbol}(ddp, FinFunction([1,3], 3), FinFunction([1,3], 3))
+
+  compose_decapodes([(Diffusion, [:C, :ϕ]), (Advection, [:C, :ϕ, :V]),
+    (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])], compose_diff_adv)
+
+  OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
+
 end
 
 
