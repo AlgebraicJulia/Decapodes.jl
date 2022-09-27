@@ -242,8 +242,6 @@ end
   """
   function compose_decapodes(decapodes_vars::Vector{Tuple{NamedDecapode{
     Any, Any, Symbol}, Vector{Symbol}}}, relation::RelationDiagram)
-    # TODO: Use better type hints than Vector{Any}.
-    # TODO: Replace calls to findall and findnext with incident.
     # TODO: Calling this function "compose" is something of a misnomer.  e.g.
     # You could very well give a vector containing a single decapode. Then the
     # effect of applying the relation would be something like renaming
@@ -251,11 +249,11 @@ end
     # just oapply if you are willing to import oapply from
     # Catlab.WiringDiagrams).
     r = relation
-    # TODO: Rename this variable something more precise.
     copies = decapodes_vars .|> first .|> copy
     # TODO: We should also check that the number of variables given in the
-    # relation is the same as the number of Vars in the corresponding
-    # decapodes.
+    # relation is the same as the number of symbols in the corresponding vector
+    # of Vars.
+
     # Step -4: Determine the mapping of global ports to local ports. (i.e. for
     # each (box,junction) pair, determine whether this corresponds to the 1st
     # Var of that box, or the 2nd Var of that box, etc.)
@@ -281,7 +279,7 @@ end
         local_name_idx = incident(copies[b_idx], name, [:name]) |> only
         # TODO: The `infer` type will never be here once the decapodes parsing
         # is finished being refactored. So we don't check for it here.
-        # TODO: This only returns the first type error found.
+        # Note: This only returns the first type error found.
         copies[b_idx][:type][local_name_idx] == first_type ||
           error("The type of $(copies[b_idx][:name][local_name_idx]),
             $(copies[b_idx][:type][local_name_idx]), in decapode
@@ -290,11 +288,6 @@ end
             $(r[:name][first(j_idxs)]). (Also, check that the order of the
             decapodes you supplied matches the the order you specified in the
             relation.)")
-        #println("The type of $(copies[b_idx][:name][local_name_idx]),
-        #   $(copies[b_idx][:type][local_name_idx]), in decapode
-        #   \"$(r[:name][b_idx])\" does match the type of
-        #   $(first_box[:name][local_name_idx]), $(first_type), in decapode
-        #   $(r[:name][first(j_idxs)]).")
       end
     end
 
@@ -323,32 +316,13 @@ end
     
     OpenNamedDecapodes = map(copies, decapodes_vars) do curr_copy, d_vs
       vars = last(d_vs)
-      println(vars)
-      #FinFunctions = Vector{FinDomFunctionVector{Int64, Vector{Int64}, FinSetInt}}[]
-      #FinFunctions = Vector{typeof(FinFunction([1],2))}[]
-      #for variable in r[:variable]
-      #  local_idxs = findall(==(variable), curr_copy[:name])
-      #  println(local_idxs)
-      #  if !isempty(local_idxs)
-      #    #push!(FinFunctions, [FinFunction(local_idxs, length(vars))])
-      #    push!(FinFunctions, [FinFunction(local_idxs, length(curr_copy[:name]))])
-      #  end
-      #end
       FinFunctions = Vector{typeof(FinFunction([1],2))}[]
       for var in vars
         local_idxs = incident(curr_copy, var, :name)
-        println(local_idxs)
-        #push!(FinFunctions, [FinFunction(local_idxs, length(vars))])
         push!(FinFunctions, [FinFunction(local_idxs, length(curr_copy[:name]))])
       end
       
       FinFunctions = FinFunctions |> flatten
-      println(FinFunctions)
-
-      #vars = curr_copy[:name] |> eachindex .|> x -> FinFunction([x], length(curr_copy[:name]))
-      #println(vars)
-      #println("end vars")
-      #OpenNamedDecapode{Any, Any, Symbol}(curr_copy, vars...)
 
       # TODO: Really we should be passing the type information from the
       # decapodes.
@@ -545,8 +519,15 @@ end
   #supepov = OpenNamedDecapode{Any,Any,Symbol}(copies[3], FinFunction([4],5), FinFunction([5],5), FinFunction([3],5), FinFunction([1],5));
   #oapply(r, [diffpov, advepov, supepov]);
 
+  # TODO: Turn this into a test.
   compose_decapodes(decapodes_vars, compose_diff_adv)
 
+  # TODO: Make this a test. (That Op2s are properly de-duplicated.)
+  #self_adv = @relation () begin
+  #  advection(C,V,ϕ)
+  #  advection(C,V,ϕ)
+  #end
+  #compose_decapodes([(adp, [:C,:V,:ϕ]), (adp, [:C,:V,:ϕ])], self_adv)
 end
 
 
