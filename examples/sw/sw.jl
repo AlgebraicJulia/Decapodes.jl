@@ -8,7 +8,7 @@ using MLStyle
 using Distributions
 using LinearAlgebra
 
-function generate(sd, my_symbol; hodge=DiagonalHodge())
+function generate(sd, my_symbol; hodge=GeometricHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
   op = @match my_symbol begin
     :k => x->2000x
@@ -25,7 +25,7 @@ function generate(sd, my_symbol; hodge=DiagonalHodge())
     # :L₀ => (v,x)->dual_derivative(1, sd)*(i0(v, x))
     :L₀ => (v,x)->begin
       # dual_derivative(1, sd)*⋆(1, sd)*wedge_product(Tuple{1,0}, sd, v, x)
-      ⋆(1, sd)*wedge_product(Tuple{1,0}, sd, v, x)
+      ⋆(1, sd; hodge=hodge)*wedge_product(Tuple{1,0}, sd, v, x)
     end
     :i₀ => i0 
     :debug => (args...)->begin println(args[1], length.(args[2:end])) end
@@ -109,6 +109,7 @@ sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
 fₘ = sim(earth)
 
 # velocity(p) = [-p[2]/p[1], 1.0, 0]/log(abs(p[3])+1)
+# velocity(p) = [-0p[2]/p[1], 0.0, sign(p[1]*abs(p[3]))]#/log(abs(p[3])+1)
 phi(p) = atan(p[2]/p[1])
 theta(p) = atan(sqrt(p[2]^2 + p[1]^2)/p[3])
 θhat(p) = [cos(phi(p))*cos(theta(p)), sin(phi(p))*cos(theta(p)), -sin(theta(p))]
@@ -116,13 +117,11 @@ theta(p) = atan(sqrt(p[2]^2 + p[1]^2)/p[3])
 rhat(p) = [cos(phi(p))*sin(theta(p)), sin(phi(p))*sin(theta(p)), cos(theta(p))]
 v = -1
 velocity(p) = v*ϕhat(p)#/log(abs(p[3])+1)
-# velocity(p) = [-p[2]/p[1], 0.0, sign(p[1]*abs(p[3]))]#/log(abs(p[3])+1)
-# velocity(p) = begin
-#   θ = atan(-p[2]/p[1])
-#   return [sin(θ), cos(θ), 0]*abs(norm(p)-p[3])/norm(p)
-# end
-# velocity(p) = [0, 0, sign(p[1]*abs(p[3]))]#/log(abs(p[3])+1)
+
 v = ♭(earth, DualVectorField(velocity.(earth[triangle_center(earth),:dual_point])))
+c_dist = MvNormal([radius/√(2), radius/√(2)], 20*[1, 1])
+c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
+
 theta_start = 45*pi/180
 phi_start = 0*pi/180
 x = radius*cos(phi_start)*sin(theta_start)
@@ -131,15 +130,17 @@ z = radius*cos(theta_start)
 c_dist = MvNormal([x, y, z], 20*[1, 1, 1])
 c = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
 
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(5000v)],Float64[], [:C, :V])
-mesh(primal_earth, color=findnode(u₀, :C), colormap=:jet)
-tₑ = 2.2
+
+u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(500v)],Float64[], [:C, :V])
+mesh(primal_earth, color=findnode(u₀, :C), colormap=:plasma)
+tₑ = 30.0
+
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 end
 
 Figure()
-scatter(0:tₑ/150:tₑ, [norm(findnode(soln(t), :C)) for t in 0:tₑ/150:tₑ ])
+scatter(0:tₑ/150:tₑ, [sum(⋆(0, earth)*findnode(soln(t), :C)) for t in 0:tₑ/150:tₑ ])
 
 mesh(primal_earth, color=findnode(soln(tₑ), :C), colormap=:jet)
 begin
