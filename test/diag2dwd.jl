@@ -223,12 +223,17 @@ end
     @test nparts(advdiffdp, :Summand) == 2
 end
 
-@testset "Compose via Structured Cospans" begin
+@testset "Decapode Composition" begin
 
   """
       function unique_by!(acset, column_names::Vector{Symbol})
 
   Given column names from the same table, remove duplicate rows.
+  
+  WARNING: This function does not check if other tables index into the one
+  given. Removal of rows is performed with prejudice.
+
+  See also: [`unique_by`](@ref).
 
   # Examples
   ```julia-repl
@@ -253,7 +258,12 @@ end
       function unique_by(acset, column_names::Vector{Symbol})
 
   Given column names from the same table, return a copy of the acset with
-  duplicate rows removed.
+  duplicate rows removed. Removal of rows is performed with prejudice.
+
+  WARNING: This function does not check if other tables index into the one
+  given. Removal of rows is performed with prejudice.
+
+  See also: [`unique_by!`](@ref).
 
   # Examples
   ```julia-repl
@@ -321,7 +331,6 @@ end
 
     # Step -3: Check that the types of all Vars connected by the same
     # junction are the same.
-    # Note that this has been "pulled apart" for readability.
     foreach(parts(r, :Junction)) do j
       # Check that all types are equal to the first type found.
       j_idxs = incident(r, j, :junction)
@@ -370,16 +379,11 @@ end
     OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
     
     OpenNamedDecapodes = map(copies, decapodes_vars) do curr_copy, d_vs
-      vars = last(d_vs)
-      FinFunctions = Vector{typeof(FinFunction([1],2))}[]
-      for var in vars
-        local_idxs = incident(curr_copy, var, :name)
-        push!(FinFunctions, [FinFunction(local_idxs, length(curr_copy[:name]))])
+      variables = last(d_vs)
+      FinFunctions = map(variables) do var
+        FinFunction(incident(curr_copy, var, :name), nparts(curr_copy, :Var))
       end
-      
-      FinFunctions = FinFunctions |> flatten
-
-      # TODO: Really we should be passing the type information from the
+      # TODO: It would be less brittle to pass the type information from the
       # decapodes.
       OpenNamedDecapode{Any, Any, Symbol}(curr_copy, FinFunctions...)
     end
@@ -490,8 +494,8 @@ end
   adv_adv = [
    (Advection, [:C,:V,:ϕ]),
    (Advection, [:C,:V,:ϕ])]
-  self_adv_comp = compose_decapodes(adv_adv, self_adv)
-  self_adv_comp_expected = @acset NamedDecapode{Any, Any, Symbol} begin
+  adv_adv_comp = compose_decapodes(adv_adv, self_adv)
+  adv_adv_comp_expected = @acset NamedDecapode{Any, Any, Symbol} begin
     Var = 3
     type = [:Form0, :Form1, :Form1]
     name = [:C, :V, :ϕ]
@@ -501,7 +505,7 @@ end
     res = [3]
     op2 = [:∧₀₁]
   end
-  @test self_adv_comp == self_adv_comp_expected
+  @test adv_adv_comp == adv_adv_comp_expected
 
   # Test that a relation of only one decapode is handled properly.
   AdvectionExprBody =  quote
@@ -512,11 +516,11 @@ end
   end
   advExpr = parse_decapode(AdvectionExprBody)
   Advection = NamedDecapode(advExpr)
-  self_adv = @relation () begin
+  adv_relation = @relation () begin
     advection(C,V,ϕ)
   end
-  self_adv_comp = compose_decapodes((Advection, [:C,:V,:ϕ]), self_adv)
-  self_adv_comp_expected = @acset NamedDecapode{Any, Any, Symbol} begin
+  adv_comp = compose_decapodes((Advection, [:C,:V,:ϕ]), adv_relation)
+  adv_comp_expected = @acset NamedDecapode{Any, Any, Symbol} begin
     Var = 3
     type = [:Form0, :Form1, :Form1]
     name = [:C, :V, :ϕ]
@@ -526,7 +530,7 @@ end
     res = [3]
     op2 = [:∧₀₁]
   end
-  @test self_adv_comp == self_adv_comp_expected
+  @test adv_comp == adv_comp_expected
 
 end
 
