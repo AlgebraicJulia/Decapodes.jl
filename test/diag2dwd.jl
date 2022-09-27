@@ -240,7 +240,8 @@ end
     (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])], compose_diff_adv)
   ````
   """
-  function compose_decapodes(decapodes_vars::Vector{Any}, relation::RelationDiagram)
+  function compose_decapodes(decapodes_vars::Vector{Tuple{NamedDecapode{
+    Any, Any, Symbol}, Vector{Symbol}}}, relation::RelationDiagram)
     # TODO: Use better type hints than Vector{Any}.
     # TODO: Replace calls to findall and findnext with incident.
     # TODO: Calling this function "compose" is something of a misnomer.  e.g.
@@ -301,8 +302,8 @@ end
     # Append each Var name with the name @relation gave the decapode.
     for (copy_idx, box_name) in enumerate(r[:name])
       for (name_idx, var_name) in enumerate(copies[copy_idx][:name])
-          copies[copy_idx][:name][name_idx] = Symbol(
-            string(box_name)*"_"*string(copies[copy_idx][:name][name_idx]))
+        copies[copy_idx][:name][name_idx] = Symbol(
+          string(box_name)*"_"*string(copies[copy_idx][:name][name_idx]))
       end
     end
 
@@ -312,16 +313,48 @@ end
       # Get the index of the row with this name in the Var.
       name = decapodes_vars[b_idx][2][lp_idx]
       name = Symbol(string(r[:name][b_idx])*"_"*string(name))
-      local_name_idx = incident(copies[b_idx], name, :name) |> only
+      #local_name_idx = incident(copies[b_idx], name, :name) |> only
+      local_name_idx = findfirst(==(name), copies[b_idx][:name]) |> only
       copies[b_idx][:name][local_name_idx] = r[:variable][j_idx]
     end
 
-    # Step 2: Start composing "from left to right."
+    # Step 2: Start composing.
     OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
     
-    # TODO: Call oapply here.
-    #oapply(r,
-    #	   OpenNamedDecapode(
+    OpenNamedDecapodes = map(copies, decapodes_vars) do curr_copy, d_vs
+      vars = last(d_vs)
+      println(vars)
+      #FinFunctions = Vector{FinDomFunctionVector{Int64, Vector{Int64}, FinSetInt}}[]
+      #FinFunctions = Vector{typeof(FinFunction([1],2))}[]
+      #for variable in r[:variable]
+      #  local_idxs = findall(==(variable), curr_copy[:name])
+      #  println(local_idxs)
+      #  if !isempty(local_idxs)
+      #    #push!(FinFunctions, [FinFunction(local_idxs, length(vars))])
+      #    push!(FinFunctions, [FinFunction(local_idxs, length(curr_copy[:name]))])
+      #  end
+      #end
+      FinFunctions = Vector{typeof(FinFunction([1],2))}[]
+      for var in vars
+        local_idxs = incident(curr_copy, var, :name)
+        println(local_idxs)
+        #push!(FinFunctions, [FinFunction(local_idxs, length(vars))])
+        push!(FinFunctions, [FinFunction(local_idxs, length(curr_copy[:name]))])
+      end
+      
+      FinFunctions = FinFunctions |> flatten
+      println(FinFunctions)
+
+      #vars = curr_copy[:name] |> eachindex .|> x -> FinFunction([x], length(curr_copy[:name]))
+      #println(vars)
+      #println("end vars")
+      #OpenNamedDecapode{Any, Any, Symbol}(curr_copy, vars...)
+
+      # TODO: Really we should be passing the type information from the
+      # decapodes.
+      OpenNamedDecapode{Any, Any, Symbol}(curr_copy, FinFunctions...)
+    end
+    dec = oapply(relation, OpenNamedDecapodes) |> apex
 
     # TODO: Perhaps split the de-duplication steps into a single function,
     # or create a function that generalizes de-duplication over all ACSets
@@ -348,6 +381,9 @@ end
     #rem_parts!(dec, :TVar,
     #  setdiff(parts(dec, :TVar),
     #    unique(i -> tvar_rows[i], eachindex(tvar_rows))))
+
+    # TODO: There must be a final step where you remove namespacing.
+    return dec
   end
 
   # TODO: Is this the best way to get multiple dispatch to work?
@@ -379,18 +415,24 @@ end
 
   advExpr = parse_decapode(AdvectionExprBody)
   adp = NamedDecapode(advExpr)
+  dac = @relation () begin
+    diffusion(C,Ċ,ϕ)
+    advection(C,V,ϕ)
+  end
 
   OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
 
-  # TODO: Rewrite this test by calling the compose_decapodes function when finished.
-  ddpov = OpenNamedDecapode{Any, Any, Symbol}(ddp, FinFunction([1,3], 3), FinFunction([1,3], 3))
-  adpov = OpenNamedDecapode{Any, Any, Symbol}(adp, FinFunction([1,3], 3), FinFunction([1,3], 3))
-  advdiff = apex(compose(ddpov, adpov))
+  oddp = OpenNamedDecapode{Any,Any,Symbol}(ddp, FinFunction([1], 3), FinFunction([2], 3), FinFunction([3], 3));
+  oadp = OpenNamedDecapode{Any,Any,Symbol}(adp, FinFunction([1], 3), FinFunction([2], 3), FinFunction([3], 3));
 
-  advdiff_expected = @acset NamedDecapode{Any, Any, Symbol} begin
+  combined = oapply(dac, [oddp, oadp]) |> apex
+
+
+  combined_expected = @acset NamedDecapode{Any, Any, Symbol} begin
     Var = 4
     type = [:Form0, :infer, :Form1, :Form1]
-    name = [:C, :Ċ, :ϕ, :V]
+    #name = [:C, :Ċ, :ϕ, :V]
+    name = [:C, :diffusion_Ċ, :ϕ, :V]
     
     TVar = 1
     incl = [2]
@@ -409,7 +451,7 @@ end
   # TODO: This should really be a test for equality between canonical forms
   # (since order within tables does not matter save for preserving mappings
   # between tables.)
-  @test advdiff == advdiff_expected
+  @test combined == combined_expected
 
   # TODO: Add a test that checks that there are no duplicate records in the Op1 table.
 
@@ -495,12 +537,15 @@ end
     superposition(ϕ₁, ϕ₂, ϕ, C)
   end
 
-  ddpov = OpenNamedDecapode{Any, Any, Symbol}(ddp, FinFunction([1,3], 3), FinFunction([1,3], 3))
+  decapodes_vars = [(Diffusion, [:C, :ϕ]), (Advection, [:C, :ϕ, :V]),
+    (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
 
-  compose_decapodes([(Diffusion, [:C, :ϕ]), (Advection, [:C, :ϕ, :V]),
-    (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])], compose_diff_adv)
+  #diffpov = OpenNamedDecapode{Any,Any,Symbol}(copies[1], FinFunction([1],2), FinFunction([2],2));
+  #advepov = OpenNamedDecapode{Any,Any,Symbol}(copies[2], FinFunction([1],3), FinFunction([3],3), FinFunction([2],3));
+  #supepov = OpenNamedDecapode{Any,Any,Symbol}(copies[3], FinFunction([4],5), FinFunction([5],5), FinFunction([3],5), FinFunction([1],5));
+  #oapply(r, [diffpov, advepov, supepov]);
 
-  OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
+  compose_decapodes(decapodes_vars, compose_diff_adv)
 
 end
 
