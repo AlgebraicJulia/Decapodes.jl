@@ -11,7 +11,7 @@ using LinearAlgebra
 function generate(sd, my_symbol; hodge=DiagonalHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
   op = @match my_symbol begin
-    :k => x->x/2
+    :k => x->2000x
     :⋆₀ => x->⋆(0,sd,hodge=hodge)*x
     :⋆₁ => x->⋆(1, sd, hodge=hodge)*x
     :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=hodge)
@@ -71,6 +71,7 @@ tₑ = 10
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
+# using CairoMakie 
 using GLMakie
 
 mesh(primal_earth, color=findnode(soln(0), :C), colormap=:plasma)
@@ -108,18 +109,30 @@ sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
 fₘ = sim(earth)
 
 # velocity(p) = [-p[2]/p[1], 1.0, 0]/log(abs(p[3])+1)
-velocity(p) = [-p[2]/p[1], 0.0, sign(p[1]*abs(p[3]))]#/log(abs(p[3])+1)
+phi(p) = atan(p[2]/p[1])
+theta(p) = atan(sqrt(p[2]^2 + p[1]^2)/p[3])
+θhat(p) = [cos(phi(p))*cos(theta(p)), sin(phi(p))*cos(theta(p)), -sin(theta(p))]
+ϕhat(p) = [-sin(phi(p)), cos(phi(p)), 0]
+rhat(p) = [cos(phi(p))*sin(theta(p)), sin(phi(p))*sin(theta(p)), cos(theta(p))]
+v = -1
+velocity(p) = v*ϕhat(p)#/log(abs(p[3])+1)
+# velocity(p) = [-p[2]/p[1], 0.0, sign(p[1]*abs(p[3]))]#/log(abs(p[3])+1)
 # velocity(p) = begin
 #   θ = atan(-p[2]/p[1])
 #   return [sin(θ), cos(θ), 0]*abs(norm(p)-p[3])/norm(p)
 # end
 # velocity(p) = [0, 0, sign(p[1]*abs(p[3]))]#/log(abs(p[3])+1)
-v = flat_op(earth, DualVectorField(velocity.(earth[triangle_center(earth),:dual_point])); dims=[30, 10, Inf])
-c_dist = MvNormal([radius/√(2), radius/√(2)], 20*[1, 1])
-c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
+v = ♭(earth, DualVectorField(velocity.(earth[triangle_center(earth),:dual_point])))
+theta_start = 45*pi/180
+phi_start = 0*pi/180
+x = radius*cos(phi_start)*sin(theta_start)
+y = radius*sin(phi_start)*sin(theta_start)
+z = radius*cos(theta_start)
+c_dist = MvNormal([x, y, z], 20*[1, 1, 1])
+c = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
 
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(2000v)],Float64[], [:C, :V])
-mesh(primal_earth, color=findnode(u₀, :C), colormap=:plasma)
+u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(5000v)],Float64[], [:C, :V])
+mesh(primal_earth, color=findnode(u₀, :C), colormap=:jet)
 tₑ = 2.2
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
@@ -128,14 +141,15 @@ end
 Figure()
 scatter(0:tₑ/150:tₑ, [norm(findnode(soln(t), :C)) for t in 0:tₑ/150:tₑ ])
 
-mesh(primal_earth, color=findnode(soln(tₑ), :C), colormap=:plasma)
+mesh(primal_earth, color=findnode(soln(tₑ), :C), colormap=:jet)
 begin
 # Plot the result
 times = range(0.0, tₑ, length=150)
 colors = [findnode(soln(t), :C) for t in times]
 
 # Initial frame
-fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = extrema(vcat(colors...)), colormap=:plasma)
+# fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = extrema(vcat(colors...)), colormap=:jet)
+fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = (-0.0001, 0.0001), colormap=:jet)
 Colorbar(fig[1,2], ob)
 framerate = 5
 
@@ -158,8 +172,17 @@ end
 
 # velocity(p) = [-p[2]/p[1], 1.0, sign(p[1]*abs(p[3]))]#/log(abs(p[3])+1)
 begin
+  ϕ(p) = atan(p[2]/p[1])
+  θ(p) = atan(sqrt(p[2]^2 + p[1]^2)/p[3])
+  r(p) = sqrt(p[1]^2 + p[2]^2 + p[3]^2)
+  θhat(p) = [cos(ϕ(p))*cos(θ(p)), sin(ϕ(p))*cos(θ(p)), -sin(θ(p))]
+  ϕhat(p) = [-sin(ϕ(p)), cos(ϕ(p)), 0]
+  rhat(p) = [cos(ϕ(p))*sin(θ(p)), sin(ϕ(p))*sin(θ(p)), cos(θ(p))]
+  v = -1
+  velocity(p) = [v*θhat(p)]#/log(abs(p[3])+1)
+  
 ps = earth[:point]
-ns = 100*Vec3f.(map(velocity, ps))
+# ns = 100*Vec3f.(map(velocity, ps))
 arrows(
     ps, ns, fxaa=true, # turn on anti-aliasing
     linecolor = :gray, arrowcolor = :gray,
