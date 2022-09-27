@@ -3,6 +3,7 @@ using Catlab
 using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
 using Catlab.Present
+using Catlab.Programs
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
@@ -218,8 +219,56 @@ end
 end
 
 @testset "Compose via Structured Cospans" begin
+
   """
-      function compose_decapodes(decapodes_vars, relation::RelationDiagram)
+      function unique_by!(acset, column_names::Vector{Symbol})
+
+  Given column names from the same table, remove duplicate rows.
+
+  # Examples
+  ```julia-repl
+  julia> g = @acset Graph begin
+    V = 2
+    E = 3
+    src = [1,1,2]
+    tgt = [1,1,2]
+  end
+  julia> unique_by!(g, :E, [:src, :tgt])
+  ``` 
+  """
+  function unique_by!(acset, table::Symbol, columns::Vector{Symbol})
+    rows = columns .|> (x -> acset[x]) |> (x -> zip(x...)) |> collect
+    rem_parts!(acset, table,
+      setdiff(parts(acset, table),
+        unique(i -> rows[i], eachindex(rows))))
+    return acset
+  end 
+
+  """
+      function unique_by(acset, column_names::Vector{Symbol})
+
+  Given column names from the same table, return a copy of the acset with
+  duplicate rows removed.
+
+  # Examples
+  ```julia-repl
+  julia> g = @acset Graph begin
+    V = 2
+    E = 3
+    src = [1,1,2]
+    tgt = [1,1,2]
+  end
+  julia> unique_by(g, :E, [:src, :tgt])
+  ``` 
+  """
+  function unique_by(acset, table::Symbol, columns::Vector{Symbol})
+    acset_copy = copy(acset)
+    unique_by!(acset_copy, table, columns)
+  end 
+
+  """
+      function compose_decapodes(decapodes_vars::Vector{Tuple{NamedDecapode{
+        Any, Any, Symbol}, Vector{Symbol}}}, relation::RelationDiagram)
 
   Compose a list of decapodes as specified by the given relation diagram.
 
@@ -254,21 +303,22 @@ end
     # relation is the same as the number of symbols in the corresponding vector
     # of Vars.
 
-    # Step -4: Determine the mapping of global ports to local ports. (i.e. for
-    # each (box,junction) pair, determine whether this corresponds to the 1st
-    # Var of that box, or the 2nd Var of that box, etc.)
+    # Step -4: Determine the mapping of global ports to local ports.
+    # In a RelationDiagram, this is baked into the order of rows in the Port
+    # table.
+    # (i.e. for each (box,junction) pair, determine whether this corresponds to
+    # the 1st Var of that box, or the 2nd Var of that box, etc.)
     # tuples (box, indices of rows with that box):
     box_rows = [(b, incident(r, b, :box)) for b in unique(r[:box])]
-    # Decrement each index by the offset of the first index of the group from
-    # row 1.
     local_ports = [map(y -> y-idxs[begin]+1, idxs) for (b, idxs) in box_rows]
-    # Put into a column that one could hcat to the Ports table.
+    # This is a column that one could hcat to the Ports table.
     local_ports = local_ports |> flatten |> collect
 
     # Step -3: Check that the types of all Vars connected by the same
     # junction are the same.
     # Note that this has been "pulled apart" for readability.
     foreach(parts(r, :Junction)) do j
+      # Check that all types are equal to the first type found.
       j_idxs = incident(r, j, :junction)
       first_box = copies[r[:box][j_idxs]] |> first
       first_lp_idx = local_ports[j_idxs] |> first
@@ -330,33 +380,18 @@ end
     end
     dec = oapply(relation, OpenNamedDecapodes) |> apex
 
-    # TODO: Perhaps split the de-duplication steps into a single function,
-    # or create a function that generalizes de-duplication over all ACSets
-    # and all Objects.
     # Step 3: De-duplicate Op1s.
-    # In SQL: Select DISTINCT src, tgt, op1 FROM Op1;
-    op1_rows = zip(dec[:src], dec[:tgt], dec[:op1]) |> collect
-    rem_parts!(dec, :Op1,
-      setdiff(parts(dec, :Op1),
-        unique(i -> op1_rows[i], eachindex(op1_rows))))
+    unique_by!(dec, :Op1, [:src, :tgt, :op1])
 
     # Step 4: De-duplicate Op2s.
-    # In SQL: Select DISTINCT proj1, proj2, res, op2 FROM Op2;
-    op2_rows = zip(dec[:proj1], dec[:proj2], dec[:res], dec[:op2]) |> collect
-    rem_parts!(dec, :Op2,
-      setdiff(parts(dec, :Op2),
-        unique(i -> op2_rows[i], eachindex(op2_rows))))
+    unique_by!(dec, :Op2, [:proj1, :proj2, :res, :op2])
 
-    # TODO: In case we have to de-duplicate tvars, this is the code. The zip |>
-    # collect idiom is used here to mirror the prior de-dups.
+    # TODO: In case we have to de-duplicate tvars, this is the code.
     ## Step 5: De-duplicate TVars.
-    ## In SQL: Select DISTINCT incl FROM TVar;
-    #tvar_rows = zip(dec[:incl]) |> collect
-    #rem_parts!(dec, :TVar,
-    #  setdiff(parts(dec, :TVar),
-    #    unique(i -> tvar_rows[i], eachindex(tvar_rows))))
+    #unique_by!(dec, :TVar, [:incl])
 
     # TODO: There must be a final step where you remove namespacing.
+
     return dec
   end
 
@@ -364,107 +399,6 @@ end
   function compose_decapodes(decapode_vars, relation::RelationDiagram)
     compose_decapodes([decapode_vars], relation)
   end
-
-  DiffusionExprBody =  quote
-    C::Form0{X}
-    Ċ::Form0{X}
-    ϕ::Form1{X}
-  
-    # Fick's first law
-    ϕ ==  ∘(k, d₀)(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-    ∂ₜ(C) == Ċ
-  end
-  AdvectionExprBody =  quote
-    C::Form0{X}
-    V::Form1{X}
-    ϕ::Form1{X}
-
-    ϕ == ∧₀₁(C,V)
-  end
-
-  diffExpr = parse_decapode(DiffusionExprBody)
-  ddp = NamedDecapode(diffExpr)
-
-  advExpr = parse_decapode(AdvectionExprBody)
-  adp = NamedDecapode(advExpr)
-  dac = @relation () begin
-    diffusion(C,Ċ,ϕ)
-    advection(C,V,ϕ)
-  end
-
-  OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
-
-  oddp = OpenNamedDecapode{Any,Any,Symbol}(ddp, FinFunction([1], 3), FinFunction([2], 3), FinFunction([3], 3));
-  oadp = OpenNamedDecapode{Any,Any,Symbol}(adp, FinFunction([1], 3), FinFunction([2], 3), FinFunction([3], 3));
-
-  combined = oapply(dac, [oddp, oadp]) |> apex
-
-
-  combined_expected = @acset NamedDecapode{Any, Any, Symbol} begin
-    Var = 4
-    type = [:Form0, :infer, :Form1, :Form1]
-    #name = [:C, :Ċ, :ϕ, :V]
-    name = [:C, :diffusion_Ċ, :ϕ, :V]
-    
-    TVar = 1
-    incl = [2]
-    
-    Op1 = 3
-    src = [1,3,1]
-    tgt = [3,2,2]
-    op1 = [[:k, :d₀], [:⋆₀⁻¹, :dual_d₁, :⋆₁], :∂ₜ]
-  
-    Op2 = 1
-    proj1 = [1]
-    proj2 = [4]
-    res = [3]
-    op2 = [:∧₀₁]
-  end
-  # TODO: This should really be a test for equality between canonical forms
-  # (since order within tables does not matter save for preserving mappings
-  # between tables.)
-  @test combined == combined_expected
-
-  # TODO: Add a test that checks that there are no duplicate records in the Op1 table.
-
-  # Test that there are no duplicates in the Op2 table.
-  # TODO: Rewrite this test by calling the compose_decapodes function when finished.
-  adpov_self = OpenNamedDecapode{Any, Any, Symbol}(adp, FinFunction([1,2,3], 3), FinFunction([1,2,3], 3))
-  adpov_self_compd = apex(compose(adpov_self, adpov_self))
-  op2_tuples = zip(adpov_self_compd[:proj1], adpov_self_compd[:proj2], adpov_self_compd[:res], adpov_self_compd[:op2]) |> collect
-  rem_parts!(adpov_self_compd, :Op2,
-      setdiff(parts(adpov_self_compd, :Op2),
-          unique(i -> op2_tuples[i], 1:length(op2_tuples))))
-  #┌─────┬───────┬──────┐
-  #│ Var │  type │ name │
-  #├─────┼───────┼──────┤
-  #│   1 │ Form0 │    C │
-  #│   2 │ Form1 │    V │
-  #│   3 │ Form1 │    ϕ │
-  #└─────┴───────┴──────┘
-  #┌─────┬───────┬───────┬─────┬─────┐
-  #│ Op2 │ proj1 │ proj2 │ res │ op2 │
-  #├─────┼───────┼───────┼─────┼─────┤
-  #│   2 │     1 │     2 │   3 │ ∧₀₁ │
-  #└─────┴───────┴───────┴─────┴─────┘
-  adpov_self_expected = @acset NamedDecapode{Any, Any, Symbol} begin
-    Var = 3
-    type = [:Form0, :Form1, :Form1]
-    name = [:C, :V, :ϕ]
-  
-    Op2 = 1
-    proj1 = [1]
-    proj2 = [2]
-    res = [3]
-    op2 = [:∧₀₁]
-  end
-  # TODO: This should really be a test for equality between canonical forms
-  # (since order within tables does not matter save for preserving mappings
-  # between tables.)
-  @test adp == adpov_self_expected
-
 
   # This is the example from the "Overview" page in the docs.
   DiffusionExprBody =  quote
@@ -474,7 +408,6 @@ end
     # Fick's first law
     ϕ ==  ∘(k, d₀)(C)
   end
-
   AdvectionExprBody = quote
     C::Form0{X}
     V::Form1{X}
@@ -482,7 +415,6 @@ end
     
     ϕ == ∧₀₁(C,V)
   end
-
   SuperpositionExprBody = quote
     C::Form0{X}
     Ċ::Form0{X}
@@ -495,39 +427,102 @@ end
     ∂ₜ(C) == Ċ
   end
 
-  diffExpr = parse_decapode(DiffusionExprBody)
-  Diffusion = NamedDecapode(diffExpr)
+  difExpr = parse_decapode(DiffusionExprBody)
+  Diffusion = NamedDecapode(difExpr)
 
   advExpr = parse_decapode(AdvectionExprBody)
   Advection = NamedDecapode(advExpr)
 
-  sdvExpr = parse_decapode(SuperpositionExprBody)
-  Superposition = NamedDecapode(sdvExpr)
+  supExpr = parse_decapode(SuperpositionExprBody)
+  Superposition = NamedDecapode(supExpr)
 
-  using Catlab.Programs
   compose_diff_adv = @relation (C,V) begin
     diffusion(C, ϕ₁)
     advection(C, ϕ₂, V)
     superposition(ϕ₁, ϕ₂, ϕ, C)
   end
 
-  decapodes_vars = [(Diffusion, [:C, :ϕ]), (Advection, [:C, :ϕ, :V]),
+  decapodes_vars = [
+    (Diffusion, [:C, :ϕ]),
+    (Advection, [:C, :ϕ, :V]),
     (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
 
-  #diffpov = OpenNamedDecapode{Any,Any,Symbol}(copies[1], FinFunction([1],2), FinFunction([2],2));
-  #advepov = OpenNamedDecapode{Any,Any,Symbol}(copies[2], FinFunction([1],3), FinFunction([3],3), FinFunction([2],3));
-  #supepov = OpenNamedDecapode{Any,Any,Symbol}(copies[3], FinFunction([4],5), FinFunction([5],5), FinFunction([3],5), FinFunction([1],5));
-  #oapply(r, [diffpov, advepov, supepov]);
+  dif_adv_sup = compose_decapodes(decapodes_vars, compose_diff_adv)
+  dif_adv_sup_expected = @acset NamedDecapode{Any, Any, Symbol} begin
+    Var = 6
+    type = [:Form0, :Form1, :Form1, :Form1, :infer, :Form1]
+    name = [:C, :ϕ₁, :V, :ϕ₂, :superposition_Ċ, :ϕ]
 
-  # TODO: Turn this into a test.
-  compose_decapodes(decapodes_vars, compose_diff_adv)
+    TVar = 1
+    incl = [5]
 
-  # TODO: Make this a test. (That Op2s are properly de-duplicated.)
-  #self_adv = @relation () begin
-  #  advection(C,V,ϕ)
-  #  advection(C,V,ϕ)
-  #end
-  #compose_decapodes([(adp, [:C,:V,:ϕ]), (adp, [:C,:V,:ϕ])], self_adv)
+    Op1 = 3
+    src = [1,6,1]
+    tgt = [2,5,5]
+    op1 = [[:k, :d₀], [:⋆₀⁻¹, :dual_d₁, :⋆₁], :∂ₜ]
+
+    Op2 = 2
+    proj1 = [1,2]
+    proj2 = [3,4]
+    res = [4,6]
+    op2 = [:∧₀₁, :+]
+  end
+  @test dif_adv_sup == dif_adv_sup_expected
+
+  # Test that Op2s are properly de-duplicated.
+  AdvectionExprBody =  quote
+    C::Form0{X}
+    V::Form1{X}
+    ϕ::Form1{X}
+    ϕ == ∧₀₁(C,V)
+  end
+  advExpr = parse_decapode(AdvectionExprBody)
+  Advection = NamedDecapode(advExpr)
+  self_adv = @relation () begin
+    advection(C,V,ϕ)
+    advection(C,V,ϕ)
+  end
+  adv_adv = [
+   (Advection, [:C,:V,:ϕ]),
+   (Advection, [:C,:V,:ϕ])]
+  self_adv_comp = compose_decapodes(adv_adv, self_adv)
+  self_adv_comp_expected = @acset NamedDecapode{Any, Any, Symbol} begin
+    Var = 3
+    type = [:Form0, :Form1, :Form1]
+    name = [:C, :V, :ϕ]
+    Op2 = 1
+    proj1 = [1]
+    proj2 = [2]
+    res = [3]
+    op2 = [:∧₀₁]
+  end
+  @test self_adv_comp == self_adv_comp_expected
+
+  # Test that a relation of only one decapode is handled properly.
+  AdvectionExprBody =  quote
+    C::Form0{X}
+    V::Form1{X}
+    ϕ::Form1{X}
+    ϕ == ∧₀₁(C,V)
+  end
+  advExpr = parse_decapode(AdvectionExprBody)
+  Advection = NamedDecapode(advExpr)
+  self_adv = @relation () begin
+    advection(C,V,ϕ)
+  end
+  self_adv_comp = compose_decapodes((Advection, [:C,:V,:ϕ]), self_adv)
+  self_adv_comp_expected = @acset NamedDecapode{Any, Any, Symbol} begin
+    Var = 3
+    type = [:Form0, :Form1, :Form1]
+    name = [:C, :V, :ϕ]
+    Op2 = 1
+    proj1 = [1]
+    proj2 = [2]
+    res = [3]
+    op2 = [:∧₀₁]
+  end
+  @test self_adv_comp == self_adv_comp_expected
+
 end
 
 
