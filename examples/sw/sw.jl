@@ -8,10 +8,10 @@ using MLStyle
 using Distributions
 using LinearAlgebra
 
-function generate(sd, my_symbol; hodge=DiagonalHodge())
+function generate(sd, my_symbol; hodge=GeometricHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
   op = @match my_symbol begin
-    :k => x->x/2
+    :k => x->2000x
     :⋆₀ => x->⋆(0,sd,hodge=hodge)*x
     :⋆₁ => x->⋆(1, sd, hodge=hodge)*x
     :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=hodge)
@@ -25,7 +25,7 @@ function generate(sd, my_symbol; hodge=DiagonalHodge())
     # :L₀ => (v,x)->dual_derivative(1, sd)*(i0(v, x))
     :L₀ => (v,x)->begin
       # dual_derivative(1, sd)*⋆(1, sd)*wedge_product(Tuple{1,0}, sd, v, x)
-      ⋆(1, sd)*wedge_product(Tuple{1,0}, sd, v, x)
+      ⋆(1, sd; hodge=hodge)*wedge_product(Tuple{1,0}, sd, v, x)
     end
     :i₀ => i0 
     :debug => (args...)->begin println(args[1], length.(args[2:end])) end
@@ -108,25 +108,28 @@ sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
 fₘ = sim(earth)
 
 # velocity(p) = [-p[2]/p[1], 1.0, 0]/log(abs(p[3])+1)
-velocity(p) = [-p[2]/p[1], 0.0, sign(p[1]*abs(p[3]))]#/log(abs(p[3])+1)
+velocity(p) = [-0p[2]/p[1], 0.0, sign(p[1]*abs(p[3]))]#/log(abs(p[3])+1)
 # velocity(p) = begin
 #   θ = atan(-p[2]/p[1])
 #   return [sin(θ), cos(θ), 0]*abs(norm(p)-p[3])/norm(p)
 # end
 # velocity(p) = [0, 0, sign(p[1]*abs(p[3]))]#/log(abs(p[3])+1)
-v = flat_op(earth, DualVectorField(velocity.(earth[triangle_center(earth),:dual_point])); dims=[30, 10, Inf])
+
+# v = flat_op(earth, DualVectorField(velocity.(earth[triangle_center(earth),:dual_point])); dims=[30,10,Inf])#,1/2*[radius, radius, radius])
+# v = ♭(earth, DualVectorField(velocity.(earth[triangle_center(earth),:dual_point])))
+v = ♭(earth, DualVectorField(velocity.(earth[triangle_center(earth),:dual_point])))
 c_dist = MvNormal([radius/√(2), radius/√(2)], 20*[1, 1])
 c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
 
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(2000v)],Float64[], [:C, :V])
+u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(500v)],Float64[], [:C, :V])
 mesh(primal_earth, color=findnode(u₀, :C), colormap=:plasma)
-tₑ = 2.2
+tₑ = 30.0
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 end
 
 Figure()
-scatter(0:tₑ/150:tₑ, [norm(findnode(soln(t), :C)) for t in 0:tₑ/150:tₑ ])
+scatter(0:tₑ/150:tₑ, [sum(⋆(0, earth)*findnode(soln(t), :C)) for t in 0:tₑ/150:tₑ ])
 
 mesh(primal_earth, color=findnode(soln(tₑ), :C), colormap=:plasma)
 begin
@@ -135,7 +138,8 @@ times = range(0.0, tₑ, length=150)
 colors = [findnode(soln(t), :C) for t in times]
 
 # Initial frame
-fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = extrema(vcat(colors...)), colormap=:plasma)
+# fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = extrema(vcat(colors...)), colormap=:plasma)
+fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = (-0.04, 0.04), colormap=:jet)
 Colorbar(fig[1,2], ob)
 framerate = 5
 
