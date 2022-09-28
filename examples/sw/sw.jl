@@ -8,6 +8,8 @@ using MLStyle
 using Distributions
 using LinearAlgebra
 
+flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
+
 function generate(sd, my_symbol; hodge=GeometricHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
   op = @match my_symbol begin
@@ -53,7 +55,9 @@ ddp = NamedDecapode(diffExpr)
 gensim(expand_operators(ddp), [:C])
 f = eval(gensim(expand_operators(ddp), [:C]))
 
+include("coordinates.jl")
 include("spherical_meshes.jl")
+
 radius = 6371+90
 primal_earth, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, radius);
 nploc = primal_earth[npi, :point]
@@ -108,17 +112,13 @@ sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
 
 fₘ = sim(earth)
 
-# velocity(p) = [-p[2]/p[1], 1.0, 0]/log(abs(p[3])+1)
-# velocity(p) = [-0p[2]/p[1], 0.0, sign(p[1]*abs(p[3]))]#/log(abs(p[3])+1)
-phi(p) = atan(p[2]/p[1])
-theta(p) = atan(sqrt(p[2]^2 + p[1]^2)/p[3])
-θhat(p) = [cos(phi(p))*cos(theta(p)), sin(phi(p))*cos(theta(p)), -sin(theta(p))]
-ϕhat(p) = [-sin(phi(p)), cos(phi(p)), 0]
-rhat(p) = [cos(phi(p))*sin(theta(p)), sin(phi(p))*sin(theta(p)), cos(theta(p))]
-v = -1
-velocity(p) = v*ϕhat(p)#/log(abs(p[3])+1)
 
-v = ♭(earth, DualVectorField(velocity.(earth[triangle_center(earth),:dual_point])))
+vmag = 500
+# velocity(p) = vmag*ϕhat(p)
+velocity(p) = TangentBasis(CartesianPoint(p))((0, -vmag/4, 0))
+# velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, -vmag/4, 0))
+
+v = flatten(velocity, earth)
 c_dist = MvNormal([radius/√(2), radius/√(2)], 20*[1, 1])
 c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
 
@@ -131,7 +131,7 @@ c_dist = MvNormal([x, y, z], 20*[1, 1, 1])
 c = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
 
 
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(500v)],Float64[], [:C, :V])
+u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(collect(v))],Float64[], [:C, :V])
 mesh(primal_earth, color=findnode(u₀, :C), colormap=:plasma)
 tₑ = 30.0
 
@@ -139,10 +139,10 @@ prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 end
 
-Figure()
-scatter(0:tₑ/150:tₑ, [sum(⋆(0, earth)*findnode(soln(t), :C)) for t in 0:tₑ/150:tₑ ])
+mass(soln, t, mesh, concentration=:C) = sum(⋆(0, mesh)*findnode(soln(t), concentration))
+@show extrema(mass(soln, t, earth, :C) for t in 0:tₑ/150:tₑ)
 
-mesh(primal_earth, color=findnode(soln(tₑ), :C), colormap=:jet)
+mesh(primal_earth, color=findnode(soln(0) - soln(tₑ), :C), colormap=:jet)
 begin
 # Plot the result
 times = range(0.0, tₑ, length=150)
