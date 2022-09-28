@@ -119,7 +119,7 @@ begin
 
 # visualize the vector field
   ps = earth[:point]
-  ns = ((x->100x) ∘ (x->Vec3f(x...))∘velocity).(ps)
+  ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
   arrows(
       ps, ns, fxaa=true, # turn on anti-aliasing
       linecolor = :gray, arrowcolor = :gray,
