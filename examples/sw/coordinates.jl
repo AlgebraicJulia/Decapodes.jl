@@ -52,7 +52,6 @@ function (tb::TangentBasis)(w)
 end
 
 function (tb::TangentBasis{P})(w) where {P <: SpherePoint}
-    println("here")
     return w
 end
 
