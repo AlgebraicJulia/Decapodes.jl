@@ -355,7 +355,7 @@ end
     for (copy_idx, box_name) in enumerate(r[:name])
       for (name_idx, var_name) in enumerate(copies[copy_idx][:name])
         copies[copy_idx][:name][name_idx] = Symbol(
-          string(box_name)*"_"*string(copies[copy_idx][:name][name_idx]))
+          string(box_name)*"_"*string(var_name))
       end
     end
 
