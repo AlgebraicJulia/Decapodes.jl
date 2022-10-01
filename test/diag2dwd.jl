@@ -225,8 +225,7 @@ end
 
 @testset "Decapode Composition" begin
 
-  """
-      function unique_by!(acset, column_names::Vector{Symbol})
+  """      function unique_by!(acset, column_names::Vector{Symbol})
 
   Given column names from the same table, remove duplicate rows.
   
@@ -247,15 +246,16 @@ end
   ``` 
   """
   function unique_by!(acset, table::Symbol, columns::Vector{Symbol})
-    rows = columns .|> (x -> acset[x]) |> (x -> zip(x...)) |> collect
+    # TODO: Declarative CT methods are prefered to imperative index arithmetic.
+    # Replace this.
+    rows = mapreduce(x -> acset[x], hcat, columns)
     rem_parts!(acset, table,
       setdiff(parts(acset, table),
-        unique(i -> rows[i], eachindex(rows))))
+        unique(i -> rows[i,:], eachindex(eachrow(rows)))))
     return acset
   end 
 
-  """
-      function unique_by(acset, column_names::Vector{Symbol})
+  """      function unique_by(acset, column_names::Vector{Symbol})
 
   Given column names from the same table, return a copy of the acset with
   duplicate rows removed. Removal of rows is performed with prejudice.
@@ -281,9 +281,9 @@ end
     unique_by!(acset_copy, table, columns)
   end 
 
-  """
-      function compose_decapodes(decapodes_vars::Vector{Tuple{NamedDecapode{
-        Any, Any, Symbol}, Vector{Symbol}}}, relation::RelationDiagram)
+  """      function compose_decapodes(decapodes_vars::Vector{
+    Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}}},
+    relation::RelationDiagram)
 
   Compose a list of decapodes as specified by the given relation diagram.
 
@@ -313,93 +313,131 @@ end
     # just oapply if you are willing to import oapply from
     # Catlab.WiringDiagrams).
     r = relation
-    copies = decapodes_vars .|> first .|> copy
-    # TODO: We should also check that the number of variables given in the
-    # relation is the same as the number of symbols in the corresponding vector
-    # of Vars.
+    copies = @. copy(first(decapodes_vars))
 
-    # Step -4: Determine the mapping of global ports to local ports.
+    # Check that the number of decapodes given matches the number of boxes in
+    # the relation.
+    #num_boxes = nparts(r, :Box)
+    num_boxes = nboxes(r)
+    num_decapodes = length(decapodes_vars)
+    # TODO: Should this be an ArgumentError?
+    num_boxes == num_decapodes || error(
+      "$(num_boxes) decapodes were specified in the relation but only "*
+      "$(num_decapodes) were given.")
+
+    # Check that the number of variables given in the relation is the same as
+    # the number of symbols in the corresponding vector of Vars.
+    # TODO: Should this be an ArgumentError?
+    #for b ∈ parts(r, :Box)
+    for b ∈ boxes(r)
+      # Note: This only returns the first length mismatch found.
+      num_junctions = length(incident(r, b, :box))
+      num_symbols = length(decapodes_vars[b][2])
+      num_junctions == num_symbols || let decapode_name = r[b,  :name]
+        error("Decapode \"$(decapode_name)\" needs $(num_junctions) "*
+        "variables, but $(num_symbols) were specified.")
+      end
+    end
+
+    ## Determine the mapping of global ports to local ports.
     # In a RelationDiagram, this is baked into the order of rows in the Port
     # table.
-    # (i.e. for each (box,junction) pair, determine whether this corresponds to
-    # the 1st Var of that box, or the 2nd Var of that box, etc.)
-    # tuples (box, indices of rows with that box):
-    box_rows = [(b, incident(r, b, :box)) for b in unique(r[:box])]
-    local_ports = [map(y -> y-idxs[begin]+1, idxs) for (b, idxs) in box_rows]
     # This is a column that one could hcat to the Ports table.
-    local_ports = local_ports |> flatten |> collect
+    local_ports = [lp for b=boxes(r) for lp=eachindex(ports(r, b))]
 
-    # Step -3: Check that the types of all Vars connected by the same
+    # TODO: Split this part into a function that does type-checking.
+    ## Check that the types of all Vars connected by the same
     # junction are the same.
-    foreach(parts(r, :Junction)) do j
+    #for j ∈ parts(r, :Junction)
+    for j ∈ junctions(r)
       # Check that all types are equal to the first type found.
-      j_idxs = incident(r, j, :junction)
-      first_box = copies[r[:box][j_idxs]] |> first
-      first_lp_idx = local_ports[j_idxs] |> first
-      first_type = first_box[:type][first_lp_idx]
-      foreach(r[:box][j_idxs], local_ports[j_idxs]) do b_idx, lp_idx
+      #P = incident(r, j, :junction)
+      P = ports_with_junction(r, j)
+      p₁ = first(P)
+      b₁ = r[p₁, :box]
+      lp₁ = local_ports[p₁]
+      type₁ = copies[b₁][lp₁, :type]
+      for p ∈ rest(P, 2)
+        b = r[p, :box]
+        lp = local_ports[p]
         # Get the index of the row with this name in the box's Var table.
-        name = decapodes_vars[b_idx][2][lp_idx]
-        local_name_idx = incident(copies[b_idx], name, [:name]) |> only
-        # TODO: The `infer` type will never be here once the decapodes parsing
-        # is finished being refactored. So we don't check for it here.
+        symbol_name = decapodes_vars[b][2][lp]
+        var = only(incident(copies[b], symbol_name, :name))
+        type = copies[b][var, :type]
         # Note: This only returns the first type error found.
-        copies[b_idx][:type][local_name_idx] == first_type ||
-          error("The type of $(copies[b_idx][:name][local_name_idx]),
-            $(copies[b_idx][:type][local_name_idx]), in decapode
-            \"$(r[:name][b_idx])\" does not match the type of
-            $(first_box[:name][local_name_idx]), $(first_type), in decapode
-            $(r[:name][first(j_idxs)]). (Also, check that the order of the
-            decapodes you supplied matches the the order you specified in the
-            relation.)")
+        type == type₁ || let
+          # TODO: These variables aren't needed outside of this let block.
+          # Should we move them to where the rest of the ₁ variables are and
+          # current_ variables are respectively anyway? Seems cleaner, but
+          # perhaps wasteful in terms of unnecessary allocations.
+          var_name =  copies[b ][var, :name]
+          var_name₁ = copies[b₁][var, :name]
+          decapode_name =  r[b,  :name]
+          decapode_name₁ = r[b₁, :name]
+          error("The type of $(var_name), $(type), in decapode "*
+            "\"$(decapode_name)\" does not match the type of $(var_name₁), "*
+            "$(type₁), in decapode \"$(decapode_name₁)\". "*
+            "(Also, check that the order of the decapodes you supplied "*
+            "matches the the order you specified in the relation.)")
+        end
       end
     end
 
-    # Step -2: Do namespacing.
+    ## Do namespacing.
     # Append each Var name with the name @relation gave the decapode.
-    for (copy_idx, box_name) in enumerate(r[:name])
-      for (name_idx, var_name) in enumerate(copies[copy_idx][:name])
-        copies[copy_idx][:name][name_idx] = Symbol(
-          string(box_name)*"_"*string(var_name))
+    #for b ∈ parts(r, :Box)
+    for b ∈ boxes(r)
+      box_name = r[b, :name]
+      for v ∈ parts(copies[b], :Var)
+        var_name = copies[b][v, :name]
+        copies[b][v, :name] = Symbol(string(box_name)*"_"*string(var_name))
       end
     end
+    # or
+    #for b ∈ boxes(r)
+    #  box_name = string(r[:name, b])
+    #  map!(copies[b][:name], copies[b][:name]) do n
+    #    Symbol(box_name * "_" * string(n))
+    #  end
+    #end
+    # or
 
-    # Step -1: Write over the name fields to be what was specified by
-    # @relation. (oapply cannot combine objects whose attrtypes are not equal.)
-    foreach(r[:box], r[:junction], local_ports) do b_idx, j_idx, lp_idx
+    ## Write over the name fields to be what was specified by @relation. (oapply
+    # cannot combine objects whose attributes are not equal.)
+    #for p ∈ parts(r, :Port)
+    for p ∈ ports(r)
+      b = r[p, :box]
+      j = r[p, :junction]
+      lp = local_ports[p]
       # Get the index of the row with this name in the Var.
-      name = decapodes_vars[b_idx][2][lp_idx]
-      name = Symbol(string(r[:name][b_idx])*"_"*string(name))
-      #local_name_idx = incident(copies[b_idx], name, :name) |> only
-      local_name_idx = findfirst(==(name), copies[b_idx][:name]) |> only
-      copies[b_idx][:name][local_name_idx] = r[:variable][j_idx]
+      symbol_name = decapodes_vars[b][2][lp]
+      name = Symbol(string(r[:name][b])*"_"*string(symbol_name))
+      var = only(incident(copies[b], name, :name))
+      #var = findfirst(==(name), copies[b][:name])
+      copies[b][var, :name] = r[j, :variable]
     end
 
-    # Step 2: Start composing.
+    ## Start composing.
+    # TODO: Move these types outside of this function.
     OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
     
-    OpenNamedDecapodes = map(copies, decapodes_vars) do curr_copy, d_vs
-      variables = last(d_vs)
-      FinFunctions = map(variables) do var
-        FinFunction(incident(curr_copy, var, :name), nparts(curr_copy, :Var))
+    #openNamedDecapodes = map(parts(r, :Box)) do b
+    openNamedDecapodes = map(boxes(r)) do b
+      curr_copy = copies[b]
+      #P = incident(r, b, :box)
+      P = ports(r, b)
+      J = r[P, :junction]
+      V = r[J, :variable]
+      FinFunctions = map(V) do v
+        FinFunction(incident(curr_copy, v, :name), nparts(curr_copy, :Var))
       end
       # TODO: It would be less brittle to pass the type information from the
       # decapodes.
       OpenNamedDecapode{Any, Any, Symbol}(curr_copy, FinFunctions...)
     end
-    dec = oapply(relation, OpenNamedDecapodes) |> apex
+    dec = apex(oapply(relation, openNamedDecapodes))
 
-    # Step 3: De-duplicate Op1s.
-    unique_by!(dec, :Op1, [:src, :tgt, :op1])
-
-    # Step 4: De-duplicate Op2s.
-    unique_by!(dec, :Op2, [:proj1, :proj2, :res, :op2])
-
-    # TODO: In case we have to de-duplicate tvars, this is the code.
-    ## Step 5: De-duplicate TVars.
-    #unique_by!(dec, :TVar, [:incl])
-
-    # TODO: There must be a final step where you remove namespacing.
+    ## TODO: Undo namespacing.
 
     return dec
   end
@@ -477,9 +515,22 @@ end
     op2 = [:∧₀₁, :+]
   end
   @test dif_adv_sup == dif_adv_sup_expected
+  
+  # Test some other permutation of the symbols yields the same decapode.
+  compose_diff_adv = @relation (C,V) begin
+    diffusion(C, ϕ₁)
+    advection(V, ϕ₂, C)
+    superposition(ϕ₁, ϕ₂, C, ϕ)
+  end
+  decapodes_vars = [
+    (Diffusion, [:C, :ϕ]),
+    (Advection, [:V, :ϕ, :C]),
+    (Superposition, [:ϕ₁, :ϕ₂, :C, :ϕ])]
+  dif_adv_sup = compose_decapodes(decapodes_vars, compose_diff_adv)
+  @test dif_adv_sup == dif_adv_sup_expected
 
   # Test that Op2s are properly de-duplicated.
-  AdvectionExprBody =  quote
+  AdvectionExprBody = quote
     C::Form0{X}
     V::Form1{X}
     ϕ::Form1{X}
@@ -495,6 +546,10 @@ end
    (Advection, [:C,:V,:ϕ]),
    (Advection, [:C,:V,:ϕ])]
   adv_adv_comp = compose_decapodes(adv_adv, self_adv)
+  # De-duplicate Op1s.
+  unique_by!(adv_adv_comp, :Op1, [:src, :tgt, :op1])
+  # De-duplicate Op2s.
+  unique_by!(adv_adv_comp, :Op2, [:proj1, :proj2, :res, :op2])
   adv_adv_comp_expected = @acset NamedDecapode{Any, Any, Symbol} begin
     Var = 3
     type = [:Form0, :Form1, :Form1]
@@ -532,28 +587,43 @@ end
   end
   @test adv_comp == adv_comp_expected
 
-end
+  # Simplest possible decapode relation.
+  TrivialExprBody = quote
+    H::Form0{X}
+  end
+  trivalExpr = parse_decapode(TrivialExprBody)
+  Trivial = NamedDecapode(trivalExpr)
+  trivial_relation = @relation () begin
+    trivial(H)
+  end
+  trivial_comp = compose_decapodes((Trivial, [:H]), trivial_relation)
+  @test trivial_comp == Trivial
 
-
-AdvDiff = quote
-    C::Form0{X}
-    Ċ::Form0{X}
-    V::Form1{X}
-    ϕ::Form1{X}
-    ϕ₁::Form1{X}
-    ϕ₂::Form1{X}
-
-    # Fick's first law
-    ϕ₁ ==  (k ∘ d₀)(C)
-    ϕ₂ == ∧₀₁(C,V)
-    ϕ == ϕ₁ + ϕ₂
-    # Diffusion equation
-    ∂ₜ(C) == Ċ
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
 end
 
 advdiff = parse_decapode(AdvDiff)
 advdiffdp = SummationDecapode(advdiff)
 to_graphviz(advdiffdp)
 
-compile(advdiffdp, [:C, :V])
+#AdvDiff = quote
+#    C::Form0{X}
+#    Ċ::Form0{X}
+#    V::Form1{X}
+#    ϕ::Form1{X}
+#    ϕ₁::Form1{X}
+#    ϕ₂::Form1{X}
+#
+#    # Fick's first law
+#    ϕ₁ ==  (k ∘ d₀)(C)
+#    ϕ₂ == ∧₀₁(C,V)
+#    ϕ == ϕ₁ + ϕ₂
+#    # Diffusion equation
+#    ∂ₜ(C) == Ċ
+#    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+#end
+#
+#advdiff = parse_decapode(AdvDiff)
+#advdiffdp = NamedDecapode(advdiff)
+#to_graphviz(advdiffdp)
+#
+#compile(advdiffdp, [:C, :V])
