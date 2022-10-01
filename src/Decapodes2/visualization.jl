@@ -92,3 +92,23 @@ function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode; kw
     return pg
 end
 
+function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; kw...)
+    tmp = NamedDecapode{Any, Any, Symbol}()
+    # FIXME we have to copy to cast
+    copy_parts!(tmp, d)
+    G = to_graphviz_property_graph(tmp; kw...)
+    findvid(G, d, v) = incident(G.graph, [Dict{Symbol, Any}(:label=>varname(d, v))], :vprops)
+    white_nodes = map(parts(d, :Σ)) do s
+        v = add_vertex!(G, label="Σ$s", shape="circle")
+        u = d[s, :sum]
+        matches = findvid(G, d, u)
+        length(matches) == 1 || error("did not find a unique vertex match for Σ$s")
+        uG = first(first(matches))
+        add_edge!(G, v, uG, label="+")
+        return v
+    end
+    for e in parts(d, :Summand)
+        e = add_edge!(G, d[e, :summand], white_nodes[d[e, :summation]], style="dashed")
+    end
+    return G
+end

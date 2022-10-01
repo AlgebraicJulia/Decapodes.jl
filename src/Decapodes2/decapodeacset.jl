@@ -71,3 +71,17 @@ function expand_operators(d::AbstractNamedDecapode)
   end
   return e
 end
+
+@present SchSummationDecapode <: SchNamedDecapode begin
+  # Σ are the white nodes in the Decapode drawing
+  # Summands are the edges that connect white nodes to variables (the projection maps)
+  # because addition is commutative, we don't need to distinguish the order
+  (Σ, Summand)::Ob
+  summand::Hom(Summand, Var)
+  summation::Hom(Summand, Σ)
+  sum::Hom(Σ, Var)
+end
+
+@acset_type SummationDecapode(SchSummationDecapode,
+  index=[:src, :tgt, :res, :incl, :op1, :op2, :type]) <: AbstractNamedDecapode
+
