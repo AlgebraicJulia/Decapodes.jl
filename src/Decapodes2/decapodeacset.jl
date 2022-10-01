@@ -19,18 +19,19 @@ end
 end
 
 @abstract_acset_type AbstractDecapode
+@abstract_acset_type AbstractNamedDecapode <: AbstractDecapode
 
 @acset_type Decapode(SchDecapode,
   index=[:src, :tgt, :res, :incl, :op1, :op2, :type]) <: AbstractDecapode
 
 @acset_type NamedDecapode(SchNamedDecapode,
-  index=[:src, :tgt, :res, :incl, :op1, :op2, :type, :name]) <: AbstractDecapode
+  index=[:src, :tgt, :res, :incl, :op1, :op2, :type, :name]) <: AbstractNamedDecapode
 
 """    fill_names!
 
 add new variable names to all the variables that don't have names.
 """
-function fill_names!(d::NamedDecapode)
+function fill_names!(d::AbstractNamedDecapode)
     bulletcount = 1
     for i in parts(d, :Var)
         if !isassigned(d[:,:name],i)
@@ -46,7 +47,7 @@ function fill_names!(d::NamedDecapode)
     return d
 end
 
-function expand_operators(d::NamedDecapode)
+function expand_operators(d::AbstractNamedDecapode)
   e = NamedDecapode{Symbol, Symbol, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op2))
   newvar = 0
