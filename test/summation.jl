@@ -37,8 +37,11 @@ NavierStokes = quote
 end
 
 parse_decapode(NavierStokes)
-parse_decapode(NavierStokes)
 nsdp = SummationDecapode(parse_decapode(NavierStokes))
+@test nparts(nsdp, :Σ) == 2
+@test nparts(nsdp, :Var) == 26
+@test nparts(nsdp, :Op2) == 5
+@test nparts(nsdp, :Summand) == 7
 savevizsvg(nsdp, "physics.svg")
 
 NavierStokes_unnested = quote
@@ -61,7 +64,9 @@ NavierStokes_unnested = quote
   end
 
 parse_decapode(NavierStokes_unnested)
-parse_decapode(NavierStokes_unnested)
 nsdp = SummationDecapode(parse_decapode(NavierStokes_unnested))
 savevizsvg(nsdp, "physics_unnested.svg")
-
+@test nparts(nsdp, :Σ) == 2
+@test nparts(nsdp, :Var) == 26
+@test nparts(nsdp, :Op2) == 5
+@test nparts(nsdp, :Summand) == 7
