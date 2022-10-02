@@ -228,7 +228,7 @@ end
   """      function unique_by!(acset, column_names::Vector{Symbol})
 
   Given column names from the same table, remove duplicate rows.
-  
+
   WARNING: This function does not check if other tables index into the one
   given. Removal of rows is performed with prejudice.
 
@@ -236,14 +236,9 @@ end
 
   # Examples
   ```julia-repl
-  julia> g = @acset Graph begin
-    V = 2
-    E = 3
-    src = [1,1,2]
-    tgt = [1,1,2]
-  end
-  julia> unique_by!(g, :E, [:src, :tgt])
-  ``` 
+  julia> unique_by!(parallel_arrows(Graph, 123), :E, [:src,:tgt]) == parallel_arrows(Graph, 1)
+  true
+  ```
   """
   function unique_by!(acset, table::Symbol, columns::Vector{Symbol})
     # TODO: Declarative CT methods are prefered to imperative index arithmetic.
@@ -253,7 +248,7 @@ end
       setdiff(parts(acset, table),
         unique(i -> rows[i,:], eachindex(eachrow(rows)))))
     return acset
-  end 
+  end
 
   """      function unique_by(acset, column_names::Vector{Symbol})
 
@@ -267,23 +262,73 @@ end
 
   # Examples
   ```julia-repl
-  julia> g = @acset Graph begin
-    V = 2
-    E = 3
-    src = [1,1,2]
-    tgt = [1,1,2]
-  end
-  julia> unique_by(g, :E, [:src, :tgt])
-  ``` 
+  julia> unique_by(parallel_arrows(Graph, 123), :E, [:src,:tgt]) == parallel_arrows(Graph, 1)
+  true
+  ```
   """
   function unique_by(acset, table::Symbol, columns::Vector{Symbol})
     acset_copy = copy(acset)
     unique_by!(acset_copy, table, columns)
-  end 
+  end
 
-  """      function compose_decapodes(decapodes_vars::Vector{
-    Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}}},
-    relation::RelationDiagram)
+  """    function type_check_decapodes_composition(decapodes_vars, relation, local_ports)
+
+  Check that the types of all Vars connected by the same junction match.
+
+  This function only throws an error on the first type mismatch found.
+  """
+  function type_check_decapodes_composition(decapodes_vars, relation, local_ports)
+    r = relation
+    decs = first.(decapodes_vars)
+    vars = last.(decapodes_vars)
+    for j ∈ junctions(r)
+      # Get the type of the first variable attached to this junction.
+      P = ports_with_junction(r, j)
+      p₁ = first(P)
+      b₁ = r[p₁, :box]
+      lp₁ = local_ports[p₁]
+      type₁ = decs[b₁][lp₁, :type]
+      # Compare the first type to the rest of the types.
+      for p ∈ rest(P, 2)
+        b = r[p, :box]
+        lp = local_ports[p]
+        symbol_name = vars[b][lp]
+        var = only(incident(decs[b], symbol_name, :name))
+        type = decs[b][var, :type]
+        # TODO: We use == here because we assume a type is a Symbol, like
+        # :Form0, :Form1. Will a type ever be something we should compare using
+        # isequal instead?
+        type == type₁ || let
+          var_name =  decs[b ][var, :name]
+          var_name₁ = decs[b₁][var, :name]
+          decapode_name =  r[b,  :name]
+          decapode_name₁ = r[b₁, :name]
+          error("The type of $(var_name), $(type), in decapode "*
+            "\"$(decapode_name)\" does not match the type of $(var_name₁), "*
+            "$(type₁), in decapode \"$(decapode_name₁)\". "*
+            "(Also, check that the order of the decapodes you supplied "*
+            "matches the the order you specified in the relation.)")
+        end
+      end
+    end
+  end
+
+  OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
+
+  # TODO: This does not work:
+  # function OpenNamedDecapode(relation, decapode, box)
+  function MakeOpenNamedDecapode(relation::RelationDiagram,
+    decapode::NamedDecapode{Any, Any, Symbol}, box)
+    P = ports(relation, box)
+    J = relation[P, :junction]
+    V = relation[J, :variable]
+    FinFunctions = map(V) do v
+      FinFunction(incident(decapode, v, :name), nparts(decapode, :Var))
+    end
+    OpenNamedDecapode{Any, Any, Symbol}(decapode, FinFunctions...)
+  end
+
+  """    function compose_decapodes(decapodes_vars::Vector{Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}}}, relation::RelationDiagram)
 
   Compose a list of decapodes as specified by the given relation diagram.
 
@@ -299,10 +344,11 @@ end
     diffusion(C, ϕ₁)
     advection(C, ϕ₂, V)
     superposition(ϕ₁, ϕ₂, ϕ, C)
-  end
+  end;
+
   julia> compose_decapodes([(Diffusion, [:C, :ϕ]), (Advection, [:C, :ϕ, :V]),
-    (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])], compose_diff_adv)
-  ````
+    (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])], compose_diff_adv);
+  ```
   """
   function compose_decapodes(decapodes_vars::Vector{Tuple{NamedDecapode{
     Any, Any, Symbol}, Vector{Symbol}}}, relation::RelationDiagram)
@@ -317,7 +363,6 @@ end
 
     # Check that the number of decapodes given matches the number of boxes in
     # the relation.
-    #num_boxes = nparts(r, :Box)
     num_boxes = nboxes(r)
     num_decapodes = length(decapodes_vars)
     # TODO: Should this be an ArgumentError?
@@ -328,7 +373,6 @@ end
     # Check that the number of variables given in the relation is the same as
     # the number of symbols in the corresponding vector of Vars.
     # TODO: Should this be an ArgumentError?
-    #for b ∈ parts(r, :Box)
     for b ∈ boxes(r)
       # Note: This only returns the first length mismatch found.
       num_junctions = length(incident(r, b, :box))
@@ -345,104 +389,42 @@ end
     # This is a column that one could hcat to the Ports table.
     local_ports = [lp for b=boxes(r) for lp=eachindex(ports(r, b))]
 
-    # TODO: Split this part into a function that does type-checking.
-    ## Check that the types of all Vars connected by the same
-    # junction are the same.
-    #for j ∈ parts(r, :Junction)
-    for j ∈ junctions(r)
-      # Check that all types are equal to the first type found.
-      #P = incident(r, j, :junction)
-      P = ports_with_junction(r, j)
-      p₁ = first(P)
-      b₁ = r[p₁, :box]
-      lp₁ = local_ports[p₁]
-      type₁ = copies[b₁][lp₁, :type]
-      for p ∈ rest(P, 2)
-        b = r[p, :box]
-        lp = local_ports[p]
-        # Get the index of the row with this name in the box's Var table.
-        symbol_name = decapodes_vars[b][2][lp]
-        var = only(incident(copies[b], symbol_name, :name))
-        type = copies[b][var, :type]
-        # Note: This only returns the first type error found.
-        type == type₁ || let
-          # TODO: These variables aren't needed outside of this let block.
-          # Should we move them to where the rest of the ₁ variables are and
-          # current_ variables are respectively anyway? Seems cleaner, but
-          # perhaps wasteful in terms of unnecessary allocations.
-          var_name =  copies[b ][var, :name]
-          var_name₁ = copies[b₁][var, :name]
-          decapode_name =  r[b,  :name]
-          decapode_name₁ = r[b₁, :name]
-          error("The type of $(var_name), $(type), in decapode "*
-            "\"$(decapode_name)\" does not match the type of $(var_name₁), "*
-            "$(type₁), in decapode \"$(decapode_name₁)\". "*
-            "(Also, check that the order of the decapodes you supplied "*
-            "matches the the order you specified in the relation.)")
-        end
-      end
-    end
+    ## Check that types of variables connected by the same junction match.
+    # "Do typechecking."
+    type_check_decapodes_composition(decapodes_vars, relation, local_ports)
 
     ## Do namespacing.
     # Append each Var name with the name @relation gave the decapode.
-    #for b ∈ parts(r, :Box)
     for b ∈ boxes(r)
       box_name = r[b, :name]
       for v ∈ parts(copies[b], :Var)
         var_name = copies[b][v, :name]
-        copies[b][v, :name] = Symbol(string(box_name)*"_"*string(var_name))
+        copies[b][v, :name] = Symbol(box_name, '_', var_name)
       end
     end
-    # or
-    #for b ∈ boxes(r)
-    #  box_name = string(r[:name, b])
-    #  map!(copies[b][:name], copies[b][:name]) do n
-    #    Symbol(box_name * "_" * string(n))
-    #  end
-    #end
-    # or
 
     ## Write over the name fields to be what was specified by @relation. (oapply
     # cannot combine objects whose attributes are not equal.)
-    #for p ∈ parts(r, :Port)
     for p ∈ ports(r)
       b = r[p, :box]
       j = r[p, :junction]
       lp = local_ports[p]
       # Get the index of the row with this name in the Var.
       symbol_name = decapodes_vars[b][2][lp]
-      name = Symbol(string(r[:name][b])*"_"*string(symbol_name))
+      name = Symbol((r[:name][b]), '_', symbol_name)
+      # Note: only is not necessary but is a useful check the decapode is
+      # well-formed. If we ever want e.g. X:Form0 and X:Form1 in a single
+      # decapode, this will need refactoring.
       var = only(incident(copies[b], name, :name))
-      #var = findfirst(==(name), copies[b][:name])
       copies[b][var, :name] = r[j, :variable]
     end
 
-    ## Start composing.
-    # TODO: Move these types outside of this function.
-    OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
-    
-    #openNamedDecapodes = map(parts(r, :Box)) do b
-    openNamedDecapodes = map(boxes(r)) do b
-      curr_copy = copies[b]
-      #P = incident(r, b, :box)
-      P = ports(r, b)
-      J = r[P, :junction]
-      V = r[J, :variable]
-      FinFunctions = map(V) do v
-        FinFunction(incident(curr_copy, v, :name), nparts(curr_copy, :Var))
-      end
-      # TODO: It would be less brittle to pass the type information from the
-      # decapodes.
-      OpenNamedDecapode{Any, Any, Symbol}(curr_copy, FinFunctions...)
-    end
-    dec = apex(oapply(relation, openNamedDecapodes))
-
-    ## TODO: Undo namespacing.
-
-    return dec
+    ## Compose
+    apex(oapply(relation, map(boxes(r)) do b
+      MakeOpenNamedDecapode(r, copies[b], b)
+    end))
   end
 
-  # TODO: Is this the best way to get multiple dispatch to work?
   function compose_decapodes(decapode_vars, relation::RelationDiagram)
     compose_decapodes([decapode_vars], relation)
   end
@@ -451,7 +433,7 @@ end
   DiffusionExprBody =  quote
     C::Form0{X}
     ϕ::Form1{X}
-                             
+
     # Fick's first law
     ϕ ==  ∘(k, d₀)(C)
   end
@@ -459,7 +441,7 @@ end
     C::Form0{X}
     V::Form1{X}
     ϕ::Form1{X}
-    
+
     ϕ == ∧₀₁(C,V)
   end
   SuperpositionExprBody = quote
@@ -468,7 +450,7 @@ end
     ϕ::Form1{X}
     ϕ₁::Form1{X}
     ϕ₂::Form1{X}
-                                 
+
     ϕ == ϕ₁ + ϕ₂
     Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
     ∂ₜ(C) == Ċ
@@ -515,7 +497,7 @@ end
     op2 = [:∧₀₁, :+]
   end
   @test dif_adv_sup == dif_adv_sup_expected
-  
+
   # Test some other permutation of the symbols yields the same decapode.
   compose_diff_adv = @relation (C,V) begin
     diffusion(C, ϕ₁)
