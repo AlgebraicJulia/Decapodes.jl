@@ -11,6 +11,7 @@ using CombinatorialSpaces
 using Decapodes
 using Test
 using MLStyle
+using LinearAlgebra
 
 C = VectorForm(ones(Float64, 10))
 V = VectorForm(ones(Float64, 100))
