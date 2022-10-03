@@ -1,6 +1,20 @@
 
 import Catlab.WiringDiagrams: oapply
 
+OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
+
+#FIXME: why can't we just add a constructor for OpenNamedDecapode
+function OpenPode(d::NamedDecapode, names::AbstractVector{Symbol})
+  legs = map(names) do name
+    FinFunction(incident(d, name, :name), nparts(d, :Var))
+  end
+  OpenNamedDecapode{Any, Any, Symbol}(d, legs...)
+end
+
+apex(decapode::OpenNamedDecapode) = apex(decapode.cospan)
+legs(decapode::OpenNamedDecapode) = legs(decapode.cospan)
+feet(decapode::OpenNamedDecapode) = decapode.feet
+
 """      function unique_by!(acset, column_names::Vector{Symbol})
 
 Given column names from the same table, remove duplicate rows.
@@ -88,12 +102,10 @@ function type_check_decapodes_composition(decapodes_vars, relation, local_ports)
   end
 end
 
-OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
 
 # TODO: This does not work:
 # function OpenNamedDecapode(relation, decapode, box)
-function MakeOpenNamedDecapode(relation::RelationDiagram,
-  decapode::NamedDecapode{Any, Any, Symbol}, box)
+function MakeOpenNamedDecapode(relation::RelationDiagram, decapode::NamedDecapode, box)
   P = ports(relation, box)
   J = relation[P, :junction]
   V = relation[J, :variable]
@@ -125,10 +137,11 @@ julia> oapply(compose_diff_adv, [(Diffusion, [:C, :ϕ]),
   (Advection, [:C, :ϕ, :V]), (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]);
 ```
 """
-function oapply(relation::RelationDiagram, decapodes_vars::Vector{
-  Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}}})
+function oapply(relation::RelationDiagram, decapodes_vars::Vector{OpenNamedDecapode})
   r = relation
-  copies = @. copy(first(decapodes_vars))
+  # FIXME: in this line, you should cast the NamedDecapode{S,T, Symbol} to NamedDecapode{S,T,Vector{Symbol}}
+  # This will allow you to return namespace scoped variables.
+  copies = deepcopy(decapodes_vars)
 
   # Check that the number of decapodes given matches the number of boxes in the
   # relation.
@@ -145,11 +158,11 @@ function oapply(relation::RelationDiagram, decapodes_vars::Vector{
   for b ∈ boxes(r)
     # Note: This only returns the first length mismatch found.
     num_junctions = length(incident(r, b, :box))
-    num_symbols = length(decapodes_vars[b][2])
+    num_symbols = length(feet(decapodes_vars[b]))
     num_junctions == num_symbols || let decapode_name = r[b,  :name]
-      error("Decapode \"$(decapode_name)\" needs $(num_junctions) "*
-      "variables, but $(num_symbols) were specified.")
+      error("Component $(decapode_name) expects $(num_junctions) interface variables, but number of feet is $(num_symbols).")
     end
+    # FIXME: this should also check the types of the feet.
   end
 
   # Determine the mapping of global ports to local ports. In a RelationDiagram,
@@ -162,6 +175,7 @@ function oapply(relation::RelationDiagram, decapodes_vars::Vector{
 
   # Do namespacing.
   # Append each Var name with the name @relation gave the decapode.
+  # FIXME: return a list of symbols here instead of underscore separated list.
   for b ∈ boxes(r)
     box_name = r[b, :name]
     for v ∈ parts(copies[b], :Var)
@@ -172,28 +186,40 @@ function oapply(relation::RelationDiagram, decapodes_vars::Vector{
 
   # Write over the name fields to be what was specified by @relation. (oapply
   # cannot combine objects whose attributes are not equal.)
-  for p ∈ ports(r)
-    b = r[p, :box]
-    j = r[p, :junction]
-    lp = local_ports[p]
-    # Get the index of the row with this name in the Var.
-    symbol_name = decapodes_vars[b][2][lp]
-    name = Symbol((r[:name][b]), '_', symbol_name)
-    # Note: only is not necessary but is a useful check the decapode is
-    # well-formed. If we ever want e.g. X:Form0 and X:Form1 in a single
-    # decapode, this will need refactoring.
-    var = only(incident(copies[b], name, :name))
-    copies[b][var, :name] = r[j, :variable]
+
+  newnames = map(boxes(r)) do b
+    pode = decapodes_vars[b]
+    ports = incident(r, b, :box)
+    localnames = map(enumerate(ports)) do (i,p)
+      localnamevec = feet(pode)[i][:name]
+      length(localnamevec) == 1 || error("Decapode arguments to oapply do not support bundling. Each foot should have 1 vertex")
+      localnamevec[1]
+    end
+
+    map(zip(ports, localnames)) do (p, lname)
+      # FIXME: this will break when we add proper namespacing
+      # Note: only is not necessary but is a useful check the decapode is
+      # well-formed. If we ever want e.g. X:Form0 and X:Form1 in a single
+      # decapode, this will need refactoring.
+      name = Symbol(r[b, :name], '_', lname)
+      var = only(incident(pode, name, :name))
+      j = r[p, :junction]
+      globalname = r[j, :variable]
+      pode[var, :name] = globalname
+      return globalname
+    end
+  end
+
+  newpodes = map(boxes(r)) do b
+    OpenPode(apex(decapodes_vars[b]), newnames[b])
   end
 
   # Compose
-  apex(oapply(relation, map(boxes(r)) do b
-    MakeOpenNamedDecapode(r, copies[b], b)
-  end))
+  oapply(relation, newpodes)
 end
 
-function oapply(relation::RelationDiagram,
-  decapode_vars::Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}})
-  oapply(relation, [decapode_vars])
-end
+# function oapply(relation::RelationDiagram,
+#   decapode_vars::Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}})
+#   oapply(relation, [decapode_vars])
+# end
 

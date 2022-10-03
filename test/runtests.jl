@@ -19,3 +19,7 @@ end
 @testset "MultiScaleArrays" begin
   include("multiscalearrays.jl")
 end
+
+@testset "Decapodes2" begin
+  include(joinpath(@__DIR__, "Decapodes2", "runtests.jl")
+end
