@@ -7,7 +7,8 @@ using Catlab.CategoricalAlgebra
 using Decapodes
 import Decapodes: DecaExpr, eval_eq!
 
-
+using Catlab.Graphics
+using Catlab.Graphics.Graphviz
 savevizsvg(g, fname::String) = open(fname, "w") do fp
   run_graphviz(fp, to_graphviz(to_graphviz_property_graph(nsdp)), prog="neato", format="svg")
 end
