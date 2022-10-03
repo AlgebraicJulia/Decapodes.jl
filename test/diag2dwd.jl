@@ -225,6 +225,8 @@ end
 
 @testset "Decapode Composition" begin
 
+  import Catlab.WiringDiagrams: oapply
+
   """      function unique_by!(acset, column_names::Vector{Symbol})
 
   Given column names from the same table, remove duplicate rows.
@@ -328,7 +330,7 @@ end
     OpenNamedDecapode{Any, Any, Symbol}(decapode, FinFunctions...)
   end
 
-  """    function compose_decapodes(decapodes_vars::Vector{Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}}}, relation::RelationDiagram)
+  """    function oapply(relation::RelationDiagram, decapodes_vars::Vector{Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}}})
 
   Compose a list of decapodes as specified by the given relation diagram.
 
@@ -346,18 +348,12 @@ end
     superposition(ϕ₁, ϕ₂, ϕ, C)
   end;
 
-  julia> compose_decapodes([(Diffusion, [:C, :ϕ]), (Advection, [:C, :ϕ, :V]),
-    (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])], compose_diff_adv);
+  julia> oapply(compose_diff_adv, [(Diffusion, [:C, :ϕ]),
+    (Advection, [:C, :ϕ, :V]), (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]);
   ```
   """
-  function compose_decapodes(decapodes_vars::Vector{Tuple{NamedDecapode{
-    Any, Any, Symbol}, Vector{Symbol}}}, relation::RelationDiagram)
-    # TODO: Calling this function "compose" is something of a misnomer.  e.g.
-    # You could very well give a vector containing a single decapode. Then the
-    # effect of applying the relation would be something like renaming
-    # variables. So this function should really be called oapply_decapodes (or
-    # just oapply if you are willing to import oapply from
-    # Catlab.WiringDiagrams).
+  function oapply(relation::RelationDiagram, decapodes_vars::Vector{
+    Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}}})
     r = relation
     copies = @. copy(first(decapodes_vars))
 
@@ -425,8 +421,9 @@ end
     end))
   end
 
-  function compose_decapodes(decapode_vars, relation::RelationDiagram)
-    compose_decapodes([decapode_vars], relation)
+  function oapply(relation::RelationDiagram,
+    decapode_vars::Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}})
+    oapply(relation, [decapode_vars])
   end
 
   # This is the example from the "Overview" page in the docs.
@@ -476,7 +473,7 @@ end
     (Advection, [:C, :ϕ, :V]),
     (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
 
-  dif_adv_sup = compose_decapodes(decapodes_vars, compose_diff_adv)
+  dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
   dif_adv_sup_expected = @acset NamedDecapode{Any, Any, Symbol} begin
     Var = 6
     type = [:Form0, :Form1, :Form1, :Form1, :infer, :Form1]
@@ -508,7 +505,7 @@ end
     (Diffusion, [:C, :ϕ]),
     (Advection, [:V, :ϕ, :C]),
     (Superposition, [:ϕ₁, :ϕ₂, :C, :ϕ])]
-  dif_adv_sup = compose_decapodes(decapodes_vars, compose_diff_adv)
+  dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
   @test dif_adv_sup == dif_adv_sup_expected
 
   # Test that Op2s are properly de-duplicated.
@@ -527,7 +524,7 @@ end
   adv_adv = [
    (Advection, [:C,:V,:ϕ]),
    (Advection, [:C,:V,:ϕ])]
-  adv_adv_comp = compose_decapodes(adv_adv, self_adv)
+  adv_adv_comp = oapply(self_adv, adv_adv)
   # De-duplicate Op1s.
   unique_by!(adv_adv_comp, :Op1, [:src, :tgt, :op1])
   # De-duplicate Op2s.
@@ -556,7 +553,7 @@ end
   adv_relation = @relation () begin
     advection(C,V,ϕ)
   end
-  adv_comp = compose_decapodes((Advection, [:C,:V,:ϕ]), adv_relation)
+  adv_comp = oapply(adv_relation, (Advection, [:C,:V,:ϕ]))
   adv_comp_expected = @acset NamedDecapode{Any, Any, Symbol} begin
     Var = 3
     type = [:Form0, :Form1, :Form1]
@@ -578,7 +575,7 @@ end
   trivial_relation = @relation () begin
     trivial(H)
   end
-  trivial_comp = compose_decapodes((Trivial, [:H]), trivial_relation)
+  trivial_comp = oapply(trivial_relation, (Trivial, [:H]))
   @test trivial_comp == Trivial
 
 end
