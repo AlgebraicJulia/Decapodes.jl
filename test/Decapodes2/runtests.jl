@@ -1,6 +1,6 @@
 using Test
 
 @testset "Composition" begin
-  include("composition.jl")
+  include(joinpath(@__DIR__, "composition.jl"))
 end
 
