@@ -88,11 +88,11 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
         return res_var
       end
       Plus(ts) => begin
-        @show summands = [!(t,d,syms) for t in ts]
-        @show res_var = add_part!(d, :Var, type=:infer, name=:sum)
-        @show n = add_part!(d, :Σ, sum=res_var)
+        summands = [!(t,d,syms) for t in ts]
+        res_var = add_part!(d, :Var, type=:infer, name=:sum)
+        n = add_part!(d, :Σ, sum=res_var)
         map(summands) do s
-          @show add_part!(d, :Summand, summand=s, summation=n)
+          add_part!(d, :Summand, summand=s, summation=n)
         end
         return res_var
       end
@@ -125,11 +125,12 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int})
         push!(deletions, rhs_ref)
       end
       # Case rhs_ref is a Plus
-      for rhs in incident(d, rhs_ref, :sum)
-        println(d)
-        println("Reconciling summation equation $rhs_ref, $lhs_ref")
-        d[rhs, :sum] = lhs_ref
-        push!(deletions, rhs_ref)
+      # FIXME: this typeguard is a subsitute for refactoring into multiple dispatch
+      if isa(d, SummationDecapode)
+        for rhs in incident(d, rhs_ref, :sum)
+          d[rhs, :sum] = lhs_ref
+          push!(deletions, rhs_ref)
+        end
       end
       # TODO: delete unused vars. The only thing stopping me from doing 
       # this is I don't know if CSet deletion preserves incident relations
