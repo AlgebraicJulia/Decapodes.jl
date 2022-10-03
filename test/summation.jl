@@ -9,11 +9,6 @@ import Decapodes: DecaExpr, eval_eq!
 
 using Catlab.Graphics
 using Catlab.Graphics.Graphviz
-savevizsvg(g, fname::String) = open(fname, "w") do fp
-  run_graphviz(fp, to_graphviz(to_graphviz_property_graph(nsdp)), prog="neato", format="svg")
-end
-
-
 
 NavierStokes = quote
     V::Form1{X}
@@ -43,7 +38,7 @@ nsdp = SummationDecapode(parse_decapode(NavierStokes))
 @test nparts(nsdp, :Var) == 26
 @test nparts(nsdp, :Op2) == 5
 @test nparts(nsdp, :Summand) == 7
-savevizsvg(nsdp, "physics.svg")
+to_graphviz_property_graph(nsdp)
 
 NavierStokes_unnested = quote
     V::Form1{X}
@@ -66,8 +61,9 @@ NavierStokes_unnested = quote
 
 parse_decapode(NavierStokes_unnested)
 nsdp = SummationDecapode(parse_decapode(NavierStokes_unnested))
-savevizsvg(nsdp, "physics_unnested.svg")
 @test nparts(nsdp, :Σ) == 2
 @test nparts(nsdp, :Var) == 26
 @test nparts(nsdp, :Op2) == 5
 @test nparts(nsdp, :Summand) == 7
+
+to_graphviz_property_graph(nsdp)
