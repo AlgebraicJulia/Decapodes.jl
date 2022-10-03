@@ -112,3 +112,7 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; kw...)
     end
     return G
 end
+
+savevizsvg(g, fname::String) = open(fname, "w") do fp
+  run_graphviz(fp, to_graphviz(to_graphviz_property_graph(nsdp)), prog="neato", format="svg")
+end

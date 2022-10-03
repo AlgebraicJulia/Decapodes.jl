@@ -44,21 +44,21 @@ js = [Judge(Var(:C), :Form0, :X),
 # TODO: Do we need to handle the fact that all the functions are parameterized by a space?
 eqs = [Eq(Var(:Ċ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
        Eq(Var(:Ċ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
-       Eq(Tan(Var(:C)), Plus(Var(:Ċ₁), Var(:Ċ₂)))
+       Eq(Tan(Var(:C)), Plus([Var(:Ċ₁), Var(:Ċ₂)]))
 ]
 diffusion_d = DecaExpr(js, eqs)
-diffusion_cset = Decapode(diffusion_d)
-diffusion_cset_named = NamedDecapode(diffusion_d)
+# diffusion_cset = Decapode(diffusion_d)
+diffusion_cset_named = SummationDecapode(diffusion_d)
 # A test with expressions on LHS (i.e. temporary variables must be made)
 # TODO: we should be intelligent and realize that the LHS of the first two
 # equations are the same and so can share a new variable
-eqs = [Eq(Plus(Var(:Ċ₁), Var(:Ċ₂)), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
-       Eq(Plus(Var(:Ċ₁), Var(:Ċ₂)), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
-       Eq(Tan(Var(:C)), Plus(Var(:Ċ₁), Var(:Ċ₂)))    
+eqs = [Eq(Plus([Var(:Ċ₁), Var(:Ċ₂)]), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
+       Eq(Plus([Var(:Ċ₁), Var(:Ċ₂)]), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
+       Eq(Tan(Var(:C)), Plus([Var(:Ċ₁), Var(:Ċ₂)]))    
 ]
 test_d = DecaExpr(js, eqs)
-test_cset = Decapode(test_d)
-test_cset_named = NamedDecapode(test_d)
+# test_cset = Decapode(test_d)
+test_cset_named = SummationDecapode(test_d)
 
 # TODO: Write tests for recursive expressions
 
@@ -70,11 +70,11 @@ Judge(Var(:ϕ₂), :Form0, :X)
 ]
 sup_eqs = [Eq(Var(:ϕ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
        Eq(Var(:ϕ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
-       Eq(Tan(Var(:C)), Plus(Var(:ϕ₁), Var(:ϕ₂)))    
+       Eq(Tan(Var(:C)), Plus([Var(:ϕ₁), Var(:ϕ₂)]))
 ]
 sup_d = DecaExpr(sup_js, sup_eqs)
-sup_cset = Decapode(sup_d)
-sup_cset_named = NamedDecapode(sup_d)
+# sup_cset = Decapode(sup_d)
+sup_cset_named = SummationDecapode(sup_d)
 
 
 compile(diffusion_cset_named, [:C,])
@@ -107,13 +107,14 @@ end
   end
 
   recExpr = parse_decapode(Recursion)
-  rdp = NamedDecapode(recExpr)
+  rdp = SummationDecapode(recExpr)
   show(rdp)
 
   @test nparts(rdp, :Var) == 9
   @test nparts(rdp, :TVar) == 1
   @test nparts(rdp, :Op1) == 5
-  @test nparts(rdp, :Op2) == 3
+  @test nparts(rdp, :Op2) == 2
+  @test nparts(rdp, :Σ) == 1
 end
 Recursion = quote
   x::Form0{X}
@@ -125,7 +126,7 @@ Recursion = quote
 end
 
 recExpr = parse_decapode(Recursion)
-rdp = NamedDecapode(recExpr)
+rdp = SummationDecapode(recExpr)
 
 @testset "Diffusion Diagram" begin
     DiffusionExprBody =  quote
@@ -141,7 +142,7 @@ rdp = NamedDecapode(recExpr)
     end
 
     diffExpr = parse_decapode(DiffusionExprBody)
-    ddp = NamedDecapode(diffExpr)
+    ddp = SummationDecapode(diffExpr)
     to_graphviz(ddp)
 
     @test nparts(ddp, :Var) == 3
@@ -161,7 +162,7 @@ end
     end
 
     advdecexpr = parse_decapode(Advection)
-    advdp = NamedDecapode(advdecexpr)
+    advdp = SummationDecapode(advdecexpr)
     @test nparts(advdp, :Var) == 3
     @test nparts(advdp, :TVar) == 0
     @test nparts(advdp, :Op1) == 0
@@ -182,11 +183,13 @@ end
     end
 
     superexp = parse_decapode(Superposition)
-    supdp = NamedDecapode(superexp)
+    supdp = SummationDecapode(superexp)
     @test nparts(supdp, :Var) == 5
     @test nparts(supdp, :TVar) == 1
     @test nparts(supdp, :Op1) == 2
-    @test nparts(supdp, :Op2) == 1
+    @test nparts(supdp, :Op2) == 0
+    @test nparts(supdp, :Σ) == 1
+    @test nparts(supdp, :Summand) == 2
 end
 
 @testset "AdvectionDiffusion Diagram" begin
@@ -210,11 +213,13 @@ end
     end
 
     advdiff = parse_decapode(AdvDiff)
-    advdiffdp = NamedDecapode(advdiff)
+    advdiffdp = SummationDecapode(advdiff)
     @test nparts(advdiffdp, :Var) == 6
     @test nparts(advdiffdp, :TVar) == 1
     @test nparts(advdiffdp, :Op1) == 4
-    @test nparts(advdiffdp, :Op2) == 2
+    @test nparts(advdiffdp, :Op2) == 1
+    @test nparts(advdiffdp, :Σ) == 1
+    @test nparts(advdiffdp, :Summand) == 2
 end
 
 
@@ -236,7 +241,7 @@ AdvDiff = quote
 end
 
 advdiff = parse_decapode(AdvDiff)
-advdiffdp = NamedDecapode(advdiff)
+advdiffdp = SummationDecapode(advdiff)
 to_graphviz(advdiffdp)
 
 compile(advdiffdp, [:C, :V])
