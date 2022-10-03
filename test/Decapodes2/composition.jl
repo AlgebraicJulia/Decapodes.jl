@@ -1,14 +1,28 @@
+using Test
+using Decapodes
+using Catlab
+using Catlab.WiringDiagrams
+using Catlab.Programs
+using Catlab.CategoricalAlgebra
+
+import Decapodes: OpenNamedDecapode, OpenPode
 
 # Simplest possible decapode relation.
 TrivialExprBody = quote
   H::Form0{X}
 end
+
 trivalExpr = parse_decapode(TrivialExprBody)
 Trivial = NamedDecapode(trivalExpr)
 trivial_relation = @relation () begin
   trivial(H)
 end
-trivial_comp = oapply(trivial_relation, (Trivial, [:H]))
+
+otrivial = OpenPode(Trivial, [:H])
+
+trivial_comp = oapply(trivial_relation, [OpenPode(Trivial, [:H])])
+apex(trivial_comp)
+
 @test trivial_comp == Trivial
 
 # Multiple variables and an equation.
@@ -23,7 +37,7 @@ Advection = NamedDecapode(advExpr)
 adv_relation = @relation () begin
   advection(C,V,ϕ)
 end
-adv_comp = oapply(adv_relation, (Advection, [:C,:V,:ϕ]))
+adv_comp = oapply(adv_relation, [OpenPode(Advection, [:C,:V,:ϕ])])
 adv_comp_expected = @acset NamedDecapode{Any, Any, Symbol} begin
   Var = 3
   type = [:Form0, :Form1, :Form1]
@@ -34,7 +48,7 @@ adv_comp_expected = @acset NamedDecapode{Any, Any, Symbol} begin
   res = [3]
   op2 = [:∧₀₁]
 end
-@test adv_comp == adv_comp_expected
+@test apex(adv_comp) == adv_comp_expected
 
 # This is the example from the "Overview" page in the docs.
 DiffusionExprBody =  quote
@@ -79,9 +93,9 @@ compose_diff_adv = @relation (C,V) begin
 end
 
 decapodes_vars = [
-  (Diffusion, [:C, :ϕ]),
-  (Advection, [:C, :ϕ, :V]),
-  (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
+  OpenPode(Diffusion, [:C, :ϕ]),
+  OpenPode(Advection, [:C, :ϕ, :V]),
+  OpenPode(Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
 
 dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
 
@@ -114,6 +128,7 @@ compose_diff_adv = @relation (C,V) begin
   advection(V, ϕ₂, C)
   superposition(ϕ₁, ϕ₂, C, ϕ)
 end
+
 decapodes_vars = [
   (Diffusion, [:C, :ϕ]),
   #(Advection, [:C, :ϕ, :V]),
@@ -121,21 +136,29 @@ decapodes_vars = [
   (Advection, [:V, :ϕ, :C]),
   (Superposition, [:ϕ₁, :ϕ₂, :C, :ϕ])]
 dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
+
 @test dif_adv_sup == dif_adv_sup_expected
 
 # Test that Op2s are properly de-duplicated.
 AdvectionExprBody = quote
   C::Form0{X}
+  Ċ::Form0{X}
   V::Form1{X}
   ϕ::Form1{X}
   ϕ == ∧₀₁(C,V)
+  ∂ₜ(C) == Ċ
+  ∂ₜ(C) == ⋆(ϕ)
 end
+
 advExpr = parse_decapode(AdvectionExprBody)
-Advection = NamedDecapode(advExpr)
+
+Advection = expand_operators(NamedDecapode(advExpr))
+
 self_adv = @relation () begin
-  advection(C,V,ϕ)
-  advection(C,V,ϕ)
+  advection₁(C,V,ϕ)
+  advection₂(C,V,ϕ)
 end
+
 adv_adv = [
  (Advection, [:C,:V,:ϕ]),
  (Advection, [:C,:V,:ϕ])]
