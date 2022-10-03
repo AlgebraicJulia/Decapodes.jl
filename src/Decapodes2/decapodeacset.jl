@@ -48,8 +48,14 @@ function fill_names!(d::AbstractNamedDecapode)
 end
 
 function expand_operators(d::AbstractNamedDecapode)
-  e = NamedDecapode{Symbol, Symbol, Symbol}()
+  e = SummationDecapode{Symbol, Symbol, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op2))
+  expand_operators!(e, d)
+  return e
+end
+
+
+function expand_operators!(e::AbstractNamedDecapode, d::AbstractNamedDecapode)
   newvar = 0
   for op in parts(d, :Op1)
     if !isa(d[op,:op1], AbstractArray)
@@ -69,9 +75,8 @@ function expand_operators(d::AbstractNamedDecapode)
       end
     end
   end
-  return e
+  return newvar
 end
-
 @present SchSummationDecapode <: SchNamedDecapode begin
   # Σ are the white nodes in the Decapode drawing
   # Summands are the edges that connect white nodes to variables (the projection maps)
@@ -85,3 +90,10 @@ end
 @acset_type SummationDecapode(SchSummationDecapode,
   index=[:src, :tgt, :res, :incl, :op1, :op2, :type]) <: AbstractNamedDecapode
 
+
+function expand_operators(d::SummationDecapode)
+  e = SummationDecapode{Symbol, Symbol, Symbol}()
+  copy_parts!(e, d, (:Var, :TVar, :Op2, :Σ, :Summand))
+  expand_operators!(e, d)
+  return e
+end
