@@ -2,6 +2,7 @@ using Catlab
 using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
 using Catlab.Present
+using Catlab.Programs
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
@@ -26,5 +27,6 @@ append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
 include("decapodeacset.jl")
 include("language.jl")
+include("composition.jl")
 include("visualization.jl")
 include("simulation.jl")
