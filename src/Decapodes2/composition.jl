@@ -60,62 +60,24 @@ function unique_by(acset, table::Symbol, columns::Vector{Symbol})
   unique_by!(acset_copy, table, columns)
 end
 
-"""    function type_check_decapodes_composition(decapodes_vars, relation, local_ports)
+"""    function type_check_decapodes_composition(relation::RelationDiagram, decs::Vector{OpenNamedDecapode})
 
 Check that the types of all Vars connected by the same junction match.
 
 This function only throws an error on the first type mismatch found.
 """
-function type_check_decapodes_composition(decapodes_vars, relation, local_ports)
+function type_check_decapodes_composition(relation::RelationDiagram, decs::Vector{OpenNamedDecapode})
   r = relation
-  decs = first.(decapodes_vars)
-  vars = last.(decapodes_vars)
-  for j ∈ junctions(r)
-    # Get the type of the first variable attached to this junction.
-    P = ports_with_junction(r, j)
-    p₁ = first(P)
-    b₁ = r[p₁, :box]
-    lp₁ = local_ports[p₁]
-    type₁ = decs[b₁][lp₁, :type]
-    # Compare the first type to the rest of the types.
-    for p ∈ rest(P, 2)
-      b = r[p, :box]
-      lp = local_ports[p]
-      symbol_name = vars[b][lp]
-      var = only(incident(decs[b], symbol_name, :name))
-      type = decs[b][var, :type]
-      # TODO: We use == here because we assume a type is a Symbol, like
-      # :Form0, :Form1. Will a type ever be something we should compare using
-      # isequal instead?
-      type == type₁ || let
-        var_name =  decs[b ][var, :name]
-        var_name₁ = decs[b₁][var, :name]
-        decapode_name =  r[b,  :name]
-        decapode_name₁ = r[b₁, :name]
-        error("The type of $(var_name), $(type), in decapode "*
-          "\"$(decapode_name)\" does not match the type of $(var_name₁), "*
-          "$(type₁), in decapode \"$(decapode_name₁)\". "*
-          "(Also, check that the order of the decapodes you supplied "*
-          "matches the the order you specified in the relation.)")
-      end
-    end
-  end
+  types = [flatten([f[:type] for f in feet(d)]) for d in decs]
+  return all(map(junctions(r)) do j
+    ports = incident(r, j, :junction)
+    ts = types[ports]
+    all(ts[1] .== ts)
+  end)
 end
 
 
-# TODO: This does not work:
-# function OpenNamedDecapode(relation, decapode, box)
-function MakeOpenNamedDecapode(relation::RelationDiagram, decapode::NamedDecapode, box)
-  P = ports(relation, box)
-  J = relation[P, :junction]
-  V = relation[J, :variable]
-  FinFunctions = map(V) do v
-    FinFunction(incident(decapode, v, :name), nparts(decapode, :Var))
-  end
-  OpenNamedDecapode{Any, Any, Symbol}(decapode, FinFunctions...)
-end
-
-"""    function oapply(relation::RelationDiagram, decapodes_vars::Vector{Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}}})
+"""    function oapply(relation::RelationDiagram, decapodes_vars::Vector{OpenNamedDecapode})
 
 Compose a list of decapodes as specified by the given relation diagram.
 
@@ -171,7 +133,7 @@ function oapply(relation::RelationDiagram, decapodes_vars::Vector{OpenNamedDecap
   local_ports = [lp for b=boxes(r) for lp=eachindex(ports(r, b))]
 
   # Check that types of variables connected by the same junction match.
-  type_check_decapodes_composition(decapodes_vars, relation, local_ports)
+  type_check_decapodes_composition(relation, decapodes_vars) || error("Composition Doesn't Typecheck")
 
   # Do namespacing.
   # Append each Var name with the name @relation gave the decapode.
@@ -218,8 +180,4 @@ function oapply(relation::RelationDiagram, decapodes_vars::Vector{OpenNamedDecap
   oapply(relation, newpodes)
 end
 
-# function oapply(relation::RelationDiagram,
-#   decapode_vars::Tuple{NamedDecapode{Any, Any, Symbol}, Vector{Symbol}})
-#   oapply(relation, [decapode_vars])
-# end
-
+oapply(relation::RelationDiagram, decapode_var::OpenNamedDecapode) = oapply(relation, [decapode_var])
