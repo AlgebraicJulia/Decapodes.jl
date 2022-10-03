@@ -22,5 +22,5 @@ end
 end
 
 @testset "Decapodes2" begin
-  include(joinpath(@__DIR__, "Decapodes2", "runtests.jl")
+  include(joinpath(@__DIR__, "Decapodes2", "runtests.jl"))
 end

@@ -5,8 +5,8 @@ using Catlab.WiringDiagrams
 using Catlab.Programs
 using Catlab.CategoricalAlgebra
 
-import Decapodes: OpenNamedDecapode, OpenPode
-
+import Decapodes: OpenNamedDecapode, OpenPode, oapply_rename
+# @testset "Composition" begin
 # Simplest possible decapode relation.
 TrivialExprBody = quote
   H::Form0{X}
@@ -23,7 +23,7 @@ otrivial = OpenPode(Trivial, [:H])
 trivial_comp = oapply(trivial_relation, [OpenPode(Trivial, [:H])])
 apex(trivial_comp)
 
-@test trivial_comp == Trivial
+@test apex(trivial_comp) == Trivial
 
 # Multiple variables and an equation.
 AdvectionExprBody =  quote
@@ -96,6 +96,7 @@ decapodes_vars = [
   OpenPode(Diffusion, [:C, :ϕ]),
   OpenPode(Advection, [:C, :ϕ, :V]),
   OpenPode(Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
+debugg = oapply_rename(compose_diff_adv, decapodes_vars)
 
 dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
 
@@ -118,7 +119,7 @@ dif_adv_sup_expected = @acset NamedDecapode{Any, Any, Symbol} begin
   res = [4,6]
   op2 = [:∧₀₁, :+]
 end
-@test dif_adv_sup == dif_adv_sup_expected
+@test apex(dif_adv_sup) == dif_adv_sup_expected
 
 # Test some other permutation of the symbols yields the same decapode.
 compose_diff_adv = @relation (C,V) begin
@@ -137,7 +138,7 @@ decapodes_vars = [
   (Superposition, [:ϕ₁, :ϕ₂, :C, :ϕ])]
 dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
 
-@test dif_adv_sup == dif_adv_sup_expected
+@test apex(dif_adv_sup) == dif_adv_sup_expected
 
 # Test that Op2s are properly de-duplicated.
 AdvectionExprBody = quote
@@ -160,8 +161,8 @@ self_adv = @relation () begin
 end
 
 adv_adv = [
- (Advection, [:C,:V,:ϕ]),
- (Advection, [:C,:V,:ϕ])]
+ OpenPode(Advection, [:C,:V,:ϕ]),
+ OpenPode(Advection, [:C,:V,:ϕ])]
 adv_adv_comp = oapply(self_adv, adv_adv)
 # De-duplicate Op1s.
 unique_by!(adv_adv_comp, :Op1, [:src, :tgt, :op1])
@@ -177,5 +178,6 @@ adv_adv_comp_expected = @acset NamedDecapode{Any, Any, Symbol} begin
   res = [3]
   op2 = [:∧₀₁]
 end
-@test adv_adv_comp == adv_adv_comp_expected
+@test apex(adv_adv_comp) == adv_adv_comp_expected
 
+# end
