@@ -1,6 +1,5 @@
 
 import Catlab.WiringDiagrams: oapply
-
 OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
 
 #FIXME: why can't we just add a constructor for OpenNamedDecapode
@@ -11,9 +10,9 @@ function OpenPode(d::NamedDecapode, names::AbstractVector{Symbol})
   OpenNamedDecapode{Any, Any, Symbol}(d, legs...)
 end
 
-apex(decapode::OpenNamedDecapode) = apex(decapode.cospan)
-legs(decapode::OpenNamedDecapode) = legs(decapode.cospan)
-feet(decapode::OpenNamedDecapode) = decapode.feet
+# apex(decapode::OpenNamedDecapode) = apex(decapode.cospan)
+# legs(decapode::OpenNamedDecapode) = legs(decapode.cospan)
+# feet(decapode::OpenNamedDecapode) = decapode.feet
 
 """      function unique_by!(acset, column_names::Vector{Symbol})
 
@@ -66,7 +65,7 @@ Check that the types of all Vars connected by the same junction match.
 
 This function only throws an error on the first type mismatch found.
 """
-function type_check_decapodes_composition(relation::RelationDiagram, decs::Vector{OpenNamedDecapode})
+function type_check_decapodes_composition(relation::RelationDiagram, decs::Vector{D}) where {D<:OpenNamedDecapode}
   r = relation
   types = [flatten([f[:type] for f in feet(d)]) for d in decs]
   return all(map(junctions(r)) do j
@@ -99,12 +98,16 @@ julia> oapply(compose_diff_adv, [(Diffusion, [:C, :ϕ]),
   (Advection, [:C, :ϕ, :V]), (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]);
 ```
 """
-function oapply(relation::RelationDiagram, decapodes_vars::Vector{OpenNamedDecapode})
+function oapply_rename(relation::RelationDiagram, decapodes::Vector)
+  copies = deepcopy(decapodes)
+  oapply_rename!(relation, copies)
+end
+
+function oapply_rename!(relation::RelationDiagram, decapodes::Vector)
   r = relation
+  decapodes_vars = collect(map(apex, decapodes))
   # FIXME: in this line, you should cast the NamedDecapode{S,T, Symbol} to NamedDecapode{S,T,Vector{Symbol}}
   # This will allow you to return namespace scoped variables.
-  copies = deepcopy(decapodes_vars)
-
   # Check that the number of decapodes given matches the number of boxes in the
   # relation.
   num_boxes = nboxes(r)
@@ -120,7 +123,7 @@ function oapply(relation::RelationDiagram, decapodes_vars::Vector{OpenNamedDecap
   for b ∈ boxes(r)
     # Note: This only returns the first length mismatch found.
     num_junctions = length(incident(r, b, :box))
-    num_symbols = length(feet(decapodes_vars[b]))
+    num_symbols = length(feet(decapodes[b]))
     num_junctions == num_symbols || let decapode_name = r[b,  :name]
       error("Component $(decapode_name) expects $(num_junctions) interface variables, but number of feet is $(num_symbols).")
     end
@@ -130,19 +133,19 @@ function oapply(relation::RelationDiagram, decapodes_vars::Vector{OpenNamedDecap
   # Determine the mapping of global ports to local ports. In a RelationDiagram,
   # this is baked into the order of rows in the Port table.
   # This is a column that one could hcat to the Port table.
-  local_ports = [lp for b=boxes(r) for lp=eachindex(ports(r, b))]
+  # local_ports = [lp for b=boxes(r) for lp=eachindex(ports(r, b))]
 
   # Check that types of variables connected by the same junction match.
-  type_check_decapodes_composition(relation, decapodes_vars) || error("Composition Doesn't Typecheck")
+  # type_check_decapodes_composition(relation, decapodes_vars) || error("Composition Doesn't Typecheck")
 
   # Do namespacing.
   # Append each Var name with the name @relation gave the decapode.
   # FIXME: return a list of symbols here instead of underscore separated list.
   for b ∈ boxes(r)
     box_name = r[b, :name]
-    for v ∈ parts(copies[b], :Var)
-      var_name = copies[b][v, :name]
-      copies[b][v, :name] = Symbol(box_name, '_', var_name)
+    for v ∈ parts(decapodes_vars[b], :Var)
+      var_name = decapodes_vars[b][v, :name]
+      decapodes_vars[b][v, :name] = Symbol(box_name, '_', var_name)
     end
   end
 
@@ -173,11 +176,11 @@ function oapply(relation::RelationDiagram, decapodes_vars::Vector{OpenNamedDecap
   end
 
   newpodes = map(boxes(r)) do b
-    OpenPode(apex(decapodes_vars[b]), newnames[b])
+    OpenPode(decapodes_vars[b], newnames[b])
   end
-
-  # Compose
-  oapply(relation, newpodes)
+  return newpodes
 end
 
-oapply(relation::RelationDiagram, decapode_var::OpenNamedDecapode) = oapply(relation, [decapode_var])
+# Compose
+oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenNamedDecapode} = oapply(r, oapply_rename(r, podes))
+oapply(r::RelationDiagram, pode::OpenNamedDecapode) = oapply(r, [pode])
