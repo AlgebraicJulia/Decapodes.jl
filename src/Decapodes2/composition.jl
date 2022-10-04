@@ -1,4 +1,4 @@
-
+import Catlab.CategoricalAlgebra: apex, feet, legs
 import Catlab.WiringDiagrams: oapply
 OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
 
@@ -10,9 +10,9 @@ function OpenPode(d::NamedDecapode, names::AbstractVector{Symbol})
   OpenNamedDecapode{Any, Any, Symbol}(d, legs...)
 end
 
-# apex(decapode::OpenNamedDecapode) = apex(decapode.cospan)
-# legs(decapode::OpenNamedDecapode) = legs(decapode.cospan)
-# feet(decapode::OpenNamedDecapode) = decapode.feet
+apex(decapode::OpenNamedDecapode) = apex(decapode.cospan)
+legs(decapode::OpenNamedDecapode) = legs(decapode.cospan)
+feet(decapode::OpenNamedDecapode) = decapode.feet
 
 """      function unique_by!(acset, column_names::Vector{Symbol})
 
@@ -153,7 +153,7 @@ function oapply_rename!(relation::RelationDiagram, decapodes::Vector)
   # cannot combine objects whose attributes are not equal.)
 
   newnames = map(boxes(r)) do b
-    pode = decapodes_vars[b]
+    pode = decapodes[b]
     ports = incident(r, b, :box)
     localnames = map(enumerate(ports)) do (i,p)
       localnamevec = feet(pode)[i][:name]
@@ -161,16 +161,17 @@ function oapply_rename!(relation::RelationDiagram, decapodes::Vector)
       localnamevec[1]
     end
 
+    pode_vars = decapodes_vars[b]
     map(zip(ports, localnames)) do (p, lname)
       # FIXME: this will break when we add proper namespacing
       # Note: only is not necessary but is a useful check the decapode is
       # well-formed. If we ever want e.g. X:Form0 and X:Form1 in a single
       # decapode, this will need refactoring.
       name = Symbol(r[b, :name], '_', lname)
-      var = only(incident(pode, name, :name))
+      var = only(incident(pode_vars, name, :name))
       j = r[p, :junction]
       globalname = r[j, :variable]
-      pode[var, :name] = globalname
+      pode_vars[var, :name] = globalname
       return globalname
     end
   end
