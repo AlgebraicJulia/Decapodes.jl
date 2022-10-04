@@ -114,8 +114,8 @@ end
 begin
   vmag = 500
   # velocity(p) = vmag*ϕhat(p)
-  velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, vmag/4, 0))
-  # velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, -vmag/4, 0))
+  velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, vmag/4))
+  # velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, -vmag/4))
 
 # visualize the vector field
   ps = earth[:point]
