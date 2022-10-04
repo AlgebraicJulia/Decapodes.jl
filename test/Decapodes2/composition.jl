@@ -5,7 +5,7 @@ using Catlab.WiringDiagrams
 using Catlab.Programs
 using Catlab.CategoricalAlgebra
 
-import Decapodes: OpenNamedDecapode, OpenPode, oapply
+import Decapodes: OpenNamedDecapode, OpenPode, oapply, oapply_rename
 # @testset "Composition" begin
 # Simplest possible decapode relation.
 TrivialExprBody = quote
