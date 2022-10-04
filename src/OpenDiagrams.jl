@@ -7,14 +7,14 @@ import Catlab.WiringDiagrams: oapply
 using Catlab.Programs.DiagrammaticPrograms: NamedGraph # FIXME: Should export?
 using Catlab.Graphics
 
-using CombinatorialSpaces.ExteriorCalculus: ExtCalc2D
+using CombinatorialSpaces.ExteriorCalculus: ThExtCalc2D
 using CombinatorialSpaces
 using Catlab.CategoricalAlgebra.Categories: Functor, Cat
 using Catlab.CategoricalAlgebra.FinCats: FinCatSize, FinCatPresentation
 
 const Diagram2D = Functor{Dom, Codom} where
                     {Ob, Hom, Dom<:(Cat{Ob, Hom, FinCatSize} where
-                      {Ob, Hom}), Codom<:FinCatPresentation{ExtCalc2D, Ob, Hom}}
+                      {Ob, Hom}), Codom<:FinCatPresentation{ThExtCalc2D, Ob, Hom}}
 
 """ Open diagram as a structured multicospan in R-form.
 
