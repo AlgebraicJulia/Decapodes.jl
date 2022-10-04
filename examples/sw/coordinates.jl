@@ -46,8 +46,15 @@ If the base point is in spherical coordinates, this is the identity,
 if the base point is in cartesian coordinates, it returns the tangent vector in cartesian coordinates.
 """
 function (tb::TangentBasis)(w) 
-    return w[1]*θhat(tb) + w[2]*ϕhat(tb)
-    # return w[1]*θhat(tb) + w[2]*ϕhat(tb) + w[3]*rhat(tb)
+    w1p = w[1]*θhat(tb)
+    w2p = w[2]*ϕhat(tb)
+    if tb.p.p[3] < 0
+        w1p = (-1.0)*w1p
+    end
+    if tb.p.p[1] < 0
+        w2p = (-1.0)*w2p
+    end
+    return w1p + w2p
 end
 
 function (tb::TangentBasis{P})(w) where {P <: SpherePoint}
@@ -55,6 +62,13 @@ function (tb::TangentBasis{P})(w) where {P <: SpherePoint}
 end
 
 function (tb::TangentBasis)(w1,w2) 
-    return w1*θhat(tb) + w2*ϕhat(tb)
-    # return w1*θhat(tb) + w2*ϕhat(tb) + w3*rhat(tb)
+    w1p = w1*θhat(tb)
+    w2p = w2*ϕhat(tb)
+    if tb.p.p[3] < 0
+        w1p = (-1.0)*w1p
+    end
+    if tb.p.p[1] < 0
+        w2p = (-1.0)*w2p
+    end
+    return w1p + w2p
 end
