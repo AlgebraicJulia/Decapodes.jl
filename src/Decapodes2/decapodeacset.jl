@@ -19,18 +19,19 @@ end
 end
 
 @abstract_acset_type AbstractDecapode
+@abstract_acset_type AbstractNamedDecapode <: AbstractDecapode
 
 @acset_type Decapode(SchDecapode,
   index=[:src, :tgt, :res, :incl, :op1, :op2, :type]) <: AbstractDecapode
 
 @acset_type NamedDecapode(SchNamedDecapode,
-  index=[:src, :tgt, :res, :incl, :op1, :op2, :type, :name]) <: AbstractDecapode
+  index=[:src, :tgt, :res, :incl, :op1, :op2, :type, :name]) <: AbstractNamedDecapode
 
 """    fill_names!
 
 add new variable names to all the variables that don't have names.
 """
-function fill_names!(d::NamedDecapode)
+function fill_names!(d::AbstractNamedDecapode)
     bulletcount = 1
     for i in parts(d, :Var)
         if !isassigned(d[:,:name],i)
@@ -46,9 +47,15 @@ function fill_names!(d::NamedDecapode)
     return d
 end
 
-function expand_operators(d::NamedDecapode)
-  e = NamedDecapode{Symbol, Symbol, Symbol}()
+function expand_operators(d::AbstractNamedDecapode)
+  e = SummationDecapode{Symbol, Symbol, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op2))
+  expand_operators!(e, d)
+  return e
+end
+
+
+function expand_operators!(e::AbstractNamedDecapode, d::AbstractNamedDecapode)
   newvar = 0
   for op in parts(d, :Op1)
     if !isa(d[op,:op1], AbstractArray)
@@ -68,5 +75,25 @@ function expand_operators(d::NamedDecapode)
       end
     end
   end
+  return newvar
+end
+@present SchSummationDecapode <: SchNamedDecapode begin
+  # Σ are the white nodes in the Decapode drawing
+  # Summands are the edges that connect white nodes to variables (the projection maps)
+  # because addition is commutative, we don't need to distinguish the order
+  (Σ, Summand)::Ob
+  summand::Hom(Summand, Var)
+  summation::Hom(Summand, Σ)
+  sum::Hom(Σ, Var)
+end
+
+@acset_type SummationDecapode(SchSummationDecapode,
+  index=[:src, :tgt, :res, :incl, :op1, :op2, :type]) <: AbstractNamedDecapode
+
+
+function expand_operators(d::SummationDecapode)
+  e = SummationDecapode{Symbol, Symbol, Symbol}()
+  copy_parts!(e, d, (:Var, :TVar, :Op2, :Σ, :Summand))
+  expand_operators!(e, d)
   return e
 end

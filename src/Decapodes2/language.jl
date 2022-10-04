@@ -10,7 +10,7 @@
   AppCirc2(Vector{Symbol}, Term, Term)
   App1(Symbol, Term)
   App2(Symbol, Term, Term)
-  Plus(Term, Term)
+  Plus(Vector{Term})
   Tan(Term)
 end
 
@@ -34,6 +34,7 @@ term(expr::Expr) = begin
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, Var(b))
         Expr(:call, a, b) => App1(a, term(b))
         Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc1(f, Var(x), Var(y))
+        Expr(:call, :+, xs...) => Plus(term.(xs))
         Expr(:call, f, x, y) => App2(f, term(x), term(y))
         Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
         x => error("Cannot construct term from  $x")
@@ -86,9 +87,13 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
         add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=fs)
         return res_var
       end
-      Plus(t1, t2) => begin # TODO: plus is an Op2 so just fold it into App2
-        res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=:plus)
+      Plus(ts) => begin
+        summands = [!(t,d,syms) for t in ts]
+        res_var = add_part!(d, :Var, type=:infer, name=:sum)
+        n = add_part!(d, :Σ, sum=res_var)
+        map(summands) do s
+          add_part!(d, :Summand, summand=s, summation=n)
+        end
         return res_var
       end
       Tan(t) => begin 
@@ -118,6 +123,14 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int})
       for rhs in incident(d, rhs_ref, :res)
         d[rhs, :res] = lhs_ref
         push!(deletions, rhs_ref)
+      end
+      # Case rhs_ref is a Plus
+      # FIXME: this typeguard is a subsitute for refactoring into multiple dispatch
+      if isa(d, SummationDecapode)
+        for rhs in incident(d, rhs_ref, :sum)
+          d[rhs, :sum] = lhs_ref
+          push!(deletions, rhs_ref)
+        end
       end
       # TODO: delete unused vars. The only thing stopping me from doing 
       # this is I don't know if CSet deletion preserves incident relations
@@ -159,5 +172,20 @@ function NamedDecapode(e::DecaExpr)
     end
     fill_names!(d)
     d[:name] = map(normalize_unicode,d[:name])
+    return d
+end
+
+function SummationDecapode(e::DecaExpr)
+    d = SummationDecapode{Any, Any, Symbol}()
+    symbol_table = Dict{Symbol, Int}()
+    for judgement in e.judgements
+      var_id = add_part!(d, :Var, name=judgement._1._1, type=judgement._2)
+      symbol_table[judgement._1._1] = var_id
+    end
+    for eq in e.equations
+      eval_eq!(eq, d, symbol_table)
+    end
+    fill_names!(d)
+    d[:name] .= normalize_unicode.(d[:name])
     return d
 end

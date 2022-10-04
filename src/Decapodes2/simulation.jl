@@ -47,7 +47,22 @@ Base.Expr(c::BinaryCall) = begin
     return :($(c.output) = $operator($(c.input1), $(c.input2)))
 end
 
-function get_vars_code(d::NamedDecapode, vars::Vector{Symbol})
+struct VarargsCall <: AbstractCall 
+    operator
+    inputs
+    output
+end
+
+Base.Expr(c::VarargsCall) = begin
+    operator = c.operator
+    if isa(c.operator, AbstractArray)
+        operator = :(compose($(c.operator)))
+    end
+    arglist = c.inputs
+    return :($(c.output) = $operator($(arglist...)))
+end
+
+function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
     stmts = map(vars) do s
         ssymbl = QuoteNode(s)
         :($s = findnode(u, $ssymbl).values)
@@ -56,7 +71,7 @@ function get_vars_code(d::NamedDecapode, vars::Vector{Symbol})
 end
 
 
-function set_tanvars_code(d::NamedDecapode, statevars::Vector{Symbol})
+function set_tanvars_code(d::AbstractNamedDecapode, statevars::Vector{Symbol})
     tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
     stmts = map(tanvars) do (s,t)
         ssymb = QuoteNode(s)
@@ -65,6 +80,38 @@ function set_tanvars_code(d::NamedDecapode, statevars::Vector{Symbol})
     return quote $(stmts...) end
 end
 
+function compile_env(d::AbstractNamedDecapode)
+  defs = quote end
+  for op in d[:op1]
+    if op == DerivOp
+      continue
+    end
+    ops = QuoteNode(op)
+    def = :($op = generate(mesh, $ops))
+    push!(defs.args, def)
+  end
+  for op in d[:op2]
+    if op == :+
+      continue
+    end
+    ops = QuoteNode(op)
+    def = :($op = generate(mesh, $ops))
+    push!(defs.args, def)
+  end
+  return defs
+end
+
+function gensim(d::AbstractNamedDecapode, input_vars)
+  d′ = expand_operators(d)
+  defs = compile_env(d′)
+  rhs = compile(d′, input_vars)
+  quote
+    function simulate(mesh)
+      $defs
+      return $rhs
+    end
+  end
+end
 
 function compile(d::NamedDecapode, inputs::Vector)
     input_numbers = incident(d, inputs, :name)
@@ -119,38 +166,74 @@ function compile(d::NamedDecapode, inputs::Vector)
         $(set_tanvars_code(d, inputs))
     end; end
 end
+function Decapodes.compile(d::SummationDecapode, inputs::Vector)
+    input_numbers = incident(d, inputs, :name)
+    visited = falses(nparts(d, :Var))
+    visited[collect(flatten(input_numbers))] .= true
+    consumed1 = falses(nparts(d, :Op1))
+    consumed2 = falses(nparts(d, :Op2))
+    consumedΣ = falses(nparts(d, :Σ))
+    # FIXME: this is a quadratic implementation of topological_sort inlined in here.
+    op_order = []
+    for iter in 1:(nparts(d, :Op1) + nparts(d,:Op2)) + nparts(d, :Σ)
+        for op in parts(d, :Op1)
+            s = d[op, :src]
+            if !consumed1[op] && visited[s]
+                # skip the derivative edges
+                operator = d[op, :op1]
+                t = d[op, :tgt]
+                if operator == DerivOp
+                    continue
+                end
+                consumed1[op] = true
+                visited[t] = true
+                sname = d[s, :name]
+                tname = d[t, :name]
+                c = UnaryCall(operator, sname, tname)
+                push!(op_order, c)
+            end
+        end
 
-function compile_env(d::NamedDecapode)
-  defs = quote end
-  for op in d[:op1]
-    if op == DerivOp
-      continue
-    end
-    ops = QuoteNode(op)
-    def = :($op = generate(mesh, $ops))
-    push!(defs.args, def)
-  end
-  for op in d[:op2]
-    if op == :+
-      continue
-    end
-    ops = QuoteNode(op)
-    def = :($op = generate(mesh, $ops))
-    push!(defs.args, def)
-  end
-  return defs
-end
+        for op in parts(d, :Op2)
+            arg1 = d[op, :proj1]
+            arg2 = d[op, :proj2]
+            if !consumed2[op] && visited[arg1] && visited[arg2]
+                r = d[op, :res]
+                a1name = d[arg1, :name]
+                a2name = d[arg2, :name]
+                rname  = d[r, :name]
+                operator = d[op, :op2]
+                consumed2[op] = true
+                visited[r] = true
+                c = BinaryCall(operator, a1name, a2name, rname)
+                push!(op_order, c)
+            end
+        end
 
-function gensim(d::NamedDecapode, input_vars)
-  d′ = expand_operators(d)
-  defs = compile_env(d′)
-  rhs = compile(d′, input_vars)
-  quote
-    function simulate(mesh)
-      $defs
-      return $rhs
+        for op in parts(d, :Σ)
+            args = subpart(d, incident(d, op, :summation), :summand)
+            if !consumedΣ[op] && all(visited[args])
+                r = d[op, :sum]
+                argnames = d[args, :name]
+                rname  = d[r, :name]
+                operator = :(+)
+                consumedΣ[op] = true
+                visited[r] = true
+                c = VarargsCall(operator, argnames, rname)
+                push!(op_order, c)
+            end
+        end
     end
-  end
+
+    assigns = map(Expr, op_order)
+    ret = :(return)
+    ret.args = d[d[:,:incl], :name]
+    return quote f(du, u, p, t) = begin
+        $(get_vars_code(d, inputs))
+        $(assigns...)
+        du .= 0.0
+        $(set_tanvars_code(d, inputs))
+    end; end
 end
 
 function closest_point(p1, p2, dims)

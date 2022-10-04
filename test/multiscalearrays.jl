@@ -5,6 +5,14 @@ using JSON
 using Distributions
 # using GLMakie
 
+using Catlab
+using Catlab.CategoricalAlgebra
+using CombinatorialSpaces
+using Decapodes
+using Test
+using MLStyle
+using LinearAlgebra
+
 C = VectorForm(ones(Float64, 10))
 V = VectorForm(ones(Float64, 100))
 
@@ -37,11 +45,10 @@ function generate(sd, my_symbol)
 end
 
 
-
-
-plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, read("./meshes/plot_mesh.json", String))
-periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, read("./meshes/periodic_mesh.json", String));
-point_map = JSON.parse(read("./meshes/point_map.json",String))
+meshpath(meshfile) = joinpath(@__DIR__, "meshes", meshfile)
+plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, read(meshpath("plot_mesh.json"), String))
+periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, read(meshpath("periodic_mesh.json"), String));
+point_map = JSON.parse(read(meshpath("point_map.json"),String))
 
 # function plotform0(plot_mesh, c)
 #   fig, ax, ob = mesh(plot_mesh; color=c[point_map]);
@@ -63,7 +70,7 @@ DiffusionExprBody =  quote
 end
 
 diffExpr = parse_decapode(DiffusionExprBody)
-ddp = NamedDecapode(diffExpr)
+ddp = SummationDecapode(diffExpr)
 gensim(expand_operators(ddp), [:C])
 f = eval(gensim(expand_operators(ddp), [:C]))
 fₘ = f(periodic_mesh)
@@ -111,7 +118,9 @@ AdvDiff = quote
 end
 
 advdiff = parse_decapode(AdvDiff)
-advdiffdp = NamedDecapode(advdiff)
+advdiffdp = SummationDecapode(advdiff)
+compile(advdiffdp, [:C, :V])
+compile(expand_operators(advdiffdp), [:C, :V])
 gensim(expand_operators(advdiffdp), [:C, :V])
 sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
 fₘ = sim(periodic_mesh)

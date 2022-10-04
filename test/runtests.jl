@@ -14,6 +14,7 @@ end
 
 @testset "New Decapodes" begin
   include("diag2dwd.jl")
+  include("summation.jl")
 end
 
 @testset "MultiScaleArrays" begin
