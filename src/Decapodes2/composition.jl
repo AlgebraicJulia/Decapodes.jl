@@ -1,18 +1,18 @@
 import Catlab.CategoricalAlgebra: apex, feet, legs
 import Catlab.WiringDiagrams: oapply
-OpenNamedDecapodeOb, OpenNamedDecapode = OpenACSetTypes(NamedDecapode, :Var)
+OpenSummationDecapodeOb, OpenSummationDecapode = OpenACSetTypes(SummationDecapode, :Var)
 
-#FIXME: why can't we just add a constructor for OpenNamedDecapode
-function OpenPode(d::NamedDecapode, names::AbstractVector{Symbol})
+#FIXME: why can't we just add a constructor for OpenSummationDecapode
+function OpenPode(d::SummationDecapode, names::AbstractVector{Symbol})
   legs = map(names) do name
     FinFunction(incident(d, name, :name), nparts(d, :Var))
   end
-  OpenNamedDecapode{Any, Any, Symbol}(d, legs...)
+  OpenSummationDecapode{Any, Any, Symbol}(d, legs...)
 end
 
-apex(decapode::OpenNamedDecapode) = apex(decapode.cospan)
-legs(decapode::OpenNamedDecapode) = legs(decapode.cospan)
-feet(decapode::OpenNamedDecapode) = decapode.feet
+apex(decapode::OpenSummationDecapode) = apex(decapode.cospan)
+legs(decapode::OpenSummationDecapode) = legs(decapode.cospan)
+feet(decapode::OpenSummationDecapode) = decapode.feet
 
 """      function unique_by!(acset, column_names::Vector{Symbol})
 
@@ -59,13 +59,13 @@ function unique_by(acset, table::Symbol, columns::Vector{Symbol})
   unique_by!(acset_copy, table, columns)
 end
 
-"""    function type_check_decapodes_composition(relation::RelationDiagram, decs::Vector{OpenNamedDecapode})
+"""    function type_check_decapodes_composition(relation::RelationDiagram, decs::Vector{OpenSummationDecapode})
 
 Check that the types of all Vars connected by the same junction match.
 
 This function only throws an error on the first type mismatch found.
 """
-function type_check_decapodes_composition(relation::RelationDiagram, decs::Vector{D}) where {D<:OpenNamedDecapode}
+function type_check_decapodes_composition(relation::RelationDiagram, decs::Vector{D}) where {D<:OpenSummationDecapode}
   r = relation
   types = [flatten([f[:type] for f in feet(d)]) for d in decs]
   return all(map(junctions(r)) do j
@@ -76,7 +76,7 @@ function type_check_decapodes_composition(relation::RelationDiagram, decs::Vecto
 end
 
 
-"""    function oapply(relation::RelationDiagram, decapodes_vars::Vector{OpenNamedDecapode})
+"""    function oapply(relation::RelationDiagram, decapodes_vars::Vector{OpenSummationDecapode})
 
 Compose a list of decapodes as specified by the given relation diagram.
 
@@ -106,7 +106,7 @@ end
 function oapply_rename!(relation::RelationDiagram, decapodes::Vector)
   r = relation
   decapodes_vars = collect(map(apex, decapodes))
-  # FIXME: in this line, you should cast the NamedDecapode{S,T, Symbol} to NamedDecapode{S,T,Vector{Symbol}}
+  # FIXME: in this line, you should cast the SummationDecapode{S,T, Symbol} to SummationDecapode{S,T,Vector{Symbol}}
   # This will allow you to return namespace scoped variables.
   # Check that the number of decapodes given matches the number of boxes in the
   # relation.
@@ -183,5 +183,7 @@ function oapply_rename!(relation::RelationDiagram, decapodes::Vector)
 end
 
 # Compose
-oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenNamedDecapode} = oapply(r, oapply_rename(r, podes))
-oapply(r::RelationDiagram, pode::OpenNamedDecapode) = oapply(r, [pode])
+
+#oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} = oapply(r, oapply_rename(r, podes))
+oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} = invoke(oapply, Tuple{UndirectedWiringDiagram, Vector{<:StructuredMulticospan{L}} where L}, r, oapply_rename(r, podes))
+oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
