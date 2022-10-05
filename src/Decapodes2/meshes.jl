@@ -11,11 +11,8 @@ struct ThermoUVSphere  <: AbstractMeshKey end
 
 #loadmesh(meshkey::AbstractMeshKey)::EmbeddedDeltaSet2D
 
-function loadmesh_helper(obj_file_name)
-  all_meshes = artifact"all_meshes"
-  mesh_obj = FileIO.load(File{format"OBJ"}(joinpath(all_meshes, obj_file_name)))
-  mesh = EmbeddedDeltaSet2D(mesh_obj)
-end
+loadmesh_helper(obj_file_name) = EmbeddedDeltaSet2D(
+  joinpath(artifact"all_meshes", obj_file_name))
 
 #function loadmesh(meshkey::UnitIcosphere)::EmbeddedDeltaSet2D
 #  all_meshes = artifact"all_meshes"
