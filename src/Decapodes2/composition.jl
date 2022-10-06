@@ -7,7 +7,8 @@ function OpenPode(d::SummationDecapode, names::AbstractVector{Symbol})
   legs = map(names) do name
     FinFunction(incident(d, name, :name), nparts(d, :Var))
   end
-  OpenSummationDecapode{Any, Any, Symbol}(d, legs...)
+  #OpenSummationDecapode{Any, Any, Symbol}(d, legs...)
+  OpenSummationDecapode{typeof(d).parameters...}(d, legs...)
 end
 
 apex(decapode::OpenSummationDecapode) = apex(decapode.cospan)
@@ -99,17 +100,11 @@ julia> oapply(compose_diff_adv, [(Diffusion, [:C, :ϕ]),
 ```
 """
 function oapply_rename(relation::RelationDiagram, decapodes::Vector)
-  copies = deepcopy(decapodes)
-  oapply_rename!(relation, copies)
-end
-
-function oapply_rename!(relation::RelationDiagram, decapodes::Vector)
   r = relation
-  # The copy. is necessary because if multiple decapodes in the vector are
+  # The deepcopy. is necessary because if multiple decapodes in the vector are
   # OpenPodes of the same SummationDecapode, their apex will point to the same
   # spot in memory. This interferes with renaming.
-  #decapodes_vars = collect(map(apex, decapodes))
-  decapodes_vars = copy.(collect(map(apex, decapodes)))
+  decapodes_vars = deepcopy.(collect(map(apex, decapodes)))
   # FIXME: in this line, you should cast the SummationDecapode{S,T, Symbol} to SummationDecapode{S,T,Vector{Symbol}}
   # This will allow you to return namespace scoped variables.
   # Check that the number of decapodes given matches the number of boxes in the

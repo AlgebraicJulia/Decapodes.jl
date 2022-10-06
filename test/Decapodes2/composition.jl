@@ -20,12 +20,19 @@ trivial_relation = @relation () begin
 end
 
 otrivial = OpenPode(Trivial, [:H])
+apex_original = apex(otrivial)
+deep_copies = deepcopy(otrivial)
+trivial_comp_from_vector = oapply(trivial_relation, [otrivial])
+trivial_comp_from_singleton = oapply(trivial_relation, otrivial)
 
-trivial_comp = oapply(trivial_relation, [OpenPode(Trivial, [:H])])
-apex(trivial_comp)
+# Test the oapply is correct.
+@test apex(trivial_comp_from_vector)    == Trivial
+@test apex(trivial_comp_from_singleton) == Trivial
+# Test none of the decapodes were mutated
+@test isequal(otrivial, deep_copies)
+# Test that we did not change where the apex of the OpenPode points to.
+@test apex_original === apex(otrivial)
 
-@test apex(oapply(trivial_relation, OpenPode(Trivial, [:H]))) == Trivial
-@test apex(trivial_comp) == Trivial
 
 # Multiple variables and an equation.
 AdvectionExprBody =  quote
@@ -101,6 +108,9 @@ decapodes_vars = [
   OpenPode(Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
 debugg = oapply_rename(compose_diff_adv, decapodes_vars)
 
+original_apexes = map(apex, decapodes_vars)
+deep_copies = deepcopy(decapodes_vars) # This is to test none of the decapodes are mutated.
+
 dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
 
 dif_adv_sup_expected = @acset SummationDecapode{Any, Any, Symbol} begin
@@ -131,6 +141,11 @@ dif_adv_sup_expected = @acset SummationDecapode{Any, Any, Symbol} begin
 end
 @test apex(dif_adv_sup) == dif_adv_sup_expected
 
+# Test none of the decapodes were mutated
+@test isequal(decapodes_vars, deep_copies)
+# Test that we did not change where the apexes of the OpenPodes point to.
+@test all(original_apexes .=== map(apex, decapodes_vars))
+
 # Test some other permutation of the symbols yields the same decapode.
 compose_diff_adv = @relation (C,V) begin
   diffusion(C, ϕ₁)
@@ -153,12 +168,9 @@ dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
 # Test that Op2s are properly de-duplicated.
 AdvectionExprBody = quote
   C::Form0{X}
-  Ċ::Form0{X}
   V::Form1{X}
   ϕ::Form1{X}
   ϕ == ∧₀₁(C,V)
-  ∂ₜ(C) == Ċ
-  ∂ₜ(C) == ⋆(ϕ)
 end
 
 advExpr = parse_decapode(AdvectionExprBody)
@@ -170,24 +182,28 @@ self_adv = @relation () begin
   advection₂(C,V,ϕ)
 end
 
+
 adv_adv = [
  OpenPode(Advection, [:C,:V,:ϕ]),
  OpenPode(Advection, [:C,:V,:ϕ])]
+deep_copies = deepcopy(adv_adv) # This is to test none of the decapodes are mutated.
 adv_adv_comp = oapply(self_adv, adv_adv)
 # De-duplicate Op1s.
-unique_by!(adv_adv_comp, :Op1, [:src, :tgt, :op1])
-# De-duplicate Op2s.
-unique_by!(adv_adv_comp, :Op2, [:proj1, :proj2, :res, :op2])
+#unique_by!(adv_adv_comp, :Op1, [:src, :tgt, :op1])
+## De-duplicate Op2s.
+#unique_by!(adv_adv_comp, :Op2, [:proj1, :proj2, :res, :op2])
 adv_adv_comp_expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 3
   type = [:Form0, :Form1, :Form1]
   name = [:C, :V, :ϕ]
-  Op2 = 1
-  proj1 = [1]
-  proj2 = [2]
-  res = [3]
-  op2 = [:∧₀₁]
+  Op2 = 2
+  proj1 = [1,1]
+  proj2 = [2,2]
+  res = [3,3]
+  op2 = [:∧₀₁,:∧₀₁]
 end
 @test apex(adv_adv_comp) == adv_adv_comp_expected
+# Test none of the decapodes were mutated
+@test isequal(adv_adv, deep_copies)
 
 # end
