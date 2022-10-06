@@ -165,7 +165,7 @@ dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
 
 @test apex(dif_adv_sup) == dif_adv_sup_expected
 
-# Test that Op2s are properly de-duplicated.
+# Test that expand_operators doesn't break composition.
 AdvectionExprBody = quote
   C::Form0{X}
   V::Form1{X}
@@ -188,11 +188,7 @@ adv_adv = [
  OpenPode(Advection, [:C,:V,:ϕ])]
 deep_copies = deepcopy(adv_adv) # This is to test none of the decapodes are mutated.
 adv_adv_comp = oapply(self_adv, adv_adv)
-# De-duplicate Op1s.
-#unique_by!(adv_adv_comp, :Op1, [:src, :tgt, :op1])
-## De-duplicate Op2s.
-#unique_by!(adv_adv_comp, :Op2, [:proj1, :proj2, :res, :op2])
-adv_adv_comp_expected = @acset SummationDecapode{Any, Any, Symbol} begin
+adv_adv_comp_expected = @acset SummationDecapode{Symbol, Symbol, Symbol} begin
   Var = 3
   type = [:Form0, :Form1, :Form1]
   name = [:C, :V, :ϕ]
