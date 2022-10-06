@@ -105,7 +105,11 @@ end
 
 function oapply_rename!(relation::RelationDiagram, decapodes::Vector)
   r = relation
-  decapodes_vars = collect(map(apex, decapodes))
+  # The copy. is necessary because if multiple decapodes in the vector are
+  # OpenPodes of the same SummationDecapode, their apex will point to the same
+  # spot in memory. This interferes with renaming.
+  #decapodes_vars = collect(map(apex, decapodes))
+  decapodes_vars = copy.(collect(map(apex, decapodes)))
   # FIXME: in this line, you should cast the SummationDecapode{S,T, Symbol} to SummationDecapode{S,T,Vector{Symbol}}
   # This will allow you to return namespace scoped variables.
   # Check that the number of decapodes given matches the number of boxes in the
@@ -184,6 +188,13 @@ end
 
 # Compose
 
+# Infinite loop:
 #oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} = oapply(r, oapply_rename(r, podes))
-oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} = invoke(oapply, Tuple{UndirectedWiringDiagram, Vector{<:StructuredMulticospan{L}} where L}, r, oapply_rename(r, podes))
+
+oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
+  invoke(oapply,
+    Tuple{UndirectedWiringDiagram, Vector{<:StructuredMulticospan{L}} where L},
+    r, oapply_rename(r, podes))
+
 oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
+

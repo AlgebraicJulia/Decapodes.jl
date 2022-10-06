@@ -170,24 +170,24 @@ self_adv = @relation () begin
   advection₂(C,V,ϕ)
 end
 
-#adv_adv = [
-# OpenPode(Advection, [:C,:V,:ϕ]),
-# OpenPode(Advection, [:C,:V,:ϕ])]
-#adv_adv_comp = oapply(self_adv, adv_adv)
-## De-duplicate Op1s.
-#unique_by!(adv_adv_comp, :Op1, [:src, :tgt, :op1])
-## De-duplicate Op2s.
-#unique_by!(adv_adv_comp, :Op2, [:proj1, :proj2, :res, :op2])
-#adv_adv_comp_expected = @acset SummationDecapode{Any, Any, Symbol} begin
-#  Var = 3
-#  type = [:Form0, :Form1, :Form1]
-#  name = [:C, :V, :ϕ]
-#  Op2 = 1
-#  proj1 = [1]
-#  proj2 = [2]
-#  res = [3]
-#  op2 = [:∧₀₁]
-#end
-#@test apex(adv_adv_comp) == adv_adv_comp_expected
+adv_adv = [
+ OpenPode(Advection, [:C,:V,:ϕ]),
+ OpenPode(Advection, [:C,:V,:ϕ])]
+adv_adv_comp = oapply(self_adv, adv_adv)
+# De-duplicate Op1s.
+unique_by!(adv_adv_comp, :Op1, [:src, :tgt, :op1])
+# De-duplicate Op2s.
+unique_by!(adv_adv_comp, :Op2, [:proj1, :proj2, :res, :op2])
+adv_adv_comp_expected = @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 3
+  type = [:Form0, :Form1, :Form1]
+  name = [:C, :V, :ϕ]
+  Op2 = 1
+  proj1 = [1]
+  proj2 = [2]
+  res = [3]
+  op2 = [:∧₀₁]
+end
+@test apex(adv_adv_comp) == adv_adv_comp_expected
 
 # end
