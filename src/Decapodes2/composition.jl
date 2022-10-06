@@ -99,7 +99,8 @@ julia> oapply(compose_diff_adv, [(Diffusion, [:C, :ϕ]),
   (Advection, [:C, :ϕ, :V]), (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]);
 ```
 """
-function oapply_rename(relation::RelationDiagram, decapodes::Vector)
+#function oapply_rename(relation::RelationDiagram, decapodes::Vector{OpenSummationDecapode})
+function oapply_rename(relation::RelationDiagram, decapodes::Vector{D}) where D<:OpenSummationDecapode
   r = relation
   # The deepcopy. is necessary because if multiple decapodes in the vector are
   # OpenPodes of the same SummationDecapode, their apex will point to the same
@@ -178,15 +179,27 @@ function oapply_rename(relation::RelationDiagram, decapodes::Vector)
   newpodes = map(boxes(r)) do b
     OpenPode(decapodes_vars[b], newnames[b])
   end
-  return oapply(r, newpodes)
+
+  uwd = UndirectedWiringDiagram(0)
+  copy_parts!(uwd, r)
+
+  #return oapply(r, newpodes)
+  return oapply(uwd, newpodes)
 end
 
-# Compose
-
 # Infinite loop:
+oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
+  oapply_rename(r, podes)
 # oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
   # invoke(oapply,
     # Tuple{UndirectedWiringDiagram, Vector{<:StructuredMulticospan{L}} where L},
     # r, oapply_rename(r, podes))
+
+#oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
+# Luke changed the above line to the below line, for e.g. the case: (Note H should be renamed to N.)
+# r = @relation () begin
+#   heat(N)
+# end
+# oapply(r, OpenPode(Heat, [:H]))
 
 oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
