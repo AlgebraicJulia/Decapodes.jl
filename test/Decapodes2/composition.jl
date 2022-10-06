@@ -6,7 +6,7 @@ using Catlab.Programs
 using Catlab.CategoricalAlgebra
 using Catlab.CSetDataStructures
 
-import Decapodes: OpenSummationDecapode, OpenPode, oapply, oapply_rename
+#import Decapodes: OpenSummationDecapode, OpenPode, oapply, oapply_rename
 # @testset "Composition" begin
 # Simplest possible decapode relation.
 TrivialExprBody = quote
@@ -23,11 +23,11 @@ otrivial = OpenPode(Trivial, [:H])
 apex_original = apex(otrivial)
 deep_copies = deepcopy(otrivial)
 trivial_comp_from_vector = oapply(trivial_relation, [otrivial])
-trivial_comp_from_singleton = oapply(trivial_relation, otrivial)
+trivial_comp_from_single = oapply(trivial_relation, otrivial)
 
 # Test the oapply is correct.
 @test apex(trivial_comp_from_vector)    == Trivial
-@test apex(trivial_comp_from_singleton) == Trivial
+@test apex(trivial_comp_from_single) == Trivial
 # Test none of the decapodes were mutated
 @test isequal(otrivial, deep_copies)
 # Test that we did not change where the apex of the OpenPode points to.
@@ -106,7 +106,7 @@ decapodes_vars = [
   OpenPode(Diffusion, [:C, :ϕ]),
   OpenPode(Advection, [:C, :ϕ, :V]),
   OpenPode(Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
-debugg = oapply_rename(compose_diff_adv, decapodes_vars)
+#debugg = oapply_rename(compose_diff_adv, decapodes_vars)
 
 original_apexes = map(apex, decapodes_vars)
 deep_copies = deepcopy(decapodes_vars) # This is to test none of the decapodes are mutated.
