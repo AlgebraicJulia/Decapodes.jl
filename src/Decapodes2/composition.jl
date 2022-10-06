@@ -178,18 +178,15 @@ function oapply_rename(relation::RelationDiagram, decapodes::Vector)
   newpodes = map(boxes(r)) do b
     OpenPode(decapodes_vars[b], newnames[b])
   end
-  return newpodes
+  return oapply(r, newpodes)
 end
 
 # Compose
 
 # Infinite loop:
-#oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} = oapply(r, oapply_rename(r, podes))
-
-oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
-  invoke(oapply,
-    Tuple{UndirectedWiringDiagram, Vector{<:StructuredMulticospan{L}} where L},
-    r, oapply_rename(r, podes))
+# oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
+  # invoke(oapply,
+    # Tuple{UndirectedWiringDiagram, Vector{<:StructuredMulticospan{L}} where L},
+    # r, oapply_rename(r, podes))
 
 oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
-
