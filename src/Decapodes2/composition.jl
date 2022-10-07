@@ -3,12 +3,16 @@ import Catlab.WiringDiagrams: oapply
 OpenSummationDecapodeOb, OpenSummationDecapode = OpenACSetTypes(SummationDecapode, :Var)
 
 #FIXME: why can't we just add a constructor for OpenSummationDecapode
-function OpenPode(d::SummationDecapode, names::AbstractVector{Symbol})
+"""    Open(d::SummationDecapode{T,U,V}, names::AbstractVector{Symbol}) where {T,U,V}
+
+creates an OpenSummationDecapode based on named variables rather than variable indices. 
+See AlgebraicPetri.jl's Open for the analogous verion for LabelledReactionNetworks.
+"""
+function Open(d::SummationDecapode{T,U,V}, names::AbstractVector{Symbol}) where {T,U,V}
   legs = map(names) do name
     FinFunction(incident(d, name, :name), nparts(d, :Var))
   end
-  #OpenSummationDecapode{Any, Any, Symbol}(d, legs...)
-  OpenSummationDecapode{typeof(d).parameters...}(d, legs...)
+  OpenSummationDecapode{T,U,V}(d, legs...)
 end
 
 apex(decapode::OpenSummationDecapode) = apex(decapode.cospan)
@@ -177,7 +181,7 @@ function oapply_rename(relation::RelationDiagram, decapodes::Vector{D}) where D<
   end
 
   newpodes = map(boxes(r)) do b
-    OpenPode(decapodes_vars[b], newnames[b])
+    Open(decapodes_vars[b], newnames[b])
   end
 
   uwd = UndirectedWiringDiagram(0)
