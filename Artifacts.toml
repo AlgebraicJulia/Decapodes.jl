@@ -1,0 +1,6 @@
+[all_meshes]
+git-tree-sha1 = "9482e8911a0f12c1be16910a2fc61486eb391b87"
+
+    [[all_meshes.download]]
+    sha256 = "79f180d7b2d880e1697c669355689e711a1dcacc76bc77518794288e1c80c978"
+    url = "https://raw.githubusercontent.com/AlgebraicJulia/DecapodesMeshes.jl/main/meshes/all_meshes.tar.gz"
