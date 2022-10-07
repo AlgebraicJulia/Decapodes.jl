@@ -6,7 +6,7 @@ using Catlab.Programs
 using Catlab.CategoricalAlgebra
 using Catlab.CSetDataStructures
 
-#import Decapodes: OpenSummationDecapode, OpenPode, oapply, oapply_rename
+import Decapodes: OpenSummationDecapode, Open, oapply, oapply_rename
 # @testset "Composition" begin
 # Simplest possible decapode relation.
 TrivialExprBody = quote
@@ -19,7 +19,7 @@ trivial_relation = @relation () begin
   trivial(H)
 end
 
-otrivial = OpenPode(Trivial, [:H])
+otrivial = Open(Trivial, [:H])
 apex_original = apex(otrivial)
 deep_copies = deepcopy(otrivial)
 trivial_comp_from_vector = oapply(trivial_relation, [otrivial])
@@ -30,7 +30,7 @@ trivial_comp_from_single = oapply(trivial_relation, otrivial)
 @test apex(trivial_comp_from_single) == Trivial
 # Test none of the decapodes were mutated
 @test isequal(otrivial, deep_copies)
-# Test that we did not change where the apex of the OpenPode points to.
+# Test that we did not change where the apex of the OpenSummationDecapode points to.
 @test apex_original === apex(otrivial)
 
 
@@ -46,7 +46,7 @@ Advection = SummationDecapode(advExpr)
 adv_relation = @relation () begin
   advection(C,V,ϕ)
 end
-adv_comp = oapply(adv_relation, [OpenPode(Advection, [:C,:V,:ϕ])])
+adv_comp = oapply(adv_relation, [Open(Advection, [:C,:V,:ϕ])])
 adv_comp_expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 3
   type = [:Form0, :Form1, :Form1]
@@ -103,9 +103,9 @@ compose_diff_adv = @relation (C,V) begin
 end
 
 decapodes_vars = [
-  OpenPode(Diffusion, [:C, :ϕ]),
-  OpenPode(Advection, [:C, :ϕ, :V]),
-  OpenPode(Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
+  Open(Diffusion, [:C, :ϕ]),
+  Open(Advection, [:C, :ϕ, :V]),
+  Open(Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
 #debugg = oapply_rename(compose_diff_adv, decapodes_vars)
 
 original_apexes = map(apex, decapodes_vars)
@@ -143,7 +143,7 @@ end
 
 # Test none of the decapodes were mutated
 @test isequal(decapodes_vars, deep_copies)
-# Test that we did not change where the apexes of the OpenPodes point to.
+# Test that we did not change where the apexes of the OpenSummationDecapodes point to.
 @test all(original_apexes .=== map(apex, decapodes_vars))
 
 # Test some other permutation of the symbols yields the same decapode.
@@ -156,11 +156,11 @@ compose_diff_adv = @relation (C,V) begin
 end
 
 decapodes_vars = [
-  OpenPode(Diffusion, [:C, :ϕ]),
-  #OpenPode(Advection, [:C, :ϕ, :V]),
-  #OpenPode(Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
-  OpenPode(Advection, [:V, :ϕ, :C]),
-  OpenPode(Superposition, [:ϕ₁, :ϕ₂, :C, :ϕ])]
+  Open(Diffusion, [:C, :ϕ]),
+  #Open(Advection, [:C, :ϕ, :V]),
+  #Open(Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]
+  Open(Advection, [:V, :ϕ, :C]),
+  Open(Superposition, [:ϕ₁, :ϕ₂, :C, :ϕ])]
 dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
 
 @test apex(dif_adv_sup) == dif_adv_sup_expected
@@ -184,8 +184,8 @@ end
 
 
 adv_adv = [
- OpenPode(Advection, [:C,:V,:ϕ]),
- OpenPode(Advection, [:C,:V,:ϕ])]
+ Open(Advection, [:C,:V,:ϕ]),
+ Open(Advection, [:C,:V,:ϕ])]
 deep_copies = deepcopy(adv_adv) # This is to test none of the decapodes are mutated.
 adv_adv_comp = oapply(self_adv, adv_adv)
 adv_adv_comp_expected = @acset SummationDecapode{Symbol, Symbol, Symbol} begin
