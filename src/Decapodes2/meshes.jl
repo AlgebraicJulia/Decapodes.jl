@@ -2,7 +2,7 @@ using Artifacts
 using CombinatorialSpaces
 using FileIO
 
-export AbstractMeshKey, loadmesh, UnitIcosphere, ThermoIcosphere, UnitUVSphere, ThermoUVSphere
+#export AbstractMeshKey, loadmesh, UnitIcosphere, ThermoIcosphere, UnitUVSphere, ThermoUVSphere
 
 abstract type AbstractMeshKey end
 

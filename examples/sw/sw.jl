@@ -7,6 +7,9 @@ using OrdinaryDiffEq
 using MLStyle
 using Distributions
 using LinearAlgebra
+using GeometryBasics: Point3
+
+Point3D = Point3{Float64}
 
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
@@ -56,11 +59,13 @@ gensim(expand_operators(ddp), [:C])
 f = eval(gensim(expand_operators(ddp), [:C]))
 
 include("coordinates.jl")
-include("spherical_meshes.jl")
+#include("spherical_meshes.jl")
 
 radius = 6371+90
-primal_earth, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, radius);
-nploc = primal_earth[npi, :point]
+#primal_earth, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, radius);
+#nploc = primal_earth[npi, :point]
+primal_earth = loadmesh(ThermoIcosphere())
+nploc = argmax(x -> x[3], primal_earth[:point])
 orient!(primal_earth)
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
 subdivide_duals!(earth, Circumcenter())
@@ -75,12 +80,12 @@ tₑ = 10
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
-# using CairoMakie 
-using GLMakie
+using CairoMakie 
+#using GLMakie
 
-mesh(primal_earth, color=findnode(soln(0), :C), colormap=:plasma)
-mesh(primal_earth, color=findnode(soln(tₑ), :C), colormap=:plasma)
-mesh(primal_earth, color=findnode(soln(tₑ)-soln(0), :C), colormap=:plasma)
+#mesh(primal_earth, color=findnode(soln(0), :C), colormap=:plasma)
+#mesh(primal_earth, color=findnode(soln(tₑ), :C), colormap=:plasma)
+#mesh(primal_earth, color=findnode(soln(tₑ)-soln(0), :C), colormap=:plasma)
 
 begin
 AdvDiff = quote
@@ -120,12 +125,12 @@ begin
 # visualize the vector field
   ps = earth[:point]
   ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
-  arrows(
-      ps, ns, fxaa=true, # turn on anti-aliasing
-      linecolor = :gray, arrowcolor = :gray,
-      linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),
-      align = :center, axis=(type=Axis3,)
-  )
+  #arrows(
+  #    ps, ns, fxaa=true, # turn on anti-aliasing
+  #    linecolor = :gray, arrowcolor = :gray,
+  #    linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),
+  #    align = :center, axis=(type=Axis3,)
+  #)
 end
 
 begin
@@ -147,7 +152,7 @@ c = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
 
 
 u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(collect(v))],Float64[], [:C, :V])
-mesh(primal_earth, color=findnode(u₀, :C), colormap=:plasma)
+#mesh(primal_earth, color=findnode(u₀, :C), colormap=:plasma)
 tₑ = 30.0
 
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
