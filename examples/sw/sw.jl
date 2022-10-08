@@ -61,8 +61,8 @@ f = eval(gensim(expand_operators(ddp), [:C]))
 include("coordinates.jl")
 #include("spherical_meshes.jl")
 
-radius = 6371+90
-#primal_earth, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, radius);
+const RADIUS = 6371+90
+#primal_earth, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, RADIUS);
 #nploc = primal_earth[npi, :point]
 primal_earth = loadmesh(ThermoIcosphere())
 nploc = argmax(x -> x[3], primal_earth[:point])
@@ -73,15 +73,15 @@ subdivide_duals!(earth, Circumcenter())
 
 fₘ = f(earth)
 c_dist = MvNormal(nploc[[1,2]], 100[1, 1])
-c = [pdf(c_dist, [p[1], p[2]]./√radius) for p in earth[:point]]
+c = [pdf(c_dist, [p[1], p[2]]./√RADIUS) for p in earth[:point]]
 
 u₀ = construct(PhysicsState, [VectorForm(c)],Float64[], [:C])
 tₑ = 10
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
-using CairoMakie 
-#using GLMakie
+#using CairoMakie 
+using GLMakie
 
 #mesh(primal_earth, color=findnode(soln(0), :C), colormap=:plasma)
 #mesh(primal_earth, color=findnode(soln(tₑ), :C), colormap=:plasma)
@@ -135,14 +135,14 @@ end
 
 begin
 v = flatten(velocity, earth)
-c_dist = MvNormal([radius/√(2), radius/√(2)], 20*[1, 1])
+c_dist = MvNormal([RADIUS/√(2), RADIUS/√(2)], 20*[1, 1])
 c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
 
 theta_start = 45*pi/180
 phi_start = 0*pi/180
-x = radius*cos(phi_start)*sin(theta_start)
-y = radius*sin(phi_start)*sin(theta_start)
-z = radius*cos(theta_start)
+x = RADIUS*cos(phi_start)*sin(theta_start)
+y = RADIUS*sin(phi_start)*sin(theta_start)
+z = RADIUS*cos(theta_start)
 c_dist₁ = MvNormal([x, y, z], 20*[1, 1, 1])
 c_dist₂ = MvNormal([x, y, -z], 20*[1, 1, 1])
 
@@ -159,24 +159,46 @@ prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 end
 begin
-mass(soln, t, mesh, concentration=:C) = sum(⋆(0, mesh)*findnode(soln(t), concentration))
-@show extrema(mass(soln, t, earth, :C) for t in 0:tₑ/150:tₑ)
-end
-mesh(primal_earth, color=findnode(soln(0), :C), colormap=:jet)
-mesh(primal_earth, color=findnode(soln(0) - soln(tₑ), :C), colormap=:jet)
+#mass(soln, t, mesh, concentration=:C) = sum(⋆(0, mesh)*findnode(soln(t), concentration))
+#@show extrema(mass(soln, t, earth, :C) for t in 0:tₑ/150:tₑ)
+#end
+#mesh(primal_earth, color=findnode(soln(0), :C), colormap=:jet)
+#mesh(primal_earth, color=findnode(soln(0) - soln(tₑ), :C), colormap=:jet)
 begin
-# Plot the result
-times = range(0.0, tₑ, length=150)
-colors = [findnode(soln(t), :C) for t in times]
 
-# Initial frame
-# fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = extrema(vcat(colors...)), colormap=:jet)
-fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = (-0.0001, 0.0001), colormap=:jet)
-Colorbar(fig[1,2], ob)
-framerate = 5
-
-# Animation
-record(fig, "diff_adv.gif", range(0.0, tₑ; length=150); framerate = 30) do t
-    ob.color = findnode(soln(t), :C)
+function interactive_sim_view(my_mesh::EmbeddedDeltaSet2D, tₑ, soln; loop_times = 1)
+  times = range(0.0, tₑ, length = 150)
+  colors = [findnode(soln(t), :C) for t in times]
+  fig, ax, ob = mesh(my_mesh, color=colors[1],
+    colorrange = extrema(vcat(colors...)), colormap=:jet)
+  display(fig)
+  loop = range(0.0, tₑ; length=150)
+  for _ in 1:loop_times
+    for t in loop
+      ob.color = findnode(soln(t), :C)
+      sleep(0.05)
+    end
+    for t in reverse(loop)
+      ob.color = findnode(soln(t), :C)
+      sleep(0.05)
+    end
+  end
 end
+
+interactive_sim_view(primal_earth, tₑ, soln, loop_times = 2)
+
+## Plot the result
+#times = range(0.0, tₑ, length=150)
+#colors = [findnode(soln(t), :C) for t in times]
+#
+## Initial frame
+## fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = extrema(vcat(colors...)), colormap=:jet)
+#fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = (-0.0001, 0.0001), colormap=:jet)
+#Colorbar(fig[1,2], ob)
+#framerate = 5
+#
+## Animation
+#record(fig, "diff_adv.gif", range(0.0, tₑ; length=150); framerate = 30) do t
+#    ob.color = findnode(soln(t), :C)
+#end
 end
