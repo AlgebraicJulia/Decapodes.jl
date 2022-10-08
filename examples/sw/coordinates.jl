@@ -35,7 +35,7 @@ end
 θhat(p::TangentBasis{P} where {P<:SpherePoint}) = Point2(1.0, 0.0)
 ϕhat(p::TangentBasis{P} where {P<:SpherePoint}) = Point2(0.0, 1.0)
 
-θhat(b::TangentBasis{P} where {P<:CartesianPoint}) = Point3(cos(theta(b.p))*cos(phi(b.p)), cos(theta(b.p))*sin(phi(b.p)), -sin(theta(b.p)))
+θhat(b::TangentBasis{P} where {P<:CartesianPoint}) = Point3(cos(theta(b.p))*cos(phi(b.p)), cos(theta(b.p))*sin(phi(b.p)), -sin(theta(b.p)))*sign(b.p.p[3])
 ϕhat(b::TangentBasis{P} where {P<:CartesianPoint}) = Point3(-sin(phi(b.p)), cos(phi(b.p)), 0)
 
 """    tb(w)
@@ -46,15 +46,7 @@ If the base point is in spherical coordinates, this is the identity,
 if the base point is in cartesian coordinates, it returns the tangent vector in cartesian coordinates.
 """
 function (tb::TangentBasis)(w) 
-    w1p = w[1]*θhat(tb)
-    w2p = w[2]*ϕhat(tb)
-    if tb.p.p[3] < 0
-        w1p = (-1.0)*w1p
-    end
-    if tb.p.p[1] < 0
-        w2p = (-1.0)*w2p
-    end
-    return w1p + w2p
+    tb(w[1], w[2])
 end
 
 function (tb::TangentBasis{P})(w) where {P <: SpherePoint}
@@ -64,11 +56,5 @@ end
 function (tb::TangentBasis)(w1,w2) 
     w1p = w1*θhat(tb)
     w2p = w2*ϕhat(tb)
-    if tb.p.p[3] < 0
-        w1p = (-1.0)*w1p
-    end
-    if tb.p.p[1] < 0
-        w2p = (-1.0)*w2p
-    end
     return w1p + w2p
 end
