@@ -22,7 +22,7 @@ export normalize_unicode, DerivOp, append_dot,
   AbstractMeshKey, loadmesh, UnitIcosphere1, UnitIcosphere2, UnitIcosphere3, UnitIcosphere4, UnitIcosphere5, 
   #AbstractMeshKey, loadmesh, UnitIcosphere, ThermoIcosphere, UnitUVSphere, ThermoUVSphere,
   Open, OpenSummationDecapodeOb, OpenSummationDecapode, unique_by, unique_by!, oapply,
-  CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat, tb
+  CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat
 
 normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
 normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
@@ -36,4 +36,3 @@ include("coordinates.jl")
 include("visualization.jl")
 include("simulation.jl")
 include("meshes.jl")
-
