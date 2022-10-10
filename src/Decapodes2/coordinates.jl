@@ -9,7 +9,7 @@ struct CartesianPoint{T}
     p::T
 end
 
-r(p::CartesianPoint) = hypot(p.p)
+r(p::CartesianPoint) = hypot(p.p...)
 theta(p::CartesianPoint) = atan(sqrt(p.p[1]^2 + p.p[2]^2)/p.p[3])
 phi(p::CartesianPoint) = atan(p.p[2]/p.p[1])
   

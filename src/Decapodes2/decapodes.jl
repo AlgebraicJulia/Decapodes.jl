@@ -20,8 +20,9 @@ export normalize_unicode, DerivOp, append_dot,
   VectorForm, PhysicsState, findname, findnode,
   compile, compile_env, gensim, closest_point, flat_op,
   AbstractMeshKey, loadmesh, UnitIcosphere1, UnitIcosphere2, UnitIcosphere3, UnitIcosphere4, UnitIcosphere5, 
-  Open, OpenSummationDecapodeOb, OpenSummationDecapode, unique_by, unique_by!, oapply
   #AbstractMeshKey, loadmesh, UnitIcosphere, ThermoIcosphere, UnitUVSphere, ThermoUVSphere,
+  Open, OpenSummationDecapodeOb, OpenSummationDecapode, unique_by, unique_by!, oapply,
+  CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat, tb
 
 normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
 normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
@@ -31,6 +32,8 @@ append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 include("decapodeacset.jl")
 include("language.jl")
 include("composition.jl")
+include("coordinates.jl")
 include("visualization.jl")
 include("simulation.jl")
 include("meshes.jl")
+

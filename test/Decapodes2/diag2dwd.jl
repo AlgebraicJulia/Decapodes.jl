@@ -77,9 +77,9 @@ sup_d = DecaExpr(sup_js, sup_eqs)
 sup_cset_named = SummationDecapode(sup_d)
 
 
-compile(diffusion_cset_named, [:C,])
-compile(test_cset_named, [:C,])
-compile(sup_cset_named, [:C,])
+Decapodes.compile(diffusion_cset_named, [:C,])
+Decapodes.compile(test_cset_named, [:C,])
+Decapodes.compile(sup_cset_named, [:C,])
 
 term(:(∧₀₁(C,V)))
 
@@ -222,26 +222,3 @@ end
     @test nparts(advdiffdp, :Summand) == 2
 end
 
-
-AdvDiff = quote
-    C::Form0{X}
-    Ċ::Form0{X}
-    V::Form1{X}
-    ϕ::Form1{X}
-    ϕ₁::Form1{X}
-    ϕ₂::Form1{X}
-
-    # Fick's first law
-    ϕ₁ ==  (k ∘ d₀)(C)
-    ϕ₂ == ∧₀₁(C,V)
-    ϕ == ϕ₁ + ϕ₂
-    # Diffusion equation
-    ∂ₜ(C) == Ċ
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-end
-
-advdiff = parse_decapode(AdvDiff)
-advdiffdp = SummationDecapode(advdiff)
-to_graphviz(advdiffdp)
-
-compile(advdiffdp, [:C, :V])
