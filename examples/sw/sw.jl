@@ -119,18 +119,19 @@ end
 begin
   vmag = 500
   # velocity(p) = vmag*ϕhat(p)
-  velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, vmag/4, 0))
-  # velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, -vmag/4, 0))
+  velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, vmag/4))
+  # velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, -vmag/4))
 
 # visualize the vector field
   ps = earth[:point]
   ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
-  #arrows(
-  #    ps, ns, fxaa=true, # turn on anti-aliasing
-  #    linecolor = :gray, arrowcolor = :gray,
-  #    linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),
-  #    align = :center, axis=(type=Axis3,)
-  #)
+
+  GLMakie.arrows(
+      ps, ns, fxaa=true, # turn on anti-aliasing
+      linecolor = :gray, arrowcolor = :gray,
+      linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),
+      align = :center, axis=(type=Axis3,)
+  )
 end
 
 begin
