@@ -19,6 +19,7 @@ export normalize_unicode, DerivOp, append_dot,
   Term, Var, Judge, Eq, AppCirc1, AppCirc2, App1, App2, Plus, Tan, term, parse_decapode,
   VectorForm, PhysicsState, findname, findnode,
   compile, compile_env, gensim, closest_point, flat_op,
+  AbstractMeshKey, loadmesh, UnitIcosphere, ThermoIcosphere, UnitUVSphere, ThermoUVSphere,
   Open, OpenSummationDecapodeOb, OpenSummationDecapode, unique_by, unique_by!, oapply
 
 normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
@@ -31,3 +32,4 @@ include("language.jl")
 include("composition.jl")
 include("visualization.jl")
 include("simulation.jl")
+include("meshes.jl")
