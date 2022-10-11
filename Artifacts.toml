@@ -9,5 +9,5 @@ git-tree-sha1 = "9482e8911a0f12c1be16910a2fc61486eb391b87"
 git-tree-sha1 = "7db4629f78161cdd08310b6f37ade7d50604f55d"
 
     [[all_meshes2.download]]
-    sha256 = "46d730bfa6cd6cbcb16babd4c56ae64c5491c0328152733c798f862e45381b28"
+    sha256 = "d1f6a4e3bf9134d95a38cd09e4e141098bf8f2543eb6bea041db330f1ced6a73"
     url = "https://raw.githubusercontent.com/AlgebraicJulia/DecapodesMeshes.jl/main/meshes/all_meshes2.tar.gz"
