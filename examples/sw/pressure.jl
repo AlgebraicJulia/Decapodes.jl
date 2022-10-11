@@ -95,8 +95,10 @@ include("coordinates.jl")
 include("spherical_meshes.jl")
 
 radius = 6371+90
-primal_earth, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, radius);
-nploc = primal_earth[npi, :point]
+
+primal_earth = loadmesh(ThermoIcosphere())
+nploc = argmax(x -> x[3], primal_earth[:point])
+
 orient!(primal_earth)
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
 subdivide_duals!(earth, Circumcenter())
