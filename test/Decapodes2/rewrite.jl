@@ -11,46 +11,31 @@ draw(f::ACSetTransformation; kw...) =
   to_graphviz(f; node_labels=true, edge_labels=true, draw_codom=false, kw...)
 
 
-#Source graph
-G = @acset Graph begin
-    V = 4
-    E = 3
-    src = [1, 2, 3]
-    tgt = [3, 3, 4]
-end
+# Source graph
+G = @acset Graph begin V = 4; E = 3; src = [1, 2, 3]; tgt = [3, 3, 4]end
 
 # Graphs represenative of what the decapode
 # rewrite should be accomplishing
 
 # To match for
-L = @acset Graph begin
-    V = 3
-    E = 2
-    src = [1, 2]
-    tgt = [3, 3]
+L = @acset Graph begin V = 3; E = 2; src = [1, 2]; tgt = [3, 3]
 end
 
 # Change into
-R = @acset Graph begin
-    V = 6
-    E = 5
-    src = [1, 2, 4, 5, 6]
-    tgt = [5, 6, 3, 4, 4]
+R = @acset Graph begin V = 6; E = 5; src = [1, 2, 4, 5, 6]; tgt = [5, 6, 3, 4, 4]
 end
 
 # Preserved by rewrite
-I = @acset Graph begin
-    V = 3
-end
+I = @acset Graph begin; V = 3 end
 
-#rule = Rule(hom(L,L), hom(L,R))
-#rule = Rule(hom(I,L), hom(I,I))
+# rule = Rule(hom(L,L), hom(L,R))
+# rule = Rule(hom(I,L), hom(I,I))
 
 rule = Rule(hom(I,L), hom(I,R))
 
-#Works for trivial pattern matching 
+# Works for trivial pattern matching 
 H = rewrite(rule, L)
-#But not for pattern-finding
+# But not for pattern-finding
 H₂ = rewrite(rule, G)
 
 
@@ -66,3 +51,18 @@ I = @acset Graph begin V=2; E=1; src=1; tgt=2 end # interface: non-deleted subse
 R = @acset Graph begin V=1; E=1; src=1; tgt=1 end # Replacement pattern
 rule = Rule(hom(I,L), hom(I,R))
 H = rewrite(rule, G)
+
+# Add loops to vertex
+G = path_graph(Graph, 3)
+
+L = Graph(1)
+
+R = @acset Graph begin V=1; E=1; src=1; tgt=1 end
+
+I = Graph(1)
+
+rule = Rule(hom(I,L), hom(I,R))
+m = CSetTransformation(L, G, V=[3])
+H = rewrite_match(rule, m)
+
+# Does rewrite rule not apply to every matching pattern?
