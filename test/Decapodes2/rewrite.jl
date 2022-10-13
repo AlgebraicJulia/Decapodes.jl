@@ -18,51 +18,134 @@ G = @acset Graph begin V = 4; E = 3; src = [1, 2, 3]; tgt = [3, 3, 4]end
 # rewrite should be accomplishing
 
 # To match for
-L = @acset Graph begin V = 3; E = 2; src = [1, 2]; tgt = [3, 3]
-end
+tomatch = @acset Graph begin V = 3; E = 2; src = [1, 2]; tgt = [3, 3] end
 
 # Change into
-R = @acset Graph begin V = 6; E = 5; src = [1, 2, 4, 5, 6]; tgt = [5, 6, 3, 4, 4]
+tosub = @acset Graph begin V = 6; E = 5; src = [1, 2, 4, 5, 6]; tgt = [5, 6, 3, 4, 4]
 end
 
 # Preserved by rewrite
-I = @acset Graph begin; V = 3 end
+I = Graph(3)
 
-# rule = Rule(hom(L,L), hom(L,R))
-# rule = Rule(hom(I,L), hom(I,I))
+L = CSetTransformation(I, tomatch, V = [1,2,3])
+R = CSetTransformation(I, tosub, V = [1,2,3])
+rule = Rule(L, R)
 
-rule = Rule(hom(I,L), hom(I,R))
+#m = CSetTransformation(tomatch, G, V=[1,2,3], E=[1,2])
+#H = rewrite_match(rule, m)
 
-# Works for trivial pattern matching 
-H = rewrite(rule, L)
-# But not for pattern-finding
-H₂ = rewrite(rule, G)
-
-
-# Example from the rewrite documentation
-G = @acset Graph begin
-    V=3; E=3;
-    src=[1,2,2];
-    tgt=[2,3,3]
-end
-
-L = @acset Graph begin V=2; E=2; src=1; tgt=2 end # matched pattern
-I = @acset Graph begin V=2; E=1; src=1; tgt=2 end # interface: non-deleted subset of L
-R = @acset Graph begin V=1; E=1; src=1; tgt=1 end # Replacement pattern
-rule = Rule(hom(I,L), hom(I,R))
 H = rewrite(rule, G)
 
-# Add loops to vertex
-G = path_graph(Graph, 3)
+function makePerfectBinaryTree(h)
+  Tree = Graph(2^h - 1)
+  interiorNodes = 2^(h-1)-1
+  add_edges!(Tree, map(x->2*x, 1:interiorNodes), 1:interiorNodes)
+  add_edges!(Tree, map(x->2*x+1, 1:interiorNodes), 1:interiorNodes)
+  return Tree
+end
 
-L = Graph(1)
+G′ = makePerfectBinaryTree(3)
 
-R = @acset Graph begin V=1; E=1; src=1; tgt=1 end
+#H′ = rewrite(rule, G′)
 
-I = Graph(1)
+ruleSeq = RuleSchedule(rule)
+seq = WhileSchedule(ruleSeq)
 
-rule = Rule(hom(I,L), hom(I,R))
-m = CSetTransformation(L, G, V=[3])
-H = rewrite_match(rule, m)
+function rewriteNAryGraph(n)
+  L = @acset Graph begin
+    V = n+1
+    E = n
+    src = 1:n
+    tgt = n+1
+  end
 
-# Does rewrite rule not apply to every matching pattern?
+  R = Graph()
+  copy_parts!(R, L)
+  m = add_vertices!(R, n)
+  add_edges!(R, m, 1:n)
+  rightmost_vertex = add_vertex!(R)
+  add_edge!(R, n+1, rightmost_vertex)
+
+  I = Graph(n+1)
+
+  L′ = CSetTransformation(I, L, V = 1:n+1)
+  R′ = CSetTransformation(I, R, V = vcat(1:n, rightmost_vertex))
+
+  rule = Rule(L′, R′)
+
+  H = rewrite(rule, L)
+end
+
+#########################
+
+const OpenGraphOb, OpenGraph = OpenCSetTypes(Graph, :V)
+
+# Define the source graph, matching graph, substitute graph
+G = @acset Graph begin V = 4; E = 3; src = [1, 2, 3]; tgt = [3, 3, 4]end
+tomatch = @acset Graph begin V = 3; E = 2; src = [1, 2]; tgt = [3, 3] end
+tosub = @acset Graph begin V = 6; E = 5; src = [1, 2, 4, 5, 6]; tgt = [5, 6, 3, 4, 4] end
+
+I = Graph(3)
+id_1 = id(Graph(1));
+
+# Create the open versions of each graph
+openG = OpenGraph(G, FinFunction([1], 4), FinFunction([2], 4), FinFunction([3], 4))
+openMatch = OpenGraph(tomatch, FinFunction([1], 3), FinFunction([2], 3), FinFunction([3], 3))
+openSub = OpenGraph(tosub, FinFunction([1], 6), FinFunction([2], 6), FinFunction([3], 6))
+
+openI = OpenGraph(I, FinFunction([1], 3), FinFunction([2], 3), FinFunction([3], 3))
+
+
+# Create the equivalances between the matching and substitute graph
+matchTrans = ACSetTransformation(I, tomatch, V = [1,2,3]);
+subTrans = ACSetTransformation(I, tosub, V = [1,2,3]);
+
+# Extend the transformation to the entire multicospan, including apex and feet
+L = StructuredMultiCospanHom(openI, openMatch, ACSetTransformation[matchTrans, id_1, id_1, id_1])
+R = StructuredMultiCospanHom(openI, openSub, ACSetTransformation[subTrans, id_1, id_1, id_1])
+
+# Declare the rewrite rule using both transformations
+rule = openrule(Span(L, R))
+
+# Declare the matching transformation, can we let the program
+# match the pattern automatically?
+findTrans = ACSetTransformation(tomatch, G, V=[1,2,3], E=[1,2]);
+m = StructuredMultiCospanHom(openMatch, openG, ACSetTransformation[findTrans, id_1, id_1, id_1])
+
+#Rewrite and get the apex, which is the result
+Hmcs = open_rewrite_match(rule, m)
+H = apex(Hmcs)
+
+#########################
+
+draw(d) = to_graphviz(d)
+
+DecaSub = quote
+  C₁::Form0{X}
+  C₂::Form0{X}
+  R::Form1{X}
+
+  # Fick's first law
+  R ==  k(d₀(C₁) + d₀(C₂))
+end
+
+subExpr = parse_decapode(DecaSub)
+Sub = SummationDecapode(subExpr)
+
+DecaMatch = quote
+  C₁::Form0{X}
+  C₂::Form0{X}
+  R::Form1{X}
+
+  # Fick's first law
+  R == d₀(C₁)
+  R == d₀(C₂)
+end
+
+matchExpr = parse_decapode(DecaMatch)
+Match = SummationDecapode(matchExpr)
+
+OpenSummationDecapodeOb, OpenSummationDecapode = OpenACSetTypes(SummationDecapode, :Var)
+
+OpenSub = Open(Sub, [:C₁, :C₂, :R])
+OpenMatch = Open(Match, [:C₁, :C₂, :R])
