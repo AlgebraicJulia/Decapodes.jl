@@ -18,20 +18,20 @@ G = @acset Graph begin V = 4; E = 3; src = [1, 2, 3]; tgt = [3, 3, 4]end
 # rewrite should be accomplishing
 
 # To match for
-tomatch = @acset Graph begin V = 3; E = 2; src = [1, 2]; tgt = [3, 3] end
+Match = @acset Graph begin V = 3; E = 2; src = [1, 2]; tgt = [3, 3] end
 
 # Change into
-tosub = @acset Graph begin V = 6; E = 5; src = [1, 2, 4, 5, 6]; tgt = [5, 6, 3, 4, 4]
+Sub = @acset Graph begin V = 6; E = 5; src = [1, 2, 4, 5, 6]; tgt = [5, 6, 3, 4, 4]
 end
 
 # Preserved by rewrite
 I = Graph(3)
 
-L = CSetTransformation(I, tomatch, V = [1,2,3])
-R = CSetTransformation(I, tosub, V = [1,2,3])
+L = CSetTransformation(I, Match, V = [1,2,3])
+R = CSetTransformation(I, Sub, V = [1,2,3])
 rule = Rule(L, R)
 
-#m = CSetTransformation(tomatch, G, V=[1,2,3], E=[1,2])
+#m = CSetTransformation(Match, G, V=[1,2,3], E=[1,2])
 #H = rewrite_match(rule, m)
 
 H = rewrite(rule, G)
@@ -45,11 +45,14 @@ function makePerfectBinaryTree(h)
 end
 
 G′ = makePerfectBinaryTree(3)
+m = CSetTransformation(Match, G′, V=[2,3,1], E=[1,4])
+H′ = rewrite_match(rule, m)
 
-#H′ = rewrite(rule, G′)
+m = CSetTransformation(Match, H′, V=[9,10,2], E=[7,9])
+H′′ = rewrite_match(rule, m)
 
-ruleSeq = RuleSchedule(rule)
-seq = WhileSchedule(ruleSeq)
+m = CSetTransformation(Match, H′′, V=[12,13,7], E=[11,12])
+H′′′ = rewrite_match(rule, m)
 
 function rewriteNAryGraph(n)
   L = @acset Graph begin
@@ -77,28 +80,27 @@ function rewriteNAryGraph(n)
 end
 
 #########################
-
 const OpenGraphOb, OpenGraph = OpenCSetTypes(Graph, :V)
 
 # Define the source graph, matching graph, substitute graph
 G = @acset Graph begin V = 4; E = 3; src = [1, 2, 3]; tgt = [3, 3, 4]end
-tomatch = @acset Graph begin V = 3; E = 2; src = [1, 2]; tgt = [3, 3] end
-tosub = @acset Graph begin V = 6; E = 5; src = [1, 2, 4, 5, 6]; tgt = [5, 6, 3, 4, 4] end
+Match = @acset Graph begin V = 3; E = 2; src = [1, 2]; tgt = [3, 3] end
+Sub = @acset Graph begin V = 6; E = 5; src = [1, 2, 4, 5, 6]; tgt = [5, 6, 3, 4, 4] end
 
 I = Graph(3)
 id_1 = id(Graph(1));
 
 # Create the open versions of each graph
 openG = OpenGraph(G, FinFunction([1], 4), FinFunction([2], 4), FinFunction([3], 4))
-openMatch = OpenGraph(tomatch, FinFunction([1], 3), FinFunction([2], 3), FinFunction([3], 3))
-openSub = OpenGraph(tosub, FinFunction([1], 6), FinFunction([2], 6), FinFunction([3], 6))
+openMatch = OpenGraph(Match, FinFunction([1], 3), FinFunction([2], 3), FinFunction([3], 3))
+openSub = OpenGraph(Sub, FinFunction([1], 6), FinFunction([2], 6), FinFunction([3], 6))
 
 openI = OpenGraph(I, FinFunction([1], 3), FinFunction([2], 3), FinFunction([3], 3))
 
 
 # Create the equivalances between the matching and substitute graph
-matchTrans = ACSetTransformation(I, tomatch, V = [1,2,3]);
-subTrans = ACSetTransformation(I, tosub, V = [1,2,3]);
+matchTrans = ACSetTransformation(I, Match, V = [1,2,3]);
+subTrans = ACSetTransformation(I, Sub, V = [1,2,3]);
 
 # Extend the transformation to the entire multicospan, including apex and feet
 L = StructuredMultiCospanHom(openI, openMatch, ACSetTransformation[matchTrans, id_1, id_1, id_1])
@@ -109,7 +111,7 @@ rule = openrule(Span(L, R))
 
 # Declare the matching transformation, can we let the program
 # match the pattern automatically?
-findTrans = ACSetTransformation(tomatch, G, V=[1,2,3], E=[1,2]);
+findTrans = ACSetTransformation(Match, G, V=[1,2,3], E=[1,2]);
 m = StructuredMultiCospanHom(openMatch, openG, ACSetTransformation[findTrans, id_1, id_1, id_1])
 
 #Rewrite and get the apex, which is the result
@@ -117,35 +119,117 @@ Hmcs = open_rewrite_match(rule, m)
 H = apex(Hmcs)
 
 #########################
-
-draw(d) = to_graphviz(d)
-
 DecaSub = quote
   C₁::Form0{X}
   C₂::Form0{X}
-  R::Form1{X}
+  Z::Form1{X}
 
-  # Fick's first law
-  R ==  k(d₀(C₁) + d₀(C₂))
+  Z ==  k(d₀(C₁) + d₀(C₂))
 end
 
-subExpr = parse_decapode(DecaSub)
-Sub = SummationDecapode(subExpr)
+Sub = SummationDecapode(parse_decapode(DecaSub))
 
 DecaMatch = quote
   C₁::Form0{X}
   C₂::Form0{X}
-  R::Form1{X}
+  Z::Form1{X}
 
-  # Fick's first law
-  R == d₀(C₁)
-  R == d₀(C₂)
+  Z == d₀(C₁)
+  Z == d₀(C₂)
 end
 
-matchExpr = parse_decapode(DecaMatch)
-Match = SummationDecapode(matchExpr)
+Match = SummationDecapode(parse_decapode(DecaMatch))
+
+DecaSource = quote
+  C₁::Form0{X}
+  C₂::Form0{X}
+  Z::Form1{X}
+  F::Form1{X}
+
+  Z == d₀(C₁)
+  Z == d₀(C₂)
+  F == k(Z)
+end
+
+G = SummationDecapode(parse_decapode(DecaSource))
+
+DecaI = quote
+  C₁::Form0{X}
+  C₂::Form0{X}
+  Z::Form1{X}
+end
+
+I = SummationDecapode(parse_decapode(DecaI))
 
 OpenSummationDecapodeOb, OpenSummationDecapode = OpenACSetTypes(SummationDecapode, :Var)
 
-OpenSub = Open(Sub, [:C₁, :C₂, :R])
-OpenMatch = Open(Match, [:C₁, :C₂, :R])
+OpenSub = Open(Sub, [:C₁, :C₂, :Z])
+OpenMatch = Open(Match, [:C₁, :C₂, :Z])
+OpenG = Open(G, [:C₁, :C₂, :Z])
+OpenI = Open(I, [:C₁, :C₂, :Z])
+
+matchTrans = ACSetTransformation(I, Match, Var = [1,2,3]);
+subTrans = ACSetTransformation(I, Sub, Var = [1,2,3]);
+
+"""
+DecaC1 = quote
+  C₁::Form0{X}
+end
+
+DecaC2 = quote
+  C₂::Form0{X}
+end
+
+DecaZ = quote
+  Z::Form1{X}
+end
+
+C1 = SummationDecapode(parse_decapode(DecaC1))
+C2 = SummationDecapode(parse_decapode(DecaC2))
+Z = SummationDecapode(parse_decapode(DecaZ))
+"""
+
+L_ = OpenSummationDecapodeOb.body
+
+L = StructuredMultiCospanHom(OpenI, OpenMatch, ACSetTransformation[matchTrans, L_(id_1), L_(id_1), L_(id_1)])
+R = StructuredMultiCospanHom(OpenI, OpenSub, ACSetTransformation[subTrans, id(C1), id(C2), id(Z)])
+
+rule = openrule(Span(L, R))
+
+findTrans = ACSetTransformation(Match, G, Var=[1,2,3], Op1=[1,2]);
+m = StructuredMultiCospanHom(OpenMatch, OpenG, ACSetTransformation[findTrans, id(C1), id(C2), id(Z)])
+
+# Crashing when it tries to invert a hom
+# Seems to be caused because invert_hom seems to want a symbol passed to it
+
+# Symbol for invert_hom seems to be retrieved from
+# L_ = typeof(left(rule.data)).parameters[1]
+# and then
+# ob = L_.parameters[1]
+# Where ob is the symbol to be used
+# Instead of a symbol, like in the OpenGraph instance which gets a :V
+# it gets the following, which is not a symbol,
+# AnonACSet{TypeLevelBasicSchema{Symbol, Tuple{:Var}, Tuple{}, 
+# Tuple{:Type, :Operator, :Name}, Tuple{(:type, :Var, :Type), (:name, 
+# :Var, :Name)}}, Tuple{Any, Any, Symbol}, Catlab.LVectors.LVector{Int64,
+# (:Var,)}, NamedTuple{(:type, :name), Tuple{Catlab.ColumnImplementations.
+# DenseAttr{Any}, Catlab.ColumnImplementations.DenseAttr{Symbol}}}}
+
+# Comparison
+# OpenGraph (which works), typeof(left(rule.data))
+# StructuredMultiCospanHom{Catlab.CategoricalAlgebra.StructuredCospans
+# .FinSetDiscreteACSet{:V, Graph}}
+
+#OpenPode (which doesn't work), typeof(left(rule.data))
+# StructuredMultiCospanHom{Catlab.CategoricalAlgebra.StructuredCospans
+#.DiscreteACSet{AnonACSet{TypeLevelBasicSchema{Symbol, Tuple{:Var}, 
+# Tuple{}, Tuple{:Type, :Operator, :Name}, Tuple{(:type, :Var, :Type), 
+# (:name, :Var, :Name)}}, Tuple{Any, Any, Symbol}, Catlab.LVectors
+# .LVector{Int64, (:Var,)}, NamedTuple{(:type, :name), Tuple{Catlab
+# .ColumnImplementations.DenseAttr{Any}, Catlab.ColumnImplementations
+# .DenseAttr{Symbol}}}}, SummationDecapode{Any, Any, Symbol}}}
+
+# Relevent code appears to be in AlgebraicRewriting>src>
+# StructuredCospans>open_pushout_complement 
+Hmcs = open_rewrite_match(rule, m)
+H = apex(Hmcs)
