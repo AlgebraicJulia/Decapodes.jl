@@ -8,59 +8,69 @@ include("../../src/Decapodes2/meshes.jl")
 # TODO: Move the testset macro to runtests.jl.
 @testset "Meshes" begin
 
-# Unit Icosphere
-unit_icosphere = loadmesh(UnitIcosphere())
-@test nv(unit_icosphere) == 2562
-@test ne(unit_icosphere) == 7680
-@test nparts(unit_icosphere, :Tri) == 5120
-
-# Icosphere at minimum altitude of thermosphere
-thermo_icosphere = loadmesh(ThermoIcosphere())
-@test nv(thermo_icosphere) == 2562
-@test ne(thermo_icosphere) == 7680
-@test nparts(thermo_icosphere, :Tri) == 5120
-
-# Unit UV sphere (TIE GCM grid)
-unit_uvsphere = loadmesh(UnitUVSphere())
-@test nv(unit_uvsphere) == 2522
-@test ne(unit_uvsphere) == 7560
-@test nparts(unit_uvsphere, :Tri) == 5040
-
-# Icosphere at minimum altitude of thermosphere
-thermo_uvsphere = loadmesh(ThermoUVSphere())
-@test nv(thermo_uvsphere) == 2522
-@test ne(thermo_uvsphere) == 7560
-@test nparts(thermo_uvsphere, :Tri) == 5040
-
-
 magnitude = (sqrt ∘ (x -> foldl(+, x*x)))
+unit_radius = 1
+euler_characteristic(p) = nv(p) - ne(p) + nparts(p, :Tri)
 
-# The definition of a discretization of a sphere of unspecified radius.
-ρ′ = magnitude(unit_icosphere[:point][begin])
-@test all(isapprox.(magnitude.(unit_icosphere[:point]), ρ′))
-# The definition of a discretization of a sphere of radius ρ.
-ρ = 1
-@test all(isapprox.(magnitude.(unit_icosphere[:point]), ρ))
+# Unit Icospheres are of the proper dimensions, are spheres, and have the right
+# Euler characteristic.
+unit_icosphere1 = loadmesh(Icosphere(1))
+@test nv(unit_icosphere1) == 12
+@test ne(unit_icosphere1) == 30
+@test nparts(unit_icosphere1, :Tri) == 20
+ρ = magnitude(unit_icosphere1[:point][begin])
+@test all(isapprox.(magnitude.(unit_icosphere1[:point]), ρ))
+@test ρ == unit_radius
+@test euler_characteristic(unit_icosphere1) == 2
 
-# The definition of a discretization of a sphere of unspecified radius.
-ρ′ = magnitude(thermo_icosphere[:point][begin])
-@test all(isapprox.(magnitude.(thermo_icosphere[:point]), ρ′))
-ρ = 6371+90
-# The definition of a discretization of a sphere of radius ρ.
-@test all(isapprox.(magnitude.(thermo_icosphere[:point]), ρ))
+unit_icosphere2 = loadmesh(Icosphere(2))
+@test nv(unit_icosphere2) == 42
+@test ne(unit_icosphere2) == 120
+@test nparts(unit_icosphere2, :Tri) == 80
+ρ = magnitude(unit_icosphere2[:point][begin])
+@test all(isapprox.(magnitude.(unit_icosphere2[:point]), ρ))
+@test ρ == unit_radius
+@test euler_characteristic(unit_icosphere2) == 2
 
-# The definition of a discretization of a sphere of unspecified radius.
-ρ′ = magnitude(unit_uvsphere[:point][begin])
-@test all(isapprox.(magnitude.(unit_uvsphere[:point]), ρ′))
-# The definition of a discretization of a sphere of radius ρ.
-ρ = 1
-@test all(isapprox.(magnitude.(unit_uvsphere[:point]), ρ))
+unit_icosphere3 = loadmesh(Icosphere(3))
+@test nv(unit_icosphere3) == 162
+@test ne(unit_icosphere3) == 480
+@test nparts(unit_icosphere3, :Tri) == 320
+ρ = magnitude(unit_icosphere3[:point][begin])
+@test all(isapprox.(magnitude.(unit_icosphere3[:point]), ρ))
+@test ρ == unit_radius
+@test euler_characteristic(unit_icosphere3) == 2
 
-# The definition of a discretization of a sphere of unspecified radius.
-ρ′ = magnitude(thermo_uvsphere[:point][begin])
-@test all(isapprox.(magnitude.(thermo_uvsphere[:point]), ρ′))
-# The definition of a discretization of a sphere of radius ρ.
-ρ = 6371+90
-@test all(isapprox.(magnitude.(thermo_uvsphere[:point]), ρ))
+unit_icosphere4 = loadmesh(Icosphere(4))
+@test nv(unit_icosphere4) == 642
+@test ne(unit_icosphere4) == 1920
+@test nparts(unit_icosphere4, :Tri) == 1280
+ρ = magnitude(unit_icosphere4[:point][begin])
+@test all(isapprox.(magnitude.(unit_icosphere4[:point]), ρ))
+@test ρ == unit_radius
+@test euler_characteristic(unit_icosphere4) == 2
+
+unit_icosphere5 = loadmesh(Icosphere(5))
+@test nv(unit_icosphere5) == 2562
+@test ne(unit_icosphere5) == 7680
+@test nparts(unit_icosphere5, :Tri) == 5120
+ρ = magnitude(unit_icosphere5[:point][begin])
+@test all(isapprox.(magnitude.(unit_icosphere5[:point]), ρ))
+@test ρ == unit_radius
+@test euler_characteristic(unit_icosphere5) == 2
+
+
+# Testing the radius parameter.
+thermosphere_radius = 6371 + 90
+
+thermo_icosphere5 = loadmesh(Icosphere(5, thermosphere_radius))
+@test nv(thermo_icosphere5) == 2562
+@test ne(thermo_icosphere5) == 7680
+@test nparts(thermo_icosphere5, :Tri) == 5120
+ρ = magnitude(thermo_icosphere5[:point][begin])
+@test all(isapprox.(magnitude.(thermo_icosphere5[:point]), ρ))
+@test ρ == thermosphere_radius
+@test euler_characteristic(thermo_icosphere5) == 2
+
 
 end

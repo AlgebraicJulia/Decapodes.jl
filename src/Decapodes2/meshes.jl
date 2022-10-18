@@ -6,35 +6,21 @@ using FileIO
 
 abstract type AbstractMeshKey end
 
-struct UnitIcosphere   <: AbstractMeshKey end
-struct ThermoIcosphere <: AbstractMeshKey end
-struct UnitUVSphere    <: AbstractMeshKey end
-struct ThermoUVSphere  <: AbstractMeshKey end
+struct Icosphere{N, R} <: AbstractMeshKey
+  n::N
+  r::R
+end
+
+Icosphere(n) = Icosphere(n, 1.0)
+
+function loadmesh(s::Icosphere)
+  1 <= s.n <= 5 || error("The only icosphere divisions supported are 1-5")
+  m = loadmesh_helper("UnitIcosphere$(s.n).obj")
+  m[:point] .*= s.r
+  return m
+end
 
 #loadmesh(meshkey::AbstractMeshKey)::EmbeddedDeltaSet2D
 
 loadmesh_helper(obj_file_name) = EmbeddedDeltaSet2D(
-  joinpath(artifact"all_meshes", obj_file_name))
-
-#function loadmesh(meshkey::UnitIcosphere)::EmbeddedDeltaSet2D
-#  all_meshes = artifact"all_meshes"
-#  this_mesh = "unit_icosphere.obj"
-#  mesh_obj = FileIO.load(File{format"OBJ"}(joinpath(all_meshes, this_mesh)))
-#  mesh = EmbeddedDeltaSet2D(mesh_obj)
-#end
-function loadmesh(meshkey::UnitIcosphere)::EmbeddedDeltaSet2D
-  loadmesh_helper("unit_icosphere.obj")
-end
-
-function loadmesh(meshkey::ThermoIcosphere)::EmbeddedDeltaSet2D
-  loadmesh_helper("thermo_icosphere.obj")
-end
-
-function loadmesh(meshkey::UnitUVSphere)::EmbeddedDeltaSet2D
-  loadmesh_helper("unit_tie_gcm.obj")
-end
-
-function loadmesh(meshkey::ThermoUVSphere)::EmbeddedDeltaSet2D
-  loadmesh_helper("thermo_tie_gcm.obj")
-end
-
+  joinpath(artifact"all_meshes2", obj_file_name))
