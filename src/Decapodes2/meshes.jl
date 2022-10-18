@@ -24,3 +24,5 @@ end
 
 loadmesh_helper(obj_file_name) = EmbeddedDeltaSet2D(
   joinpath(artifact"all_meshes2", obj_file_name))
+
+loadmesh(s, subdivision=Circumcenter()) = subdivide_duals!(loadmesh(s), subdivision)
