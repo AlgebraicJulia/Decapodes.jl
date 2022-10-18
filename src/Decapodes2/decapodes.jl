@@ -19,7 +19,7 @@ export normalize_unicode, DerivOp, append_dot,
   Term, Var, Judge, Eq, AppCirc1, AppCirc2, App1, App2, Plus, Tan, term, parse_decapode,
   VectorForm, PhysicsState, findname, findnode,
   compile, compile_env, gensim, closest_point, flat_op,
-  AbstractMeshKey, loadmesh, UnitIcosphere1, UnitIcosphere2, UnitIcosphere3, UnitIcosphere4, UnitIcosphere5, 
+  AbstractMeshKey, loadmesh, Icosphere, 
   Open, OpenSummationDecapodeOb, OpenSummationDecapode, unique_by, unique_by!, oapply
   #AbstractMeshKey, loadmesh, UnitIcosphere, ThermoIcosphere, UnitUVSphere, ThermoUVSphere,
 

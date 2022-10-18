@@ -45,6 +45,7 @@ PressureFlow = quote
   ϕc == γc(-(L₀(V, C))) 
   Ṗ == βₚ(Δ₀(P)) + ∘(dual_d₁,⋆₀⁻¹)(ϕₚ)
   Ċ == βc(Δ₀(C)) + ∘(dual_d₁,⋆₀⁻¹)(ϕc)
+
   
   # Ṗ  == ϕₚ
 end
@@ -60,7 +61,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :μ => x->-0.0001x
     # :μ => x->-2000x
     # :α => x->100*x
-    :α => x->1*x
+    :α => x->1.0*x  # divide alpha by length of mesh for proper scaling
     :βₚ => x->2000*x
     :γₚ => x->1*x    
     :βc => x->2000*x
@@ -110,7 +111,7 @@ include("spherical_meshes.jl")
 
 radius = 6371+90
 
-primal_earth = loadmesh(ThermoIcosphere())
+primal_earth = loadmesh(Icosphere(3,radius))
 nploc = argmax(x -> x[3], primal_earth[:point])
 
 orient!(primal_earth)
@@ -124,10 +125,11 @@ sim = eval(gensim(expand_operators(physics), [:C, :P, :V]))
 fₘ = sim(earth)
 
 # begin
-#   vmag = 500
+  vmag = 5
 #   # velocity(p) = vmag*ϕhat(p)
 #   # velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, vmag/4, 0))
-  velocity(p) = TangentBasis(CartesianPoint(p))((0, 0, 0))
+# velocity(p) = TangentBasis(CartesianPoint(p))((0, 0, 0))
+velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, vmag/4, 0))
 #   # velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, -vmag/4, 0))
 
 # # visualize the vector field
@@ -149,18 +151,25 @@ phi_start = 0*pi/180
 x = radius*cos(phi_start)*sin(theta_start)
 y = radius*sin(phi_start)*sin(theta_start)
 z = radius*cos(theta_start)
-c_dist₁ = MvNormal([x, y, z], 20*[1, 1, 1])
-c_dist₂ = MvNormal([x, y, -z], 20*[1, 1, 1])
+c_dist₁ = MvNormal([x, y, z], 200*[1, 1, 1])
+c_dist₂ = MvNormal([x, y, -z], 200*[1, 1, 1])
 
 c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 # c = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
-c = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
+c = 10000*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
 pfield = 100000*[p[3]/radius for p in earth[:point]]
-
+maximum(c)
 
 u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:C, :V, :P])
-mesh(primal_earth, color=findnode(u₀, :C), colormap=:plasma)
-tₑ = 30.0
+fig, ax, ob = mesh(primal_earth, color=findnode(u₀, :P), colormap=:plasma)
+Colorbar(fig[1,2], ob)
+end
+extrema(pfield)
+
+d(0, earth, pfield)
+begin
+# tₑ = 30.0
+tₑ = 15.0
 
 @info("Precompiling Solver")
 prob = ODEProblem(fₘ,u₀,(0,1e-4))
@@ -175,26 +184,38 @@ end
 begin
 mass(soln, t, mesh, concentration=:C) = sum(⋆(0, mesh)*findnode(soln(t), concentration))
 
-@show extrema(mass(soln, t, earth, :P) for t in 0:tₑ/150:tₑ)
+numframes = 250;
+
+@show extrema(mass(soln, t, earth, :P) for t in 0:tₑ/numframes:tₑ)
 end
 mesh(primal_earth, color=findnode(soln(0), :C), colormap=:jet)
 mesh(primal_earth, color=findnode(soln(0) - soln(tₑ), :C), colormap=:jet)
 begin
 # Plot the result
-times = range(0.0, tₑ, length=150)
+times = range(0.0, tₑ, length=numframes)
 colors = [findnode(soln(t), :C) for t in times]
 
 # Initial frame
-# fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = extrema(vcat(colors...)), colormap=:jet)
-fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = (-0.0001, 0.0001), colormap=:jet)
+fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = extrema(vcat(colors...)), colormap=:jet)
+# fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange=(-5e-8, 5e-8), colormap=:jet)
 Colorbar(fig[1,2], ob)
 framerate = 5
 
 # Animation
-record(fig, "weather.gif", range(0.0, tₑ; length=150); framerate = 30) do t
+record(fig, "weather.gif", range(0.0, tₑ; length=numframes); framerate = 30) do t
     ob.color = findnode(soln(t), :C)
 end
 end
 
+trange = range(0.0, tₑ; length=numframes)
+begin
+  # Plot max velocity (at any point on the grid) vs time
+  maxVel = [maximum(findnode(soln(t), :V)) for t in trange]
+  minVel = [minimum(findnode(soln(t), :V)) for t in trange]
 
+end
+plt = scatter(trange,maxVel)
+scatter(trange,minVel,color=:red)
+ylims!(minimum(minVel),maximum(maxVel))
 
+extrema(soln(tₑ), )
