@@ -2,12 +2,6 @@ using Catlab, Catlab.CategoricalAlgebra
 using CombinatorialSpaces
 using Test
 
-# TODO: Remove this line when we can do using Decapodes.
-include("../../src/Decapodes2/meshes.jl")
-
-# TODO: Move the testset macro to runtests.jl.
-@testset "Meshes" begin
-
 magnitude = (sqrt ∘ (x -> foldl(+, x*x)))
 unit_radius = 1
 euler_characteristic(p) = nv(p) - ne(p) + nparts(p, :Tri)
@@ -72,5 +66,3 @@ thermo_icosphere5 = loadmesh(Icosphere(5, thermosphere_radius))
 @test ρ == thermosphere_radius
 @test euler_characteristic(thermo_icosphere5) == 2
 
-
-end
