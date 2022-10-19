@@ -166,7 +166,7 @@ function compile(d::NamedDecapode, inputs::Vector)
         $(set_tanvars_code(d, inputs))
     end; end
 end
-function Decapodes.compile(d::SummationDecapode, inputs::Vector)
+function compile(d::SummationDecapode, inputs::Vector)
     input_numbers = incident(d, inputs, :name)
     visited = falses(nparts(d, :Var))
     visited[collect(flatten(input_numbers))] .= true
