@@ -11,6 +11,9 @@ using GLMakie
 using Logging
 # using CairoMakie 
 
+using GeometryBasics: Point3
+Point3D = Point3{Float64}
+
 PressureFlow = quote
   # state variables
   V::Form1{X}
@@ -91,12 +94,13 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return (args...) ->  op(args...)
 end
 
-include("coordinates.jl")
-include("spherical_meshes.jl")
+#include("coordinates.jl")
+#include("spherical_meshes.jl")
 
 radius = 6371+90
 
-primal_earth = loadmesh(ThermoIcosphere())
+#primal_earth = loadmesh(ThermoIcosphere())
+primal_earth = loadmesh(Icosphere(3, radius))
 nploc = argmax(x -> x[3], primal_earth[:point])
 
 orient!(primal_earth)

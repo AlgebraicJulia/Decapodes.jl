@@ -7,6 +7,9 @@ using OrdinaryDiffEq
 using MLStyle
 using Distributions
 using LinearAlgebra
+using GeometryBasics: Point3
+
+Point3D = Point3{Float64}
 
 """ Wedge product of a 0-form and a ``k``-form.
 """
@@ -70,14 +73,16 @@ end
 
 
 diffExpr = parse_decapode(AdvectionDiffusionExprBody)
-ddp = NamedDecapode(diffExpr)
+ddp = SummationDecapode(diffExpr)
 gensim(expand_operators(ddp), [:C, :V])
 f = eval(gensim(expand_operators(ddp), [:C, :V]))
 
-include("spherical_meshes.jl")
+#include("spherical_meshes.jl")
 radius = 6371+90
-primal_earth, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, radius);
-nploc = primal_earth[npi, :point]
+#primal_earth, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, radius);
+#nploc = primal_earth[npi, :point]
+primal_earth = loadmesh(Icosphere(4, radius))
+nploc = argmax(x -> x[3], primal_earth[:point])
 orient!(primal_earth)
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
 subdivide_duals!(earth, Circumcenter())
