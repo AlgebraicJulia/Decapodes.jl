@@ -1,3 +1,5 @@
+using Test
+
 using Decapodes
 using Catlab.Graphics
 using Catlab, Catlab.Graphs, Catlab.Graphics, Catlab.CategoricalAlgebra
@@ -10,6 +12,233 @@ draw(g; kw...) = to_graphviz(g; node_labels=true, edge_labels=true, kw...)
 draw(f::ACSetTransformation; kw...) =
   to_graphviz(f; node_labels=true, edge_labels=true, draw_codom=false, kw...)
 
+
+#########################
+# Work on rewriting a decapode based only on Op1
+
+function get_rewrite_indexes(decaSource)
+  # Convention will be that the target vertex will be the final
+  # value in the rewrite_indexes, all before are source vertices
+  temp = map(target -> vcat(decaSource[:src][incident(decaSource, target, :tgt)], target), unique(decaSource[:tgt]))
+  rewrite_indexes = []
+  for indexes in temp
+    # Check if the relation isn't a trivial substitution
+    # Only one Op1 into target
+    if(length(indexes) > 2)
+      push!(rewrite_indexes, indexes)
+    end
+  end
+  return rewrite_indexes
+end
+
+function rewrite_decapode(decaSource, decaToRewrite, info, serial=0)
+  # Just for now, I'll get it working with this example
+
+  num_outer_vars = length(info)
+  num_inner_vars = length(info)
+
+  nary = length(info) - 1
+
+  result_index = length(info)
+  sum_index = 2 * length(info)
+
+  # Cannot work with undefined types
+  Match_1 = @acset SummationDecapode{Any, Any, Symbol} begin 
+    Var = num_outer_vars
+    type = decaSource[:type][info]
+    name = decaSource[:name][info]
+
+    # This will probably break for rewrites including 
+    # Non-Op1 rewrites
+    Op1 = nary
+    src = 1:nary
+    tgt = fill(result_index, nary)
+    op1 = decaSource[:op1][incident(decaSource, info[end], :tgt)]
+  end
+
+  I_1 = @acset SummationDecapode{Any, Any, Symbol} begin 
+    Var = num_outer_vars
+    type = decaSource[:type][info]
+    name = decaSource[:name][info]
+  end 
+
+  Sub_1 = @acset SummationDecapode{Any, Any, Symbol} begin 
+    Var = num_outer_vars + num_inner_vars
+    type = vcat(decaSource[:type][info], decaSource[:type][info])
+    name = vcat(decaSource[:name][info], map(x -> Symbol("••",x), serial+1:serial+nary), [:sum])
+    Op1 = nary + 1
+    src = vcat(1:nary, sum_index)
+    tgt = vcat(num_outer_vars+1:sum_index-1, [result_index])
+    op1 = vcat(decaSource[:op1][incident(decaSource, info[end], :tgt)], Symbol(:avg, nary))
+    Σ = 1
+    sum = [sum_index]
+    Summand = nary
+    summand = nary+1+1:sum_index-1
+    summation = fill(1, nary)
+  end
+
+  L = ACSetTransformation(I_1, Match_1, Var = 1:num_outer_vars);
+  R = ACSetTransformation(I_1, Sub_1, Var = 1:num_outer_vars);
+
+  rule = Rule(L, R)
+
+  # This matching morphism needs to change if we are going to
+  # rewrite on decapodes other than the original
+  m = ACSetTransformation(Match_1, decaToRewrite, Var=info, Op1=incident(decaSource, info[end], :tgt));
+  rewrite_match(rule, m)
+end
+
+"""
+Match_2 = @acset SummationDecapode{Any, Any, Symbol} begin 
+Var = 3
+type = [:Form1, :Form1, :Form1]
+name = [:D₁, :D₂, :F]
+Op1 = 2
+src = [1, 2]
+tgt = [3, 3]
+op1 = [:c₁, :c₂]
+end
+
+I_2 = @acset SummationDecapode{Any, Any, Symbol} begin 
+Var = 3
+type = [:Form1, :Form1, :Form1]
+name = [:D₁, :D₂, :F]
+end 
+
+Sub_2 = @acset SummationDecapode{Any, Any, Symbol} begin 
+Var = 6
+type = [:Form1, :Form1, :Form1, :infer, :infer, :infer]
+name = [:D₁, :D₂, :F, :sum2, :Three, :Four]
+Op1 = 3
+src = [1,2,4]
+tgt = [5,6,3]
+op1 = [:c₁, :c₂, :k₂]
+Σ = 1
+sum = [4]
+Summand = 2
+summand = [5, 6]
+summation = [1, 1]
+end
+
+L = ACSetTransformation(I_2, Match_2, Var = [1,2,3]);
+R = ACSetTransformation(I_2, Sub_2, Var = [1,2,3]);
+
+rule = Rule(L, R)
+
+m = ACSetTransformation(Match_2, H, Var=[3,7,8], Op1=[4,5]);
+H′′ = rewrite_match(rule, m)
+"""
+
+"""
+Test for multiple op1 from the same source
+Test for multiple potential rewrites
+Test for no valid rewrite
+Test for large nary
+"""
+# Trivial test
+# Make sure var, op names and forms are preserved
+DecaTest1 = quote
+  D₁::Form1{X}
+  D₂::Form2{X}
+  F::Form3{X}
+
+  F == c₁(D₁)
+  F == c₂(D₂)
+end
+
+Test1 = SummationDecapode(parse_decapode(DecaTest1))
+rewriteIndexesTest1 = get_rewrite_indexes(Test1)
+@test rewriteIndexesTest1 == [[1,2,3]]
+
+Test1Res = rewrite_decapode(Test1, Test1, rewriteIndexesTest1[1])
+
+# Test with multiple rewrites
+# TODO: Support multiple different rewrites
+DecaTest2 = quote
+  C₁::Form0{X}
+  C₂::Form0{X}
+  D₁::Form1{X}
+  D₂::Form1{X}
+  F::Form1{X}
+
+  D₁ == d₀(C₁)
+  D₁ == d₀(C₂)
+  F == c₁(D₁)
+  F == c₂(D₂)
+end
+
+Test2 = SummationDecapode(parse_decapode(DecaTest2))
+rewriteIndexesTest2 = get_rewrite_indexes(Test2)
+@test rewriteIndexesTest2 == [[1,2,3], [3,4,5]]
+
+# Should combine into one test once multiple rewrite working
+Test2Res1 = rewrite_decapode(Test2, Test2, rewriteIndexesTest2[1])
+Test2Res2 = rewrite_decapode(Test2, Test2, rewriteIndexesTest2[2])
+
+# Test to ensure isolation of rewrite from unsupported features
+# TODO: Will be test for op1, op2,sum combined rewrite later
+DecaTest3 = quote
+  A::Form0{X}
+  B::Form0{X}
+  C::Form0{X}
+  D::Form0{X}
+  E::Form2{X}
+  F::Form3{X}
+  G::Form4{X}
+
+  G == ∧(A, B)
+  G == k(C)
+  G == t(D)
+  G == F + E
+end
+
+Test3 = SummationDecapode(parse_decapode(DecaTest3))
+rewriteIndexesTest3 = get_rewrite_indexes(Test3)
+@test rewriteIndexesTest2 == [[3,4,7]]
+
+TestRes3 = rewrite_decapode(Test3, Test3, rewriteIndexesTest3[1])
+
+# Test to ensure that ops from the same source are all preserved
+DecaTest4 = quote
+  C::Form9{X}
+  D::Form4{X}
+
+  D == k(C)
+  D == t(C)
+  D == p(C)
+end
+
+Test4 = SummationDecapode(parse_decapode(DecaTest4))
+rewriteIndexesTest4 = get_rewrite_indexes(Test4)
+@test rewriteIndexesTest4 == [[1,1,1,2]]
+
+TestRes4 = rewrite_decapode(Test4, Test4, rewriteIndexesTest4[1])
+
+# Test that larger nary rewrites function properly
+DecaTest5 = quote
+  A::Form0{X}
+  B::Form1{X}
+  C::Form2{X}
+  D::Form3{X}
+  E::Form4{X}
+  F::Form5{X}
+  G::Form6{X}
+
+  G == f(F)
+  G == e(E)
+  G == d(D)
+  G == c(C)
+  G == b(B)
+  G == a(A)
+end
+
+Test5 = SummationDecapode(parse_decapode(DecaTest5))
+rewriteIndexesTest5 = get_rewrite_indexes(Test5)
+@test rewriteIndexesTest5 == [[6, 5, 4, 3, 2, 1, 7]]
+
+TestRes5 = rewrite_decapode(Test5, Test5, rewriteIndexesTest5[1])
+#########################
+# May be used later on to try out composing rewrite rules
 
 # Source graph
 G = @acset Graph begin V = 4; E = 3; src = [1, 2, 3]; tgt = [3, 3, 4]end
@@ -79,6 +308,9 @@ function rewriteNAryGraph(n)
   H = rewrite(rule, L)
 end
 
+""" This is rewritting using open types, 
+don't know if I need this anymore.
+
 #########################
 const OpenGraphOb, OpenGraph = OpenCSetTypes(Graph, :V)
 
@@ -119,6 +351,10 @@ Hmcs = open_rewrite_match(rule, m)
 H = apex(Hmcs)
 
 #########################
+# Decapode rewriting using the OpenSummationDecapode 
+# Not sure if it works as of now but leaving it here
+OpenSummationDecapodeOb, OpenSummationDecapode = OpenACSetTypes(SummationDecapode, :Var)
+
 DecaSub = quote
   C₁::Form0{X}
   C₂::Form0{X}
@@ -148,7 +384,7 @@ DecaSource = quote
 
   Z == d₀(C₁)
   Z == d₀(C₂)
-  F == k(Z)
+  F == c(Z)
 end
 
 G = SummationDecapode(parse_decapode(DecaSource))
@@ -161,8 +397,6 @@ end
 
 I = SummationDecapode(parse_decapode(DecaI))
 
-OpenSummationDecapodeOb, OpenSummationDecapode = OpenACSetTypes(SummationDecapode, :Var)
-
 OpenSub = Open(Sub, [:C₁, :C₂, :Z])
 OpenMatch = Open(Match, [:C₁, :C₂, :Z])
 OpenG = Open(G, [:C₁, :C₂, :Z])
@@ -171,7 +405,6 @@ OpenI = Open(I, [:C₁, :C₂, :Z])
 matchTrans = ACSetTransformation(I, Match, Var = [1,2,3]);
 subTrans = ACSetTransformation(I, Sub, Var = [1,2,3]);
 
-"""
 DecaC1 = quote
   C₁::Form0{X}
 end
@@ -187,9 +420,10 @@ end
 C1 = SummationDecapode(parse_decapode(DecaC1))
 C2 = SummationDecapode(parse_decapode(DecaC2))
 Z = SummationDecapode(parse_decapode(DecaZ))
-"""
 
-L_ = OpenSummationDecapodeOb.body
+id_1 = id(Graph(1));
+
+L_ = OpenSummationDecapodeOb{Symbol, Symbol, Symbol}.body
 
 L = StructuredMultiCospanHom(OpenI, OpenMatch, ACSetTransformation[matchTrans, L_(id_1), L_(id_1), L_(id_1)])
 R = StructuredMultiCospanHom(OpenI, OpenSub, ACSetTransformation[subTrans, id(C1), id(C2), id(Z)])
@@ -233,3 +467,5 @@ m = StructuredMultiCospanHom(OpenMatch, OpenG, ACSetTransformation[findTrans, id
 # StructuredCospans>open_pushout_complement 
 Hmcs = open_rewrite_match(rule, m)
 H = apex(Hmcs)
+
+"""
