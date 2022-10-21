@@ -107,11 +107,8 @@ is only a primal mesh, we also generate and subdivide the dual mesh.
 using Catlab.CategoricalAlgebra
 using CombinatorialSpaces, CombinatorialSpaces.DiscreteExteriorCalculus
 using CairoMakie
-using JSON
-using HTTP: get
 
-plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}},
-                                 String(get("https://raw.githubusercontent.com/AlgebraicJulia/Decapodes.jl/main/docs/assets/meshes/plot_mesh.json").body))
+plot_mesh = loadmesh(Rectangle_30x10())
 
 # Generate the dual mesh
 plot_mesh_dual = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}(plot_mesh)
