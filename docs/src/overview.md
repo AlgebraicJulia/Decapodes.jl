@@ -115,14 +115,10 @@ non-periodic meshes.
 using Catlab.CategoricalAlgebra
 using CombinatorialSpaces, CombinatorialSpaces.DiscreteExteriorCalculus
 using CairoMakie
-using JSON
-using HTTP: get
 
-periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}},
-                                 String(get("https://raw.githubusercontent.com/AlgebraicJulia/Decapodes.jl/main/docs/assets/meshes/periodic_mesh.json").body))
-plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}},
-                                 String(get("https://raw.githubusercontent.com/AlgebraicJulia/Decapodes.jl/main/docs/assets/meshes/plot_mesh.json").body))
-point_map = JSON.parse(String(get("https://raw.githubusercontent.com/AlgebraicJulia/Decapodes.jl/main/docs/assets/meshes/point_map.json").body))
+plot_mesh = loadmesh(Rectangle_30x10())
+periodic_mesh = loadmesh(Torus_30x10())
+point_map = loadmesh(Point_Map())
 
 fig, ax, ob = wireframe(plot_mesh)
 ax.aspect = AxisAspect(3.0)
