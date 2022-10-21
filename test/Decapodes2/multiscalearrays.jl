@@ -3,6 +3,7 @@ using OrdinaryDiffEq
 using GeometryBasics
 using JSON
 using Distributions
+using Artifacts
 # using GLMakie
 
 using Catlab
@@ -46,9 +47,12 @@ end
 
 
 meshpath(meshfile) = joinpath(@__DIR__, "meshes", meshfile)
-plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, read(meshpath("plot_mesh.json"), String))
-periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, read(meshpath("periodic_mesh.json"), String));
-point_map = JSON.parse(read(meshpath("point_map.json"),String))
+#plot_mesh = parse_json_acset(EmbeddedDeltaSet2D{Bool, Point3{Float64}}, read(meshpath("plot_mesh.json"), String))
+#periodic_mesh = parse_json_acset(EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}, read(meshpath("periodic_mesh.json"), String));
+#point_map = JSON.parse(read(meshpath("point_map.json"),String))
+plot_mesh = loadmesh(Rectangle_30x10())
+periodic_mesh = loadmesh(Torus_30x10())
+point_map = loadmesh(Point_Map())
 
 # function plotform0(plot_mesh, c)
 #   fig, ax, ob = mesh(plot_mesh; color=c[point_map]);
