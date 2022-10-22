@@ -64,8 +64,7 @@ function parse_exp_diagram(cat, body; kw...)
       push!(new_body.args, exp)
     end
   end
-  dec = parse_diagram(cat, new_body; kw...)
-  dec.diagram
+  parse_diagram(cat, new_body; kw...)
 end
 
 i2sub = Dict(
