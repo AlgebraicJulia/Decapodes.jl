@@ -238,4 +238,8 @@ function diag2dwd(diagram; clean = false, calc_states = [], out_vars=[], in_vars
   dwd
 end
 
+diag2dwd(simple_diagram::T; args...) where {T <: SimpleDiagram} =
+  diag2dwd(diagram(simple_diagram); args...)
+
+
 end

@@ -37,6 +37,10 @@ function OpenDiagram(F::FinDomFunctor, names::AbstractVector{Symbol})
   OpenDiagram(F, Multicospan(FinSet(1), legs))
 end
 
+function OpenDiagram(d::Diagram, args...)
+  OpenDiagram(diagram(d), args...)
+end
+
 const OpenFreeDiagramOb, OpenFreeDiagram = OpenACSetTypes(FreeDiagram, :V)
 
 OpenFreeDiagram(d::FreeDiagram{Ob,Hom}, args...) where {Ob,Hom} =
