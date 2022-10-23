@@ -7,7 +7,27 @@ using Catlab.Graphics
 
 using Test
 
+using MLStyle
+using CombinatorialSpaces
+using LinearAlgebra
+using Distributions
+using MultiScaleArrays
+
 @testset "Simulation Generation" begin
+function generate(sd, my_symbol)
+  op = @match my_symbol begin
+    :⋆₀ => x->⋆(0,sd,hodge=DiagonalHodge())*x
+    :⋆₁ => x->⋆(1, sd, hodge=DiagonalHodge())*x
+    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=DiagonalHodge())
+    :⋆₁⁻¹ => x->inv_hodge_star(1,sd,hodge=DiagonalHodge())*x
+    :d₀ => x->d(0,sd)*x
+    :dual_d₀ => x->dual_derivative(0,sd)*x
+    :dual_d₁ => x->dual_derivative(1,sd)*x
+    :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
+  end
+  # return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
+  return (args...) ->  op(args...)
+end
 
 DiffusionExprBody =  quote
     C::Form0{X}
@@ -49,6 +69,16 @@ compile(expand_operators(ddp), [:C, :k])
 
 gensim(ddp)
 
+torus = loadmesh(Torus_30x10())
+c_dist = MvNormal([5, 5], [1.5, 1.5])
+c = [pdf(c_dist, [p[1], p[2]]) for p in torus[:point]]
+
+u₀ = construct(PhysicsState, [VectorForm(c)],Float64[], [:C])
+du = construct(PhysicsState, [VectorForm(zero(c))],Float64[], [:C])
+
+f = eval(gensim(expand_operators(ddp)))
+fₘₛ = f(torus)
+
 
 DiffusionExprBody =  quote
     C::Form0{X}
@@ -72,4 +102,15 @@ compile(expand_operators(ddp), [:C, :k])
 @test infer_state_names(ddp) == [:C, :k]
 @test Decapodes.get_vars_code(ddp, [:k]).args[2] == :(k = p.k(t))
 gensim(ddp)
+
+f = eval(gensim(expand_operators(ddp)))
+fₘₚ = f(torus)
+
+@test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
+ 
+# to solve the ODE over a duration, use the ODEProblem from OrdinaryDiffEq
+# tₑ = 10
+# using OrdinaryDiffEq
+# prob = ODEProblem(fₘₛ,u₀, (0,tₑ), (k=2.0,))
+# soln = solve(prob, Tsit5())
 end
