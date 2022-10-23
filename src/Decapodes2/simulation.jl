@@ -118,7 +118,7 @@ function compile_env(d::AbstractNamedDecapode)
       continue
     end
     ops = QuoteNode(op)
-    def = :($op = generate(mesh, $ops))
+    def = :($op = operators(mesh, $ops))
     push!(defs.args, def)
   end
   return defs
@@ -131,7 +131,7 @@ function gensim(d::AbstractNamedDecapode, input_vars)
   defs = compile_env(d′)
   rhs = compile(d′, input_vars)
   quote
-    function simulate(mesh)
+    function simulate(mesh, operators)
       $defs
       return $rhs
     end
