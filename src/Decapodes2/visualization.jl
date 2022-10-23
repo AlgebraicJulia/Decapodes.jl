@@ -20,6 +20,10 @@ varname(d, v) = "$(d[v, :name]):$(spacename(d, v))"
 Graphics.to_graphviz(F::AbstractDecapode; kw...) =
 to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; kw...))
 
+decapode_edge_label(s::Symbol) = String(s)
+decapode_edge_label(s::Vector{Symbol}) = join(String.(s), "⋅")
+
+
 function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode; kw...)
     pg = PropertyGraph{Any}(;kw...)
     vids = map(parts(d, :Var)) do v
@@ -28,7 +32,7 @@ function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode; kw
 
     map(parts(d, :Op1)) do op
       s, t = d[op, :src], d[op, :tgt]
-      add_edge!(pg, vids[s],vids[t], label=String(d[op,:op1]))
+      add_edge!(pg, vids[s],vids[t], label=decapode_edge_label(d[op,:op1]))
     end
 
     map(parts(d, :Op2)) do op
@@ -37,7 +41,7 @@ function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode; kw
       v = add_vertex!(pg, label="$(spacename(d, s))×$(spacename(d,t))", shape="rectangle")
       add_edge!(pg, v, vids[s], label="π₁", style="dashed")
       add_edge!(pg, v, vids[t], label="π₂", style="dashed")
-      add_edge!(pg, v, vids[r], label=String(d[op, :op2]))
+      add_edge!(pg, v, vids[r], label=decapode_edge_label(d[op, :op2]))
     end
 
     return pg
