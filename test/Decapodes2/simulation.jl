@@ -13,7 +13,6 @@ using LinearAlgebra
 using Distributions
 using MultiScaleArrays
 
-@testset "Simulation Generation" begin
 function generate(sd, my_symbol)
   op = @match my_symbol begin
     :⋆₀ => x->⋆(0,sd,hodge=DiagonalHodge())*x
@@ -29,6 +28,7 @@ function generate(sd, my_symbol)
   return (args...) ->  op(args...)
 end
 
+@testset "Simulation Generation" begin
 DiffusionExprBody =  quote
     C::Form0{X}
     Ċ::Form0{X}
@@ -43,14 +43,14 @@ end
 
 diffExpr = parse_decapode(DiffusionExprBody)
 ddp = SummationDecapode(diffExpr)
-add_scalar!(ddp, :k)
+add_constant!(ddp, :k)
 @test nparts(ddp, :Var) == 4
 
 DiffusionExprBody =  quote
     C::Form0{X}
     Ċ::Form0{X}
     ϕ::Form1{X}
-    k::Scalar{ℝ}
+    k::Constant{ℝ}
 
 
     # Fick's first law

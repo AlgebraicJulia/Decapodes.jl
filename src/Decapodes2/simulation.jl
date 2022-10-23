@@ -81,7 +81,7 @@ infer_state_names(d) = d[infer_states(d), :name]
 function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
     stmts = map(vars) do s
         ssymbl = QuoteNode(s)
-        if all(d[incident(d, s, :name) , :type] .== :Scalar)
+        if all(d[incident(d, s, :name) , :type] .== :Constant)
             :($s = p.$s)
         elseif all(d[incident(d, s, :name) , :type] .== :Parameter)
             :($s = (p.$s)(t))
