@@ -17,7 +17,7 @@ DiffusionExprBody =  quote
     # Fick's first law
     ϕ ==  ∘(k, d₀)(C)
     # Diffusion equation
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
     ∂ₜ(C) == Ċ
 end
 
@@ -36,7 +36,7 @@ DiffusionExprBody =  quote
     # Fick's first law
     ϕ ==  k * d₀(C)
     # Diffusion equation
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
     ∂ₜ(C) == Ċ
 end
 
@@ -60,7 +60,7 @@ DiffusionExprBody =  quote
     # Fick's first law
     ϕ ==  k * d₀(C)
     # Diffusion equation
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
     ∂ₜ(C) == Ċ
 end
 
