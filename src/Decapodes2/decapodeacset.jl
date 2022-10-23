@@ -97,3 +97,11 @@ function expand_operators(d::SummationDecapode)
   expand_operators!(e, d)
   return e
 end
+
+function add_scalar!(d::AbstractNamedDecapode, k::Symbol)
+    return add_part!(d, :Var, type=:Scalar, name=k)
+end
+
+function add_parameter(d::AbstractNamedDecapode, k::Symbol)
+    return add_part!(d, :Var, type=:Parameter, name=k)
+end
