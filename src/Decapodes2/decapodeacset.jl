@@ -47,6 +47,16 @@ function fill_names!(d::AbstractNamedDecapode)
     return d
 end
 
+function make_sum_unique!(d::AbstractNamedDecapode)
+  num = 1
+  for (i, name) in enumerate(d[:name])
+    if(name == :sum)
+      d[i, :name] = Symbol(join([String(name), string(num)] , "_"))
+      num += 1
+    end
+  end
+end
+
 function expand_operators(d::AbstractNamedDecapode)
   e = SummationDecapode{Symbol, Symbol, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op2))
