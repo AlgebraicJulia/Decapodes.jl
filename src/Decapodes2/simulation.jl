@@ -62,10 +62,32 @@ Base.Expr(c::VarargsCall) = begin
     return :($(c.output) = $operator($(arglist...)))
 end
 
+function infer_states(d::AbstractNamedDecapode)
+    vars = map(parts(d, :Var)) do v
+        if length(incident(d, v, :tgt)) == 0 &&
+            length(incident(d, v, :res)) == 0 &&
+            length(incident(d, v, :sum)) == 0
+            # v isn't a derived value
+            return v
+        else
+            return nothing
+        end
+    end
+    return filter(!isnothing, vars)
+end
+
+infer_state_names(d) = d[infer_states(d), :name]
+
 function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
     stmts = map(vars) do s
         ssymbl = QuoteNode(s)
-        :($s = findnode(u, $ssymbl).values)
+        if all(d[incident(d, s, :name) , :type] .== :Constant)
+            :($s = p.$s)
+        elseif all(d[incident(d, s, :name) , :type] .== :Parameter)
+            :($s = (p.$s)(t))
+        else
+            :($s = findnode(u, $ssymbl).values)
+        end
     end
     return quote $(stmts...) end
 end
@@ -81,6 +103,7 @@ function set_tanvars_code(d::AbstractNamedDecapode, statevars::Vector{Symbol})
 end
 
 function compile_env(d::AbstractNamedDecapode)
+  assumed_ops = Set([:+, :*, :-, :/])
   defs = quote end
   for op in d[:op1]
     if op == DerivOp
@@ -91,7 +114,7 @@ function compile_env(d::AbstractNamedDecapode)
     push!(defs.args, def)
   end
   for op in d[:op2]
-    if op == :+
+    if op in assumed_ops
       continue
     end
     ops = QuoteNode(op)
@@ -100,6 +123,8 @@ function compile_env(d::AbstractNamedDecapode)
   end
   return defs
 end
+
+gensim(d::AbstractNamedDecapode) = gensim(d, collect(infer_state_names(d)))
 
 function gensim(d::AbstractNamedDecapode, input_vars)
   d′ = expand_operators(d)
@@ -112,6 +137,8 @@ function gensim(d::AbstractNamedDecapode, input_vars)
     end
   end
 end
+
+compile(d::AbstractNamedDecapode) = compile(d, infer_state_names(d))
 
 function compile(d::NamedDecapode, inputs::Vector)
     input_numbers = incident(d, inputs, :name)
@@ -166,6 +193,7 @@ function compile(d::NamedDecapode, inputs::Vector)
         $(set_tanvars_code(d, inputs))
     end; end
 end
+
 function compile(d::SummationDecapode, inputs::Vector)
     input_numbers = incident(d, inputs, :name)
     visited = falses(nparts(d, :Var))

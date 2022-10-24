@@ -107,3 +107,11 @@ function expand_operators(d::SummationDecapode)
   expand_operators!(e, d)
   return e
 end
+
+function add_constant!(d::AbstractNamedDecapode, k::Symbol)
+    return add_part!(d, :Var, type=:Constant, name=k)
+end
+
+function add_parameter(d::AbstractNamedDecapode, k::Symbol)
+    return add_part!(d, :Var, type=:Parameter, name=k)
+end
