@@ -73,7 +73,7 @@ diffExpr = parse_decapode(DiffusionExprBody)
 ddp = SummationDecapode(diffExpr)
 gensim(expand_operators(ddp), [:C])
 f = eval(gensim(expand_operators(ddp), [:C]))
-fₘ = f(periodic_mesh)
+fₘ = f(periodic_mesh, generate)
 c_dist = MvNormal([5, 5], [1.5, 1.5])
 c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
 
@@ -123,7 +123,7 @@ Decapodes.compile(advdiffdp, [:C, :V])
 Decapodes.compile(expand_operators(advdiffdp), [:C, :V])
 gensim(expand_operators(advdiffdp), [:C, :V])
 sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
-fₘ = sim(periodic_mesh)
+fₘ = sim(periodic_mesh, generate)
 velocity(p) = [-0.5, -0.5, 0.0]
 v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
 c_dist = MvNormal([7, 5], [1.5, 1.5])

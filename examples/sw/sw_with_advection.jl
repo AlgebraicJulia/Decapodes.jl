@@ -87,7 +87,7 @@ orient!(primal_earth)
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
 subdivide_duals!(earth, Circumcenter())
 
-fₘ = f(earth)
+fₘ = f(earth, generate)
 c_dist = MvNormal(nploc[[1,2]], 100[1, 1])
 c = [pdf(c_dist, [p[1], p[2]]./√radius) for p in earth[:point]]
 v = ones(Float64, ne(earth))
