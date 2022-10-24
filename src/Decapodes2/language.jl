@@ -187,5 +187,6 @@ function SummationDecapode(e::DecaExpr)
     end
     fill_names!(d)
     d[:name] .= normalize_unicode.(d[:name])
+    make_sum_unique!(d)
     return d
 end
