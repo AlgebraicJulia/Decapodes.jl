@@ -65,6 +65,19 @@ end
 function infer_states(d::AbstractNamedDecapode)
     vars = map(parts(d, :Var)) do v
         if length(incident(d, v, :tgt)) == 0 &&
+            length(incident(d, v, :res)) == 0
+            # v isn't a derived value
+            return v
+        else
+            return nothing
+        end
+    end
+    return filter(!isnothing, vars)
+end
+
+function infer_states(d::SummationDecapode)
+    vars = map(parts(d, :Var)) do v
+        if length(incident(d, v, :tgt)) == 0 &&
             length(incident(d, v, :res)) == 0 &&
             length(incident(d, v, :sum)) == 0
             # v isn't a derived value
