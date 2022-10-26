@@ -77,7 +77,7 @@ u₀ = construct(PhysicsState, [VectorForm(c)],Float64[], [:C])
 du = construct(PhysicsState, [VectorForm(zero(c))],Float64[], [:C])
 
 f = eval(gensim(expand_operators(ddp)))
-fₘₛ = f(torus)
+fₘₛ = f(torus, generate)
 
 
 DiffusionExprBody =  quote
@@ -104,7 +104,7 @@ compile(expand_operators(ddp), [:C, :k])
 gensim(ddp)
 
 f = eval(gensim(expand_operators(ddp)))
-fₘₚ = f(torus)
+fₘₚ = f(torus, generate)
 
 @test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
  

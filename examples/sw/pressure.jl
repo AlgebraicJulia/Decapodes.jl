@@ -111,7 +111,7 @@ physics = SummationDecapode(parse_decapode(PressureFlow))
 gensim(expand_operators(physics), [:P, :V])
 sim = eval(gensim(expand_operators(physics), [:P, :V]))
 
-fₘ = sim(earth)
+fₘ = sim(earth, generate)
 
 begin
   vmag = 500
