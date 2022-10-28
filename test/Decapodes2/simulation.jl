@@ -30,12 +30,11 @@ end
 
 @testset "Simulation Generation" begin
 DiffusionExprBody =  quote
-    C::Form0{X}
-    Ċ::Form0{X}
+    (C, Ċ)::Form0{X}
     ϕ::Form1{X}
 
     # Fick's first law
-    ϕ ==  ∘(k, d₀)(C)
+    ϕ == ∘(k, d₀)(C)
     # Diffusion equation
     Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
     ∂ₜ(C) == Ċ
@@ -47,14 +46,13 @@ add_constant!(ddp, :k)
 @test nparts(ddp, :Var) == 4
 
 DiffusionExprBody =  quote
-    C::Form0{X}
-    Ċ::Form0{X}
+    (C, Ċ)::Form0{X}
     ϕ::Form1{X}
     k::Constant{ℝ}
 
 
     # Fick's first law
-    ϕ ==  k * d₀(C)
+    ϕ == k * d₀(C)
     # Diffusion equation
     Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
     ∂ₜ(C) == Ċ
@@ -81,14 +79,12 @@ fₘₛ = f(torus, generate)
 
 
 DiffusionExprBody =  quote
-    C::Form0{X}
-    Ċ::Form0{X}
+    (C, Ċ)::Form0{X}
     ϕ::Form1{X}
     k::Parameter{ℝ}
 
-
     # Fick's first law
-    ϕ ==  k * d₀(C)
+    ϕ == k * d₀(C)
     # Diffusion equation
     Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
     ∂ₜ(C) == Ċ
