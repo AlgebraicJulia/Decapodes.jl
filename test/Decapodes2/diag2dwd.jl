@@ -130,8 +130,7 @@ rdp = SummationDecapode(recExpr)
 
 @testset "Diffusion Diagram" begin
     DiffusionExprBody =  quote
-        C::Form0{X}
-        Ċ::Form0{X}
+        (C, Ċ)::Form0{X}
         ϕ::Form1{X}
     
         # Fick's first law
@@ -155,8 +154,7 @@ end
 @testset "Advection Diagram" begin
     Advection = quote
         C::Form0{X}
-        V::Form1{X}
-        ϕ::Form1{X}
+        (V, ϕ)::Form1{X}
 
         ϕ == ∧₀₁(C,V)
     end
@@ -171,11 +169,8 @@ end
 
 @testset "Superposition Diagram" begin
     Superposition = quote
-        C::Form0{X}
-        Ċ::Form0{X}
-        ϕ::Form1{X}
-        ϕ₁::Form1{X}
-        ϕ₂::Form1{X}
+        (C, Ċ)::Form0{X}
+        (ϕ, ϕ₁, ϕ₂)::Form1{X}
 
         ϕ == ϕ₁ + ϕ₂
         Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
@@ -194,13 +189,9 @@ end
 
 @testset "AdvectionDiffusion Diagram" begin
     AdvDiff = quote
-        C::Form0{X}
-        Ċ::Form0{X}
-        V::Form1{X}
-        ϕ::Form1{X}
-        ϕ₁::Form1{X}
-        ϕ₂::Form1{X}
-    
+        (C, Ċ)::Form0{X}
+        (V, ϕ, ϕ₁, ϕ₂)::Form1{X}
+
         # Fick's first law
         ϕ₁ ==  (k ∘ d₀)(C)
         # Diffusion equation
