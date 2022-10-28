@@ -53,16 +53,13 @@ function parse_decapode(expr::Expr)
     end |> skipmissing |> collect
     judges = []
     eqns = []
-    for s in stmts
-        if typeof(s) == Judge
-            push!(judges, s)
-        elseif typeof(s) == Vector{Judge}
-          for judgement in s
-            push!(judges, judgement)
-          end
-        elseif typeof(s) == Eq
-            push!(eqns, s)
-        end
+    foreach(stmts) do s
+      @match s begin
+        ::Judge => push!(judges, s)
+        ::Vector{Judge} => append!(judges, s)
+        ::Eq => push!(eqns, s)
+        _ => error("Statement containing $s of type $(typeof(s)) was not added.")
+      end
     end
     DecaExpr(judges, eqns)
 end
