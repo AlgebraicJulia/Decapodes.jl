@@ -7,6 +7,7 @@ using Catlab.Theories, Catlab.CategoricalAlgebra
 using AlgebraicRewriting
 using AlgebraicRewriting: rewrite
 const hom = AlgebraicRewriting.homomorphism
+const Var = AlgebraicRewriting.Var
 
 draw(g; kw...) = to_graphviz(g; node_labels=true, edge_labels=true, kw...)
 draw(f::ACSetTransformation; kw...) =
@@ -31,61 +32,64 @@ function get_rewrite_indexes(decaSource)
   return rewrite_indexes
 end
 
-function rewrite_decapode(decaSource, decaToRewrite, info, serial=0)
+function rewrite_decapode(decaSource, decaToRewrite)
   # Just for now, I'll get it working with this example
 
-  num_outer_vars = length(info)
-  num_inner_vars = length(info)
+  nary_of_rewrite = 2
+  num_nodes_match = nary_of_rewrite + 1
+  result_index = num_nodes_match
+  sum_index = 2 * result_index
 
-  nary = length(info) - 1
-
-  result_index = length(info)
-  sum_index = 2 * length(info)
+  variable_types = map(n -> Var(Symbol("t",string(n))), 1:num_nodes_match)
+  variable_var = map(n -> Var(Symbol("v",string(n))), 1:num_nodes_match)
+  variable_op1 = map(n -> Var(Symbol("op1_",string(n))), 1:nary_of_rewrite)
 
   # Cannot work with undefined types
-  Match_1 = @acset SummationDecapode{Any, Any, Symbol} begin 
-    Var = num_outer_vars
-    type = decaSource[:type][info]
-    name = decaSource[:name][info]
+  Match_1 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
+    Var = num_nodes_match
+    type = variable_types
+    name = variable_var
 
     # This will probably break for rewrites including 
     # Non-Op1 rewrites
-    Op1 = nary
-    src = 1:nary
-    tgt = fill(result_index, nary)
-    op1 = decaSource[:op1][incident(decaSource, info[end], :tgt)]
+    Op1 = nary_of_rewrite
+    src = 1:nary_of_rewrite
+    tgt = fill(result_index, nary_of_rewrite)
+    op1 = variable_op1
   end
 
-  I_1 = @acset SummationDecapode{Any, Any, Symbol} begin 
-    Var = num_outer_vars
-    type = decaSource[:type][info]
-    name = decaSource[:name][info]
+  I_1 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
+    Var = num_nodes_match
+    type = variable_types
+    name = variable_var
   end 
 
-  Sub_1 = @acset SummationDecapode{Any, Any, Symbol} begin 
-    Var = num_outer_vars + num_inner_vars
-    type = vcat(decaSource[:type][info], decaSource[:type][info])
-    name = vcat(decaSource[:name][info], map(x -> Symbol("••",x), serial+1:serial+nary), [:sum])
-    Op1 = nary + 1
-    src = vcat(1:nary, sum_index)
-    tgt = vcat(num_outer_vars+1:sum_index-1, [result_index])
-    op1 = vcat(decaSource[:op1][incident(decaSource, info[end], :tgt)], Symbol(:avg, nary))
+  Sub_1 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
+    Var = 2 * num_nodes_match
+    type = vcat(variable_types, variable_types)
+    name = vcat(variable_var, map(x -> Symbol("••",x), 1:nary_of_rewrite), [:sum])
+    Op1 = nary_of_rewrite + 1
+    src = vcat(1:nary_of_rewrite, sum_index)
+    tgt = vcat(num_nodes_match+1:sum_index-1, [result_index])
+    op1 = vcat(variable_op1, Symbol(:avg, nary_of_rewrite))
     Σ = 1
     sum = [sum_index]
-    Summand = nary
-    summand = nary+1+1:sum_index-1
-    summation = fill(1, nary)
+    Summand = nary_of_rewrite
+    summand = num_nodes_match+1:sum_index-1
+    summation = fill(1, nary_of_rewrite)
   end
 
-  L = ACSetTransformation(I_1, Match_1, Var = 1:num_outer_vars);
-  R = ACSetTransformation(I_1, Sub_1, Var = 1:num_outer_vars);
-
+  L = hom(I_1, Match_1; monic = true, bindvars = true);
+  R = hom(I_1, Sub_1; monic = true, bindvars = true);
+  
   rule = Rule(L, R)
 
   # This matching morphism needs to change if we are going to
   # rewrite on decapodes other than the original
-  m = ACSetTransformation(Match_1, decaToRewrite, Var=info, Op1=incident(decaSource, info[end], :tgt));
-  rewrite_match(rule, m)
+  # m = ACSetTransformation(Match_1, decaToRewrite, Var=info, Op1=incident(decaSource, info[end], :tgt));
+  # rewrite_match(rule, m)
+
+  rewrite(rule, decaSource)
 end
 
 """
@@ -147,6 +151,17 @@ DecaTest1 = quote
 end
 
 Test1 = SummationDecapode(parse_decapode(DecaTest1))
+
+Test1 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
+  Var = 3
+  type = [:Form1, :Form2, :Form3]
+  name = [:D₁, :D₂, :F]
+
+  Op1 = 2
+  src = [1, 2]
+  tgt = [3, 3]
+  op1 = [:c₁, :c₂]
+end
 rewriteIndexesTest1 = get_rewrite_indexes(Test1)
 @test rewriteIndexesTest1 == [[1,2,3]]
 
@@ -168,6 +183,17 @@ DecaTest2 = quote
 end
 
 Test2 = SummationDecapode(parse_decapode(DecaTest2))
+Test2 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
+  Var = 5
+  type = [:Form0, :Form0, :Form1, :Form1,:Form1,]
+  name = [:C₁, :C₂, :D₁, :D₂, :F]
+
+  Op1 = 4
+  src = [1, 2, 3, 4]
+  tgt = [3, 3, 5, 5]
+  op1 = [:d₀, :d₀, :c₁, :c₂]
+end
+
 rewriteIndexesTest2 = get_rewrite_indexes(Test2)
 @test rewriteIndexesTest2 == [[1,2,3], [3,4,5]]
 
