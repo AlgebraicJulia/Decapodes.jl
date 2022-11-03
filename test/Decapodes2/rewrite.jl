@@ -16,46 +16,146 @@ draw(f::ACSetTransformation; kw...) =
 
 #########################
 
-# This could be made more efficient
-# Largest nary stored first
-function get_rewrite_count(deca_source)
-  # Stores the nary of all possible rewrites locations
-  nary_counts = []
+function get_target_indices(deca_source)
+  targetVars = []
   for var in parts(deca_source, :Var)
     op1Count = length(incident(deca_source, var, :tgt))
-    # op2Count = length(incident(deca_source, var, :res))
-    # sumCount = length(incident(deca_source, var, :sum))
+    op2Count = length(incident(deca_source, var, :res))
+    sumCount = length(incident(deca_source, var, :sum))
 
-    tot = op1Count # + op2Count + sumCount
+    tot = op1Count + op2Count + sumCount
     if(tot >= 2)
-      push!(nary_counts, tot)
+      append!(targetVars, var)
     end
   end
 
-  return sort(nary_counts, rev = true)
+  return targetVars
 end
 
+function get_preprocess_indices(deca_source)
+  targetOp2 = []
+  targetSum = []
 
+  targetVars = get_target_indices(deca_source)
+
+  for var in targetVars
+    append!(targetOp2, incident(deca_source, var, :res))
+    append!(targetSum, incident(deca_source, var, :sum))
+  end
+
+  return targetOp2, targetSum
+end
+
+function preprocess_rewrite(deca_source)
+  targetOp2, targetSum = get_preprocess_indices(deca_source)
+
+  # If we don't need to preprocess then don't
+  if(length(targetOp2) == 0 && length(targetSum) == 0)
+    return deca_source
+  end
+
+  LHS = []
+  RHS = []
+
+  SuperMatch = []
+  SuperVarMap = Vector{Int64}()
+  SuperOp2Map = Vector{Int64}()
+
+  # Process all of the target rewrites for op2
+  for opID in targetOp2
+
+    vars = [deca_source[opID, :proj1], deca_source[opID, :proj2], deca_source[opID, :res]]
+    types = deca_source[vars, :type]
+    names = deca_source[vars, :name]
+    op2name = deca_source[opID, :op2]
+
+    Match = @acset SummationDecapode{Any, Any, Symbol} begin 
+      Var = 3
+      type = types
+      name = names
+
+      Op2 = 1
+      proj1 = [1]
+      proj2 = [2]
+      res = [3]
+      op2 = op2name
+    end
+
+    I = @acset SummationDecapode{Any, Any, Symbol} begin 
+      Var = 3
+      type = types
+      name = names
+    end
+
+    Sub = @acset SummationDecapode{Any, Any, Symbol} begin 
+      Var = 4
+      type = vcat(types, types[end])
+      name = vcat(names, :temp)
+
+      Op1 = 1
+      src = [4]
+      tgt = [3]
+      op1 = [:temp]
+
+      Op2 = 1
+      proj1 = [1]
+      proj2 = [2]
+      res = [4]
+      op2 = op2name
+    end
+
+    L = ACSetTransformation(I, Match, Var = 1:3)
+    R = ACSetTransformation(I, Sub, Var = 1:3)
+
+    push!(LHS, L)
+    push!(RHS, R)
+    push!(SuperMatch, Match)
+
+    append!(SuperVarMap, vars)
+    push!(SuperOp2Map, opID)
+  end
+    
+
+  # Combine all rules in parallel and apply
+  rule = Rule(oplus(LHS), oplus(RHS))
+  m = ACSetTransformation(oplus(SuperMatch), deca_source, Var = SuperVarMap, Op2 = SuperOp2Map)
+
+  rewrite_match(rule, m)
+end
 
 function rewrite_decapode(deca_source)
   # Just for now, I'll get it working with op1 only
   # Considering op2 and summations will make this significantly more difficult
 
-  nary_counts = get_rewrite_count(deca_source)
-  deca_rewrite = deca_source
+  targetVars = get_target_indices(deca_source)
 
-  for count in nary_counts
-    nary_of_rewrite = first(nary_counts)
-    num_nodes_match = nary_of_rewrite + 1
+  if(length(targetVars) == 0)
+    return deca_source
+  end
+
+  LHS = []
+  RHS = []
+
+  SuperMatch = []
+  SuperVarMap = Vector{Int64}()
+  SuperOp1Map = Vector{Int64}()
+
+  for varID in targetVars
+    targetOp1 = incident(deca_source, varID, :tgt)
+    vars = vcat(deca_source[targetOp1, :src], varID)
+
+    num_nodes_match = length(vars)
+    nary_of_rewrite = num_nodes_match - 1
+
     result_index = num_nodes_match
     sum_index = 2 * result_index
 
-    variable_types = map(n -> Var(Symbol("t",string(n))), 1:num_nodes_match)
-    variable_var = map(n -> Var(Symbol("v",string(n))), 1:num_nodes_match)
-    variable_op1 = map(n -> Var(Symbol("op1_",string(n))), 1:nary_of_rewrite)
+    variable_types = deca_source[vars, :type]
+    variable_var =  deca_source[vars, :name]
+    variable_op1 = deca_source[targetOp1, :op1]
 
     # Cannot work with undefined types
-    Match_1 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
+    Match = @acset SummationDecapode{Any, Any, Symbol} begin 
       Var = num_nodes_match
       type = variable_types
       name = variable_var
@@ -68,13 +168,13 @@ function rewrite_decapode(deca_source)
       op1 = variable_op1
     end
 
-    I_1 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
+    I = @acset SummationDecapode{Any, Any, Symbol} begin 
       Var = num_nodes_match
       type = variable_types
       name = variable_var
     end 
 
-    Sub_1 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
+    Sub = @acset SummationDecapode{Any, Any, Symbol} begin 
       Var = 2 * num_nodes_match
       type = vcat(variable_types, variable_types)
       name = vcat(variable_var, map(x -> Symbol("••",x), 1:nary_of_rewrite), [:sum])
@@ -89,15 +189,21 @@ function rewrite_decapode(deca_source)
       summation = fill(1, nary_of_rewrite)
     end
 
-    L = hom(I_1, Match_1; monic = true, bindvars = true);
-    R = hom(I_1, Sub_1; monic = true, bindvars = true);
+    L = ACSetTransformation(I, Match, Var = 1:num_nodes_match);
+    R = ACSetTransformation(I, Sub, Var = 1:num_nodes_match);
     
-    rule = Rule(L, R)
+    push!(LHS, L)
+    push!(RHS, R)
+    push!(SuperMatch, Match)
 
-    deca_rewrite = rewrite(rule, deca_rewrite)
+    append!(SuperVarMap, vars)
+    append!(SuperOp1Map, targetOp1)
   end
 
-  return deca_rewrite
+  rule = Rule(oplus(LHS), oplus(RHS))
+
+  m = ACSetTransformation(oplus(SuperMatch), deca_source, Var = SuperVarMap, Op1 = SuperOp1Map)
+  rewrite_match(rule, m)
 end
 
 """
@@ -119,16 +225,6 @@ end
 
 Test1 = SummationDecapode(parse_decapode(DecaTest1))
 
-Test1 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
-  Var = 3
-  type = [:Form1, :Form2, :Form3]
-  name = [:D₁, :D₂, :F]
-
-  Op1 = 2
-  src = [1, 2]
-  tgt = [3, 3]
-  op1 = [:c₁, :c₂]
-end
 
 Test1Res = rewrite_decapode(Test1)
 
@@ -149,16 +245,6 @@ DecaTest2 = quote
 end
 
 Test2 = SummationDecapode(parse_decapode(DecaTest2))
-Test2 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
-  Var = 5
-  type = [:Form0, :Form0, :Form1, :Form1,:Form1,]
-  name = [:C₁, :C₂, :D₁, :D₂, :F]
-
-  Op1 = 4
-  src = [1, 2, 3, 4]
-  tgt = [3, 3, 5, 5]
-  op1 = [:d₀, :d₀, :c₁, :c₂]
-end
 
 Test2Res = rewrite_decapode(Test2)
 
@@ -180,32 +266,39 @@ DecaTest3 = quote
 end
 
 Test3 = SummationDecapode(parse_decapode(DecaTest3))
+Test3Res = rewrite_decapode(preTest3Res)
 
-Test3 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
-  Var = 7
-  type = [:Form0, :Form0, :Form0, :Form0, :Form2, :Form3, :Form4]
-  name = [:A, :B, :C, :D, :E, :F, :G]
+# Need to find a way to post-process the temps back off
+post_match_3 = @acset SummationDecapode{Any, Any, Symbol} begin 
+  Var = 2
+  type = [:Form4, :Form4]
+  name = [Symbol("••1"), :temp]
 
-  Op1 = 2
-  src = [3, 4]
-  tgt = [7, 7]
-  op1 = [:k, :t]
-
-  Op2 = 1
-  proj1 = [1]
-  proj2 = [2]
-  res = [7]
-  op2 = [:∧]
-
-  Σ = 1
-  sum = [7]
-
-  Summand = 2
-  summand = [6, 5]
-  summation = [1, 1]
+  Op1 = 1
+  src = [2]
+  tgt = [1]
+  op1 = [:temp]
 end
 
-Test3Res = rewrite_decapode(Test3)
+post_I_3 = @acset SummationDecapode{Any, Any, Symbol} begin 
+  Var = 2
+  type = [:Form4, :Form4]
+  name = [Symbol("••1"), :temp]
+end
+
+post_sub_3 = @acset SummationDecapode{Any, Any, Symbol} begin 
+  Var = 1
+  type = [:Form4]
+  name = [Symbol("••1")]
+end
+
+L = ACSetTransformation(post_I_3, post_match_3; Var = 1:2)
+R = ACSetTransformation(post_I_3, post_sub_3; Var = [1, 1])
+
+rule = Rule(L, R)
+
+m = ACSetTransformation(post_match_3, Test3Res, Var = [5, 1], Op1 = [1])
+postTest3Res = rewrite_match(rule, m)
 
 # Test to ensure that ops from the same source are all preserved
 DecaTest4 = quote
@@ -218,18 +311,6 @@ DecaTest4 = quote
 end
 
 Test4 = SummationDecapode(parse_decapode(DecaTest4))
-
-Test4 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
-  Var = 2
-  type = [:Form9, :Form4]
-  name = [:C, :D]
-
-  Op1 = 3
-  src = [1, 1, 1]
-  tgt = [2, 2, 2]
-  op1 = [:k, :t, :p]
-end
-
 Test4Res = rewrite_decapode(Test4)
 
 # Test that larger nary rewrites function properly
@@ -251,26 +332,46 @@ DecaTest5 = quote
 end
 
 Test5 = SummationDecapode(parse_decapode(DecaTest5))
-
-Test5 = @acset SummationDecapode{Any, Any, Union{Var, Symbol}} begin 
-  Var = 7
-  type = [:Form0, :Form1, :Form2, :Form3, :Form4, :Form5, :Form6]
-  name = [:A, :B, :C, :D, :E, :F, :G]
-
-  Op1 = 6
-  src = [6, 5, 4, 3, 2, 1]
-  tgt = [7, 7, 7, 7, 7, 7]
-  op1 = [:f, :e, :d, :c, :b, :a]
-end
-
 # TODO: This rewrite takes a significant amount of time to complete
 Test5Res = rewrite_decapode(Test5)
 
+DecaTest6 = quote
+  A::Form0{X}
+  B::Form1{X}
+  C::Form2{X}
+  D::Form3{X}
+  E::Form4{X}
+  F::Form5{X}
+
+  F == k(A)
+  F == t(E)
+  E == p(B, C)
+  E == q(B, D)
+end
+
+Test6 = SummationDecapode(parse_decapode(DecaTest6))
+
+Test6 = @acset SummationDecapode{Any, Any, Symbol} begin 
+  Var = 6
+  type = [:Form0, :Form1, :Form2, :Form3, :Form4, :Form5]
+  name = [:A, :B, :C, :D, :E, :F]
+
+  Op1 = 2
+  src = [1, 5]
+  tgt = [6, 6]
+  op1 = [:k, :t]
+
+  Op2 = 2
+  proj1 = [2, 2]
+  proj2 = [3, 4]
+  res = [5, 5]
+  op2 = [:p, :q]
+end
 #########################
 # May be used later on to try out composing rewrite rules
 
 # Source graph
-G = @acset Graph begin V = 4; E = 3; src = [1, 2, 3]; tgt = [3, 3, 4]end
+G = @acset Graph begin V = 5; E = 4; src = [1, 2, 3, 5]; tgt = [3, 3, 4, 4]end
 
 # Graphs represenative of what the decapode
 # rewrite should be accomplishing
@@ -279,20 +380,20 @@ G = @acset Graph begin V = 4; E = 3; src = [1, 2, 3]; tgt = [3, 3, 4]end
 Match = @acset Graph begin V = 3; E = 2; src = [1, 2]; tgt = [3, 3] end
 
 # Change into
-Sub = @acset Graph begin V = 6; E = 5; src = [1, 2, 4, 5, 6]; tgt = [5, 6, 3, 4, 4]
-end
+Sub = @acset Graph begin V = 6; E = 5; src = [1, 2, 4, 5, 6]; tgt = [5, 6, 3, 4, 4] end
 
 # Preserved by rewrite
 I = Graph(3)
 
 L = CSetTransformation(I, Match, V = [1,2,3])
 R = CSetTransformation(I, Sub, V = [1,2,3])
-rule = Rule(L, R)
 
-#m = CSetTransformation(Match, G, V=[1,2,3], E=[1,2])
-#H = rewrite_match(rule, m)
+rule = Rule(oplus(L, L), oplus(R, R))
 
-H = rewrite(rule, G)
+m = CSetTransformation(oplus(Match, Match), G, V=[1,2,3,3,5,4], E=[1,2,3,4])
+H = rewrite_match(rule, m)
+
+#H = rewrite(rule, G)
 
 function makePerfectBinaryTree(h)
   Tree = Graph(2^h - 1)
@@ -336,3 +437,4 @@ function rewriteNAryGraph(n)
 
   H = rewrite(rule, L)
 end
+
