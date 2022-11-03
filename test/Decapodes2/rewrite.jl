@@ -60,7 +60,10 @@ function preprocess_rewrite(deca_source)
   SuperMatch = []
   SuperVarMap = Vector{Int64}()
   SuperOp2Map = Vector{Int64}()
+  SuperSigmaMap = Vector{Int64}()
+  SuperSummandMap = Vector{Int64}()
 
+  serial = 0
   # Process all of the target rewrites for op2
   for opID in targetOp2
 
@@ -90,7 +93,7 @@ function preprocess_rewrite(deca_source)
     Sub = @acset SummationDecapode{Any, Any, Symbol} begin 
       Var = 4
       type = vcat(types, types[end])
-      name = vcat(names, :temp)
+      name = vcat(names, Symbol("Temp", serial))
 
       Op1 = 1
       src = [4]
@@ -104,6 +107,8 @@ function preprocess_rewrite(deca_source)
       op2 = op2name
     end
 
+    serial += 1
+
     L = ACSetTransformation(I, Match, Var = 1:3)
     R = ACSetTransformation(I, Sub, Var = 1:3)
 
@@ -115,10 +120,70 @@ function preprocess_rewrite(deca_source)
     push!(SuperOp2Map, opID)
   end
     
+  # Process all of the target rewrites for sums
+  for sumID in targetSum
+    summandIDs = incident(deca_source, sumID, :summation)
+    vars = vcat(deca_source[summandIDs, :summand], deca_source[sumID, :sum])
+    types = deca_source[vars, :type]
+    names = deca_source[vars, :name]
+    
+    rewrite_size = length(vars)
+    nary = rewrite_size - 1
+
+    Match = @acset SummationDecapode{Any, Any, Symbol} begin 
+      Var = rewrite_size
+      type = types
+      name = names
+
+      Σ = 1
+      sum = [rewrite_size]
+
+      Summand = nary
+      summand = 1:nary
+      summation = fill(1, nary)
+    end
+
+    I = @acset SummationDecapode{Any, Any, Symbol} begin 
+      Var = rewrite_size
+      type = types
+      name = names
+    end
+
+    Sub = @acset SummationDecapode{Any, Any, Symbol} begin 
+      Var = rewrite_size + 1
+      type = vcat(types, types[end])
+      name = vcat(names, Symbol("Temp_", serial))
+
+      Op1 = 1
+      src = [rewrite_size + 1]
+      tgt = [rewrite_size]
+      op1 = [:temp]
+
+      Σ = 1
+      sum = [rewrite_size + 1]
+
+      Summand = nary
+      summand = 1:nary
+      summation = fill(1, nary)
+    end
+
+    serial += 1
+
+    L = ACSetTransformation(I, Match, Var = 1:rewrite_size)
+    R = ACSetTransformation(I, Sub, Var = 1:rewrite_size)
+
+    push!(LHS, L)
+    push!(RHS, R)
+    push!(SuperMatch, Match)
+
+    append!(SuperVarMap, vars)
+    push!(SuperSigmaMap, sumID)
+    append!(SuperSummandMap, summandIDs)
+  end
 
   # Combine all rules in parallel and apply
   rule = Rule(oplus(LHS), oplus(RHS))
-  m = ACSetTransformation(oplus(SuperMatch), deca_source, Var = SuperVarMap, Op2 = SuperOp2Map)
+  m = ACSetTransformation(oplus(SuperMatch), deca_source, Var = SuperVarMap, Op2 = SuperOp2Map, Σ = SuperSigmaMap, Summand = SuperSummandMap)
 
   rewrite_match(rule, m)
 end
@@ -140,6 +205,7 @@ function rewrite_decapode(deca_source)
   SuperVarMap = Vector{Int64}()
   SuperOp1Map = Vector{Int64}()
 
+  serial = 0
   for varID in targetVars
     targetOp1 = incident(deca_source, varID, :tgt)
     vars = vcat(deca_source[targetOp1, :src], varID)
@@ -177,7 +243,7 @@ function rewrite_decapode(deca_source)
     Sub = @acset SummationDecapode{Any, Any, Symbol} begin 
       Var = 2 * num_nodes_match
       type = vcat(variable_types, variable_types)
-      name = vcat(variable_var, map(x -> Symbol("••",x), 1:nary_of_rewrite), [:sum])
+      name = vcat(variable_var, map(x -> Symbol("••", serial + x), 1:nary_of_rewrite), [:sum])
       Op1 = nary_of_rewrite + 1
       src = vcat(1:nary_of_rewrite, sum_index)
       tgt = vcat(num_nodes_match+1:sum_index-1, [result_index])
@@ -188,6 +254,8 @@ function rewrite_decapode(deca_source)
       summand = num_nodes_match+1:sum_index-1
       summation = fill(1, nary_of_rewrite)
     end
+
+    serial += nary_of_rewrite
 
     L = ACSetTransformation(I, Match, Var = 1:num_nodes_match);
     R = ACSetTransformation(I, Sub, Var = 1:num_nodes_match);
@@ -351,22 +419,20 @@ end
 
 Test6 = SummationDecapode(parse_decapode(DecaTest6))
 
-Test6 = @acset SummationDecapode{Any, Any, Symbol} begin 
-  Var = 6
-  type = [:Form0, :Form1, :Form2, :Form3, :Form4, :Form5]
-  name = [:A, :B, :C, :D, :E, :F]
+DecaTest7 = quote
+  A::Form0{X}
+  B::Form1{X}
+  C::Form2{X}
+  D::Form3{X}
+  E::Form4{X}
+  F::Form5{X}
 
-  Op1 = 2
-  src = [1, 5]
-  tgt = [6, 6]
-  op1 = [:k, :t]
-
-  Op2 = 2
-  proj1 = [2, 2]
-  proj2 = [3, 4]
-  res = [5, 5]
-  op2 = [:p, :q]
+  F == A + B
+  F == C + D + E
 end
+
+Test7 = SummationDecapode(parse_decapode(DecaTest7))
+
 #########################
 # May be used later on to try out composing rewrite rules
 
