@@ -7,7 +7,8 @@ using CombinatorialSpaces.ExteriorCalculus
 using Catlab
 using Catlab.CategoricalAlgebra
 using Catlab.Theories
-using Catlab.Programs.DiagrammaticPrograms: parse_diagram, parse_gat_expr
+using Catlab.Programs.DiagrammaticPrograms.AST
+using Catlab.Programs.DiagrammaticPrograms: parse_diagram, parse_gat_expr, parse_diagram_ast
 using Unicode
 
 export @decapode, Decapodes2D
@@ -26,7 +27,7 @@ relations within the Decapode.
 
 """
 macro decapode(cat, body)
-  :(parse_exp_diagram($(esc(cat)), $(Meta.quot(body)), free=true))
+  :(parse_exp_diagram($(esc(cat)), $(Meta.quot(body))))
 end
 
 function parse_exp_diagram(cat, body; kw...)
@@ -64,7 +65,8 @@ function parse_exp_diagram(cat, body; kw...)
       push!(new_body.args, exp)
     end
   end
-  parse_diagram(cat, new_body; kw...)
+  free_new_body = AST.Diagram(parse_diagram_ast(new_body, free=true))
+  parse_diagram(cat, free_new_body)
 end
 
 i2sub = Dict(
