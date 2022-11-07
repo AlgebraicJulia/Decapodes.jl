@@ -27,3 +27,7 @@ end
 @testset "Simulation" begin
   include(joinpath(@__DIR__, "simulation.jl"))
 end
+
+@testset "Visualization" begin
+  include(joinpath(@__DIR__, "visualization.jl"))
+end
