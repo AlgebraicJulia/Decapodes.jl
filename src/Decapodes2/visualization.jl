@@ -3,7 +3,8 @@ import Catlab.Graphics.Graphviz
 using Catlab.Graphics
 using Catlab.Graphics.Graphviz
 using Catlab.Graphs.PropertyGraphs
-import Decapodes: infer_states, infer_state_names
+using Catlab.Graphs
+using Catlab.BasicGraphs
 
 reg_to_sub = Dict('0'=>'₀', '1'=>"₁", '2'=>'₂', '3'=>'₃', '4'=>'₄',
     '5'=>'₅', '6'=>'₆','7'=>'₇', '8'=>'₈', '9'=>'₉', 'r'=>'•')
@@ -65,15 +66,17 @@ function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode, is
     return pg
 end
 
-function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; isDirected = true, kw...)
+function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; isDirected = true, node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), kw...)
     #=tmp = NamedDecapode{Any, Any, Symbol}()
     # FIXME we have to copy to cast
     copy_parts!(tmp, d)
     G = to_graphviz_property_graph(tmp, isDirected; kw...)
     =#
 
-    prog = isDirected ? "dot" : "neato"
-    G = PropertyGraph{Any}(prog = prog;kw...)
+    # prog = isDirected ? "dot" : "neato"
+    println(kw)
+    #G = PropertyGraph{Any}(;kw...)
+    G = to_graphviz_property_graph(Catlab.Graphs.Graph(0); node_attrs, edge_attrs, graph_attrs)
 
     vids = map(parts(d, :Var)) do v
       add_vertex!(G, label=varname(d,v))
@@ -81,12 +84,12 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; isDire
 
     # Add entry and exit vertices and wires
     if(isDirected)
-      tempin = add_vertex!(G, shape = "none", label = "")
+      tempin = add_vertex!(G, shape = "egg", label = "nasonf")
       for state in infer_states(d)
         add_edge!(G, tempin, vids[state])
       end
 
-      tempout = add_vertex!(G, shape = "none", label = "")
+      tempout = add_vertex!(G, label = "nasonf")
       for tvar in d[:incl]
         add_edge!(G, vids[tvar], tempout)
       end
