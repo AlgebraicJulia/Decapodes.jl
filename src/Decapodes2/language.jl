@@ -45,19 +45,21 @@ function parse_decapode(expr::Expr)
     stmts = map(expr.args) do line 
         @match line begin
             ::LineNumberNode => missing
-            Expr(:(::), a, b) => Judge(Var(a),b.args[1], b.args[2])
+            Expr(:(::), a::Symbol, b) => Judge(Var(a),b.args[1], b.args[2])
+            Expr(:(::), a::Expr, b) => map(sym -> Judge(Var(sym), b.args[1], b.args[2]), a.args)
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
             x => x
         end
     end |> skipmissing |> collect
     judges = []
     eqns = []
-    for s in stmts
-        if typeof(s) == Judge
-            push!(judges, s)
-        elseif typeof(s) == Eq
-            push!(eqns, s)
-        end
+    foreach(stmts) do s
+      @match s begin
+        ::Judge => push!(judges, s)
+        ::Vector{Judge} => append!(judges, s)
+        ::Eq => push!(eqns, s)
+        _ => error("Statement containing $s of type $(typeof(s)) was not added.")
+      end
     end
     DecaExpr(judges, eqns)
 end

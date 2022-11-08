@@ -37,8 +37,7 @@ trivial_comp_from_single = oapply(trivial_relation, otrivial)
 # Multiple variables and an equation.
 AdvectionExprBody =  quote
   C::Form0{X}
-  V::Form1{X}
-  ϕ::Form1{X}
+  (V, ϕ)::Form1{X}
   ϕ == ∧₀₁(C,V)
 end
 advExpr = parse_decapode(AdvectionExprBody)
@@ -69,17 +68,13 @@ DiffusionExprBody =  quote
 end
 AdvectionExprBody = quote
   C::Form0{X}
-  V::Form1{X}
-  ϕ::Form1{X}
+  (V, ϕ)::Form1{X}
 
   ϕ == ∧₀₁(C,V)
 end
 SuperpositionExprBody = quote
-  C::Form0{X}
-  Ċ::Form0{X}
-  ϕ::Form1{X}
-  ϕ₁::Form1{X}
-  ϕ₂::Form1{X}
+  (C, Ċ)::Form0{X}
+  (ϕ, ϕ₁, ϕ₂)::Form1{X}
 
   ϕ == ϕ₁ + ϕ₂
   Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
@@ -168,8 +163,7 @@ dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
 # Test that expand_operators doesn't break composition.
 AdvectionExprBody = quote
   C::Form0{X}
-  V::Form1{X}
-  ϕ::Form1{X}
+  (V, ϕ)::Form1{X}
   ϕ == ∧₀₁(C,V)
 end
 

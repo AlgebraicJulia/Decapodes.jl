@@ -58,8 +58,7 @@ point_map = loadmesh(Point_Map())
 # end
 
 DiffusionExprBody =  quote
-    C::Form0{X}
-    Ċ::Form0{X}
+    (C, Ċ)::Form0{X}
     ϕ::Form1{X}
 
     # Fick's first law
@@ -101,12 +100,8 @@ soln(0.9)
 # end
 
 AdvDiff = quote
-    C::Form0{X}
-    Ċ::Form0{X}
-    V::Form1{X}
-    ϕ::Form1{X}
-    ϕ₁::Form1{X}
-    ϕ₂::Form1{X}
+    (C, Ċ)::Form0{X}
+    (V, ϕ, ϕ₁, ϕ₂)::Form1{X}
 
     # Fick's first law
     ϕ₁ ==  (d₀∘k)(C)

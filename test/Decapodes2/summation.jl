@@ -11,13 +11,9 @@ using Catlab.Graphics
 using Catlab.Graphics.Graphviz
 
 NavierStokes = quote
-    V::Form1{X}
-    V̇::Form1{X}
-    G::Form1{X}
+    (V, V̇, G)::Form1{X}
     # T::Form0{X}
-    ρ::Form0{X}
-    ṗ::Form0{X}
-    p::Form0{X}
+    (ρ, ṗ, p)::Form0{X}
     tmp1::Form1{X}
     
     tmp1 == Δ₁(V) + third(d₀(δ₁(V)))
@@ -41,13 +37,8 @@ nsdp = SummationDecapode(parse_decapode(NavierStokes))
 to_graphviz_property_graph(nsdp)
 
 NavierStokes_unnested = quote
-    V::Form1{X}
-    V̇::Form1{X}
-    G::Form1{X}
-    ρ::Form0{X}
-    ṗ::Form0{X}
-    p::Form0{X}
-    
+    (V, V̇, G)::Form1{X}
+    (ρ, ṗ, p)::Form0{X}
   
     V̇ == neg₁(L₁′(V, V)) + 
           div₁(kᵥ(Δ₁(V) + third(d₀(δ₁(V)))), avg₀₁(ρ)) +
