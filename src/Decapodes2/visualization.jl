@@ -20,21 +20,21 @@ end
 varname(d, v) = "$(d[v, :name]):$(spacename(d, v))"
 
 # TODO: Change orientation to print 
-Graphics.to_graphviz(F::AbstractDecapode; isDirected = true, orientation = LeftToRight, kw...) =
-to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; isDirected, kw...))
+Graphics.to_graphviz(F::AbstractDecapode; directed = true, kw...) =
+to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; directed, kw...))
 
 decapode_edge_label(s::Symbol) = String(s)
 decapode_edge_label(s::Vector{Symbol}) = join(String.(s), "⋅")
 
 
-function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode, isDirected = true; kw...)
+function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode, directed = true; kw...)
     pg = PropertyGraph{Any}(;kw...)
     vids = map(parts(d, :Var)) do v
       add_vertex!(pg, label=varname(d,v))
     end
 
     # Add entry and exit vertices and wires
-    if(isDirected)
+    if(directed)
       for state in infer_states(d)
         tempv = add_vertex!(pg)
         add_edge!(pg, tempv, vids[state])
@@ -53,7 +53,7 @@ function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode, is
 
       # If in directed mode, sources point into the projection field
       # Else, everything points out
-      if(isDirected)
+      if(directed)
         add_edge!(pg, vids[s], v, label="π₁", style="dashed")
         add_edge!(pg, vids[t], v, label="π₂", style="dashed")
       else
@@ -66,30 +66,29 @@ function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode, is
     return pg
 end
 
-function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; isDirected = true, node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), kw...)
-    #=tmp = NamedDecapode{Any, Any, Symbol}()
-    # FIXME we have to copy to cast
-    copy_parts!(tmp, d)
-    G = to_graphviz_property_graph(tmp, isDirected; kw...)
-    =#
+function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, kw...)
+    
+    default_graph_attrs = Dict(:rankdir => "TB")
+    default_edge_attrs = Dict()
+    default_node_attrs = Dict(:shape => "oval")
 
-    # prog = isDirected ? "dot" : "neato"
-    println(kw)
-    #G = PropertyGraph{Any}(;kw...)
-    G = to_graphviz_property_graph(Catlab.Graphs.Graph(0); node_attrs, edge_attrs, graph_attrs)
+    G = to_graphviz_property_graph(Catlab.Graphs.Graph(0); prog, node_labels,
+      node_attrs = merge!(default_node_attrs, node_attrs),  
+      edge_attrs = merge!(default_edge_attrs, edge_attrs),  
+      graph_attrs = merge!(default_graph_attrs, graph_attrs))
 
     vids = map(parts(d, :Var)) do v
       add_vertex!(G, label=varname(d,v))
     end
 
     # Add entry and exit vertices and wires
-    if(isDirected)
-      tempin = add_vertex!(G, shape = "egg", label = "nasonf")
+    if(directed)
+      tempin = add_vertex!(G, shape = "none", label = "")
       for state in infer_states(d)
         add_edge!(G, tempin, vids[state])
       end
 
-      tempout = add_vertex!(G, label = "nasonf")
+      tempout = add_vertex!(G, shape = "none", label = "")
       for tvar in d[:incl]
         add_edge!(G, vids[tvar], tempout)
       end
@@ -107,7 +106,7 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; isDire
 
       # If in directed mode, sources point into the projection field
       # Else, everything points out
-      if(isDirected)
+      if(directed)
         add_edge!(G, vids[s], v, label="π₁", style="dashed")
         add_edge!(G, vids[t], v, label="π₂", style="dashed")
       else
@@ -130,7 +129,7 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; isDire
     for e in parts(d, :Summand)
         # If directed, point summands into the sum
         # Else, everything points outward
-        if(isDirected)
+        if(directed)
           e = add_edge!(G, d[e, :summand], white_nodes[d[e, :summation]], style="dashed")
         else
           e = add_edge!(G, white_nodes[d[e, :summation]], d[e, :summand], style="dashed")
