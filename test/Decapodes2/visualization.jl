@@ -58,7 +58,7 @@ t2 = to_graphviz(Test2)
 @test Graphviz.filter_statements(t2, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₀", "C:Ω₀", "D:Ω₀", "Ḋ:Ω•", "•1:Ω•", "•2:Ω•", "", "", "Ω₀×Ω₀", "Ω₀×Ω₀", "Σ1"]
 @test Graphviz.filter_statements(t2, Graphviz.Node, :shape) == ["none", "none", "rectangle", "rectangle", "circle"]
 
-t2_undirected = to_graphviz(Test2, isDirected = false)
+t2_undirected = to_graphviz(Test2, directed = false)
 @test Graphviz.filter_statements(t2_undirected, Graphviz.Edge, :label) == ["∂ₜ", "π₁", "π₂", "k", "π₁", "π₂", "p", "+"]
 @test Graphviz.filter_statements(t2_undirected, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₀", "C:Ω₀", "D:Ω₀", "Ḋ:Ω•", "•1:Ω•", "•2:Ω•", "Ω₀×Ω₀", "Ω₀×Ω₀", "Σ1"]
 @test Graphviz.filter_statements(t2_undirected, Graphviz.Node, :shape) == ["rectangle", "rectangle", "circle"]
