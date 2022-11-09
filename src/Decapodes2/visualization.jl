@@ -3,8 +3,9 @@ import Catlab.Graphics.Graphviz
 using Catlab.Graphics
 using Catlab.Graphics.Graphviz
 using Catlab.Graphs.PropertyGraphs
+import Decapodes: infer_states, infer_state_names
 using Catlab.Graphs
-using Catlab.BasicGraphs
+using Catlab.Graphs.BasicGraphs
 
 reg_to_sub = Dict('0'=>'₀', '1'=>"₁", '2'=>'₂', '3'=>'₃', '4'=>'₄',
     '5'=>'₅', '6'=>'₆','7'=>'₇', '8'=>'₈', '9'=>'₉', 'r'=>'•')
