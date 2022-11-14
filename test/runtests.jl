@@ -12,6 +12,6 @@ end
   include("Examples.jl")
 end
 
-@testset "Decapodes2" begin
+@testset verbose = true "Decapodes2" begin
   include(joinpath(@__DIR__, "Decapodes2", "runtests.jl"))
 end

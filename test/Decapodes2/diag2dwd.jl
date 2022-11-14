@@ -213,3 +213,19 @@ end
     @test nparts(advdiffdp, :Summand) == 2
 end
 
+@testset "Type Inference" begin
+  Test1 = quote
+    C::Form0{X}
+    ∂ₜ(C) == C
+  end
+  t1 = SummationDecapode(parse_decapode(Test1))
+
+  t1_inferred = infer_types(t1)
+
+  # We use set equality because we do not care about the order of the Var table.
+  names_types = Set(zip(t1_inferred[:name], t1_inferred[:type]))
+  names_types_expected = Set([(:Ċ, :Form0), (:C, :Form0)])
+  @test issetequal(names_types, names_types_expected)
+
+end
+

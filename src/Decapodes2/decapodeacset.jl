@@ -1,3 +1,6 @@
+using AlgebraicRewriting
+using AlgebraicRewriting: Var as ARVar
+
 @present SchDecapode(FreeSchema) begin
     (Var, TVar, Op1, Op2)::Ob
     (Type, Operator)::AttrType
@@ -115,3 +118,83 @@ end
 function add_parameter(d::AbstractNamedDecapode, k::Symbol)
     return add_part!(d, :Var, type=:Parameter, name=k)
 end
+
+
+"""
+These are the default rewrite rules used to do type inference.
+"""
+default_type_inference_rules = [
+  begin
+    L = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2
+      TVar = 1
+      Op1 = 1
+      
+      type = [ARVar(:src_form), :infer]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      incl = [2]
+      src = [1]
+      tgt = [2]
+      op1 = [:∂ₜ]
+    end
+    I = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 1
+      
+      type = [ARVar(:src_form)]
+      name = [ARVar(:src_name)]
+    end
+    R = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2
+      TVar = 1
+      Op1 = 1
+      
+      type = [ARVar(:src_form), ARVar(:src_form)]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      incl = [2]
+      src = [1]
+      tgt = [2]
+      op1 = [:∂ₜ]
+    end
+    hil = AlgebraicRewriting.homomorphism(I, L)
+    hir = AlgebraicRewriting.homomorphism(I, R)
+    Rule(hil, hir)
+  end]
+
+function infer_types(d::SummationDecapode, rules::Vector{Rule{:DPO}})
+  # Step 1: Convert to {Any,Any,Any} so we can use AlgebraicRewriting's Var.
+  #d′ = migrate(SummationDecapode{Any, Any, Any}, d,
+  #  Dict(:Var => :Var, :TVar => :TVar, :Op1 => :Op1, :Op2 => :Op2, :Σ => :Σ, :Summand => :Summand, :Type => :Type, :Operator => :Operator, :Name => :Name),
+  #  Dict(:src => :src, :tgt => :tgt, :proj1 => :proj1, :proj2 => :proj2, :res => :res, :incl => :incl, :op1 => :op1, :op2 => :op2, :type => :type, :name => :name, :summand => :summand, :summation => :summation, :sum => :sum))
+  d′ = migrate(SummationDecapode{Any, Any, Any}, d,
+    merge(
+      Dict(SchSummationDecapode.generators.Ob .=> SchSummationDecapode.generators.Ob),
+      Dict(SchSummationDecapode.generators.AttrType .=> SchSummationDecapode.generators.AttrType)),
+    merge(
+      Dict(SchSummationDecapode.generators.Hom .=> SchSummationDecapode.generators.Hom),
+      Dict(SchSummationDecapode.generators.Attr .=> SchSummationDecapode.generators.Attr)))
+
+  # Step 2: Apply rules
+  seq = Schedule[]
+  append!(seq, RuleSchedule.(rules))
+  #seq = Vector{Schedule}([RuleSchedule.(rules)])
+  ar_step = ListSchedule(seq)
+  end_condition(prev, curr) = :infer ∉ curr[:type]
+  overall = WhileSchedule(ar_step, :main, end_condition)
+  trajectory = apply_schedule(overall, G=d′)
+  res = last(trajectory).G
+  # Step 3: Convert back to {Any,Any,Symbol}.
+  #migrate(SummationDecapode{Any, Any, Symbol}, res
+  #  Dict(:Var => :Var, :TVar => :TVar, :Op1 => :Op1, :Op2 => :Op2, :Σ => :Σ, :Summand => :Summand, :Type => :Type, :Operator => :Operator, :Name => :Name),
+  #  Dict(:src => :src, :tgt => :tgt, :proj1 => :proj1, :proj2 => :proj2, :res => :res, :incl => :incl, :op1 => :op1, :op2 => :op2, :type => :type, :name => :name, :summand => :summand, :summation => :summation, :sum => :sum))
+  migrate(SummationDecapode{Any, Any, Symbol}, res,
+    merge(
+      Dict(SchSummationDecapode.generators.Ob .=> SchSummationDecapode.generators.Ob),
+      Dict(SchSummationDecapode.generators.AttrType .=> SchSummationDecapode.generators.AttrType)),
+    merge(
+      Dict(SchSummationDecapode.generators.Hom .=> SchSummationDecapode.generators.Hom),
+      Dict(SchSummationDecapode.generators.Attr .=> SchSummationDecapode.generators.Attr)))
+end
+
+infer_types(d::SummationDecapode) =
+  infer_types(d, default_type_inference_rules)
+
