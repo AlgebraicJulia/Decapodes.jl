@@ -1,19 +1,13 @@
 using Test
 
 using Decapodes
-using Catlab.Graphics
-using Catlab, Catlab.Graphs, Catlab.Graphics, Catlab.CategoricalAlgebra
-using Catlab.Theories, Catlab.CategoricalAlgebra
-using AlgebraicRewriting
-using AlgebraicRewriting: rewrite
+import Decapodes: average_rewrite
 
-draw(g; kw...) = to_graphviz(g; node_labels=true, edge_labels=true, kw...)
+#= draw(g; kw...) = to_graphviz(g; node_labels=true, edge_labels=true, kw...)
 draw(f::ACSetTransformation; kw...) =
-  to_graphviz(f; node_labels=true, edge_labels=true, draw_codom=false, kw...)
-
+  to_graphviz(f; node_labels=true, edge_labels=true, draw_codom=false, kw...) =#
 
 #########################
-
 
 # No valid rewrites, return original decapode
 DecaTest0 = quote
@@ -39,7 +33,7 @@ DecaTest0 = quote
 end
 
 Test0 = SummationDecapode(parse_decapode(DecaTest0))
-Test0Res = rewrite_decapode(preprocess_rewrite(Test0))
+Test0Res = average_rewrite(Test0)
 @test Test0 == Test0Res
 
 # Trivial rewrite test
@@ -54,7 +48,7 @@ DecaTest1 = quote
 end
 
 Test1 = SummationDecapode(parse_decapode(DecaTest1))
-Test1Res = rewrite_decapode(preprocess_rewrite(Test1))
+Test1Res = average_rewrite(Test1)
 
 Test1Expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 6
@@ -92,7 +86,7 @@ DecaTest2 = quote
 end
 
 Test2 = SummationDecapode(parse_decapode(DecaTest2))
-Test2Res = rewrite_decapode(preprocess_rewrite(Test2))
+Test2Res = average_rewrite(Test2)
 
 Test2Expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 11
@@ -135,7 +129,7 @@ DecaTest3 = quote
 end
 
 Test3 = SummationDecapode(parse_decapode(DecaTest3))
-Test3Res = rewrite_decapode(preprocess_rewrite(Test3))
+Test3Res = average_rewrite(Test3)
 
 Test3Expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 14
@@ -178,7 +172,7 @@ DecaTest4 = quote
 end
 
 Test4 = SummationDecapode(parse_decapode(DecaTest4))
-Test4Res = rewrite_decapode(preprocess_rewrite(Test4))
+Test4Res = average_rewrite(Test4)
 
 Test4Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 6
@@ -219,7 +213,7 @@ DecaTest5 = quote
 end
 
 Test5 = SummationDecapode(parse_decapode(DecaTest5))
-Test5Res = rewrite_decapode(preprocess_rewrite(Test5))
+Test5Res = average_rewrite(Test5)
 
 Test5Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 14
@@ -258,7 +252,7 @@ DecaTest6 = quote
 end
 
 Test6 = SummationDecapode(parse_decapode(DecaTest6))
-Test6Res = rewrite_decapode(preprocess_rewrite(Test6))
+Test6Res = average_rewrite(Test6)
 
 Test6Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 14
@@ -301,7 +295,7 @@ DecaTest7 = quote
 end
 
 Test7 = SummationDecapode(parse_decapode(DecaTest7))
-Test7Res = rewrite_decapode(preprocess_rewrite(Test7))
+Test7Res = average_rewrite(Test7)
 
 Test7Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 11
@@ -336,7 +330,7 @@ DecaTest8 = quote
 end
 
 Test8 = SummationDecapode(parse_decapode(DecaTest8))
-Test8Res = rewrite_decapode(preprocess_rewrite(Test8))
+Test8Res = average_rewrite(Test8)
 
 Test8Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 4
@@ -370,7 +364,7 @@ end
 end
 
 Test9 = SummationDecapode(parse_decapode(DecaTest9))
-Test9Res = rewrite_decapode(preprocess_rewrite(Test9))=#
+Test9Res = average_rewrite(Test9)=#
 
 # Test that rewrites preverse TVars, ignore ∂ₜ
 DecaTest10 = quote
@@ -388,7 +382,7 @@ DecaTest10 = quote
 end
 
 Test10 = SummationDecapode(parse_decapode(DecaTest10))
-Test10Res = rewrite_decapode(preprocess_rewrite(Test10))
+Test10Res = average_rewrite(Test10)
 
 Test10Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 9
@@ -433,7 +427,7 @@ end
 
 h = 5
 BinTest = makePerfectBinaryDeca(h)
-BinTestRes = rewrite_decapode(preprocess_rewrite(BinTest))
+BinTestRes = average_rewrite(BinTest)
 
 BinTestExpected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 76
@@ -460,136 +454,6 @@ BinTestExpected = @acset SummationDecapode{Any, Any, Symbol}  begin
 end
 
 @test BinTestRes == BinTestExpected
-#=
-#########################
-# May be used later on to try out composing rewrite rules
-
-# Source graph
-G = @acset Graph begin V = 5; E = 4; src = [1, 2, 3, 5]; tgt = [3, 3, 4, 4]end
-
-# Graphs represenative of what the decapode
-# rewrite should be accomplishing
-
-# To match for
-Match = @acset Graph begin V = 3; E = 2; src = [1, 2]; tgt = [3, 3] end
-
-# Change into
-Sub = @acset Graph begin V = 6; E = 5; src = [1, 2, 4, 5, 6]; tgt = [5, 6, 3, 4, 4] end
-
-# Preserved by rewrite
-I = Graph(3)
-
-L = CSetTransformation(I, Match, V = [1,2,3])
-R = CSetTransformation(I, Sub, V = [1,2,3])
-
-rule = Rule(oplus(L, L), oplus(R, R))
-
-m = CSetTransformation(oplus(Match, Match), G, V=[1,2,3,3,5,4], E=[1,2,3,4])
-H = rewrite_match(rule, m)
-
-#H = rewrite(rule, G)
-
-function makePerfectBinaryTree(h)
-  Tree = Graph(2^h - 1)
-  interiorNodes = 2^(h-1)-1
-  add_edges!(Tree, map(x->2*x, 1:interiorNodes), 1:interiorNodes)
-  add_edges!(Tree, map(x->2*x+1, 1:interiorNodes), 1:interiorNodes)
-  return Tree
-end
-
-G′ = makePerfectBinaryTree(3)
-m = CSetTransformation(Match, G′, V=[2,3,1], E=[1,4])
-H′ = rewrite_match(rule, m)
-
-m = CSetTransformation(Match, H′, V=[9,10,2], E=[7,9])
-H′′ = rewrite_match(rule, m)
-
-m = CSetTransformation(Match, H′′, V=[12,13,7], E=[11,12])
-H′′′ = rewrite_match(rule, m)
-
-function rewriteNAryGraph(n)
-  L = @acset Graph begin
-    V = n+1
-    E = n
-    src = 1:n
-    tgt = n+1
-  end
-
-  R = Graph()
-  copy_parts!(R, L)
-  m = add_vertices!(R, n)
-  add_edges!(R, m, 1:n)
-  rightmost_vertex = add_vertex!(R)
-  add_edge!(R, n+1, rightmost_vertex)
-
-  I = Graph(n+1)
-
-  L′ = CSetTransformation(I, L, V = 1:n+1)
-  R′ = CSetTransformation(I, R, V = vcat(1:n, rightmost_vertex))
-
-  rule = Rule(L′, R′)
-
-  H = rewrite(rule, L)
-end
-
-
-# Need to find a way to post-process the temps back off
-# Seems to work if the temp being removed has no edges into it
-
-TrialDeca = @acset SummationDecapode{Any, Any, Symbol} begin 
-  Var = 4
-  type = [:Form0, :Form1, :Form2, :Form3]
-  name = [:A, :B, :C, :D]
-
-  Op1 = 3
-  src = [1, 2, 3]
-  tgt = [2, 3, 4]
-  op1 = [:a, :b, :c]
-end
-
-ResDeca = @acset SummationDecapode{Any, Any, Symbol} begin 
-  Var = 3
-  type = [:Form0, :Form2, :Form3]
-  name = [:A, :C, :D]
-
-  Op1 = 2
-  src = [1, 2]
-  tgt = [2, 3]
-  op1 = [:a, :c,]
-end
-
-post_match_3 = @acset SummationDecapode{Any, Any, Symbol} begin 
-  Var = 2
-  type = [:Form1, :Form2]
-  name = [:B, :C]
-
-  Op1 = 1
-  src = [1]
-  tgt = [2]
-  op1 = [:b]
-end
-
-post_I_3 = @acset SummationDecapode{Any, Any, Symbol} begin 
-  Var = 1
-  type = [:Form2]
-  name = [:C]
-end
-
-post_sub_3 = @acset SummationDecapode{Any, Any, Symbol} begin 
-  Var = 1
-  type = [:Form2]
-  name = [:C]
-end
-
-L = hom(post_I_3, post_match_3)
-R = hom(post_I_3, post_sub_3)
-
-rule = Rule(L, R)
-
-m = hom(post_match_3, TrialDeca; monic = true)
-postWrite = rewrite_match(rule, m)
-
-=#
 
 # Meant for debugging purposes only, gives decapode acset structure
 # to make copy decapodes for testing quickly
