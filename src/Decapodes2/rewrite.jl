@@ -270,3 +270,6 @@ function get_valid_op1s(deca_source, varID)
     rewrite_match(rule, m)
   end
   
+function average_rewrite(deca_source::SummationDecapode)
+    return rewrite_decapode(preprocess_rewrite(deca_source))
+end
