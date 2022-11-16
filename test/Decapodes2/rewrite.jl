@@ -1,6 +1,7 @@
 using Test
 
 using Decapodes
+using Catlab.CSetDataStructures
 import Decapodes: average_rewrite
 
 #= draw(g; kw...) = to_graphviz(g; node_labels=true, edge_labels=true, kw...)
@@ -504,42 +505,3 @@ function generate_test_decapode(deca_source)
   println("end")
 end
 
-# Returns array of match on variables between from a decapode
-# source to a target, alse returns is mapping is valid
-# WARNING: This assumes that variable names are unique
-# If variable names are not unique or do not exist, mapping value is set to 0
-function find_variable_mapping(deca_source, deca_tgt)
-
-  mapping = []
-  valid_matching = true
-
-  for varID in parts(deca_source, :Var)
-    varName = deca_source[varID, :name]
-    matches = incident(deca_tgt, varName, :name)
-    if(length(matches) >= 2)
-      # println("Name for variable at index $varID named $varName is not unique. Setting to 0.")
-      valid_matching = false
-      push!(mapping, 0)
-    elseif(length(matches) == 0)
-      # println("Variable at index $varID named $varName does not exist in target. Setting to 0.")
-      valid_matching = false
-      push!(mapping, 0)
-    else
-      push!(mapping, only(matches))
-    end
-  end
-
-  return mapping, valid_matching
-end
-
-Recenter  = @acset SummationDecapode{Any, Any, Symbol}  begin
-Var = 7
-type = Any[:Form0, :Form0, :Form0, :Form0, :Form2, :Form3, :Form4]
-name = [:A, :B, :C, :D, :E, :F, :G]
-end
-
-L = ACSetTransformation(Recenter, Recenter, Var = 1:7)
-R = ACSetTransformation(Recenter, Recenter, Var = 1:7)
-rule = Rule(L, R)
-
-recentered = rewrite(rule, Test3Res)

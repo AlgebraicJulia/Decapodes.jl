@@ -273,3 +273,31 @@ end
 function average_rewrite(deca_source::SummationDecapode)
     return rewrite_decapode(preprocess_rewrite(deca_source))
 end
+
+# Returns array of match on variables between from a decapode
+# source to a target, alse returns is mapping is valid
+# WARNING: This assumes that variable names are unique
+# If variable names are not unique or do not exist, mapping value is set to 0
+function find_variable_mapping(deca_source, deca_tgt)
+
+    mapping = []
+    valid_matching = true
+  
+    for varID in parts(deca_source, :Var)
+      varName = deca_source[varID, :name]
+      matches = incident(deca_tgt, varName, :name)
+      if(length(matches) >= 2)
+        # println("Name for variable at index $varID named $varName is not unique. Setting to 0.")
+        valid_matching = false
+        push!(mapping, 0)
+      elseif(length(matches) == 0)
+        # println("Variable at index $varID named $varName does not exist in target. Setting to 0.")
+        valid_matching = false
+        push!(mapping, 0)
+      else
+        push!(mapping, only(matches))
+      end
+    end
+  
+    return mapping, valid_matching
+  end
