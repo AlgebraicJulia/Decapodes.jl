@@ -124,12 +124,11 @@ end
 These are the default rewrite rules used to do type inference.
 """
 default_type_inference_rules = [
+  # The tgt of ∂ₜ is of the same type as its src.
   begin
     L = @acset SummationDecapode{Any, Any, Any} begin
-      Var = 2
-      TVar = 1
-      Op1 = 1
-      
+      Var = 2; TVar = 1; Op1 = 1
+
       type = [ARVar(:src_form), :infer]
       name = [ARVar(:src_name), ARVar(:tgt_name)]
       incl = [2]
@@ -139,15 +138,12 @@ default_type_inference_rules = [
     end
     I = @acset SummationDecapode{Any, Any, Any} begin
       Var = 1
-      
       type = [ARVar(:src_form)]
       name = [ARVar(:src_name)]
     end
     R = @acset SummationDecapode{Any, Any, Any} begin
-      Var = 2
-      TVar = 1
-      Op1 = 1
-      
+      Var = 2; TVar = 1; Op1 = 1
+
       type = [ARVar(:src_form), ARVar(:src_form)]
       name = [ARVar(:src_name), ARVar(:tgt_name)]
       incl = [2]
@@ -158,9 +154,160 @@ default_type_inference_rules = [
     hil = AlgebraicRewriting.homomorphism(I, L)
     hir = AlgebraicRewriting.homomorphism(I, R)
     Rule(hil, hir)
+  end,
+  # The src of ∂ₜ is of the same type as its tgt.
+  begin
+    L = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2; TVar = 1; Op1 = 1
+
+      type = [:infer, ARVar(:tgt_form)]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      incl = [2]
+      src = [1]
+      tgt = [2]
+      op1 = [:∂ₜ]
+    end
+    I = @acset SummationDecapode{Any, Any, Any} begin
+      #Var = 1
+      #type = [ARVar(:tgt_form)]
+      #name = [ARVar(:tgt_name)]
+      Var = 1; TVar = 1
+      type = [ARVar(:tgt_form)]
+      name = [ARVar(:tgt_name)]
+      incl = [1]
+    end
+    R = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2; TVar = 1; Op1 = 1
+
+      type = [ARVar(:tgt_form), ARVar(:tgt_form)]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      incl = [2]
+      src = [1]
+      tgt = [2]
+      op1 = [:∂ₜ]
+    end
+    hil = AlgebraicRewriting.homomorphism(I, L)
+    hir = AlgebraicRewriting.homomorphism(I, R)
+    Rule(hil, hir)
+  end,
+  # The tgt of d of a Form0 is of the type Form1.
+  begin
+    L = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2; Op1 = 1
+
+      type = [:Form0, :infer]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      src = [1]
+      tgt = [2]
+      op1 = [:d]
+    end
+    I = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 1
+      type = [:Form0]
+      name = [ARVar(:src_name)]
+    end
+    R = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2; Op1 = 1
+
+      type = [:Form0, :Form1]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      src = [1]
+      tgt = [2]
+      op1 = [:d]
+    end
+    hil = AlgebraicRewriting.homomorphism(I, L)
+    hir = AlgebraicRewriting.homomorphism(I, R)
+    Rule(hil, hir)
+  end,
+  # The tgt of d of a Form1 is of the type Form2.
+  begin
+    L = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2; Op1 = 1
+
+      type = [:Form1, :infer]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      src = [1]
+      tgt = [2]
+      op1 = [:d]
+    end
+    I = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 1
+      type = [:Form1]
+      name = [ARVar(:src_name)]
+    end
+    R = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2; Op1 = 1
+
+      type = [:Form1, :Form2]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      src = [1]
+      tgt = [2]
+      op1 = [:d]
+    end
+    hil = AlgebraicRewriting.homomorphism(I, L)
+    hir = AlgebraicRewriting.homomorphism(I, R)
+    Rule(hil, hir)
+  end,
+  # The src of d of a Form1 is of the type Form0.
+  begin
+    L = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2; Op1 = 1
+
+      type = [:infer, :Form1]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      src = [1]
+      tgt = [2]
+      op1 = [:d]
+    end
+    I = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 1
+      type = [:Form1]
+      name = [ARVar(:tgt_name)]
+    end
+    R = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2; Op1 = 1
+
+      type = [:Form0, :Form1]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      src = [1]
+      tgt = [2]
+      op1 = [:d]
+    end
+    hil = AlgebraicRewriting.homomorphism(I, L)
+    hir = AlgebraicRewriting.homomorphism(I, R)
+    Rule(hil, hir)
+  end,
+  # The src of d of a Form2 is of the type Form1.
+  begin
+    L = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2; Op1 = 1
+
+      type = [:infer, :Form2]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      src = [1]
+      tgt = [2]
+      op1 = [:d]
+    end
+    I = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 1
+      type = [:Form2]
+      name = [ARVar(:tgt_name)]
+    end
+    R = @acset SummationDecapode{Any, Any, Any} begin
+      Var = 2; Op1 = 1
+
+      type = [:Form1, :Form2]
+      name = [ARVar(:src_name), ARVar(:tgt_name)]
+      src = [1]
+      tgt = [2]
+      op1 = [:d]
+    end
+    hil = AlgebraicRewriting.homomorphism(I, L)
+    hir = AlgebraicRewriting.homomorphism(I, R)
+    Rule(hil, hir)
   end]
 
-function infer_types(d::SummationDecapode, rules::Vector{Rule{:DPO}})
+function infer_types(d::SummationDecapode, rules::Vector{Rule{:DPO}}; kw...)
   # Step 1: Convert to {Any,Any,Any} so we can use AlgebraicRewriting's Var.
   #d′ = migrate(SummationDecapode{Any, Any, Any}, d,
   #  Dict(:Var => :Var, :TVar => :TVar, :Op1 => :Op1, :Op2 => :Op2, :Σ => :Σ, :Summand => :Summand, :Type => :Type, :Operator => :Operator, :Name => :Name),
@@ -180,7 +327,7 @@ function infer_types(d::SummationDecapode, rules::Vector{Rule{:DPO}})
   ar_step = ListSchedule(seq)
   end_condition(prev, curr) = :infer ∉ curr[:type]
   overall = WhileSchedule(ar_step, :main, end_condition)
-  trajectory = apply_schedule(overall, G=d′)
+  trajectory = apply_schedule(overall; G=d′, kw...)
   res = last(trajectory).G
   # Step 3: Convert back to {Any,Any,Symbol}.
   #migrate(SummationDecapode{Any, Any, Symbol}, res
@@ -195,6 +342,6 @@ function infer_types(d::SummationDecapode, rules::Vector{Rule{:DPO}})
       Dict(SchSummationDecapode.generators.Attr .=> SchSummationDecapode.generators.Attr)))
 end
 
-infer_types(d::SummationDecapode) =
-  infer_types(d, default_type_inference_rules)
+infer_types(d::SummationDecapode; kw...) =
+  infer_types(d, default_type_inference_rules; kw...)
 

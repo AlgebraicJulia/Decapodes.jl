@@ -214,18 +214,63 @@ end
 end
 
 @testset "Type Inference" begin
+  # The type of the tgt of ∂ₜ is inferred.
   Test1 = quote
     C::Form0{X}
     ∂ₜ(C) == C
   end
   t1 = SummationDecapode(parse_decapode(Test1))
-
   t1_inferred = infer_types(t1)
 
   # We use set equality because we do not care about the order of the Var table.
-  names_types = Set(zip(t1_inferred[:name], t1_inferred[:type]))
-  names_types_expected = Set([(:Ċ, :Form0), (:C, :Form0)])
-  @test issetequal(names_types, names_types_expected)
+  names_types_1 = Set(zip(t1_inferred[:name], t1_inferred[:type]))
+  names_types_expected_1 = Set([(:Ċ, :Form0), (:C, :Form0)])
+  @test issetequal(names_types_1, names_types_expected_1)
+
+  # The type of the src of ∂ₜ is inferred.
+  Test2 = quote
+    C::infer{X}
+    ∂ₜ(C) == C
+  end
+  t2 = SummationDecapode(parse_decapode(Test2))
+  t2[:type][only(incident(t2, :Ċ, :name))] = :Form0
+  t2_inferred = infer_types(t2)
+
+  names_types_2 = Set(zip(t2_inferred[:name], t2_inferred[:type]))
+  names_types_expected_2 = Set([(:Ċ, :Form0), (:C, :Form0)])
+  @test issetequal(names_types_2, names_types_expected_2)
+
+  # The type of the tgt of d is inferred.
+  Test3 = quote
+    C::Form0{X}
+    D::infer{X}
+    E::infer{X}
+    #C::infer{X}
+    #D::Form1{X}
+    #E::infer{X}
+    D == d(C)
+    E == d(D)
+  end
+  t3 = SummationDecapode(parse_decapode(Test3))
+  #t3_inferred = infer_types(t3)
+  t3_inferred = infer_types(t3, verbose=true)
+
+  names_types_3 = Set(zip(t3_inferred[:name], t3_inferred[:type]))
+  names_types_expected_3 = Set([(:C, :Form0), (:D, :Form1), (:E, :Form2)])
+  @test issetequal(names_types_3, names_types_expected_3)
+
+  # The type of the src of d is inferred.
+  Test4 = quote
+    C::infer{X}
+    D::Form1{X}
+    D == d(C)
+  end
+  t4 = SummationDecapode(parse_decapode(Test4))
+  t4_inferred = infer_types(t4)
+
+  names_types_4 = Set(zip(t4_inferred[:name], t4_inferred[:type]))
+  names_types_expected_4 = Set([(:C, :Form0), (:D, :Form1)])
+  @test issetequal(names_types_4, names_types_expected_4)
 
 end
 
