@@ -307,5 +307,35 @@ end
     (:F, :DualForm2), (:E, :DualForm1), (:D, :DualForm0)])
   @test issetequal(names_types_6, names_types_expected_6)
 
+  function makeInferPathDeca(log_cycles; infer_path = false)
+    cycles = 2 ^ log_cycles
+    num_nodes = 6 * cycles
+    num_ops = num_nodes - 1
+
+    if(infer_path)
+      type_arr = vcat(:Form0, fill(:infer, num_nodes - 1))
+    else
+      type_arr = repeat([:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2], cycles)
+    end
+
+    InferPathTest = @acset SummationDecapode{Any, Any, Symbol} begin
+      Var = num_nodes
+      type = type_arr
+      name = map(x -> Symbol("•$x"), 1:num_nodes)
+
+      Op1 = num_ops
+      src = 1:num_ops
+      tgt = 2:num_ops + 1
+      op1 = repeat([:d, :d, :⋆, :d, :d, :⋆], cycles)[1:num_ops]
+    end
+  end
+  # log_cycles > 6 starts to be slow
+  log_cycles = 3
+
+  decapode_to_infer = makeInferPathDeca(log_cycles, infer_path = true)
+  decapode_expected = makeInferPathDeca(log_cycles)
+  infer_types!(decapode_to_infer)
+  @test decapode_to_infer == decapode_expected
+
 end
 

@@ -346,8 +346,9 @@ end
 #  infer_types(d, default_type_inference_rules; kw...)
 
 
+# TODO: You could write a method which auto-generates these rules given degree N.
 """
-These are the default rules used to do type inference.
+These are the default rules used to do type inference in the 2D exterior calculus.
 """
 default_type_inference_rules_2D = [
   # Rules for ∂ₜ where tgt is unknown.
@@ -382,17 +383,44 @@ default_type_inference_rules_2D = [
   (src_type = :infer, tgt_type = :Form0, replacement_type = :DualForm2, op = :⋆),
   (src_type = :infer, tgt_type = :Form1, replacement_type = :DualForm1, op = :⋆),
   (src_type = :infer, tgt_type = :Form2, replacement_type = :DualForm0, op = :⋆)]
+"""
+These are the default rules used to do type inference in the 1D exterior calculus.
+"""
+default_type_inference_rules_1D = [
+  # Rules for ∂ₜ where tgt is unknown.
+  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
+  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :∂ₜ),
+  # Rules for ∂ₜ where src is unknown.
+  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form0, op = :∂ₜ),
+  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form1, op = :∂ₜ),
+  # Rule for d where tgt is unknown.
+  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form1, op = :d),
+  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :DualForm0, op = :d),
+  # Rules for d where src is unknown.
+  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form0, op = :d),
+  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :DualForm0, op = :d),
+  # Rules for ⋆ where tgt is unknown.
+  (src_type = :Form0, tgt_type = :infer, replacement_type = :DualForm1, op = :⋆),
+  (src_type = :Form1, tgt_type = :infer, replacement_type = :DualForm0, op = :⋆),
+  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :Form0, op = :⋆),
+  (src_type = :DualForm0, tgt_type = :infer, replacement_type = :Form1, op = :⋆),
+  # Rules for ⋆ where src is unknown.
+  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :Form0, op = :⋆),
+  (src_type = :infer, tgt_type = :DualForm0, replacement_type = :Form1, op = :⋆),
+  (src_type = :infer, tgt_type = :Form0, replacement_type = :DualForm1, op = :⋆),
+  (src_type = :infer, tgt_type = :Form1, replacement_type = :DualForm0, op = :⋆)]
 
 """
-  function infer_types_helper(d::SummationDecapode, src_type, tgt_type, op::Symbol)
+  function infer_types_helper!(d::SummationDecapode, types_known::Vector{Bool}, src_type::Symbol, tgt_type::Symbol, replacement_type::Symbol, op::Symbol)
 
 """
-function infer_types_helper(d::SummationDecapode, src_type::Symbol, tgt_type::Symbol, replacement_type::Symbol, op::Symbol)
+function infer_types_helper!(d::SummationDecapode, types_known::Vector{Bool}, src_type::Symbol, tgt_type::Symbol, replacement_type::Symbol, op::Symbol)
   applied = false
   if !xor(src_type == :infer, tgt_type == :infer)
     error("Exactly one provided type must be :infer.")
   end
   for op1_idx in parts(d, :Op1)
+    types_known[op1_idx] && continue
     src = d[:src][op1_idx]; tgt = d[:tgt][op1_idx]; op1 = d[:op1][op1_idx]
 
     if op1 == op && d[:type][src] == src_type && d[:type][tgt] == tgt_type
@@ -401,6 +429,7 @@ function infer_types_helper(d::SummationDecapode, src_type::Symbol, tgt_type::Sy
       else #if tgt_type == :infer
         d[:type][tgt] = replacement_type
       end
+      types_known[op1_idx] = true
       applied = true
       break
     end
@@ -408,17 +437,27 @@ function infer_types_helper(d::SummationDecapode, src_type::Symbol, tgt_type::Sy
   return applied
 end
 
+# TODO: Although the big-O complexity is the same, it might be more efficent on
+# average to iterate over edges then rules, instead of rules then edges. This
+# might result in more un-maintainable code. If you implement this, you might
+# also want to make the rules keys in a Dict.
+# It also might be more efficient on average to instead iterate over variables.
 """
   function infer_types!(d::SummationDecapode, rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}})
 
 Infer types of Vars given rules wherein one type is known and the other not.
 """
 function infer_types!(d::SummationDecapode, rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}})
+  # This is an optimization so we do not "visit" a row which has no infer types.
+  # It could be deleted if found to be not worth maintainability tradeoff.
+  types_known = ones(Bool, nparts(d, :Op1))
+  types_known[incident(d, :infer, [:src, :type])] .= false
+  types_known[incident(d, :infer, [:tgt, :type])] .= false
   while true
     applied = false
     for rule in rules
-      applied = infer_types_helper(d, rule...)
-      applied && break # Break if a rule was applied.
+      this_applied = infer_types_helper!(d, types_known, rule...)
+      applied = applied || this_applied
     end
     applied || break # Break if no rules were applied.
   end
