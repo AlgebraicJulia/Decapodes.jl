@@ -349,7 +349,7 @@ end
 """
 These are the default rules used to do type inference.
 """
-default_type_inference_rules = [
+default_type_inference_rules_2D = [
   # Rules for ∂ₜ where tgt is unknown.
   (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
   (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :∂ₜ),
@@ -361,13 +361,27 @@ default_type_inference_rules = [
   # Rules for d where tgt is unknown.
   (src_type = :Form0, tgt_type = :infer, replacement_type = :Form1, op = :d),
   (src_type = :Form1, tgt_type = :infer, replacement_type = :Form2, op = :d),
-  (src_type = :DualForm2, tgt_type = :infer, replacement_type = :DualForm1, op = :d),
-  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :DualForm0, op = :d),
+  (src_type = :DualForm0, tgt_type = :infer, replacement_type = :DualForm1, op = :d),
+  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :DualForm2, op = :d),
   # Rules for d where src is unknown.
   (src_type = :infer, tgt_type = :Form2, replacement_type = :Form1, op = :d),
   (src_type = :infer, tgt_type = :Form1, replacement_type = :Form0, op = :d),
   (src_type = :infer, tgt_type = :DualForm0, replacement_type = :DualForm1, op = :d),
-  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :DualForm2, op = :d)]
+  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :DualForm2, op = :d),
+  # Rules for ⋆ where tgt is unknown.
+  (src_type = :Form0, tgt_type = :infer, replacement_type = :DualForm2, op = :⋆),
+  (src_type = :Form1, tgt_type = :infer, replacement_type = :DualForm1, op = :⋆),
+  (src_type = :Form2, tgt_type = :infer, replacement_type = :DualForm0, op = :⋆),
+  (src_type = :DualForm2, tgt_type = :infer, replacement_type = :Form0, op = :⋆),
+  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :Form1, op = :⋆),
+  (src_type = :DualForm0, tgt_type = :infer, replacement_type = :Form2, op = :⋆),
+  # Rules for ⋆ where src is unknown.
+  (src_type = :infer, tgt_type = :DualForm2, replacement_type = :Form0, op = :⋆),
+  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :Form1, op = :⋆),
+  (src_type = :infer, tgt_type = :DualForm0, replacement_type = :Form2, op = :⋆),
+  (src_type = :infer, tgt_type = :Form0, replacement_type = :DualForm2, op = :⋆),
+  (src_type = :infer, tgt_type = :Form1, replacement_type = :DualForm1, op = :⋆),
+  (src_type = :infer, tgt_type = :Form2, replacement_type = :DualForm0, op = :⋆)]
 
 """
   function infer_types_helper(d::SummationDecapode, src_type, tgt_type, op::Symbol)
@@ -412,5 +426,5 @@ function infer_types!(d::SummationDecapode, rules::Vector{NamedTuple{(:src_type,
 end
 
 infer_types!(d::SummationDecapode) =
-  infer_types!(d, default_type_inference_rules)
+  infer_types!(d, default_type_inference_rules_2D)
 

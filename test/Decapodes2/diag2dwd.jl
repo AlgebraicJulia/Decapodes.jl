@@ -288,5 +288,24 @@ end
   names_types_expected_5 = Set([(:C, :Form0), (:D, :Form1)])
   @test issetequal(names_types_5, names_types_expected_5)
 
+  # The type of the src of d is inferred.
+  Test6 = quote
+    A::Form0{X}
+    (B,C,D,E,F)::infer{X}
+    B == d(A)
+    C == d(B)
+    D == ⋆(C)
+    E == d(D)
+    F == d(E)
+  end
+  t6 = SummationDecapode(parse_decapode(Test6))
+  infer_types!(t6)
+
+  names_types_6 = Set(zip(t6[:name], t6[:type]))
+  names_types_expected_6 = Set([
+    (:A, :Form0),     (:B, :Form1),     (:C, :Form2),
+    (:F, :DualForm2), (:E, :DualForm1), (:D, :DualForm0)])
+  @test issetequal(names_types_6, names_types_expected_6)
+
 end
 
