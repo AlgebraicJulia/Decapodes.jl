@@ -339,3 +339,77 @@ end
 
 end
 
+@testset "Overloading Resolution" begin
+  # d overloading is resolved.
+  Test1 = quote
+    A::Form0{X}
+    B::Form1{X}
+    C::Form2{X}
+    D::DualForm0{X}
+    E::DualForm1{X}
+    F::DualForm2{X}
+    B == d(A)
+    C == d(B)
+    E == d(D)
+    F == d(E)
+  end
+  t1 = SummationDecapode(parse_decapode(Test1))
+  resolve_overloads!(t1)
+
+  op1s_1 = t1[:op1]
+  op1s_expected_1 = [:d₀ , :d₁, :dual_d₀, :dual_d₁]
+  @test op1s_1 == op1s_expected_1
+  
+  # ⋆ overloading is resolved.
+  Test2 = quote
+    C::Form0{X}
+    D::DualForm2{X}
+    E::Form1{X}
+    F::DualForm1{X}
+    G::Form2{X}
+    H::DualForm0{X}
+    D == ⋆(C)
+    C == ⋆(D)
+    E == ⋆(F)
+    F == ⋆(E)
+    G == ⋆(H)
+    H == ⋆(G)
+  end
+  t2 = SummationDecapode(parse_decapode(Test2))
+  resolve_overloads!(t2)
+
+  op1s_2 = t2[:op1]
+  # Note: The Op1 table of the decapode created does not have the functions
+  # listed in the order in which they appear in Test2.
+  op1s_expected_2 = [:⋆₀ , :⋆₀⁻¹ , :⋆₁⁻¹ , :⋆₁ , :⋆₂⁻¹ , :⋆₂]
+  @test op1s_2 == op1s_expected_2
+  
+  # All overloading on the de Rahm complex is resolved.
+  Test3 = quote
+    A::Form0{X}
+    B::Form1{X}
+    C::Form2{X}
+    D::DualForm0{X}
+    E::DualForm1{X}
+    F::DualForm2{X}
+    B == d(A)
+    C == d(B)
+    E == d(D)
+    F == d(E)
+    F == ⋆(A)
+    A == ⋆(F)
+    E == ⋆(B)
+    B == ⋆(E)
+    D == ⋆(C)
+    C == ⋆(D)
+  end
+  t3 = SummationDecapode(parse_decapode(Test3))
+  resolve_overloads!(t3)
+
+  op1s_3 = t3[:op1]
+  # Note: The Op1 table of the decapode created does not have the functions
+  # listed in the order in which they appear in Test2.
+  op1s_expected_3 = [:d₀ , :d₁, :dual_d₀, :dual_d₁, :⋆₀ , :⋆₀⁻¹ , :⋆₁ , :⋆₁⁻¹ , :⋆₂ , :⋆₂⁻¹]
+  @test op1s_3 == op1s_expected_3
+end
+

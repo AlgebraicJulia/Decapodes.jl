@@ -1,5 +1,5 @@
-using AlgebraicRewriting
-using AlgebraicRewriting: Var as ARVar
+#using AlgebraicRewriting
+#using AlgebraicRewriting: Var as ARVar
 
 @present SchDecapode(FreeSchema) begin
     (Var, TVar, Op1, Op2)::Ob
@@ -351,6 +351,7 @@ end
 These are the default rules used to do type inference in the 2D exterior calculus.
 """
 default_type_inference_rules_2D = [
+  # TODO: There are rules for op2s that must be written still.
   # Rules for ∂ₜ where tgt is unknown.
   (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
   (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :∂ₜ),
@@ -383,10 +384,12 @@ default_type_inference_rules_2D = [
   (src_type = :infer, tgt_type = :Form0, replacement_type = :DualForm2, op = :⋆),
   (src_type = :infer, tgt_type = :Form1, replacement_type = :DualForm1, op = :⋆),
   (src_type = :infer, tgt_type = :Form2, replacement_type = :DualForm0, op = :⋆)]
+
 """
 These are the default rules used to do type inference in the 1D exterior calculus.
 """
 default_type_inference_rules_1D = [
+  # TODO: There are rules for op2s that must be written still.
   # Rules for ∂ₜ where tgt is unknown.
   (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
   (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :∂ₜ),
@@ -464,6 +467,65 @@ function infer_types!(d::SummationDecapode, rules::Vector{NamedTuple{(:src_type,
   d
 end
 
+# TODO: When SummationDecapodes are annotated with the degree of their space,
+# use dispatch to choose the correct set of rules.
 infer_types!(d::SummationDecapode) =
   infer_types!(d, default_type_inference_rules_2D)
+
+# TODO: You could write a method which auto-generates these rules given degree N.
+"""
+These are the default rules used to do function resolution in the 2D exterior calculus.
+"""
+default_overloading_resolution_rules_2D = [
+  # TODO: There are rules for op2s that must be written still.
+  # Rules for d.
+  (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = :d),
+  (src_type = :Form1, tgt_type = :Form2, resolved_name = :d₁, op = :d),
+  (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = :dual_d₀, op = :d),
+  (src_type = :DualForm1, tgt_type = :DualForm2, resolved_name = :dual_d₁, op = :d),
+  # Rules for ⋆.
+  (src_type = :Form0, tgt_type = :DualForm2, resolved_name = :⋆₀, op = :⋆),
+  (src_type = :Form1, tgt_type = :DualForm1, resolved_name = :⋆₁, op = :⋆),
+  (src_type = :Form2, tgt_type = :DualForm0, resolved_name = :⋆₂, op = :⋆),
+  (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
+  (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆),
+  (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :⋆)]
+
+"""
+These are the default rules used to do function resolution in the 1D exterior calculus.
+"""
+default_overloading_resolution_rules_1D = [
+  # TODO: There are rules for op2s that must be written still.
+  # Rules for d.
+  (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = :d),
+  (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = :dual_d₀, op = :d),
+  # Rules for ⋆.
+  (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = :⋆),
+  (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :⋆),
+  (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
+  (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆)]
+
+"""
+  function resolve_overloads!(d::SummationDecapode, rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
+
+Resolve function overloads based on types of src and tgt.
+"""
+function resolve_overloads!(d::SummationDecapode, rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
+  for op1_idx in parts(d, :Op1)
+    src = d[:src][op1_idx]; tgt = d[:tgt][op1_idx]; op1 = d[:op1][op1_idx]
+    src_type = d[:type][src]; tgt_type = d[:type][tgt]
+    for rule in rules
+      if op1 == rule[:op] && src_type == rule[:src_type] && tgt_type == rule[:tgt_type]
+        d[:op1][op1_idx] = rule[:resolved_name]
+        break
+      end
+    end
+  end
+  d
+end
+
+# TODO: When SummationDecapodes are annotated with the degree of their space,
+# use dispatch to choose the correct set of rules.
+resolve_overloads!(d::SummationDecapode) =
+  resolve_overloads!(d, default_overloading_resolution_rules_2D)
 
