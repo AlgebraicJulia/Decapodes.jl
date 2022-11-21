@@ -123,7 +123,7 @@ end
 #"""
 #These are the default rewrite rules used to do type inference.
 #"""
-#default_type_inference_rules = [
+#default_op1_type_inference_rules = [
 #  # The tgt of ∂ₜ is of the same type as its src.
 #  begin
 #    L = @acset SummationDecapode{Any, Any, Any} begin
@@ -343,14 +343,14 @@ end
 #end
 #
 #infer_types(d::SummationDecapode; kw...) =
-#  infer_types(d, default_type_inference_rules; kw...)
+#  infer_types(d, default_op1_type_inference_rules; kw...)
 
 
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
 These are the default rules used to do type inference in the 2D exterior calculus.
 """
-default_type_inference_rules_2D = [
+default_op1_type_inference_rules_2D = [
   # TODO: There are rules for op2s that must be written still.
   # Rules for ∂ₜ where tgt is unknown.
   (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
@@ -388,7 +388,7 @@ default_type_inference_rules_2D = [
 """
 These are the default rules used to do type inference in the 1D exterior calculus.
 """
-default_type_inference_rules_1D = [
+default_op1_type_inference_rules_1D = [
   # TODO: There are rules for op2s that must be written still.
   # Rules for ∂ₜ where tgt is unknown.
   (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
@@ -414,10 +414,33 @@ default_type_inference_rules_1D = [
   (src_type = :infer, tgt_type = :Form1, replacement_type = :DualForm0, op = :⋆)]
 
 """
-  function infer_types_helper!(d::SummationDecapode, types_known::Vector{Bool}, src_type::Symbol, tgt_type::Symbol, replacement_type::Symbol, op::Symbol)
+  function infer_summands_and_summations!(d::SummationDecapode)
 
 """
-function infer_types_helper!(d::SummationDecapode, types_known::Vector{Bool}, src_type::Symbol, tgt_type::Symbol, replacement_type::Symbol, op::Symbol)
+function infer_summands_and_summations!(d::SummationDecapode)
+  # Note that we are not doing any type checking here!
+  # i.e. We are not checking for this: [Form0, Form1, Form0].
+  applied = false
+  for Σ_idx in parts(d, :Σ)
+    summands = d[:summand][incident(d, Σ_idx, :summation)]
+    sum = d[:sum][Σ_idx]
+    idxs = [summands; sum]
+    types = d[:type][idxs]
+    all(t != :infer for t in types) && continue # We need not infer
+    all(t == :infer for t in types) && continue # We can  not infer
+    inferred_type = types[findfirst(!=(:infer), types)]
+    to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
+    d[:type][to_infer_idxs] .= inferred_type
+    applied = true
+  end
+  return applied
+end
+
+"""
+  function apply_op1_type_rules!(d::SummationDecapode, types_known::Vector{Bool}, src_type::Symbol, tgt_type::Symbol, replacement_type::Symbol, op::Symbol)
+
+"""
+function apply_op1_type_rules!(d::SummationDecapode, types_known::Vector{Bool}, src_type::Symbol, tgt_type::Symbol, replacement_type::Symbol, op::Symbol)
   applied = false
   if !xor(src_type == :infer, tgt_type == :infer)
     error("Exactly one provided type must be :infer.")
@@ -446,11 +469,11 @@ end
 # also want to make the rules keys in a Dict.
 # It also might be more efficient on average to instead iterate over variables.
 """
-  function infer_types!(d::SummationDecapode, rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}})
+  function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}})
 
 Infer types of Vars given rules wherein one type is known and the other not.
 """
-function infer_types!(d::SummationDecapode, rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}})
+function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}})
   # This is an optimization so we do not "visit" a row which has no infer types.
   # It could be deleted if found to be not worth maintainability tradeoff.
   types_known = ones(Bool, nparts(d, :Op1))
@@ -458,10 +481,12 @@ function infer_types!(d::SummationDecapode, rules::Vector{NamedTuple{(:src_type,
   types_known[incident(d, :infer, [:tgt, :type])] .= false
   while true
     applied = false
-    for rule in rules
-      this_applied = infer_types_helper!(d, types_known, rule...)
+    for rule in op1_rules
+      this_applied = apply_op1_type_rules!(d, types_known, rule...)
       applied = applied || this_applied
     end
+    # TODO: Infer Op2 types.
+    applied = applied || infer_summands_and_summations!(d)
     applied || break # Break if no rules were applied.
   end
   d
@@ -470,7 +495,7 @@ end
 # TODO: When SummationDecapodes are annotated with the degree of their space,
 # use dispatch to choose the correct set of rules.
 infer_types!(d::SummationDecapode) =
-  infer_types!(d, default_type_inference_rules_2D)
+  infer_types!(d, default_op1_type_inference_rules_2D)
 
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
@@ -506,15 +531,15 @@ default_overloading_resolution_rules_1D = [
   (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆)]
 
 """
-  function resolve_overloads!(d::SummationDecapode, rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
+  function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
 
 Resolve function overloads based on types of src and tgt.
 """
-function resolve_overloads!(d::SummationDecapode, rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
+function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
   for op1_idx in parts(d, :Op1)
     src = d[:src][op1_idx]; tgt = d[:tgt][op1_idx]; op1 = d[:op1][op1_idx]
     src_type = d[:type][src]; tgt_type = d[:type][tgt]
-    for rule in rules
+    for rule in op1_rules
       if op1 == rule[:op] && src_type == rule[:src_type] && tgt_type == rule[:tgt_type]
         d[:op1][op1_idx] = rule[:resolved_name]
         break

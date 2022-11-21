@@ -307,6 +307,50 @@ end
     (:F, :DualForm2), (:E, :DualForm1), (:D, :DualForm0)])
   @test issetequal(names_types_6, names_types_expected_6)
 
+  # The type of a summand is inferred.
+  Test7 = quote
+    A::Form0{X}
+    (B,C,D,E,F)::infer{X}
+    A == B+C+D+E+F
+  end
+  t7 = SummationDecapode(parse_decapode(Test7))
+  infer_types!(t7)
+
+  types_7 = Set(t7[:type])
+  types_expected_7 = Set([:Form0])
+  @test issetequal(types_7, types_expected_7)
+
+  # The type of a sum is inferred.
+  Test8 = quote
+    B::Form0{X}
+    (A,C,D,E,F)::infer{X}
+    A == B+C+D+E+F
+  end
+  t8 = SummationDecapode(parse_decapode(Test8))
+  infer_types!(t8)
+
+  types_8 = Set(t8[:type])
+  types_expected_8 = Set([:Form0])
+  @test issetequal(types_8, types_expected_8)
+
+  # Type inference of op1 propagates through sums.
+  Test8 = quote
+    Γ::Form0{X}
+    (A,B,C,D,E,F,Θ)::infer{X}
+    B == d(Γ)
+    A == B+C+D+E+F
+    Θ == d(A)
+  end
+  t8 = SummationDecapode(parse_decapode(Test8))
+  infer_types!(t8)
+
+  names_types_8 = Set(zip(t8[:name], t8[:type]))
+  names_types_expected_8 = Set([
+    (:Γ, :Form0),
+    (:A, :Form1), (:B, :Form1), (:C, :Form1), (:D, :Form1), (:E, :Form1), (:F, :Form1),
+    (:Θ, :Form2)])
+  @test issetequal(names_types_8, names_types_expected_8)
+
   function makeInferPathDeca(log_cycles; infer_path = false)
     cycles = 2 ^ log_cycles
     num_nodes = 6 * cycles
