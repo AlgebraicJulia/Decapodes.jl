@@ -346,6 +346,40 @@ end
 #  infer_types(d, default_op1_type_inference_rules; kw...)
 
 
+function expand_compositions!(d::SummationDecapode)
+  max_anon = 1
+  for op1_idx in parts(d, :Op1)
+    op1 = string(d[:op1])
+    op1[1] != '•' && continue
+    num = parse(Integer, op1[4:end])
+    if max_anon < num
+      max_anon = num
+    end
+  end
+  curr_anon = max_anon
+  for op1_idx in parts(d, :Op1)
+    op1 = d[:op1][op1_idx]
+    typeof(op1) == Vector{Symbol} || continue
+    prev_var_added_idx = d[:src][op1_idx]
+    for op in op1[1:end-1]
+      # Add a new intermediate var.
+      curr_var_added_idx = add_part!(d, :Var)
+      d[:type][curr_var_added_idx] = :infer
+      d[:name][curr_var_added_idx] = Symbol('•', curr_anon)
+      curr_anon += 1
+      # Add a new intermediate op.
+      curr_op1_added_idx = add_part!(d, :Op1)
+      d[:op1][curr_op1_added_idx] = op
+      d[:src][curr_op1_added_idx] = prev_var_added_idx
+      d[:tgt][curr_op1_added_idx] = curr_var_added_idx
+      prev_var_added_idx = curr_var_added_idx
+    end
+    d[:op1][op1_idx] = last(d[:op1][op1_idx])
+    d[:src][op1_idx] = prev_var_added_idx
+  end
+  d
+end
+
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
 These are the default rules used to do type inference in the 2D exterior calculus.
@@ -476,7 +510,10 @@ Infer types of Vars given rules wherein one type is known and the other not.
 function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}})
   # This is an optimization so we do not "visit" a row which has no infer types.
   # It could be deleted if found to be not worth maintainability tradeoff.
-  types_known = ones(Bool, nparts(d, :Op1))
+  #types_known = ones(Bool, nparts(d, :Op1))
+  #types_known[incident(d, :infer, [:src, :type])] .= false
+  #types_known[incident(d, :infer, [:tgt, :type])] .= false
+  types_known = zeros(Bool, nparts(d, :Op1))
   types_known[incident(d, :infer, [:src, :type])] .= false
   types_known[incident(d, :infer, [:tgt, :type])] .= false
   while true
@@ -514,7 +551,18 @@ default_overloading_resolution_rules_2D = [
   (src_type = :Form2, tgt_type = :DualForm0, resolved_name = :⋆₂, op = :⋆),
   (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
   (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆),
-  (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :⋆)]
+  (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :⋆),
+  # Rules for δ.
+  (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = :δ),
+  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ),
+  # Rules for ∇².
+  (src_type = :Form0, tgt_type = :Form0, resolved_name = :∇²₀, op = :∇²),
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :∇²₁, op = :∇²),
+  (src_type = :Form2, tgt_type = :Form2, resolved_name = :∇²₂, op = :∇²),
+  # Rules for Δ².
+  (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :Δ),
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :Δ),
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :Δ)]
 
 """
 These are the default rules used to do function resolution in the 1D exterior calculus.
@@ -528,7 +576,9 @@ default_overloading_resolution_rules_1D = [
   (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = :⋆),
   (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :⋆),
   (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
-  (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆)]
+  (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆),
+  # Rules for δ.
+  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ)]
 
 """
   function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})

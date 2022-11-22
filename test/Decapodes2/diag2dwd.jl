@@ -381,6 +381,22 @@ end
   infer_types!(decapode_to_infer)
   @test decapode_to_infer == decapode_expected
 
+  # Inference can happen "through" composed ops.
+  Test9 = quote
+    A::Form0{X}
+    B::infer{X}
+    B == ∘(d,d,⋆,d,d)(A)
+  end
+  t9 = SummationDecapode(parse_decapode(Test9))
+  expand_compositions!(t9)
+  infer_types!(t9)
+
+  names_types_9 = Set(zip(t9[:name], t9[:type]))
+  names_types_expected_9 = Set([
+    (:A, :Form0),     (:•1, :Form1),     (:•2, :Form2),
+    (:B, :DualForm2), (:•4, :DualForm1), (:•3, :DualForm0)])
+  @test issetequal(names_types_9, names_types_expected_9)
+  @test op1s_9 == op1s_expected_9
 end
 
 @testset "Overloading Resolution" begin
