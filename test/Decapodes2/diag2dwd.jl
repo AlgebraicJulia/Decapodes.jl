@@ -393,10 +393,9 @@ end
 
   names_types_9 = Set(zip(t9[:name], t9[:type]))
   names_types_expected_9 = Set([
-    (:A, :Form0),     (:•1, :Form1),     (:•2, :Form2),
-    (:B, :DualForm2), (:•4, :DualForm1), (:•3, :DualForm0)])
+    (:A, :Form0),     (Symbol('•', 1), :Form1),     (Symbol('•', 2), :Form2),
+    (:B, :DualForm2), (Symbol('•', 4), :DualForm1), (Symbol('•', 3), :DualForm0)])
   @test issetequal(names_types_9, names_types_expected_9)
-  @test op1s_9 == op1s_expected_9
 end
 
 @testset "Overloading Resolution" begin
