@@ -1,4 +1,7 @@
 using Catlab
+using Catlab.CategoricalAlgebra
+#using Catlab.Graphics
+using Catlab.Programs
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
 using Decapodes
@@ -38,6 +41,7 @@ end
 #end
 
 Diffusion = SummationDecapode(parse_decapode(DiffusionExprBody))
+#to_graphviz(Diffusion)
 
 #AdvectionExprBody = quote
 #  (T, Ṫ)::Form0{X}
@@ -74,6 +78,7 @@ end
 NavierStokes = SummationDecapode(parse_decapode(NavierStokesExprBody))
 NavierStokes[6, :type] = :Form0
 NavierStokes[2, :type] = :Form1
+#to_graphviz(NavierStokes)
 # TODO: Use infer_types!
 
 EnergyExprBody = quote
@@ -89,8 +94,10 @@ end
 
 Energy = SummationDecapode(parse_decapode(EnergyExprBody))
 
+
 # Needed until we resolve infered types
 Energy[5, :type] = :Form0
+#to_graphviz(Energy)
 # TODO: Use infer_types!
 
 BoundaryConditionsExprBody = quote
@@ -107,6 +114,7 @@ BoundaryConditionsExprBody = quote
 end
 
 BoundaryConditions = SummationDecapode(parse_decapode(BoundaryConditionsExprBody))
+#to_graphviz(BoundaryConditions)
 
 compose_heat_xfer = @relation (V, ρ) begin
   flow(V, V̇, T, ρ, ṗ, p)
@@ -122,6 +130,7 @@ HeatXfer_comp = oapply(compose_heat_xfer,
                    Open(BoundaryConditions, [:Ṫ, :ṗ, :V, :V̇])])
 
 HeatXfer = apex(HeatXfer_comp)
+#to_graphviz(HeatXfer)
 # end
 
 # End Navier Stokes
