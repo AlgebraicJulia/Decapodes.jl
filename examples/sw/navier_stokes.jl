@@ -122,6 +122,7 @@ compose_heat_xfer = @relation (V, ρ) begin
   diffusion(T, Ṫ₁)
   bcs(Ṫ, ṗ, V, V̇)
 end
+to_graphviz(compose_heat_xfer, junction_labels=:variable, box_labels=:name, prog="dot")
 
 HeatXfer_comp = oapply(compose_heat_xfer,
                   [Open(NavierStokes, [:V, :V̇, :T, :ρ, :ṗ, :p]),
@@ -130,41 +131,8 @@ HeatXfer_comp = oapply(compose_heat_xfer,
                    Open(BoundaryConditions, [:Ṫ, :ṗ, :V, :V̇])])
 
 HeatXfer = apex(HeatXfer_comp)
-#to_graphviz(HeatXfer)
+to_graphviz(HeatXfer)
 # end
-
-# End Navier Stokes
-
-PressureFlow = quote
-  # state variables
-  V::Form1{X}
-  P::Form0{X}
-
-  # derived quantities
-  ΔV::Form1{X}
-  ∇P::Form0{X}
-  ΔP::Form0{X}
-  ϕₚ::Form1{X}
-
-  # tanvars
-  V̇::Form1{X}
-  Ṗ::Form0{X}
-  ∂ₜ(V) == V̇
-  ∂ₜ(P) == Ṗ
-  
-  ∇P == d₀(P)
-  ΔV == Δ₁(V)
-  ΔP == Δ₀(P)
-
-  V̇  == α(∇P) + μ(ΔV)
-  ϕₚ == γ(-(L₀(V, P))) 
-  Ṗ == β(Δ₀(P)) + ∘(dual_d₁,⋆₀⁻¹)(ϕₚ)
-  # Ṗ  == ϕₚ
-end
-
-pf = SummationDecapode(parse_decapode(PressureFlow))
-
-flatten_form(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
@@ -202,6 +170,27 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
       δ(2, sd, d(1, sd)*x, hodge=hodge) + d(0, sd)*δ(1, sd, x, hodge=hodge)
     end
 
+    :δ₁ => x -> inv_hodge_star(0, sd, hodge=hodge) * dual_derivative(1,sd) * ⋆(1, sd, hodge=hodge) * x
+    :i₁′ => (v,x) -> inv_hodge_star(0,sd, hodge=hodge) * wedge_product(Tuple{1,1}, sd, v, ⋆(1, sd, hodge=hodge) * x) #⋆₀⁻¹{X}(∧₁₁′(F1, ⋆₁{X}(F1′)))
+    #:L₁′ = ... + d(0,sd)*i₁′(v,x) #i₀′(F1, d₁{X}(F1′)) + d₀{X}(i₁′(F1, F1′))
+    :neg₁ => x -> -1.0 * x
+    :neg₀ => x -> -1.0 * x
+    :half => x -> 0.5 * x
+    :third => x -> x / 3.0
+    :div₀ => (v,x) -> v / x
+    :div₁ => (v,x) -> v / x
+    :avg₀₁ => x -> begin
+      I = Vector{Int64}()
+      J = Vector{Int64}()
+      V = Vector{Float64}()
+      for e in 1:ne(s)
+          append!(J, [s[e,:∂v0],s[e,:∂v1]])
+          append!(I, [e,e])
+          append!(V, [0.5, 0.5])
+      end
+      sparse(I,J,V)*x
+    end
+
     # :Δ₁ => x -> begin # d ⋆ d̃ ⋆⁻¹ + ⋆ d̃ ⋆ d
     #   y = dual_derivative(0,sd)*⋆(2, sd, hodge=hodge)*d(1,sd)*x
     #   inv_hodge_star(2,sd, y; hodge=hodge) 
@@ -214,6 +203,10 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   # return (args...) -> begin println("applying $my_symbol"); println("arg length $(length.(args))"); op(args...);end
   return (args...) ->  op(args...)
 end
+
+# End Navier Stokes
+
+flatten_form(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
 #include("coordinates.jl")
 #include("spherical_meshes.jl")
@@ -243,7 +236,7 @@ begin
 # visualize the vector field
   ps = earth[:point]
   ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
-  arrows(
+  GLMakie.arrows(
       ps, ns, fxaa=true, # turn on anti-aliasing
       linecolor = :gray, arrowcolor = :gray,
       linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),
@@ -307,48 +300,48 @@ record(fig, "weather.gif", range(0.0, tₑ; length=150); framerate = 30) do t
 end
 end
 
-AdvDiff = quote
-    C::Form0{X}
-    Ċ::Form0{X}
-    V::Form1{X}
-    ϕ::Form1{X}
-    ϕ₁::Form1{X}
-    ϕ₂::Form1{X}
-    starC::DualForm2{X}
-    lvc::Form1{X}
-    # Fick's first law
-    ϕ₁ ==  ∘(d₀,k,⋆₁)(C)
-    # Advective Flux
-    ϕ₂ == -(L₀(V, C))
-    # Superposition Principle
-    ϕ == plus(ϕ₁ , ϕ₂)
-    # Conservation of Mass
-    Ċ == ∘(dual_d₁,⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
-end
-
-NavierStokes = quote
-  V::Form1{X}
-  V̇::Form1{X}
-  G::Form1{X}
-  T::Form0{X}
-  ρ::Form0{X}
-  ṗ::Form0{X}
-  p::Form0{X}
-  
-
-  V̇ == neg₁(L₁′(V, V)) + 
-        div₁(kᵥ(Δ₁(V) + third(d₀(δ₁(V)))), avg₀₁(ρ)) +
-        d₀(half(i₁′(V, V))) +
-        neg₁(div₁(d₀(p),avg₀₁(ρ))) +
-        G
-  ∂ₜ(V) == V̇
-  ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(p))))# + ⋆₀⁻¹(dual_d₁(⋆₁(kᵨ(d₀(ρ)))))
-  ∂ₜ(p) == ṗ
-end
-
-parse_decapode(NavierStokes)
-SummationDecapode(parse_decapode(NavierStokes))
+#AdvDiff = quote
+#    C::Form0{X}
+#    Ċ::Form0{X}
+#    V::Form1{X}
+#    ϕ::Form1{X}
+#    ϕ₁::Form1{X}
+#    ϕ₂::Form1{X}
+#    starC::DualForm2{X}
+#    lvc::Form1{X}
+#    # Fick's first law
+#    ϕ₁ ==  ∘(d₀,k,⋆₁)(C)
+#    # Advective Flux
+#    ϕ₂ == -(L₀(V, C))
+#    # Superposition Principle
+#    ϕ == plus(ϕ₁ , ϕ₂)
+#    # Conservation of Mass
+#    Ċ == ∘(dual_d₁,⋆₀⁻¹)(ϕ)
+#    ∂ₜ(C) == Ċ
+#end
+#
+#NavierStokes = quote
+#  V::Form1{X}
+#  V̇::Form1{X}
+#  G::Form1{X}
+#  T::Form0{X}
+#  ρ::Form0{X}
+#  ṗ::Form0{X}
+#  p::Form0{X}
+#  
+#
+#  V̇ == neg₁(L₁′(V, V)) + 
+#        div₁(kᵥ(Δ₁(V) + third(d₀(δ₁(V)))), avg₀₁(ρ)) +
+#        d₀(half(i₁′(V, V))) +
+#        neg₁(div₁(d₀(p),avg₀₁(ρ))) +
+#        G
+#  ∂ₜ(V) == V̇
+#  ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(p))))# + ⋆₀⁻¹(dual_d₁(⋆₁(kᵨ(d₀(ρ)))))
+#  ∂ₜ(p) == ṗ
+#end
+#
+#parse_decapode(NavierStokes)
+#SummationDecapode(parse_decapode(NavierStokes))
 
 # Energy = @decapode Flow2DQuantities begin
 #   (V)::Form1{X}
