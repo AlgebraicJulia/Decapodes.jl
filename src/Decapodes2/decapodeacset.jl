@@ -346,40 +346,6 @@ end
 #  infer_types(d, default_op1_type_inference_rules; kw...)
 
 
-function expand_compositions!(d::SummationDecapode)
-  max_anon = 1
-  for op1_idx in parts(d, :Op1)
-    op1 = string(d[:op1])
-    op1[1] != '•' && continue
-    num = parse(Integer, op1[4:end])
-    if max_anon < num
-      max_anon = num
-    end
-  end
-  curr_anon = max_anon
-  for op1_idx in parts(d, :Op1)
-    op1 = d[:op1][op1_idx]
-    typeof(op1) == Vector{Symbol} || continue
-    prev_var_added_idx = d[:src][op1_idx]
-    for op in op1[1:end-1]
-      # Add a new intermediate var.
-      curr_var_added_idx = add_part!(d, :Var)
-      d[:type][curr_var_added_idx] = :infer
-      d[:name][curr_var_added_idx] = Symbol('•', curr_anon)
-      curr_anon += 1
-      # Add a new intermediate op.
-      curr_op1_added_idx = add_part!(d, :Op1)
-      d[:op1][curr_op1_added_idx] = op
-      d[:src][curr_op1_added_idx] = prev_var_added_idx
-      d[:tgt][curr_op1_added_idx] = curr_var_added_idx
-      prev_var_added_idx = curr_var_added_idx
-    end
-    d[:op1][op1_idx] = last(d[:op1][op1_idx])
-    d[:src][op1_idx] = prev_var_added_idx
-  end
-  d
-end
-
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
 These are the default rules used to do type inference in the 2D exterior calculus.

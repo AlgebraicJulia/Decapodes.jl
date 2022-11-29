@@ -15,7 +15,7 @@ using Base.Iterators
 import Unicode
 
 export normalize_unicode, DerivOp, append_dot,
-  SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, Decapode, NamedDecapode, SummationDecapode, fill_names!, expand_operators, add_constant!, add_parameter, expand_compositions!, infer_types!, resolve_overloads!,
+  SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, Decapode, NamedDecapode, SummationDecapode, fill_names!, expand_operators, add_constant!, add_parameter, infer_types!, resolve_overloads!,
   Term, Var, Judge, Eq, AppCirc1, AppCirc2, App1, App2, Plus, Tan, term, parse_decapode,
   VectorForm, PhysicsState, findname, findnode,
   compile, compile_env, gensim, closest_point, flat_op,

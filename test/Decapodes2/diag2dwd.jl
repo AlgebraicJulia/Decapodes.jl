@@ -388,13 +388,13 @@ end
     B == ∘(d,d,⋆,d,d)(A)
   end
   t9 = SummationDecapode(parse_decapode(Test9))
-  expand_compositions!(t9)
+  t9 = expand_operators(t9)
   infer_types!(t9)
 
   names_types_9 = Set(zip(t9[:name], t9[:type]))
   names_types_expected_9 = Set([
-    (:A, :Form0),     (Symbol('•', 1), :Form1),     (Symbol('•', 2), :Form2),
-    (:B, :DualForm2), (Symbol('•', 4), :DualForm1), (Symbol('•', 3), :DualForm0)])
+    (:A, :Form0),     (Symbol("•_1_", 1), :Form1),     (Symbol("•_1_", 2), :Form2),
+    (:B, :DualForm2), (Symbol("•_1_", 4), :DualForm1), (Symbol("•_1_", 3), :DualForm0)])
   @test issetequal(names_types_9, names_types_expected_9)
 end
 
