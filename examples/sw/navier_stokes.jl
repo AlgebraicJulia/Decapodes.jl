@@ -132,8 +132,30 @@ HeatXfer_comp = oapply(compose_heat_xfer,
 
 HeatXfer = apex(HeatXfer_comp)
 to_graphviz(HeatXfer)
-to_graphviz(HeatXfer, directed=false)
+to_graphviz(HeatXfer, graph_attrs=Dict(:rankdir => "LR"))
+to_graphviz(HeatXfer, graph_attrs=Dict(:rankdir => "TB"))
 # end
+
+hodge = GeometricHodge()
+d₀(x,sd) = d(0,sd)*x
+d₁(x,sd) = d(1,sd)*x
+⋆₀(x,sd,hodge) = ⋆(0,sd,hodge=hodge)*x
+⋆₁(x,sd,hodge) = ⋆(1,sd,hodge=hodge)*x
+⋆₂(x,sd,hodge) = ⋆(2,sd,hodge=hodge)*x
+⋆₀⁻¹(x,sd,hodge) = inv_hodge_star(0,sd,hodge=hodge)*x
+⋆₁⁻¹(x,sd,hodge) = inv_hodge_star(1,sd,hodge=hodge)*x
+∧₀₁′(x,y,sd) = wedge_product(Tuple{0,1}, sd, x, y)
+∧₁₁′(x,y,sd) = wedge_product(Tuple{1,1}, sd, x, y)
+i₀′(x,y,sd,hodge) = -1.0 * (∧₁₀′(x, ⋆₂(y,sd,hodge)),sd)
+#i₁′(v,x) = inv_hodge_star(0,sd, hodge=hodge) * wedge_product(Tuple{1,1}, sd, v, ⋆(1, sd, hodge=hodge) * x) #⋆₀⁻¹{X}(∧₁₁′(F1, ⋆₁{X}(F1′)))
+i₁′(x,y,sd,hodge) = ⋆₀⁻¹(∧₁₁′(x, ⋆₁(y,sd,hodge), sd),hodge) #⋆₀⁻¹{X}(∧₁₁′(F1, ⋆₁{X}(F1′)))
+L1′(x,y,sd,hodge) = i₀′(x,d₁(y,sd),sd,hodge) + d₀(i₁′(x,y,sd,hodge),sd)
+boltzmann_constant = 1.38064852e-23
+mol_mass = 28.96
+density = 0.000210322
+kₜ = 0.0246295028571 # Thermal conductivity
+cₚ = 1004.703 # Specific Heat at constant pressure
+k₁ = kₜ / (density * cₚ) # Heat diffusion constant in fluid
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
@@ -141,7 +163,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :k => x->2000x
     :μ => x->-0.0001x
     # :μ => x->-2000x
-    :α => x->0*x
     :β => x->2000*x
     :γ => x->1*x
     :⋆₀ => x->⋆(0,sd,hodge=hodge)*x
@@ -172,12 +193,29 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     end
 
     :δ₁ => x -> inv_hodge_star(0, sd, hodge=hodge) * dual_derivative(1,sd) * ⋆(1, sd, hodge=hodge) * x
-    :i₁′ => (v,x) -> inv_hodge_star(0,sd, hodge=hodge) * wedge_product(Tuple{1,1}, sd, v, ⋆(1, sd, hodge=hodge) * x) #⋆₀⁻¹{X}(∧₁₁′(F1, ⋆₁{X}(F1′)))
+    #:i₁′ => (v,x) -> inv_hodge_star(0,sd, hodge=hodge) * wedge_product(Tuple{1,1}, sd, v, ⋆(1, sd, hodge=hodge) * x) #⋆₀⁻¹{X}(∧₁₁′(F1, ⋆₁{X}(F1′)))
+    :i₁′ => (x,y) -> i₁′(x,y,sd,hodge)
     #:L₁′ = ... + d(0,sd)*i₁′(v,x) #i₀′(F1, d₁{X}(F1′)) + d₀{X}(i₁′(F1, F1′))
+    :L₁′ => (x,y) -> L₁′(x,y,sd,hodge)
     :neg₁ => x -> -1.0 * x
     :neg₀ => x -> -1.0 * x
     :half => x -> 0.5 * x
     :third => x -> x / 3.0
+    #:R₀ => x-> 1.38064852e-23 * 6.0221409e23 / (28.96 / 1000) # Boltzmann constant * ??? / (molecular mass / 1000)
+    :R₀ => x-> boltzmann_constant * 6.0221409e23 / (mol_mass / 1000) # Boltzmann constant * ??? / (molecular mass / 1000)
+    :kᵥ => x->0.000210322*x # / density
+    # These are the steps used to compute k.
+    # We have no boundaries, so I set k to the constant k₁
+    #kₜ = 0.0246295028571 # Thermal conductivity
+    #k_cyl = kₜ * 4
+    #density = 0.000210322
+    #cₚ = 1004.703 # Specific Heat at constant pressure
+    #k₁ = kₜ / (density * cₚ) # Heat diffusion constant in fluid
+    #k₂ = k_cyl / (density * cₚ) # Heat diffusion constant in cylinder
+    #k_col = fill(k₁, ne(s))
+    #k_col[cyl] .= k₂
+    #k = diagm(k_col)
+    :k => x->k₁*x
     :div₀ => (v,x) -> v / x
     :div₁ => (v,x) -> v / x
     :avg₀₁ => x -> begin
