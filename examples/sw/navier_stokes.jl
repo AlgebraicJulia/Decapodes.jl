@@ -1,6 +1,6 @@
 using Catlab
 using Catlab.CategoricalAlgebra
-using Catlab.Graphics
+# using Catlab.Graphics
 using Catlab.Programs
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
@@ -10,9 +10,9 @@ using OrdinaryDiffEq
 using MLStyle
 using Distributions
 using LinearAlgebra
-using GLMakie
+# using GLMakie
 using Logging
-# using CairoMakie 
+using CairoMakie 
 
 using GeometryBasics: Point3
 Point3D = Point3{Float64}
@@ -41,7 +41,7 @@ end
 #end
 
 Diffusion = SummationDecapode(parse_decapode(DiffusionExprBody))
-to_graphviz(Diffusion)
+# to_graphviz(Diffusion)
 
 #AdvectionExprBody = quote
 #  (T, Ṫ)::Form0{X}
@@ -78,16 +78,16 @@ end
 NavierStokes = SummationDecapode(parse_decapode(NavierStokesExprBody))
 NavierStokes[6, :type] = :Form0
 NavierStokes[2, :type] = :Form1
-to_graphviz(NavierStokes)
+# to_graphviz(NavierStokes)
 # TODO: Use infer_types!
 
 EnergyExprBody = quote
   V::Form1{X}
-  (ρ, p, T, Ṫ, Ṫₐ, Ṫ₁, bc₀)::Form0{X}
+  (ρ, p, T, Ṫ, Ṫₐ, Ṫ₁)::Form0{X}
 
   ρ == div₀(p, R₀(T))
   Ṫₐ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(T))))
-  bc₀ == ∂ₜₐ(Ṫₐ)
+  # bc₀ == ∂ₜₐ(Ṫₐ)
   Ṫ == Ṫₐ + Ṫ₁
   ∂ₜ(T) == Ṫ 
 end
@@ -97,7 +97,7 @@ Energy = SummationDecapode(parse_decapode(EnergyExprBody))
 
 # Needed until we resolve infered types
 Energy[5, :type] = :Form0
-to_graphviz(Energy)
+# to_graphviz(Energy)
 # TODO: Use infer_types!
 
 #BoundaryConditionsExprBody = quote
@@ -117,12 +117,12 @@ to_graphviz(Energy)
 #to_graphviz(BoundaryConditions)
 
 compose_heat_xfer = @relation (V, ρ) begin
-  flow(V, V̇, T, ρ, ṗ, p)
-  energy(Ṫ, V, ρ, p, T, Ṫ₁)
+  flow(V, V̇, T, ρ, Ṗ, P)
+  energy(Ṫ, V, ρ, P, T, Ṫ₁)
   diffusion(T, Ṫ₁)
   #bcs(Ṫ, ṗ, V, V̇)
 end
-to_graphviz(compose_heat_xfer, junction_labels=:variable, box_labels=:name, prog="dot")
+# to_graphviz(compose_heat_xfer, junction_labels=:variable, box_labels=:name, prog="dot")
 
 HeatXfer_comp = oapply(compose_heat_xfer,
                   [Open(NavierStokes, [:V, :V̇, :T, :ρ, :ṗ, :p]),
@@ -131,9 +131,9 @@ HeatXfer_comp = oapply(compose_heat_xfer,
                    #Open(BoundaryConditions, [:Ṫ, :ṗ, :V, :V̇])])
 
 HeatXfer = apex(HeatXfer_comp)
-to_graphviz(HeatXfer)
-to_graphviz(HeatXfer, graph_attrs=Dict(:rankdir => "LR"))
-to_graphviz(HeatXfer, graph_attrs=Dict(:rankdir => "TB"))
+# to_graphviz(HeatXfer)
+# to_graphviz(HeatXfer, graph_attrs=Dict(:rankdir => "LR"))
+# to_graphviz(HeatXfer, graph_attrs=Dict(:rankdir => "TB"))
 # end
 
 hodge = GeometricHodge()
@@ -253,16 +253,16 @@ flatten_form(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[t
 radius = 6371+90
 
 #primal_earth = loadmesh(ThermoIcosphere())
-primal_earth = loadmesh(Icosphere(3, radius))
+primal_earth = loadmesh(Icosphere(4, radius))
 nploc = argmax(x -> x[3], primal_earth[:point])
 
 orient!(primal_earth)
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
 subdivide_duals!(earth, Circumcenter())
 
-physics = SummationDecapode(parse_decapode(PressureFlow))
-gensim(expand_operators(physics), [:P, :V])
-sim = eval(gensim(expand_operators(physics), [:P, :V]))
+physics = HeatXfer
+gensim(expand_operators(physics))
+sim = eval(gensim(expand_operators(physics)))
 
 fₘ = sim(earth, generate)
 
@@ -275,7 +275,7 @@ begin
 # visualize the vector field
   ps = earth[:point]
   ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
-  GLMakie.arrows(
+  CairoMakie.arrows(
       ps, ns, fxaa=true, # turn on anti-aliasing
       linecolor = :gray, arrowcolor = :gray,
       linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),
@@ -283,10 +283,10 @@ begin
   )
 end
 
-begin
+# begin
 v = flatten_form(velocity, earth)
-c_dist = MvNormal([radius/√(2), radius/√(2)], 20*[1, 1])
-c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
+# c_dist = MvNormal([radius/√(2), radius/√(2)], 20*[1, 1])
+# c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
 
 theta_start = 45*pi/180
 phi_start = 0*pi/180
@@ -298,10 +298,10 @@ c_dist₂ = MvNormal([x, y, -z], 20*[1, 1, 1])
 
 c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 
-c = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
+t = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
+pfield = 100000*[p[3]/radius for p in earth[:point]]
 
-
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(collect(v))],Float64[], [:P, :V])
+u₀ = construct(PhysicsState, [VectorForm(t), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:T, :V, :P])
 mesh(primal_earth, color=findnode(u₀, :P), colormap=:plasma)
 tₑ = 30.0
 
@@ -313,7 +313,7 @@ soln.retcode != :Unstable || error("Solver was not stable")
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 @info("Done")
-end
+# end
 
 begin
 mass(soln, t, mesh, concentration=:P) = sum(⋆(0, mesh)*findnode(soln(t), concentration))
