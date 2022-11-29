@@ -83,11 +83,12 @@ to_graphviz(NavierStokes)
 
 EnergyExprBody = quote
   V::Form1{X}
-  (ρ, p, T, Ṫ, Ṫₐ, Ṫ₁, bc₀)::Form0{X}
+  #(ρ, p, T, Ṫ, Ṫₐ, Ṫ₁, bc₀)::Form0{X}
+  (ρ, p, T, Ṫ, Ṫₐ, Ṫ₁)::Form0{X}
 
   ρ == div₀(p, R₀(T))
   Ṫₐ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(T))))
-  bc₀ == ∂ₜₐ(Ṫₐ)
+  #bc₀ == ∂ₜₐ(Ṫₐ)
   Ṫ == Ṫₐ + Ṫ₁
   ∂ₜ(T) == Ṫ 
 end
