@@ -1,6 +1,6 @@
 using Catlab
 using Catlab.CategoricalAlgebra
-#using Catlab.Graphics
+using Catlab.Graphics
 using Catlab.Programs
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
@@ -41,7 +41,7 @@ end
 #end
 
 Diffusion = SummationDecapode(parse_decapode(DiffusionExprBody))
-#to_graphviz(Diffusion)
+to_graphviz(Diffusion)
 
 #AdvectionExprBody = quote
 #  (T, Ṫ)::Form0{X}
@@ -78,7 +78,7 @@ end
 NavierStokes = SummationDecapode(parse_decapode(NavierStokesExprBody))
 NavierStokes[6, :type] = :Form0
 NavierStokes[2, :type] = :Form1
-#to_graphviz(NavierStokes)
+to_graphviz(NavierStokes)
 # TODO: Use infer_types!
 
 EnergyExprBody = quote
@@ -97,41 +97,42 @@ Energy = SummationDecapode(parse_decapode(EnergyExprBody))
 
 # Needed until we resolve infered types
 Energy[5, :type] = :Form0
-#to_graphviz(Energy)
+to_graphviz(Energy)
 # TODO: Use infer_types!
 
-BoundaryConditionsExprBody = quote
-  (V, V̇, bc₁)::Form1{X}
-  (Ṫ, ṗ, bc₀)::Form0{X}
-
-  # no-slip edges
-  bc₁ == ∂ᵥ(V̇)
-  # No change on left/right boundaries
-
-  # TODO: Change back to ∂ₜ once naming is fixed
-  bc₀ == ∂τ(Ṫ)
-  bc₀ == ∂ₚ(ṗ)
-end
-
-BoundaryConditions = SummationDecapode(parse_decapode(BoundaryConditionsExprBody))
+#BoundaryConditionsExprBody = quote
+#  (V, V̇, bc₁)::Form1{X}
+#  (Ṫ, ṗ, bc₀)::Form0{X}
+#
+#  # no-slip edges
+#  bc₁ == ∂ᵥ(V̇)
+#  # No change on left/right boundaries
+#
+#  # TODO: Change back to ∂ₜ once naming is fixed
+#  bc₀ == ∂τ(Ṫ)
+#  bc₀ == ∂ₚ(ṗ)
+#end
+#
+#BoundaryConditions = SummationDecapode(parse_decapode(BoundaryConditionsExprBody))
 #to_graphviz(BoundaryConditions)
 
 compose_heat_xfer = @relation (V, ρ) begin
   flow(V, V̇, T, ρ, ṗ, p)
   energy(Ṫ, V, ρ, p, T, Ṫ₁)
   diffusion(T, Ṫ₁)
-  bcs(Ṫ, ṗ, V, V̇)
+  #bcs(Ṫ, ṗ, V, V̇)
 end
 to_graphviz(compose_heat_xfer, junction_labels=:variable, box_labels=:name, prog="dot")
 
 HeatXfer_comp = oapply(compose_heat_xfer,
                   [Open(NavierStokes, [:V, :V̇, :T, :ρ, :ṗ, :p]),
                    Open(Energy, [:Ṫ, :V, :ρ, :p, :T, :Ṫ₁]),
-                   Open(Diffusion, [:T, :Ṫ]),
-                   Open(BoundaryConditions, [:Ṫ, :ṗ, :V, :V̇])])
+                   Open(Diffusion, [:T, :Ṫ])])
+                   #Open(BoundaryConditions, [:Ṫ, :ṗ, :V, :V̇])])
 
 HeatXfer = apex(HeatXfer_comp)
 to_graphviz(HeatXfer)
+to_graphviz(HeatXfer, directed=false)
 # end
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
