@@ -348,44 +348,6 @@ end
 
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
-These are the default rules used to do type inference in the 2D exterior calculus.
-"""
-default_op1_type_inference_rules_2D = [
-  # TODO: There are rules for op2s that must be written still.
-  # Rules for ∂ₜ where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :∂ₜ),
-  (src_type = :Form2, tgt_type = :infer, replacement_type = :Form2, op = :∂ₜ),
-  # Rules for ∂ₜ where src is unknown.
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form0, op = :∂ₜ),
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form1, op = :∂ₜ),
-  (src_type = :infer, tgt_type = :Form2, replacement_type = :Form2, op = :∂ₜ),
-  # Rules for d where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form1, op = :d),
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form2, op = :d),
-  (src_type = :DualForm0, tgt_type = :infer, replacement_type = :DualForm1, op = :d),
-  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :DualForm2, op = :d),
-  # Rules for d where src is unknown.
-  (src_type = :infer, tgt_type = :Form2, replacement_type = :Form1, op = :d),
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form0, op = :d),
-  (src_type = :infer, tgt_type = :DualForm0, replacement_type = :DualForm1, op = :d),
-  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :DualForm2, op = :d),
-  # Rules for ⋆ where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :DualForm2, op = :⋆),
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :DualForm1, op = :⋆),
-  (src_type = :Form2, tgt_type = :infer, replacement_type = :DualForm0, op = :⋆),
-  (src_type = :DualForm2, tgt_type = :infer, replacement_type = :Form0, op = :⋆),
-  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :Form1, op = :⋆),
-  (src_type = :DualForm0, tgt_type = :infer, replacement_type = :Form2, op = :⋆),
-  # Rules for ⋆ where src is unknown.
-  (src_type = :infer, tgt_type = :DualForm2, replacement_type = :Form0, op = :⋆),
-  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :Form1, op = :⋆),
-  (src_type = :infer, tgt_type = :DualForm0, replacement_type = :Form2, op = :⋆),
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :DualForm2, op = :⋆),
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :DualForm1, op = :⋆),
-  (src_type = :infer, tgt_type = :Form2, replacement_type = :DualForm0, op = :⋆)]
-
-"""
 These are the default rules used to do type inference in the 1D exterior calculus.
 """
 default_op1_type_inference_rules_1D = [
@@ -438,13 +400,80 @@ default_op1_type_inference_rules_1D = [
     (proj1_type = :Form1, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :L),
     (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :L),   
 
-
     # Rules for i where proj1 is unknown. i₁
     (proj1_type = :infer, proj2_type = :Form1, res_type = :Form0, replacement_type = :Form1, op = :i),
     # Rules for i where proj2 is unknown. i₁
     (proj1_type = :Form1, proj2_type = :infer, res_type = :infer, replacement_type = :Form0, op = :i),
     # Rules for i where res is unknown. i₁
     (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form0, op = :i)]
+
+"""
+These are the default rules used to do type inference in the 2D exterior calculus.
+"""
+default_op1_type_inference_rules_2D = [
+  # TODO: There are rules for op2s that must be written still.
+  # Rules for ∂ₜ where tgt is unknown.
+  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
+  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :∂ₜ),
+  (src_type = :Form2, tgt_type = :infer, replacement_type = :Form2, op = :∂ₜ),
+  # Rules for ∂ₜ where src is unknown.
+  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form0, op = :∂ₜ),
+  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form1, op = :∂ₜ),
+  (src_type = :infer, tgt_type = :Form2, replacement_type = :Form2, op = :∂ₜ),
+  # Rules for d where tgt is unknown.
+  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form1, op = :d),
+  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form2, op = :d),
+  (src_type = :DualForm0, tgt_type = :infer, replacement_type = :DualForm1, op = :d),
+  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :DualForm2, op = :d),
+  # Rules for d where src is unknown.
+  (src_type = :infer, tgt_type = :Form2, replacement_type = :Form1, op = :d),
+  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form0, op = :d),
+  (src_type = :infer, tgt_type = :DualForm0, replacement_type = :DualForm1, op = :d),
+  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :DualForm2, op = :d),
+  # Rules for ⋆ where tgt is unknown.
+  (src_type = :Form0, tgt_type = :infer, replacement_type = :DualForm2, op = :⋆),
+  (src_type = :Form1, tgt_type = :infer, replacement_type = :DualForm1, op = :⋆),
+  (src_type = :Form2, tgt_type = :infer, replacement_type = :DualForm0, op = :⋆),
+  (src_type = :DualForm2, tgt_type = :infer, replacement_type = :Form0, op = :⋆),
+  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :Form1, op = :⋆),
+  (src_type = :DualForm0, tgt_type = :infer, replacement_type = :Form2, op = :⋆),
+  # Rules for ⋆ where src is unknown.
+  (src_type = :infer, tgt_type = :DualForm2, replacement_type = :Form0, op = :⋆),
+  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :Form1, op = :⋆),
+  (src_type = :infer, tgt_type = :DualForm0, replacement_type = :Form2, op = :⋆),
+  (src_type = :infer, tgt_type = :Form0, replacement_type = :DualForm2, op = :⋆),
+  (src_type = :infer, tgt_type = :Form1, replacement_type = :DualForm1, op = :⋆),
+  (src_type = :infer, tgt_type = :Form2, replacement_type = :DualForm0, op = :⋆)]
+
+  default_op2_type_inference_rules_2D = vcat(default_op2_type_inference_rules_1D, [
+    # Rules for ∧ where proj1 is unknown. ∧₁₁, ∧₂₁, ∧₁₂
+    (proj1_type = :infer, proj2_type = :Form1, res_type = :Form2, replacement_type = :Form1, op = :∧),
+    (proj1_type = :infer, proj2_type = :Form1, res_type = :Form3, replacement_type = :Form2, op = :∧),
+    (proj1_type = :infer, proj2_type = :Form2, res_type = :Form3, replacement_type = :Form1, op = :∧),
+    # Rules for ∧ where proj2 is unknown. ∧₁₁, ∧₂₁, ∧₁₂
+    (proj1_type = :Form1, proj2_type = :infer, res_type = :Form2, replacement_type = :Form1, op = :∧),
+    (proj1_type = :Form2, proj2_type = :infer, res_type = :Form3, replacement_type = :Form1, op = :∧),
+    (proj1_type = :Form1, proj2_type = :infer, res_type = :Form3, replacement_type = :Form2, op = :∧),
+    # Rules for ∧ where res is unknown. ∧₁₁, ∧₂₁, ∧₁₂
+    (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form2, op = :∧),
+    (proj1_type = :Form2, proj2_type = :Form1, res_type = :infer, replacement_type = :Form3, op = :∧),
+    (proj1_type = :Form1, proj2_type = :Form2, res_type = :infer, replacement_type = :Form3, op = :∧),
+
+    # TODO: Overhaul since L apparently always needs a Form1 as it's first input
+    # Rules for L where proj1 is unknown. L₂
+    (proj1_type = :infer, proj2_type = :Form0, res_type = :Form0, replacement_type = :Form1, op = :L),
+    # Rules for L where proj2 is unknown. L₂
+    (proj1_type = :Form1, proj2_type = :infer, res_type = :Form2, replacement_type = :Form2, op = :L),
+    # Rules for L where res is unknown. L₂
+    (proj1_type = :Form1, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :L),
+
+    # Rules for i where proj1 is unknown. i₁
+    (proj1_type = :infer, proj2_type = :Form2, res_type = :Form1, replacement_type = :Form1, op = :i),
+    # Rules for i where proj2 is unknown. i₁
+    (proj1_type = :Form1, proj2_type = :infer, res_type = :Form1, replacement_type = :Form2, op = :i),
+    # Rules for i where res is unknown. i₁
+    (proj1_type = :Form1, proj2_type = :Form2, res_type = :infer, replacement_type = :Form1, op = :i)])
+
     
 
 """
@@ -570,7 +599,7 @@ end
 # TODO: When SummationDecapodes are annotated with the degree of their space,
 # use dispatch to choose the correct set of rules.
 infer_types!(d::SummationDecapode) =
-  infer_types!(d, default_op1_type_inference_rules_2D, default_op2_type_inference_rules_1D)
+  infer_types!(d, default_op1_type_inference_rules_2D, default_op2_type_inference_rules_2D)
 
 # TODO: You could write a method which auto-generates these rules given degree N.
 """

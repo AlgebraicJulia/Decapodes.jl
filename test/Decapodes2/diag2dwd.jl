@@ -214,6 +214,11 @@ end
 end
 
 @testset "Type Inference" begin
+  
+  function get_name_type_pair(d::SummationDecapode)
+    Set(zip(d[:name], d[:type]))
+  end
+
   # The type of the tgt of ∂ₜ is inferred.
   Test1 = quote
     C::Form0{X}
@@ -446,11 +451,6 @@ end
   names_types_expected_12 = Set([(:A, :Form1), (:B, :Form1), (:C, :Form0)])
   @test issetequal(names_types_12, names_types_expected_12)
 end
-
-function get_name_type_pair(d::SummationDecapode)
-  Set(zip(d[:name], d[:type]))
-end
-
 
 @testset "Overloading Resolution" begin
   # d overloading is resolved.
