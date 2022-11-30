@@ -413,6 +413,40 @@ default_op1_type_inference_rules_1D = [
   (src_type = :infer, tgt_type = :Form0, replacement_type = :DualForm1, op = :⋆),
   (src_type = :infer, tgt_type = :Form1, replacement_type = :DualForm0, op = :⋆)]
 
+  default_op2_type_inference_rules_1D = [
+    # Rules for ∧ where proj1 is unknown. ∧₀₀, ∧₁₀, ∧₀₁
+    (proj1_type = :infer, proj2_type = :Form0, res_type = :Form0, replacement_type = :Form0, op = :∧),
+    (proj1_type = :infer, proj2_type = :Form0, res_type = :Form1, replacement_type = :Form1, op = :∧),
+    (proj1_type = :infer, proj2_type = :Form1, res_type = :Form1, replacement_type = :Form0, op = :∧),
+    # Rules for ∧ where proj2 is unknown. ∧₀₀, ∧₁₀, ∧₀₁
+    (proj1_type = :Form0, proj2_type = :infer, res_type = :Form0, replacement_type = :Form0, op = :∧),
+    (proj1_type = :Form1, proj2_type = :infer, res_type = :Form1, replacement_type = :Form0, op = :∧),
+    (proj1_type = :Form0, proj2_type = :infer, res_type = :Form1, replacement_type = :Form1, op = :∧),
+    # Rules for ∧ where res is unknown. ∧₀₀, ∧₁₀, ∧₀₁
+    (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :∧),
+    (proj1_type = :Form1, proj2_type = :Form0, res_type = :infer, replacement_type = :Form1, op = :∧),
+    (proj1_type = :Form0, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :∧),
+
+    # TODO: Overhaul since L apparently always needs a Form1 as it's first input
+    # Rules for L where proj1 is unknown. L₀, L₁
+    (proj1_type = :infer, proj2_type = :Form0, res_type = :Form0, replacement_type = :Form1, op = :L),
+    (proj1_type = :infer, proj2_type = :Form1, res_type = :Form1, replacement_type = :Form1, op = :L),    
+    # Rules for L where proj2 is unknown. L₀, L₁
+    (proj1_type = :Form1, proj2_type = :infer, res_type = :Form0, replacement_type = :Form0, op = :L),
+    (proj1_type = :Form1, proj2_type = :infer, res_type = :Form1, replacement_type = :Form1, op = :L),    
+    # Rules for L where res is unknown. L₀, L₁
+    (proj1_type = :Form1, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :L),
+    (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :L),   
+
+
+    # Rules for i where proj1 is unknown. i₁
+    (proj1_type = :infer, proj2_type = :Form1, res_type = :Form0, replacement_type = :Form1, op = :i),
+    # Rules for i where proj2 is unknown. i₁
+    (proj1_type = :Form1, proj2_type = :infer, res_type = :infer, replacement_type = :Form0, op = :i),
+    # Rules for i where res is unknown. i₁
+    (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form0, op = :i)]
+    
+
 """
   function infer_summands_and_summations!(d::SummationDecapode)
 
@@ -463,6 +497,30 @@ function apply_op1_type_rules!(d::SummationDecapode, types_known::Vector{Bool}, 
   return applied
 end
 
+function apply_op2_type_rules!(d::SummationDecapode, types_known::Vector{Bool}, proj1_type::Symbol, proj2_type::Symbol, res_type::Symbol, replacement_type::Symbol, op::Symbol)
+  applied = false
+  # TODO: May want to add that an inference rule is valid, so that at least some variable is an infer type
+
+  for op2_idx in parts(d, :Op2)
+    types_known[op2_idx] && continue
+    proj1 = d[:proj1][op2_idx]; proj2 = d[:proj2][op2_idx]; res = d[:res][op2_idx]; op2 = d[:op2][op2_idx]
+
+    if op2 == op && d[:type][proj1] == proj1_type && d[:type][proj2] == proj2_type && d[:type][res] == res_type
+      if proj1_type == :infer
+        d[:type][proj1] = replacement_type
+      elseif proj2_type == :infer
+        d[:type][proj2] = replacement_type
+      elseif res_type == :infer 
+        d[:type][res] = replacement_type
+      end
+      types_known[op2_idx] = true
+      applied = true
+      break
+    end
+  end
+  return applied
+end
+
 # TODO: Although the big-O complexity is the same, it might be more efficent on
 # average to iterate over edges then rules, instead of rules then edges. This
 # might result in more un-maintainable code. If you implement this, you might
@@ -473,32 +531,46 @@ end
 
 Infer types of Vars given rules wherein one type is known and the other not.
 """
-function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}})
+function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}}, op2_rules::Vector{NamedTuple{(:proj1_type, :proj2_type, :res_type, :replacement_type, :op), NTuple{5, Symbol}}})
   # This is an optimization so we do not "visit" a row which has no infer types.
   # It could be deleted if found to be not worth maintainability tradeoff.
-  #types_known = ones(Bool, nparts(d, :Op1))
-  #types_known[incident(d, :infer, [:src, :type])] .= false
-  #types_known[incident(d, :infer, [:tgt, :type])] .= false
-  types_known = zeros(Bool, nparts(d, :Op1))
-  types_known[incident(d, :infer, [:src, :type])] .= false
-  types_known[incident(d, :infer, [:tgt, :type])] .= false
+  types_known_op1 = ones(Bool, nparts(d, :Op1))
+  types_known_op1[incident(d, :infer, [:src, :type])] .= false
+  types_known_op1[incident(d, :infer, [:tgt, :type])] .= false
+
+  #types_known_op1 = zeros(Bool, nparts(d, :Op1))
+  #types_known_op1[incident(d, :infer, [:src, :type])] .= false
+  #types_known_op1[incident(d, :infer, [:tgt, :type])] .= false
+
+  types_known_op2 = zeros(Bool, nparts(d, :Op2))
+  types_known_op2[incident(d, :infer, [:proj1, :type])] .= false
+  types_known_op2[incident(d, :infer, [:proj2, :type])] .= false
+  types_known_op2[incident(d, :infer, [:res, :type])] .= false
+
   while true
     applied = false
     for rule in op1_rules
-      this_applied = apply_op1_type_rules!(d, types_known, rule...)
+      this_applied = apply_op1_type_rules!(d, types_known_op1, rule...)
       applied = applied || this_applied
     end
+
     # TODO: Infer Op2 types.
+    for rule in op2_rules
+      this_applied = apply_op2_type_rules!(d, types_known_op2, rule...)
+      applied = applied || this_applied
+    end
+
     applied = applied || infer_summands_and_summations!(d)
     applied || break # Break if no rules were applied.
-  end
+  end 
+
   d
 end
 
 # TODO: When SummationDecapodes are annotated with the degree of their space,
 # use dispatch to choose the correct set of rules.
 infer_types!(d::SummationDecapode) =
-  infer_types!(d, default_op1_type_inference_rules_2D)
+  infer_types!(d, default_op1_type_inference_rules_2D, default_op2_type_inference_rules_1D)
 
 # TODO: You could write a method which auto-generates these rules given degree N.
 """

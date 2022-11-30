@@ -396,7 +396,61 @@ end
     (:A, :Form0),     (Symbol("•_1_", 1), :Form1),     (Symbol("•_1_", 2), :Form2),
     (:B, :DualForm2), (Symbol("•_1_", 4), :DualForm1), (Symbol("•_1_", 3), :DualForm0)])
   @test issetequal(names_types_9, names_types_expected_9)
+
+  # Basic op2 inference using ∧
+  Test10 = quote
+    (A, B)::Form0{X}
+    C::infer{X}
+
+    D::Form0{X}
+    E::Form1{X}
+    (F, H)::infer{X}
+    C == ∧(A, B)
+    F == ∧(D, E)
+    H == ∧(E, D)
+  end
+  t10 = SummationDecapode(parse_decapode(Test10))
+  infer_types!(t10)
+
+  names_types_10 = get_name_type_pair(t10)
+  names_types_expected_10 = Set([(:F, :Form1), (:B, :Form0), (:C, :Form0), (:H, :Form1), (:A, :Form0), (:E, :Form1), (:D, :Form0)])
+  @test issetequal(names_types_10, names_types_expected_10)
+
+  # Basic op2 inference using L
+  Test11 = quote
+    (A, E)::Form1{X}
+    B::Form0{X}
+    (C, D)::infer{X}
+
+    C == L(A, B)
+    D == L(A, E)
+  end
+  t11 = SummationDecapode(parse_decapode(Test11))
+  infer_types!(t11)
+
+  names_types_11 = get_name_type_pair(t11)
+  names_types_expected_11 = Set([(:A, :Form1), (:B, :Form0), (:C, :Form0), (:E, :Form1), (:D, :Form1)])
+  @test issetequal(names_types_11, names_types_expected_11)
+
+  # Basic op2 inference using i
+  Test12 = quote
+    (A, B)::Form1{X}
+    C::infer{X}
+
+    C == i(A, B)
+  end
+  t12 = SummationDecapode(parse_decapode(Test12))
+  infer_types!(t12)
+
+  names_types_12 = get_name_type_pair(t12)
+  names_types_expected_12 = Set([(:A, :Form1), (:B, :Form1), (:C, :Form0)])
+  @test issetequal(names_types_12, names_types_expected_12)
 end
+
+function get_name_type_pair(d::SummationDecapode)
+  Set(zip(d[:name], d[:type]))
+end
+
 
 @testset "Overloading Resolution" begin
   # d overloading is resolved.
