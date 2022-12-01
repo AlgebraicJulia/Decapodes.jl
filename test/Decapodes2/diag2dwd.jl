@@ -214,7 +214,8 @@ end
 end
 
 @testset "Type Inference" begin
-  
+  # Warning, this testing depends on the fact that varname, form information is 
+  # unique within a decapode even though this is not enforced
   function get_name_type_pair(d::SummationDecapode)
     Set(zip(d[:name], d[:type]))
   end
@@ -410,7 +411,9 @@ end
     D::Form0{X}
     E::Form1{X}
     (F, H)::infer{X}
+
     C == ∧(A, B)
+
     F == ∧(D, E)
     H == ∧(E, D)
   end
@@ -450,6 +453,58 @@ end
   names_types_12 = get_name_type_pair(t12)
   names_types_expected_12 = Set([(:A, :Form1), (:B, :Form1), (:C, :Form0)])
   @test issetequal(names_types_12, names_types_expected_12)
+
+  #2D op2 inference using ∧
+  Test13 = quote
+    (A, B)::Form1{X}
+    C::infer{X}
+
+    D::Form0{X}
+    E::Form2{X}
+    (F, H)::infer{X}
+
+    C == ∧(A, B)
+
+    F == ∧(D, E)
+    H == ∧(E, D)
+  end
+  t13 = SummationDecapode(parse_decapode(Test13))
+  infer_types!(t13)
+
+  names_types_13 = get_name_type_pair(t13)
+  names_types_expected_13 = Set([(:E, :Form2), (:B, :Form1), (:C, :Form2), (:A, :Form1), (:F, :Form2), (:H, :Form2), (:D, :Form0)])
+  @test issetequal(names_types_13, names_types_expected_13)
+
+  # 2D op2 inference using L
+  Test14 = quote
+    A::Form1{X}
+    B::Form2{X}
+    C::infer{X}
+
+    C == L(A, B)
+  end
+  t14 = SummationDecapode(parse_decapode(Test14))
+  infer_types!(t14)
+
+  names_types_14 = get_name_type_pair(t14)
+  names_types_expected_14 = Set([(:C, :Form2), (:A, :Form1), (:B, :Form2)])
+  @test issetequal(names_types_14, names_types_expected_14)
+
+  # 2D op2 inference using i
+  Test15 = quote
+    A::Form1{X}
+    B::Form2{X}
+    C::infer{X}
+
+    C == i(A, B)
+  end
+  t15 = SummationDecapode(parse_decapode(Test15))
+  infer_types!(t15)
+
+  names_types_15 = get_name_type_pair(t15)
+  names_types_expected_15 = Set([(:A, :Form1), (:B, :Form2), (:C, :Form1)])
+  @test issetequal(names_types_15, names_types_expected_15)
+
 end
 
 @testset "Overloading Resolution" begin
@@ -524,5 +579,24 @@ end
   # listed in the order in which they appear in Test2.
   op1s_expected_3 = [:d₀ , :d₁, :dual_d₀, :dual_d₁, :⋆₀ , :⋆₀⁻¹ , :⋆₁ , :⋆₁⁻¹ , :⋆₂ , :⋆₂⁻¹]
   @test op1s_3 == op1s_expected_3
+
+  Test4 = quote
+    (A, C, F, H)::Form0{X}
+    (B, B₂, D, E, G)::Form1{X}
+
+
+    C == ∧(A, A)
+    D == ∧(A, B)
+    E == ∧(B, A)
+    F == L(B, A)
+    G == L(B, B₂)
+    H == i(B, B₂)
+  end
+  t4 = SummationDecapode(parse_decapode(Test4))
+  resolve_overloads!(t4)
+  op2s_4 = t4[:op2]
+  op2s_expected_4 = [:∧₀₀ , :∧₀₁, :∧₁₀, :L₀, :L₁, :i₁]
+  @test op2s_4 == op2s_expected_4
+
 end
 
