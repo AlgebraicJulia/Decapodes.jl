@@ -7,6 +7,7 @@ using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
 using Catlab.Graphics
+using Catlab.Programs
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
 using LinearAlgebra
@@ -600,3 +601,84 @@ end
 
 end
 
+@testset "Type Inference and Overloading Resolution Integration" begin
+  # Momentum-formulation of Navier Stokes on sphere
+  DiffusionExprBody = quote
+    (T, Ṫ)::Form0{X}
+    ϕ::DualForm1{X}
+    k::Constant{X}
+    # Fick's first law
+    ϕ ==  ⋆(k*d(T))
+    # Diffusion equation
+    Ṫ ==  ⋆(d(ϕ))
+  end
+  Diffusion = SummationDecapode(parse_decapode(DiffusionExprBody))
+  AdvectionExprBody = quote
+    (M,V)::Form1{X}  #  M = ρV
+    (ρ, p, T, Ṫ)::Form0{X}
+    V == M/avg(ρ)
+    ρ == p / R₀(T)
+    Ṫ == neg(⋆(L(V, ⋆(T))))
+  end
+  Advection = SummationDecapode(parse_decapode(AdvectionExprBody))
+  SuperpositionExprBody = quote
+    (T, Ṫ, Ṫ₁, Ṫₐ)::Form0{X}
+    Ṫ == Ṫ₁ + Ṫₐ
+    ∂ₜ(T) == Ṫ 
+  end
+  Superposition = SummationDecapode(parse_decapode(SuperpositionExprBody))
+  compose_continuity = @relation () begin
+    diffusion(T, Ṫ₁)
+    advection(M, ρ, P, T, Ṫₐ)
+    superposition(T, Ṫ, Ṫ₁, Ṫₐ)
+  end
+  continuity_cospan = oapply(compose_continuity,
+                  [Open(Diffusion, [:T, :Ṫ]),
+                   Open(Advection, [:M, :ρ, :p, :T, :Ṫ]),
+                   Open(Superposition, [:T, :Ṫ, :Ṫ₁, :Ṫₐ])])
+
+  continuity = apex(continuity_cospan)
+  NavierStokesExprBody = quote
+    (M, Ṁ, G, V)::Form1{X}
+    (T, ρ, p, ṗ)::Form0{X}
+    (two,three,kᵥ)::Constant{X}
+    V == M/avg(ρ)
+    Ṁ == neg(L(V, V))*avg(ρ) + 
+          kᵥ*(Δ(V) + d(δ(V))/three) +
+          d(i(V, V)/two)*avg(ρ) +
+          neg(d(p)) +
+          G*avg(ρ)
+    ∂ₜ(M) == Ṁ
+    ṗ == neg(⋆(L(V, ⋆(p)))) # *Lie(3Form) = Div(*3Form x v) --> conservation of pressure
+    ∂ₜ(p) == ṗ
+  end
+  NavierStokes = SummationDecapode(parse_decapode(NavierStokesExprBody))
+  compose_heatXfer = @relation () begin
+    continuity(M, ρ, P, T)
+    navierstokes(M, ρ, P, T)
+  end
+  heatXfer_cospan = oapply(compose_heatXfer,
+                  [Open(continuity, [:M, :ρ, :P, :T]),
+                   Open(NavierStokes, [:M, :ρ, :p, :T])])
+  HeatXfer = apex(heatXfer_cospan)
+
+  # TODO: This decapode uses Op1s and Op2s that are not in the default rule
+  # sets, so this call to infer_types! should use a custom dict.
+  infer_types!(HeatXfer)
+
+  names_types_hx = Set(zip(HeatXfer[:name], HeatXfer[:type]))
+
+  names_types_expected_hx = Nothing #TODO
+  @test_broken issetequal(names_types_hx, names_types_expected_hx)
+
+  # TODO: This decapode uses Op1s and Op2s that are not in the default rule
+  # sets, so this call to resolve_overloads! should use a custom dict.
+  resolve_overloads!(HeatXfer)
+
+  op1s_hx = HeatXfer[:op1]
+  op1s_expected_hx = Nothing #TODO
+  @test_broken op1s_hx == op2s_expected_hx
+  op2s_hx = HeatXfer[:op2]
+  op2s_expected_hx = Nothing #TODO
+  @test_broken op2s_hx == op2s_expected_hx
+end
