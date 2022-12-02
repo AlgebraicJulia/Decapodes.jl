@@ -3,7 +3,6 @@ import Catlab.Graphics.Graphviz
 using Catlab.Graphics
 using Catlab.Graphics.Graphviz
 using Catlab.Graphs.PropertyGraphs
-import Decapodes: infer_states, infer_state_names
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
 
@@ -97,7 +96,7 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; direct
 
     map(parts(d, :Op1)) do op
       s, t = d[op, :src], d[op, :tgt]
-      add_edge!(G, vids[s],vids[t], label=decapode_edge_label(d[op,:op1]))
+      add_edge!(G, s, t, label=decapode_edge_label(d[op,:op1]))
     end
 
     map(parts(d, :Op2)) do op
@@ -108,23 +107,19 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; direct
       # If in directed mode, sources point into the projection field
       # Else, everything points out
       if(directed)
-        add_edge!(G, vids[s], v, label="π₁", style="dashed")
-        add_edge!(G, vids[t], v, label="π₂", style="dashed")
+        add_edge!(G, s, v, label="π₁", style="dashed")
+        add_edge!(G, t, v, label="π₂", style="dashed")
       else
-        add_edge!(G, v, vids[s], label="π₁", style="dashed")
-        add_edge!(G, v, vids[t], label="π₂", style="dashed")
+        add_edge!(G, v, s, label="π₁", style="dashed")
+        add_edge!(G, v, t, label="π₂", style="dashed")
       end
-      add_edge!(G, v, vids[r], label=decapode_edge_label(d[op, :op2]))
+      add_edge!(G, v, r, label=decapode_edge_label(d[op, :op2]))
     end
 
-    findvid(G, d, v) = incident(G.graph, [Dict{Symbol, Any}(:label=>varname(d, v))], :vprops)
     white_nodes = map(parts(d, :Σ)) do s
         v = add_vertex!(G, label="Σ$s", shape="circle")
         u = d[s, :sum]
-        matches = first(findvid(G, d, u))
-        length(matches) == 1 || error("did not find a unique vertex match for Σ$s")
-        uG = first(matches)
-        add_edge!(G, v, uG, label="+")
+        add_edge!(G, v, u, label="+")
         return v
     end
     for e in parts(d, :Summand)

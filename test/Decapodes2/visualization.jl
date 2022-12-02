@@ -56,3 +56,37 @@ t2_undirected = to_graphviz(Test2, directed = false)
 @test Graphviz.filter_statements(t2_undirected, Graphviz.Edge, :label) == ["∂ₜ", "π₁", "π₂", "k", "π₁", "π₂", "p", "+"]
 @test Graphviz.filter_statements(t2_undirected, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₀", "C:Ω₀", "D:Ω₀", "Ḋ:Ω•", "•1:Ω•", "•2:Ω•", "Ω₀×Ω₀", "Ω₀×Ω₀", "Σ1"]
 @test Graphviz.filter_statements(t2_undirected, Graphviz.Node, :shape) == ["rectangle", "rectangle", "circle"]
+
+# Same decapode as Test2 but with all names the same
+Test3 = @acset SummationDecapode{Any, Any, Symbol}  begin
+  Var = 7
+  type = Any[:Form0, :Form0, :Form0, :Form0, :infer, :infer, :infer]
+  name = [:A, :A, :A, :A, :A, :A, :A]
+
+  TVar = 1
+  incl = [5]
+
+  Op1 = 1
+  src = [4]
+  tgt = [5]
+  op1 = Any[:∂ₜ]
+
+  Op2 = 2
+  proj1 = [1, 3]
+  proj2 = [2, 2]
+  res = [6, 7]
+  op2 = Any[:k, :p]
+
+  Σ = 1
+  sum = [5]
+
+  Summand = 2
+  summand = [6, 7]
+  summation = [1, 1]
+end
+
+t3 = to_graphviz(Test3)
+@test Graphviz.filter_statements(t3, Graphviz.Edge, :label) == ["∂ₜ", "π₁", "π₂", "k", "π₁", "π₂", "p", "+"]
+@test Graphviz.filter_statements(t3, Graphviz.Node, :label) == ["A:Ω₀", "A:Ω₀", "A:Ω₀", "A:Ω₀", "A:Ω•", "A:Ω•", "A:Ω•", "", "", "Ω₀×Ω₀", "Ω₀×Ω₀", "Σ1"]
+@test Graphviz.filter_statements(t3, Graphviz.Node, :shape) == ["none", "none", "rectangle", "rectangle", "circle"]
+
