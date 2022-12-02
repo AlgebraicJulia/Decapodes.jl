@@ -659,6 +659,19 @@ default_op1_overloading_resolution_rules_2D = [
   (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :Δ),
   (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :Δ),
   (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :Δ)]
+
+# WARNING: I'm combining 1D and 2D rules directly here since it seems op2 rules
+# are metric-free. If for some reason we can't make this assumption, this needs to change
+default_op2_overloading_resolution_rules_2D = vcat(default_op2_overloading_resolution_rules_1D, [
+  # Rules for ∧.
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = :∧),
+  (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :∧),
+  (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :∧),
+  # Rules for L.
+  (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form2, resolved_name = :L₂, op = :L),
+  # Rules for i.
+  (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form1, resolved_name = :i₂, op = :i)])
+  
 """
   function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
 
@@ -693,5 +706,5 @@ end
 # TODO: When SummationDecapodes are annotated with the degree of their space,
 # use dispatch to choose the correct set of rules.
 resolve_overloads!(d::SummationDecapode) =
-  resolve_overloads!(d, default_op1_overloading_resolution_rules_2D, default_op2_overloading_resolution_rules_1D)
+  resolve_overloads!(d, default_op1_overloading_resolution_rules_2D, default_op2_overloading_resolution_rules_2D)
 

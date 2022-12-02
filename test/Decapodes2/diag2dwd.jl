@@ -583,15 +583,15 @@ end
 
   Test4 = quote
     (A, C, F, H)::Form0{X}
-    (B, B₂, D, E, G)::Form1{X}
+    (B, D, E, G)::Form1{X}
 
 
     C == ∧(A, A)
     D == ∧(A, B)
     E == ∧(B, A)
     F == L(B, A)
-    G == L(B, B₂)
-    H == i(B, B₂)
+    G == L(B, B)
+    H == i(B, B)
   end
   t4 = SummationDecapode(parse_decapode(Test4))
   resolve_overloads!(t4)
@@ -599,6 +599,22 @@ end
   op2s_expected_4 = [:∧₀₀ , :∧₀₁, :∧₁₀, :L₀, :L₁, :i₁]
   @test op2s_4 == op2s_expected_4
 
+  Test5 = quote
+    A::Form0{X}
+    (B, H)::Form1{X}
+    (C, D, E, F, G)::Form2{X}
+
+    D == ∧(B, B)
+    E == ∧(A, C)
+    F == ∧(C, A)
+    G == L(B, C)
+    H == i(B, C)
+  end
+  t5 = SummationDecapode(parse_decapode(Test5))
+  resolve_overloads!(t5)
+  op2s_5 = t5[:op2]
+  op2s_expected_5 = [:∧₁₁, :∧₀₂, :∧₂₀, :L₂, :i₂]
+  @test op2s_5 == op2s_expected_5
 end
 
 @testset "Type Inference and Overloading Resolution Integration" begin
