@@ -403,7 +403,7 @@ default_op2_type_inference_rules_1D = [
   # Rules for i where proj1 is unknown. i₁
   (proj1_type = :infer, proj2_type = :Form1, res_type = :Form0, replacement_type = :Form1, op = :i),
   # Rules for i where proj2 is unknown. i₁
-  (proj1_type = :Form1, proj2_type = :infer, res_type = :infer, replacement_type = :Form0, op = :i),
+  (proj1_type = :Form1, proj2_type = :infer, res_type = :Form0, replacement_type = :Form1, op = :i),
   # Rules for i where res is unknown. i₁
   (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form0, op = :i)]
 
@@ -463,7 +463,7 @@ default_op2_type_inference_rules_2D = vcat(default_op2_type_inference_rules_1D, 
 
   # TODO: Overhaul since L apparently always needs a Form1 as it's first input
   # Rules for L where proj1 is unknown. L₂
-  (proj1_type = :infer, proj2_type = :Form0, res_type = :Form0, replacement_type = :Form1, op = :L),
+  (proj1_type = :infer, proj2_type = :Form2, res_type = :Form2, replacement_type = :Form1, op = :L),
   # Rules for L where proj2 is unknown. L₂
   (proj1_type = :Form1, proj2_type = :infer, res_type = :Form2, replacement_type = :Form2, op = :L),
   # Rules for L where res is unknown. L₂
@@ -708,3 +708,4 @@ end
 resolve_overloads!(d::SummationDecapode) =
   resolve_overloads!(d, default_op1_overloading_resolution_rules_2D, default_op2_overloading_resolution_rules_2D)
 
++
