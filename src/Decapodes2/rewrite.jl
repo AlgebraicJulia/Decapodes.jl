@@ -1,29 +1,29 @@
-using Catlab, Catlab.Graphs, Catlab.Graphics, Catlab.CategoricalAlgebra
-using Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab, Catlab.Graphs, Catlab.CategoricalAlgebra
 using AlgebraicRewriting
 using AlgebraicRewriting: rewrite
-const hom = AlgebraicRewriting.homomorphism
 
-""" function get_valid_op1s(deca_source, varID)
+""" function get_valid_op1s(deca_source::SummationDecapode, varID)
 Searches SummationDecapode, deca_source, at the request varID
-and returns all op1s which are allowed to be averaged.
+and returns all op1s which are allowed to be averaged. Returns
+an array of indices of valid op1 sources.
 
-Namely this is meant to exclude ∂ₜ from being included in an average
+Namely this is meant to exclude ∂ₜ from being included in an average.
 """
 
-function get_valid_op1s(deca_source, varID)
+function get_valid_op1s(deca_source::SummationDecapode, varID)
     # skip_ops = Set([:∂ₜ])
     indices = incident(deca_source, varID, :tgt)
     return filter!(x -> deca_source[x, :op1] != :∂ₜ, indices)
 end
   
-""" function get_target_indices(deca_source)
+""" function get_target_indices(deca_source::SummationDecapode)
 Searches SummationDecapode, deca_source, for all Vars which are
 valid for average rewriting. Validity is determined by having 
 two or more distinct operations leading into the variable.
+Returns an array of valid Var target ids.
 """
 
-function get_target_indices(deca_source)
+function get_target_indices(deca_source::SummationDecapode)
     targetVars = []
     for var in parts(deca_source, :Var)
         op1Count = length(get_valid_op1s(deca_source, var))
@@ -39,13 +39,14 @@ function get_target_indices(deca_source)
     return targetVars
 end
   
-""" function get_preprocess_indices(deca_source)
+""" function get_preprocess_indices(deca_source::SummationDecapode)
 Searches SummationDecapode, deca_source, for all Vars which are
 valid for average rewriting preprocessing. Namely this just includes
-all op2 and summation operations.
+all op2 and summation operations. Returns two arrays, first is 
+array of valid Op2 ids, second is array of valid Σ ids.
 """
 
-function get_preprocess_indices(deca_source)
+function get_preprocess_indices(deca_source::SummationDecapode)
     targetOp2 = []
     targetSum = []
 
@@ -59,14 +60,14 @@ function get_preprocess_indices(deca_source)
     return targetOp2, targetSum
 end
   
-""" function preprocess_average_rewrite(deca_source)
+""" function preprocess_average_rewrite(deca_source::SummationDecapode)
 Preprocesses SummationDecapode, deca_source, for easier average 
 rewriting later on. Specifically, all op2 and summation results are
 stored in variables called "Temp" and results are then passed off to 
 their original result along an op1 called "temp". This "temp" operation
 is equivalent to an identity function.
 """
-function preprocess_average_rewrite(deca_source)
+function preprocess_average_rewrite(deca_source::SummationDecapode)
     targetOp2, targetSum = get_preprocess_indices(deca_source)
 
     # If we don't need to preprocess then don't
@@ -208,13 +209,13 @@ function preprocess_average_rewrite(deca_source)
     rewrite_match(rule, m)
 end
   
-""" function process_average_rewrite(deca_source)
+""" function process_average_rewrite(deca_source::SummationDecapode)
 Rewrites SummationDecapode, deca_source, by including averages
 of redundent operations. While this function only searches for op1s
 to match on, because of preprocessing, this indirectly includes op2 
 and summations in the final result.
 """
-function process_average_rewrite(deca_source)
+function process_average_rewrite(deca_source::SummationDecapode)
     targetVars = get_target_indices(deca_source)
 
     # If no rewrites available, then don't rewrite
@@ -302,7 +303,6 @@ end
   
 """ function average_rewrite(deca_source::SummationDecapode)
 Simply meant to wrap average rewriting steps into one function.
-Mostly mean for ease of use.
 """
 function average_rewrite(deca_source::SummationDecapode)
     return process_average_rewrite(preprocess_average_rewrite(deca_source))
@@ -310,9 +310,10 @@ end
 
 """ function find_variable_mapping(deca_source, deca_tgt)
 Returns array of match on variables between from a decapode
-source to a target, alse returns is mapping is valid
-WARNING: This assumes that variable names are unique
-If variable names are not unique or do not exist, mapping value is set to 0
+source to a target, also returns if mapping is valid
+WARNING: This assumes that variable names are unique.
+If variable names are not unique or do not exist, 
+corrsponding mapping value is set to 0.
 """
 function find_variable_mapping(deca_source, deca_tgt)
 
@@ -336,4 +337,4 @@ function find_variable_mapping(deca_source, deca_tgt)
     end
   
     return mapping, valid_matching
-  end
+end
