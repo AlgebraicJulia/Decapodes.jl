@@ -10,9 +10,9 @@ using OrdinaryDiffEq
 using MLStyle
 using Distributions
 using LinearAlgebra
-# using GLMakie
+using GLMakie
 using Logging
-using CairoMakie 
+# using CairoMakie 
 
 using GeometryBasics: Point3
 Point3D = Point3{Float64}
@@ -81,7 +81,8 @@ NavierStokesExprBody = quote
         kᵥ*(Δ₁(V) + d₀(δ₁(V))/three) +
         d₀(i₁′(V, V)/two)*avg₀₁(ρ) +
         neg₁(d₀(p)) +
-        G*avg₀₁(ρ)
+        G*avg₀₁(ρ) # + 
+        # (q*V cross product B) # 1 form in primal mesh with 0 form in dual mesh
   ∂ₜ(M) == Ṁ
   ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(p)))) # *Lie(3Form) = Div(*3Form x v) --> conservation of pressure
   ∂ₜ(p) == ṗ
@@ -174,7 +175,8 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :third => x -> x / 3.0
     #:R₀ => x-> 1.38064852e-23 * 6.0221409e23 / (28.96 / 1000) # Boltzmann constant * ??? / (molecular mass / 1000)
     :R₀ => x-> boltzmann_constant * 6.0221409e23 / (mol_mass / 1000) # Boltzmann constant * ??? / (molecular mass / 1000)
-    :kᵥ => x->0.000210322*x # / density
+    # :kᵥ => x->0.000210322*x # / density
+    :kᵥ => x->1.2e-5*x # / density
     # These are the steps used to compute k.
     # We have no boundaries, so I set k to the constant k₁
     #kₜ = 0.0246295028571 # Thermal conductivity
@@ -221,7 +223,7 @@ flatten_form(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[t
 #include("coordinates.jl")
 #include("spherical_meshes.jl")
 
-radius = 6371+90
+radius = (6371+90) * 1e3
 
 #primal_earth = loadmesh(ThermoIcosphere())
 primal_earth = loadmesh(Icosphere(3, radius))
@@ -241,13 +243,13 @@ fₘ = sim(earth, generate)
 begin
   vmag = 500
   # velocity(p) = vmag*ϕhat(p)
-  velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, vmag/4, 0))
+  velocity(p) = TangentBasis(CartesianPoint(p))(vmag/4, vmag/4)
   # velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, -vmag/4, 0))
 
 # visualize the vector field
   ps = earth[:point]
   ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
-  CairoMakie.arrows(
+  GLMakie.arrows(
       ps, ns, fxaa=true, # turn on anti-aliasing
       linecolor = :gray, arrowcolor = :gray,
       linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),
@@ -273,17 +275,30 @@ c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 t = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
 pfield = 100000*[p[3] for p in earth[:point]]
 
+m = 8e22 # A*m^2
+μ₀ = 4*π*1e-7 # kg*m/s^2/A^2
+# Bθ(p) = -μ₀*m*sin(theta(p))/(4*π*radius^3)  # radius instead of r(p)*1000 
+# B1Form = flatten_form(p->TangentBasis(CartesianPoint(p))(Bθ(CartesianPoint(p)), 0), earth)
+Br(p) = -μ₀*2*m*cos(theta(p))/(4*π*radius^3)  # radius instead of r(p)*1000 
+Br_flux = hodge_star(earth, TriForm(map(triangles(earth)) do t 
+                        dual_pid = triangle_center(earth, t)
+                        p = earth[dual_pid, :dual_point]
+                        return Br(CartesianPoint(p))
+                        end))
+# B₀(p) = sqrt(Bθ(p)^2+Br(p)^2)
+
 
 u₀ = construct(PhysicsState, [VectorForm(t), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:T, :V, :P])
 mesh(primal_earth, color=findnode(u₀, :P), colormap=:plasma)
 tₑ = 30.0
 
 @info("Precompiling Solver")
-prob = ODEProblem(fₘ,u₀,(0,1e-4))
+my_constants = (kᵥ=1.2e-5,two=2,three=3,continuity_diffusion_k=k₁)
+prob = ODEProblem(fₘ,u₀,(0,1e-4),my_constants)
 soln = solve(prob, Tsit5())
 soln.retcode != :Unstable || error("Solver was not stable")
 @info("Solving")
-prob = ODEProblem(fₘ,u₀,(0,tₑ))
+prob = ODEProblem(fₘ,u₀,(0,tₑ),my_constants)
 soln = solve(prob, Tsit5())
 @info("Done")
 #end
@@ -307,7 +322,7 @@ Colorbar(fig[1,2], ob)
 framerate = 5
 
 # Animation
-record(fig, "weather.gif", range(0.0, tₑ; length=150); framerate = 30) do t
+record(fig, "weatherNS.gif", range(0.0, tₑ; length=150); framerate = 30) do t
     ob.color = findnode(soln(t), :P)
 end
 end
