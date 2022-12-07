@@ -17,11 +17,27 @@ spacename(d, v) = begin
     dom = startswith(String(t), "Dual") ? "Ω̃" : "Ω"
     return "$dom$subscript"
 end
-varname(d, v) = "$(d[v, :name]):$(spacename(d, v))"
+
+varname(d, v; verbose = false) = begin 
+  name =  "$(d[v, :name]):$(spacename(d, v))"
+  
+  if(verbose)
+    cut_off_under = findlast('_', name)
+    cut_off_bullet = findfirst('•', name)
+  
+    if(!isnothing(cut_off_bullet))
+      name = "•:$(spacename(d, v))"
+    elseif(!isnothing(cut_off_under))
+      name = name[cut_off_under+1:end]
+    end
+  end
+
+  return name
+end
 
 # TODO: Change orientation to print 
-Graphics.to_graphviz(F::AbstractDecapode; directed = true, kw...) =
-to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; directed, kw...))
+Graphics.to_graphviz(F::AbstractDecapode; directed = true, verbose = false, kw...) =
+to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; directed, verbose, kw...))
 
 decapode_edge_label(s::Symbol) = String(s)
 decapode_edge_label(s::Vector{Symbol}) = join(String.(s), "⋅")
@@ -66,7 +82,7 @@ function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode, di
     return pg
 end
 
-function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, kw...)
+function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; directed = true, verbose = false, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, kw...)
     
     default_graph_attrs = Dict(:rankdir => "TB")
     default_edge_attrs = Dict()
@@ -78,7 +94,7 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; direct
       graph_attrs = merge!(default_graph_attrs, graph_attrs))
 
     vids = map(parts(d, :Var)) do v
-      add_vertex!(G, label=varname(d,v))
+      add_vertex!(G, label=varname(d,v; verbose))
     end
 
     # Add entry and exit vertices and wires

@@ -90,3 +90,11 @@ t3 = to_graphviz(Test3)
 @test Graphviz.filter_statements(t3, Graphviz.Node, :label) == ["A:Ω₀", "A:Ω₀", "A:Ω₀", "A:Ω₀", "A:Ω•", "A:Ω•", "A:Ω•", "", "", "Ω₀×Ω₀", "Ω₀×Ω₀", "Σ1"]
 @test Graphviz.filter_statements(t3, Graphviz.Node, :shape) == ["none", "none", "rectangle", "rectangle", "circle"]
 
+Test4 = @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 5
+  type = [:Form0, :Form0, :Form0, :Form0, :Form0]
+  name = [Symbol("_A"), :A, Symbol("_•"), Symbol("•_"), Symbol("_")]
+end
+
+t4 = to_graphviz(Test4, directed = false, verbose = true)
+@test Graphviz.filter_statements(t4, Graphviz.Node, :label) == ["A:Ω₀", "A:Ω₀", "•:Ω₀", "•:Ω₀", ":Ω₀"]
