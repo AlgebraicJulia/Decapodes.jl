@@ -35,10 +35,12 @@ to_graphviz(Diffusion)
 to_graphviz(Diffusion, graph_attrs=Dict(:rankdir => "LR"))
 
 AdvectionExprBody = quote
-  (M,V)::Form1{X}  #  M = ρV
-  (ρ, p, T, Ṫ)::Form0{X}
-  V == M/avg₀₁(ρ)
-  ρ == p / R₀(T)
+  #(M,V)::Form1{X}  #  M = ρV
+  V::Form1{X}  #  M = ρV
+  (ρ, P, T, Ṫ)::Form0{X}
+  #V == M/avg₀₁(ρ)
+  #ρ == P / R₀(T)
+  ρ == P ./ R₀(T)
   Ṫ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(T))))
 end
 
@@ -57,15 +59,15 @@ to_graphviz(Superposition, graph_attrs=Dict(:rankdir => "LR"))
 
 compose_continuity = @relation () begin
   diffusion(T, Ṫ₁)
-  advection(M, ρ, P, T, Ṫₐ)
+  #advection(M, ρ, T, Ṫₐ)
+  advection(ρ, T, Ṫₐ)
   superposition(T, Ṫ, Ṫ₁, Ṫₐ)
 end
-#to_graphviz(compose_continuity, junction_labels=:variable, box_labels=:name, prog="neato")
 to_graphviz(compose_continuity, junction_labels=:variable, box_labels=:name, prog="circo")
 
 continuity_cospan = oapply(compose_continuity,
                 [Open(Diffusion, [:T, :Ṫ]),
-                 Open(Advection, [:M, :ρ, :p, :T, :Ṫ]),
+                 Open(Advection, [:ρ, :T, :Ṫ]),
                  Open(Superposition, [:T, :Ṫ, :Ṫ₁, :Ṫₐ])])
 
 continuity = apex(continuity_cospan)
@@ -73,19 +75,29 @@ to_graphviz(continuity)
 to_graphviz(continuity, graph_attrs=Dict(:rankdir => "LR"))
 
 NavierStokesExprBody = quote
-  (M, Ṁ, G, V)::Form1{X}
-  (T, ρ, p, ṗ)::Form0{X}
-  (two,three,kᵥ)::Constant{X}
-  V == M/avg₀₁(ρ)
-  Ṁ == neg₁(L₁′(V, V))*avg₀₁(ρ) + 
+  #(M, Ṁ, G, V)::Form1{X}
+  (M, Ṁ, V)::Form1{X}
+  (ρ, P, Ṗ)::Form0{X}
+  B::Form2{X}
+  (negone,two,three,kᵥ,q,nₑ)::Constant{X}
+  #V == M/avg₀₁(ρ)
+  #M == V*avg₀₁(ρ)
+  M == V .* avg₀₁(ρ)
+  #Ṁ == neg₁(L₁′(V, V))*avg₀₁(ρ) + 
+  Ṁ == neg₁(L₁′(V, V)) .* avg₀₁(ρ) + 
         kᵥ*(Δ₁(V) + d₀(δ₁(V))/three) +
-        d₀(i₁′(V, V)/two)*avg₀₁(ρ) +
-        neg₁(d₀(p)) +
-        G*avg₀₁(ρ) # + 
+        #d₀(i₁′(V, V)/two)*avg₀₁(ρ) +
+        d₀(i₁′(V, V)/two) .* avg₀₁(ρ) +
+        neg₁(d₀(P)) +
+        #G*avg₀₁(ρ) + 
         # (q*V cross product B) # 1 form in primal mesh with 0 form in dual mesh
+        #cp_2_1(B, q*⋆₁⁻¹(V)) * negone
+        #cp_2_1(B, (nₑ*q)*⋆₁(V)) * negone
+        #∧₁₀′(B, (nₑ*q)*⋆₁(V)) * negone
+        ∧₁₀′((nₑ*q)*⋆₁(V), B) * negone
   ∂ₜ(M) == Ṁ
-  ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(p)))) # *Lie(3Form) = Div(*3Form x v) --> conservation of pressure
-  ∂ₜ(p) == ṗ
+  Ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(P)))) # *Lie(3Form) = Div(*3Form x v) --> conservation of pressure
+  ∂ₜ(P) == Ṗ
 end
 
 NavierStokes = SummationDecapode(parse_decapode(NavierStokesExprBody))
@@ -93,19 +105,83 @@ to_graphviz(NavierStokes)
 to_graphviz(NavierStokes, graph_attrs=Dict(:rankdir => "LR"))
 
 compose_heatXfer = @relation () begin
-  continuity(M, ρ, P, T)
-  navierstokes(M, ρ, P, T)
+  continuity(V, ρ, P)
+  navierstokes(V, ρ, P)
 end
-#to_graphviz(compose_heatXtfer, junction_labels=:variable, box_labels=:name, prog="neato")
 to_graphviz(compose_heatXfer, junction_labels=:variable, box_labels=:name, prog="circo")
 
 heatXfer_cospan = oapply(compose_heatXfer,
-                [Open(continuity, [:M, :ρ, :P, :T]),
-                 Open(NavierStokes, [:M, :ρ, :p, :T])])
+                [Open(continuity, [:advection_V, :ρ, :advection_P]),
+                 Open(NavierStokes, [:V, :ρ, :P])])
 
 HeatXfer = apex(heatXfer_cospan)
 to_graphviz(HeatXfer)
 to_graphviz(HeatXfer, graph_attrs=Dict(:rankdir => "LR"))
+
+# x is a Form1, y is a DualForm0 or Form2
+# Returns a Form1.
+function cp_2_1(x,y)
+  #x_cache = t2c * x
+  #y_cache = e2c * y
+  x_cache = e2c * x
+  y_cache = t2c * y
+  broadcast!(*, y_cache, x_cache, y_cache)
+  cross * y_cache
+end
+
+function edge_to_support(s)
+  vals = Dict{Tuple{Int64, Int64}, Float64}()
+  I = Vector{Int64}()
+  J = Vector{Int64}()
+  V = Vector{Float64}()
+  for e in 1:ne(s)
+      de = elementary_duals(Val{1},s, e)
+      ev = CombinatorialSpaces.volume(Val{1}, s, e)
+      dv = sum([dual_volume(Val{1}, s, d) for d in de])
+      for d in de
+          dt = incident(s, d, :D_∂e0)
+          append!(I, dt)
+          append!(J, fill(e, length(dt)))
+          append!(V, fill(1/(dv*ev), length(dt)))
+      end
+  end
+  sparse(I,J,V)
+end
+
+function support_to_tri(s)
+  vals = Dict{Tuple{Int64, Int64}, Float64}()
+  I = Vector{Int64}()
+  J = Vector{Int64}()
+  V = Vector{Float64}()
+  for t in 1:nv(s)
+      dt = elementary_duals(Val{0},s, t)
+      for d in dt
+          push!(I, t)
+          push!(J, d)
+          push!(V, 1)
+      end
+  end
+  sparse(I,J,V)
+end
+
+diag_vols(s) = spdiagm([dual_volume(Val{2}, s, dt) for dt in 1:nparts(s, :DualTri)])
+
+wedge_mat(::Type{Val{(1,1)}}, s) = 2.0 * (support_to_tri(s)*diag_vols(s)*edge_to_support(s))
+
+function pd_wedge(::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat(Val{(1,1)}, s)), kw...)
+  wedge_t[(1,1)] * broadcast(*, α, β)
+end
+
+#∧₁₀′(⋆₁(v,earth,hodge), Br_temp)
+∧₁₀′(Br_temp, ⋆₁(v,earth,hodge))
+
+∧₁₀′(v, ⋆₂(d₁(v,earth),earth,hodge))
+⋆₂(d₁(v,earth),earth,hodge)
+∧₁₀′(⋆₂(d₁(v,earth),earth,hodge),v)
+i₀′(v,d₁(v,earth),earth,hodge)
+#∧₁₀′(⋆₂(d₁(v,earth),earth,hodge), v)
+∧₁₀′(v, ⋆₂(d₁(v,earth),earth,hodge))
+i₀′(v,d₁(v,earth),earth,hodge) + d₀(i₁′(v,v,earth,hodge),earth)
 
 hodge = GeometricHodge()
 d₀(x,sd) = d(0,sd)*x
@@ -115,13 +191,13 @@ d₁(x,sd) = d(1,sd)*x
 ⋆₂(x,sd,hodge) = ⋆(2,sd,hodge=hodge)*x
 ⋆₀⁻¹(x,sd,hodge) = inv_hodge_star(0,sd,hodge=hodge)*x
 ⋆₁⁻¹(x,sd,hodge) = inv_hodge_star(1,sd,hodge=hodge)*x
-∧₀₁′(x,y,sd) = wedge_product(Tuple{0,1}, sd, x, y)
-∧₁₁′(x,y,sd) = wedge_product(Tuple{1,1}, sd, x, y)
-#∧₁₀′(x,y,sd) = cp_2_i ...
-i₀′(x,y,sd,hodge) = -1.0 * (∧₁₀′(x, ⋆₂(y,sd,hodge)),sd)
-#i₁′(v,x) = inv_hodge_star(0,sd, hodge=hodge) * wedge_product(Tuple{1,1}, sd, v, ⋆(1, sd, hodge=hodge) * x) #⋆₀⁻¹{X}(∧₁₁′(F1, ⋆₁{X}(F1′)))
-i₁′(x,y,sd,hodge) = ⋆₀⁻¹(∧₁₁′(x, ⋆₁(y,sd,hodge), sd),hodge) #⋆₀⁻¹{X}(∧₁₁′(F1, ⋆₁{X}(F1′)))
-L1′(x,y,sd,hodge) = i₀′(x,d₁(y,sd),sd,hodge) + d₀(i₁′(x,y,sd,hodge),sd)
+⋆₂⁻¹(x,sd,hodge) = inv_hodge_star(2,sd,hodge=hodge)*x
+∧₁₀′(x,y) = cp_2_1(x,y)
+∧₁₁′(x,y,sd) = pd_wedge(Val{(1,1)},sd, x, y)
+i₀′(x,y,sd,hodge) = -1.0 * (∧₁₀′(x, ⋆₂(y,sd,hodge)))
+#i₀′(x,y,sd,hodge) = -1.0 * (∧₁₀′(⋆₂(y,sd,hodge), x))
+i₁′(x,y,sd,hodge) = ⋆₀⁻¹(∧₁₁′(x, ⋆₁(y,sd,hodge), sd),sd,hodge)
+L₁′(x,y,sd,hodge) = i₀′(x,d₁(y,sd),sd,hodge) + d₀(i₁′(x,y,sd,hodge),sd)
 boltzmann_constant = 1.38064852e-23
 mol_mass = 28.96
 density = 0.000210322
@@ -129,29 +205,140 @@ kₜ = 0.0246295028571 # Thermal conductivity
 cₚ = 1004.703 # Specific Heat at constant pressure
 k₁ = kₜ / (density * cₚ) # Heat diffusion constant in fluid
 
+#vect(s, e) = (s[s[e,:∂v1], :point] - s[s[e,:∂v0], :point]) * sign(1, s, e)
+#vect(s, e::AbstractVector) = [vect(s, el) for el in e]
+#t_vects(s,t) = vect(s, triangle_edges(s,t)) .* ([1,-1,1] * sign(2,s,t))
+# These helper functions convert an edge to a vector, multiplying by the sign of
+# a simplex where appropriate.
+edge_to_vector(s, e) = (s[e, [:∂v1, :point]] - s[e, [:∂v0, :point]]) * sign(1, s, e)
+edge_to_vector(s, e::AbstractVector) = [vect(s, el) for el in e]
+t_vects(s,t) = edge_to_vector(s, triangle_edges(s,t)) .* ([1,-1,1] * sign(2,s,t))
+# Return a dictionary where a key is a (triangle_idx, edge_idx) a pair, and a
+# value is an index for that pair (from 1 to num_triangles*3).
+# The purpose of this dictionary is so we can store values on an edge with
+# respect to the triangle(s) it is a part of individually.
+function comp_support(sd)
+  vects = []
+  for t in 1:ntriangles(sd)
+      inds = triangle_edges(sd, t)
+      for i in 1:3
+          push!(vects, (t, inds[i]))
+      end
+  end
+  v2comp = Dict{Tuple{Int64, Int64}, Int64}()
+  for (i, v) in enumerate(vects)
+      v2comp[v] = i
+  end
+  v2comp
+end
+v2comp = comp_support(earth)
+
+# Return a (num_triangles*3) by (num_edges) sparse matrix.
+# Row index is the index of the (triangle_idx, edge_idx) pair according to
+# comp_support.
+# Column index is the index of an edge.
+# Values are 1/length of the corresponding edge.
+# Multiplying by this matrix thus normalizes by edge length.
+function edge2comp(sd, v2comp)
+  I = Vector{Int64}(); J = Vector{Int64}(); V = Vector{Float64}()
+  for t in 1:ntriangles(sd)
+      inds = triangle_edges(sd, t)
+      for i in 1:3
+          push!(I, v2comp[(t,inds[i])])
+          push!(J, inds[i])
+          #push!(V, 1 / volume(Val{1}, sd, inds[i]))
+          push!(V, 1 / SimplicialSets.volume(Val{1}, sd, inds[i]))
+      end
+  end
+  sparse(I,J,V)
+end
+e2c = edge2comp(earth, v2comp)
+
+# Return a (num_triangles*3) by (num_triangles) sparse matrix.
+# Row index is the index of the (triangle_idx, edge_idx) pair according to
+# comp_support.
+# Column index is the index of a triangle.
+# Values are 1.
+function tri2comp(sd, v2comp)
+  I = Vector{Int64}(); J = Vector{Int64}(); V = Vector{Float64}()
+  for t in 1:ntriangles(sd)
+      inds = triangle_edges(sd, t)
+      for i in 1:3
+          push!(I, v2comp[(t,inds[i])])
+          push!(J, t)
+          push!(V, 1)
+      end
+  end
+  sparse(I,J,V)
+end
+t2c = tri2comp(earth, v2comp)
+
+# Return a (num_edges) by (num_triangles*3) sparse matrix.
+function changes(s, v2comp)
+  orient_vals = [1,-1,1]
+  I = Vector{Int64}(); J = Vector{Int64}(); V = Vector{Float64}()
+  for t in 1:ntriangles(s)
+    inds = triangle_edges(s, t)
+    e_vects = t_vects(s,t)
+    for i in 1:3
+      ns = [(i+1)%3 + 1, i%3+1]
+      ort = e_vects[i] × (e_vects[i] × e_vects[ns[1]])
+      n_ort = normalize(ort)
+      append!(I, inds[ns[1]])
+      append!(J, v2comp[(t,inds[i])])
+      append!(V, dot(n_ort, e_vects[ns[1]]) * orient_vals[ns[1]] * sign(1, s, ns[1])* orient_vals[i]* sign(2,s,t) / 3.0)
+      append!(I, inds[ns[2]])
+      append!(J, v2comp[(t,inds[i])])
+      append!(V, dot(n_ort, e_vects[ns[2]]) * orient_vals[ns[2]] * sign(1, s, ns[2])* orient_vals[i]* sign(2,s,t) / 3.0)
+    end
+  end
+  sparse(I,J,V, ne(s), ntriangles(s)*3)
+end
+cross = changes(earth, v2comp)
+
+function avg_mat(::Type{Val{(0,1)}},s)
+  I = Vector{Int64}()
+  J = Vector{Int64}()
+  V = Vector{Float64}()
+  for e in 1:ne(s)
+      append!(J, [s[e,:∂v0],s[e,:∂v1]])
+      append!(I, [e,e])
+      append!(V, [0.5, 0.5])
+  end
+  sparse(I,J,V)
+end
+
 function generate(sd, my_symbol; hodge=GeometricHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
   op = @match my_symbol begin
-    :k => x->2000x
+    #:k => x->2000x
     :μ => x->-0.0001x
     # :μ => x->-2000x
     :β => x->2000*x
     :γ => x->1*x
     :⋆₀ => x->⋆(0,sd,hodge=hodge)*x
     :⋆₁ => x->⋆(1, sd, hodge=hodge)*x
-    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=hodge)
+    #:⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=hodge)
+    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, hodge=hodge)*x
     :⋆₁⁻¹ => x->inv_hodge_star(1,sd,hodge=hodge)*x
     :d₀ => x->d(0,sd)*x
     :d₁ => x->d(1,sd)*x
     :dual_d₀ => x->dual_derivative(0,sd)*x
     :dual_d₁ => x->dual_derivative(1,sd)*x
     :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
+    :∧₁₀′ => (x,y) -> cp_2_1(x,y)
+    #:cp_2_1 => (x,y)-> begin
+    #  x_cache = t2c * x
+    #  y_cache = e2c * y
+    #  broadcast!(*, y_cache, x_cache, y_cache)
+    #  cross * y_cache
+    #end
     :plus => (+)
     :(-) => x-> -x
     # :L₀ => (v,x)->dual_derivative(1, sd)*(i0(v, x))
     :L₀ => (v,x)->begin
       # dual_derivative(1, sd)*⋆(1, sd)*wedge_product(Tuple{1,0}, sd, v, x)
-      ⋆(1, sd; hodge=hodge)*wedge_product(Tuple{1,0}, sd, v, x)
+      dual_derivative(1, sd)*⋆(1, sd; hodge=hodge)*wedge_product(Tuple{1,0}, sd, v, x)
     end
     :i₀ => i0 
     :Δ₀ => x -> begin # dδ
@@ -174,7 +361,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :half => x -> 0.5 * x
     :third => x -> x / 3.0
     #:R₀ => x-> 1.38064852e-23 * 6.0221409e23 / (28.96 / 1000) # Boltzmann constant * ??? / (molecular mass / 1000)
-    :R₀ => x-> boltzmann_constant * 6.0221409e23 / (mol_mass / 1000) # Boltzmann constant * ??? / (molecular mass / 1000)
+    :R₀ => x-> x * boltzmann_constant * 6.0221409e23 / (mol_mass / 1000) # Boltzmann constant * ??? / (molecular mass / 1000)
     # :kᵥ => x->0.000210322*x # / density
     :kᵥ => x->1.2e-5*x # / density
     # These are the steps used to compute k.
@@ -188,20 +375,33 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     #k_col = fill(k₁, ne(s))
     #k_col[cyl] .= k₂
     #k = diagm(k_col)
-    :k => x->k₁*x
+    #:k => x->k₁*x
     :div₀ => (v,x) -> v / x
     :div₁ => (v,x) -> v / x
+    #:avg₀₁ => x -> begin
+    #  I = Vector{Int64}()
+    #  J = Vector{Int64}()
+    #  V = Vector{Float64}()
+    #  for e in 1:ne(s)
+    #      append!(J, [s[e,:∂v0],s[e,:∂v1]])
+    #      append!(I, [e,e])
+    #      append!(V, [0.5, 0.5])
+    #  end
+    #  sparse(I,J,V)*x
+    #end
     :avg₀₁ => x -> begin
       I = Vector{Int64}()
       J = Vector{Int64}()
       V = Vector{Float64}()
-      for e in 1:ne(s)
-          append!(J, [s[e,:∂v0],s[e,:∂v1]])
+      for e in 1:ne(sd)
+          append!(J, [sd[e,:∂v0],sd[e,:∂v1]])
           append!(I, [e,e])
           append!(V, [0.5, 0.5])
       end
       sparse(I,J,V)*x
     end
+    :./ => (x,y) -> x ./ y
+    :.* => (x,y) -> x .* y
 
     # :Δ₁ => x -> begin # d ⋆ d̃ ⋆⁻¹ + ⋆ d̃ ⋆ d
     #   y = dual_derivative(0,sd)*⋆(2, sd, hodge=hodge)*d(1,sd)*x
@@ -233,7 +433,6 @@ orient!(primal_earth)
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
 subdivide_duals!(earth, Circumcenter())
 
-#physics = SummationDecapode(parse_decapode(PressureFlow))
 physics = HeatXfer
 gensim(expand_operators(physics))
 sim = eval(gensim(expand_operators(physics)))
@@ -249,12 +448,12 @@ begin
 # visualize the vector field
   ps = earth[:point]
   ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
-  GLMakie.arrows(
-      ps, ns, fxaa=true, # turn on anti-aliasing
-      linecolor = :gray, arrowcolor = :gray,
-      linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),
-      align = :center, axis=(type=Axis3,)
-  )
+  #GLMakie.arrows(
+  #    ps, ns, fxaa=true, # turn on anti-aliasing
+  #    linecolor = :gray, arrowcolor = :gray,
+  #    linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),
+  #    align = :center, axis=(type=Axis3,)
+  #)
 end
 
 #begin
@@ -273,27 +472,51 @@ c_dist₂ = MvNormal([x, y, -z], 20*[1, 1, 1])
 c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 
 t = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
+t = [300.0 for p in earth[:point]] # Kelvin (300-600)
 pfield = 100000*[p[3] for p in earth[:point]]
 
 m = 8e22 # A*m^2
 μ₀ = 4*π*1e-7 # kg*m/s^2/A^2
 # Bθ(p) = -μ₀*m*sin(theta(p))/(4*π*radius^3)  # radius instead of r(p)*1000 
 # B1Form = flatten_form(p->TangentBasis(CartesianPoint(p))(Bθ(CartesianPoint(p)), 0), earth)
-Br(p) = -μ₀*2*m*cos(theta(p))/(4*π*radius^3)  # radius instead of r(p)*1000 
-Br_flux = hodge_star(earth, TriForm(map(triangles(earth)) do t 
+# Magnetic flux density at a given point.
+Br_helper(p) = -μ₀*2*m*cos(theta(p))/(4*π*radius^3)  # radius instead of r(p)*1000 
+#Br_flux = hodge_star(earth, TriForm(map(triangles(earth)) do t 
+#                        dual_pid = triangle_center(earth, t)
+#                        p = earth[dual_pid, :dual_point]
+#                        return Br(CartesianPoint(p))
+#                        end))
+# This is magnetic flux density.
+Br_temp = inv_hodge_star(2,earth,hodge=hodge)*DualForm{0}(map(triangles(earth)) do t 
                         dual_pid = triangle_center(earth, t)
                         p = earth[dual_pid, :dual_point]
                         return Br(CartesianPoint(p))
-                        end))
+                        end)
 # B₀(p) = sqrt(Bθ(p)^2+Br(p)^2)
 
+momentum = flatten_form(velocity, earth)
 
-u₀ = construct(PhysicsState, [VectorForm(t), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:T, :V, :P])
+#u₀ = construct(PhysicsState, [VectorForm(t), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:T, :V, :P])
+#u₀ = construct(PhysicsState,
+  #[VectorForm(Br_temp), VectorForm(t), VectorForm(collect(v)), VectorForm(pfield)],Float64[],
+  #[:navierstokes_B, :continuity_T, :V, :P])
+u₀ = construct(PhysicsState,
+  [VectorForm(Br_temp), VectorForm(t), VectorForm(collect(v)), VectorForm(pfield), VectorForm(collect(momentum))],Float64[],
+  [:navierstokes_B, :continuity_T, :V, :P, :navierstokes_M])
 mesh(primal_earth, color=findnode(u₀, :P), colormap=:plasma)
 tₑ = 30.0
 
+nₑ = 1e9 # Particles per cubic meter at ~90k altitude
+
 @info("Precompiling Solver")
-my_constants = (kᵥ=1.2e-5,two=2,three=3,continuity_diffusion_k=k₁)
+my_constants = (
+  navierstokes_kᵥ=1.2e-5,
+  navierstokes_two=2,
+  navierstokes_three=3,
+  navierstokes_negone=-1,
+  navierstokes_q=1.602176634e−19,
+  navierstokes_nₑ=nₑ,
+  continuity_diffusion_k=k₁)
 prob = ODEProblem(fₘ,u₀,(0,1e-4),my_constants)
 soln = solve(prob, Tsit5())
 soln.retcode != :Unstable || error("Solver was not stable")
@@ -326,67 +549,3 @@ record(fig, "weatherNS.gif", range(0.0, tₑ; length=150); framerate = 30) do t
     ob.color = findnode(soln(t), :P)
 end
 end
-
-#AdvDiff = quote
-#    C::Form0{X}
-#    Ċ::Form0{X}
-#    V::Form1{X}
-#    ϕ::Form1{X}
-#    ϕ₁::Form1{X}
-#    ϕ₂::Form1{X}
-#    starC::DualForm2{X}
-#    lvc::Form1{X}
-#    # Fick's first law
-#    ϕ₁ ==  ∘(d₀,k,⋆₁)(C)
-#    # Advective Flux
-#    ϕ₂ == -(L₀(V, C))
-#    # Superposition Principle
-#    ϕ == plus(ϕ₁ , ϕ₂)
-#    # Conservation of Mass
-#    Ċ == ∘(dual_d₁,⋆₀⁻¹)(ϕ)
-#    ∂ₜ(C) == Ċ
-#end
-#
-#NavierStokes = quote
-#  V::Form1{X}
-#  V̇::Form1{X}
-#  G::Form1{X}
-#  T::Form0{X}
-#  ρ::Form0{X}
-#  ṗ::Form0{X}
-#  p::Form0{X}
-#  
-#
-#  V̇ == neg₁(L₁′(V, V)) + 
-#        div₁(kᵥ(Δ₁(V) + third(d₀(δ₁(V)))), avg₀₁(ρ)) +
-#        d₀(half(i₁′(V, V))) +
-#        neg₁(div₁(d₀(p),avg₀₁(ρ))) +
-#        G
-#  ∂ₜ(V) == V̇
-#  ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(p))))# + ⋆₀⁻¹(dual_d₁(⋆₁(kᵨ(d₀(ρ)))))
-#  ∂ₜ(p) == ṗ
-#end
-#
-#parse_decapode(NavierStokes)
-#SummationDecapode(parse_decapode(NavierStokes))
-
-# Energy = @decapode Flow2DQuantities begin
-#   (V)::Form1{X}
-#   (ρ, p, T, Ṫ, Ṫₐ, Ṫ₁, bc₀)::Form0{X}
-
-#   ρ == div₀(p, R₀(T))
-#   Ṫₐ == neg₀(⋆₀⁻¹{X}(L₀(V, ⋆₀{X}(T))))
-#   ∂ₜₐ(Ṫₐ) == bc₀
-#   Ṫ == Ṫₐ + Ṫ₁
-#   ∂ₜ{Form0{X}}(T) == Ṫ
-# end
-
-# BoundaryConditions = @decapode Flow2DQuantities begin 
-#   (V, V̇, bc₁)::Form1{X}
-#   (Ṫ, ṗ, bc₀)::Form0{X} 
-#   # no-slip edges
-#   ∂ᵥ(V̇) == bc₁
-#   # No change on left/right boundaries
-#   ∂ₜ(Ṫ) == bc₀
-#   ∂ₚ(ṗ) == bc₀
-# end
