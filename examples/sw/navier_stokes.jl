@@ -10,6 +10,7 @@ using OrdinaryDiffEq
 using MLStyle
 using Distributions
 using LinearAlgebra
+using SparseArrays
 using GLMakie
 using Logging
 # using CairoMakie 
@@ -79,22 +80,24 @@ NavierStokesExprBody = quote
   (M, Ṁ, V)::Form1{X}
   (ρ, P, Ṗ)::Form0{X}
   B::Form2{X}
-  (negone,two,three,kᵥ,q,nₑ)::Constant{X}
+  (negone,two,three,c,kᵥ,q,nₑ)::Constant{X}
   #V == M/avg₀₁(ρ)
   #M == V*avg₀₁(ρ)
-  M == V .* avg₀₁(ρ)
+  #M == V .* avg₀₁(ρ)
   #Ṁ == neg₁(L₁′(V, V))*avg₀₁(ρ) + 
   Ṁ == neg₁(L₁′(V, V)) .* avg₀₁(ρ) + 
-        kᵥ*(Δ₁(V) + d₀(δ₁(V))/three) +
+        #kᵥ*(Δ₁(V) + d₀(δ₁(V))/three) +
+        kᵥ*(Δ₁(V) + d₀(δ₁(V))/three) .* avg₀₁(ρ) +
         #d₀(i₁′(V, V)/two)*avg₀₁(ρ) +
         d₀(i₁′(V, V)/two) .* avg₀₁(ρ) +
-        neg₁(d₀(P)) +
+        neg₁(d₀(P)) #+ # Possibly wrong
         #G*avg₀₁(ρ) + 
         # (q*V cross product B) # 1 form in primal mesh with 0 form in dual mesh
         #cp_2_1(B, q*⋆₁⁻¹(V)) * negone
         #cp_2_1(B, (nₑ*q)*⋆₁(V)) * negone
         #∧₁₀′(B, (nₑ*q)*⋆₁(V)) * negone
-        ∧₁₀′((nₑ*q)*⋆₁(V), B) * negone
+        #∧₁₀′((nₑ*q)*⋆₁(V), B) * negone
+        #∧₁₀′((nₑ*q/c)*⋆₁(V), B) * negone
   ∂ₜ(M) == Ṁ
   Ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(P)))) # *Lie(3Form) = Div(*3Form x v) --> conservation of pressure
   ∂ₜ(P) == Ṗ
@@ -173,15 +176,15 @@ function pd_wedge(::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat
 end
 
 #∧₁₀′(⋆₁(v,earth,hodge), Br_temp)
-∧₁₀′(Br_temp, ⋆₁(v,earth,hodge))
-
-∧₁₀′(v, ⋆₂(d₁(v,earth),earth,hodge))
-⋆₂(d₁(v,earth),earth,hodge)
-∧₁₀′(⋆₂(d₁(v,earth),earth,hodge),v)
-i₀′(v,d₁(v,earth),earth,hodge)
-#∧₁₀′(⋆₂(d₁(v,earth),earth,hodge), v)
-∧₁₀′(v, ⋆₂(d₁(v,earth),earth,hodge))
-i₀′(v,d₁(v,earth),earth,hodge) + d₀(i₁′(v,v,earth,hodge),earth)
+#∧₁₀′(Br_temp, ⋆₁(v,earth,hodge))
+#
+#∧₁₀′(v, ⋆₂(d₁(v,earth),earth,hodge))
+#⋆₂(d₁(v,earth),earth,hodge)
+#∧₁₀′(⋆₂(d₁(v,earth),earth,hodge),v)
+#i₀′(v,d₁(v,earth),earth,hodge)
+##∧₁₀′(⋆₂(d₁(v,earth),earth,hodge), v)
+#∧₁₀′(v, ⋆₂(d₁(v,earth),earth,hodge))
+#i₀′(v,d₁(v,earth),earth,hodge) + d₀(i₁′(v,v,earth,hodge),earth)
 
 hodge = GeometricHodge()
 d₀(x,sd) = d(0,sd)*x
@@ -211,7 +214,7 @@ k₁ = kₜ / (density * cₚ) # Heat diffusion constant in fluid
 # These helper functions convert an edge to a vector, multiplying by the sign of
 # a simplex where appropriate.
 edge_to_vector(s, e) = (s[e, [:∂v1, :point]] - s[e, [:∂v0, :point]]) * sign(1, s, e)
-edge_to_vector(s, e::AbstractVector) = [vect(s, el) for el in e]
+edge_to_vector(s, e::AbstractVector) = [edge_to_vector(s, el) for el in e]
 t_vects(s,t) = edge_to_vector(s, triangle_edges(s,t)) .* ([1,-1,1] * sign(2,s,t))
 # Return a dictionary where a key is a (triangle_idx, edge_idx) a pair, and a
 # value is an index for that pair (from 1 to num_triangles*3).
@@ -447,7 +450,7 @@ begin
 
 # visualize the vector field
   ps = earth[:point]
-  ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
+  #ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
   #GLMakie.arrows(
   #    ps, ns, fxaa=true, # turn on anti-aliasing
   #    linecolor = :gray, arrowcolor = :gray,
@@ -490,11 +493,21 @@ Br_helper(p) = -μ₀*2*m*cos(theta(p))/(4*π*radius^3)  # radius instead of r(p
 Br_temp = inv_hodge_star(2,earth,hodge=hodge)*DualForm{0}(map(triangles(earth)) do t 
                         dual_pid = triangle_center(earth, t)
                         p = earth[dual_pid, :dual_point]
-                        return Br(CartesianPoint(p))
+                        return Br_helper(CartesianPoint(p))
                         end)
 # B₀(p) = sqrt(Bθ(p)^2+Br(p)^2)
 
-momentum = flatten_form(velocity, earth)
+Ii = Vector{Int64}()
+Ji = Vector{Int64}()
+Vi = Vector{Float64}()
+for e in 1:ne(earth)
+    append!(Ji, [earth[e,:∂v0],earth[e,:∂v1]])
+    append!(Ii, [e,e])
+    append!(Vi, [0.5, 0.5])
+end
+R₀ = boltzmann_constant * 6.0221409e23 / (mol_mass / 1000) # Boltzmann constant * ??? / (molecular mass / 1000)
+ρ = pfield ./ (R₀*t)
+momentum = v .* (sparse(Ii,Ji,Vi)*ρ)
 
 #u₀ = construct(PhysicsState, [VectorForm(t), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:T, :V, :P])
 #u₀ = construct(PhysicsState,
@@ -516,6 +529,7 @@ my_constants = (
   navierstokes_negone=-1,
   navierstokes_q=1.602176634e−19,
   navierstokes_nₑ=nₑ,
+  navierstokes_c=299_792_458,
   continuity_diffusion_k=k₁)
 prob = ODEProblem(fₘ,u₀,(0,1e-4),my_constants)
 soln = solve(prob, Tsit5())
