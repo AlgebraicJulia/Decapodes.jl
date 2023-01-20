@@ -411,7 +411,6 @@ default_op2_type_inference_rules_1D = [
 These are the default rules used to do type inference in the 2D exterior calculus.
 """
 default_op1_type_inference_rules_2D = [
-  # TODO: There are rules for op2s that must be written still.
   # Rules for ∂ₜ where tgt is unknown.
   (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
   (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :∂ₜ),
@@ -635,7 +634,6 @@ default_op2_overloading_resolution_rules_1D = [
 These are the default rules used to do function resolution in the 2D exterior calculus.
 """
 default_op1_overloading_resolution_rules_2D = [
-  # TODO: There are rules for op2s that must be written still.
   # Rules for d.
   (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = :d),
   (src_type = :Form1, tgt_type = :Form2, resolved_name = :d₁, op = :d),
@@ -655,7 +653,7 @@ default_op1_overloading_resolution_rules_2D = [
   (src_type = :Form0, tgt_type = :Form0, resolved_name = :∇²₀, op = :∇²),
   (src_type = :Form1, tgt_type = :Form1, resolved_name = :∇²₁, op = :∇²),
   (src_type = :Form2, tgt_type = :Form2, resolved_name = :∇²₂, op = :∇²),
-  # Rules for Δ².
+  # Rules for Δ.
   (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :Δ),
   (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :Δ),
   (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :Δ)]

@@ -678,23 +678,124 @@ end
                    Open(NavierStokes, [:M, :ρ, :p, :T])])
   HeatXfer = apex(heatXfer_cospan)
 
-  # TODO: This decapode uses Op1s and Op2s that are not in the default rule
-  # sets, so this call to infer_types! should use a custom dict.
-  infer_types!(HeatXfer)
+  bespoke_op1_inf_rules = [
+  # Rules for avg where tgt is unknown.
+  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form1, op = :avg),
+  # Rules for avg where src is unknown.
+  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form0, op = :avg),
+  # Rules for R₀ where tgt is unknown.
+  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :R₀),
+  # Rules for R₀ where src is unknown.
+  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form0, op = :R₀),
+  # Rules for neg where tgt is unknown.
+  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :neg),
+  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :neg),
+  (src_type = :Form2, tgt_type = :infer, replacement_type = :Form2, op = :neg),
+  # Rules for neg where src is unknown.
+  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form0, op = :neg),
+  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form1, op = :neg),
+  (src_type = :infer, tgt_type = :Form2, replacement_type = :Form2, op = :neg),
+  # Rules for Δ where tgt is unknown.
+  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :Δ),
+  # Rules for Δ where src is unknown.
+  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form1, op = :Δ),
+  # Rules for δ where tgt is unknown.
+  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form0, op = :δ),
+  # Rules for δ where src is unknown.
+  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form1, op = :δ)]
+
+  bespoke_op2_inf_rules = [
+  # Rules for / where res is unknown.
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :/),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :/),
+  (proj1_type = :Form2, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :/),
+  (proj1_type = :Constant, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :/),
+  (proj1_type = :Constant, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :/),
+  (proj1_type = :Constant, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :/),
+  (proj1_type = :Form0, proj2_type = :Constant, res_type = :infer, replacement_type = :Form0, op = :/),
+  (proj1_type = :Form1, proj2_type = :Constant, res_type = :infer, replacement_type = :Form1, op = :/),
+  (proj1_type = :Form2, proj2_type = :Constant, res_type = :infer, replacement_type = :Form2, op = :/),
+  # Rules for * where res is unknown.
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :*),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :*),
+  (proj1_type = :Form2, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :*),
+  (proj1_type = :Constant, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :*),
+  (proj1_type = :Constant, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :*),
+  (proj1_type = :Constant, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :*),
+  (proj1_type = :Form0, proj2_type = :Constant, res_type = :infer, replacement_type = :Form0, op = :*),
+  (proj1_type = :Form1, proj2_type = :Constant, res_type = :infer, replacement_type = :Form1, op = :*),
+  (proj1_type = :Form2, proj2_type = :Constant, res_type = :infer, replacement_type = :Form2, op = :*)]
+
+  infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, default_op1_type_inference_rules_2D),
+    vcat(bespoke_op2_inf_rules, default_op2_type_inference_rules_2D))
 
   names_types_hx = Set(zip(HeatXfer[:name], HeatXfer[:type]))
 
-  names_types_expected_hx = Nothing #TODO
-  @test_broken issetequal(names_types_hx, names_types_expected_hx)
+  names_types_expected_hx = [
+  (Symbol("continuity_advection_•4"), :Form0),
+  (:navierstokes_G, :Form1),
+  (Symbol("navierstokes_•8"), :Form1),
+  (Symbol("navierstokes_•18"), :Form1),
+  (Symbol("navierstokes_•3"), :Form1),
+  (Symbol("navierstokes_•13"), :Form0),
+  (Symbol("navierstokes_•10"), :Form0),
+  (Symbol("continuity_diffusion_•2"), :Form1),
+  (:continuity_Ṫₐ, :Form0),
+  (Symbol("navierstokes_•15"), :Form1),
+  (Symbol("continuity_advection_•2"), :Form0),
+  (Symbol("navierstokes_•1"), :Form1),
+  (Symbol("continuity_diffusion_•1"), :Form1),
+  (Symbol("continuity_advection_•3"), :DualForm2),
+  (:navierstokes_Ṁ, :Form1),
+  (:ρ, :Form0),
+  (:T, :Form0),
+  (:continuity_diffusion_k, :Constant),
+  (Symbol("navierstokes_•7"), :Form1),
+  (Symbol("navierstokes_•22"), :DualForm2),
+  (Symbol("continuity_diffusion_•3"), :DualForm2),
+  (Symbol("navierstokes_•20"), :DualForm2),
+  (:continuity_Ṫ, :Form0),
+  (:M, :Form1),
+  (:navierstokes_three, :Constant),
+  (:navierstokes_kᵥ, :Constant),
+  (Symbol("navierstokes_•12"), :Form1),
+  (:navierstokes_ṗ, :Form0),
+  (Symbol("navierstokes_•11"), :Form1),
+  (Symbol("navierstokes_•17"), :Form1),
+  (Symbol("navierstokes_•6"), :Form1),
+  (Symbol("navierstokes_•19"), :Form1),
+  (:navierstokes_two, :Constant),
+  (:navierstokes_sum_1, :Form1),
+  (Symbol("navierstokes_•2"), :Form1),
+  (Symbol("navierstokes_•5"), :Form1),
+  (Symbol("continuity_advection_•1"), :Form1),
+  (Symbol("navierstokes_•4"), :Form1),
+  (Symbol("navierstokes_•16"), :Form1),
+  (:P, :Form0),
+  (:continuity_diffusion_ϕ, :DualForm1),
+  (Symbol("navierstokes_•9"), :Form1),
+  (:navierstokes_V, :Form1),
+  (:continuity_Ṫ₁, :Form0),
+  (Symbol("continuity_advection_•5"), :DualForm2),
+  (:continuity_advection_V, :Form1),
+  (Symbol("navierstokes_•14"), :Form0),
+  (Symbol("navierstokes_•21"), :Form0)]
 
-  # TODO: This decapode uses Op1s and Op2s that are not in the default rule
-  # sets, so this call to resolve_overloads! should use a custom dict.
-  resolve_overloads!(HeatXfer)
+  @test issetequal(names_types_hx, names_types_expected_hx)
+
+  bespoke_op2_res_rules = [
+  # Rules for L.
+  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :Form2, resolved_name = :L₀, op = :L),
+  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₀, op = :L),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, resolved_name = :L₁′, op = :L)]
+
+  resolve_overloads!(HeatXfer, default_op1_overloading_resolution_rules_2D,
+    vcat(bespoke_op2_res_rules, default_op2_overloading_resolution_rules_2D))
 
   op1s_hx = HeatXfer[:op1]
-  op1s_expected_hx = Nothing #TODO
-  @test_broken op1s_hx == op2s_expected_hx
+  op1s_expected_hx = [:d₀, :⋆₁, :dual_d₁, :⋆₀⁻¹, :avg, :R₀, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ, :avg, :neg, :avg, :Δ₁, :δ₁, :d₀, :d₀, :avg, :d₀, :neg, :avg, :∂ₜ, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ]
+  @test op1s_hx == op1s_expected_hx
   op2s_hx = HeatXfer[:op2]
-  op2s_expected_hx = Nothing #TODO
-  @test_broken op2s_hx == op2s_expected_hx
+  op2s_expected_hx = [:*, :/, :/, :L₀, :/, :L₁′, :*, :/, :*, :i₁, :/, :*, :*, :L₀]
+  @test op2s_hx == op2s_expected_hx
 end
