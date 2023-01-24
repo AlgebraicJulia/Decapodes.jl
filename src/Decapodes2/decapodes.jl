@@ -15,7 +15,7 @@ using Base.Iterators
 import Unicode
 
 export normalize_unicode, DerivOp, append_dot,
-  SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, Decapode, NamedDecapode, SummationDecapode, fill_names!, expand_operators, add_constant!, add_parameter, infer_types!, resolve_overloads!, default_op1_type_inference_rules_1D, default_op1_type_inference_rules_2D, default_op2_type_inference_rules_1D, default_op2_type_inference_rules_2D, default_op1_overloading_resolution_rules_1D, default_op1_overloading_resolution_rules_2D, default_op2_overloading_resolution_rules_1D, default_op2_overloading_resolution_rules_2D,
+  SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, Decapode, NamedDecapode, SummationDecapode, fill_names!, expand_operators, add_constant!, add_parameter, infer_types!, resolve_overloads!, op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D, op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D,
   Term, Var, Judge, Eq, AppCirc1, AppCirc2, App1, App2, Plus, Tan, term, parse_decapode,
   VectorForm, PhysicsState, findname, findnode,
   compile, compile_env, gensim, closest_point, flat_op,

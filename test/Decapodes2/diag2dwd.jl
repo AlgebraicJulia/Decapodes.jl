@@ -109,7 +109,6 @@ end
 
   recExpr = parse_decapode(Recursion)
   rdp = SummationDecapode(recExpr)
-  show(rdp)
 
   @test nparts(rdp, :Var) == 9
   @test nparts(rdp, :TVar) == 1
@@ -726,8 +725,8 @@ end
   (proj1_type = :Form1, proj2_type = :Constant, res_type = :infer, replacement_type = :Form1, op = :*),
   (proj1_type = :Form2, proj2_type = :Constant, res_type = :infer, replacement_type = :Form2, op = :*)]
 
-  infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, default_op1_type_inference_rules_2D),
-    vcat(bespoke_op2_inf_rules, default_op2_type_inference_rules_2D))
+  infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
+    vcat(bespoke_op2_inf_rules, op2_inf_rules_2D))
 
   names_types_hx = Set(zip(HeatXfer[:name], HeatXfer[:type]))
 
@@ -789,8 +788,8 @@ end
   (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₀, op = :L),
   (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, resolved_name = :L₁′, op = :L)]
 
-  resolve_overloads!(HeatXfer, default_op1_overloading_resolution_rules_2D,
-    vcat(bespoke_op2_res_rules, default_op2_overloading_resolution_rules_2D))
+  resolve_overloads!(HeatXfer, op1_res_rules_2D,
+    vcat(bespoke_op2_res_rules, op2_res_rules_2D))
 
   op1s_hx = HeatXfer[:op1]
   op1s_expected_hx = [:d₀, :⋆₁, :dual_d₁, :⋆₀⁻¹, :avg, :R₀, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ, :avg, :neg, :avg, :Δ₁, :δ₁, :d₀, :d₀, :avg, :d₀, :neg, :avg, :∂ₜ, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ]

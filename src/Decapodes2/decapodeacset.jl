@@ -119,239 +119,11 @@ function add_parameter(d::AbstractNamedDecapode, k::Symbol)
     return add_part!(d, :Var, type=:Parameter, name=k)
 end
 
-
-#"""
-#These are the default rewrite rules used to do type inference.
-#"""
-#default_op1_type_inference_rules = [
-#  # The tgt of ∂ₜ is of the same type as its src.
-#  begin
-#    L = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; TVar = 1; Op1 = 1
-#
-#      type = [ARVar(:src_form), :infer]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      incl = [2]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:∂ₜ]
-#    end
-#    I = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 1
-#      type = [ARVar(:src_form)]
-#      name = [ARVar(:src_name)]
-#    end
-#    R = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; TVar = 1; Op1 = 1
-#
-#      type = [ARVar(:src_form), ARVar(:src_form)]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      incl = [2]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:∂ₜ]
-#    end
-#    hil = AlgebraicRewriting.homomorphism(I, L)
-#    hir = AlgebraicRewriting.homomorphism(I, R)
-#    Rule(hil, hir)
-#  end,
-#  # The src of ∂ₜ is of the same type as its tgt.
-#  begin
-#    L = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; TVar = 1; Op1 = 1
-#
-#      type = [:infer, ARVar(:tgt_form)]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      incl = [2]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:∂ₜ]
-#    end
-#    I = @acset SummationDecapode{Any, Any, Any} begin
-#      #Var = 1
-#      #type = [ARVar(:tgt_form)]
-#      #name = [ARVar(:tgt_name)]
-#      Var = 1; TVar = 1
-#      type = [ARVar(:tgt_form)]
-#      name = [ARVar(:tgt_name)]
-#      incl = [1]
-#    end
-#    R = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; TVar = 1; Op1 = 1
-#
-#      type = [ARVar(:tgt_form), ARVar(:tgt_form)]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      incl = [2]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:∂ₜ]
-#    end
-#    hil = AlgebraicRewriting.homomorphism(I, L)
-#    hir = AlgebraicRewriting.homomorphism(I, R)
-#    Rule(hil, hir)
-#  end,
-#  # The tgt of d of a Form0 is of the type Form1.
-#  begin
-#    L = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; Op1 = 1
-#
-#      type = [:Form0, :infer]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:d]
-#    end
-#    I = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 1
-#      type = [:Form0]
-#      name = [ARVar(:src_name)]
-#    end
-#    R = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; Op1 = 1
-#
-#      type = [:Form0, :Form1]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:d]
-#    end
-#    hil = AlgebraicRewriting.homomorphism(I, L)
-#    hir = AlgebraicRewriting.homomorphism(I, R)
-#    Rule(hil, hir)
-#  end,
-#  # The tgt of d of a Form1 is of the type Form2.
-#  begin
-#    L = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; Op1 = 1
-#
-#      type = [:Form1, :infer]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:d]
-#    end
-#    I = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 1
-#      type = [:Form1]
-#      name = [ARVar(:src_name)]
-#    end
-#    R = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; Op1 = 1
-#
-#      type = [:Form1, :Form2]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:d]
-#    end
-#    hil = AlgebraicRewriting.homomorphism(I, L)
-#    hir = AlgebraicRewriting.homomorphism(I, R)
-#    Rule(hil, hir)
-#  end,
-#  # The src of d of a Form1 is of the type Form0.
-#  begin
-#    L = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; Op1 = 1
-#
-#      type = [:infer, :Form1]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:d]
-#    end
-#    I = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 1
-#      type = [:Form1]
-#      name = [ARVar(:tgt_name)]
-#    end
-#    R = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; Op1 = 1
-#
-#      type = [:Form0, :Form1]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:d]
-#    end
-#    hil = AlgebraicRewriting.homomorphism(I, L)
-#    hir = AlgebraicRewriting.homomorphism(I, R)
-#    Rule(hil, hir)
-#  end,
-#  # The src of d of a Form2 is of the type Form1.
-#  begin
-#    L = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; Op1 = 1
-#
-#      type = [:infer, :Form2]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:d]
-#    end
-#    I = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 1
-#      type = [:Form2]
-#      name = [ARVar(:tgt_name)]
-#    end
-#    R = @acset SummationDecapode{Any, Any, Any} begin
-#      Var = 2; Op1 = 1
-#
-#      type = [:Form1, :Form2]
-#      name = [ARVar(:src_name), ARVar(:tgt_name)]
-#      src = [1]
-#      tgt = [2]
-#      op1 = [:d]
-#    end
-#    hil = AlgebraicRewriting.homomorphism(I, L)
-#    hir = AlgebraicRewriting.homomorphism(I, R)
-#    Rule(hil, hir)
-#  end]
-#
-#function infer_types(d::SummationDecapode, rules::Vector{Rule{:DPO}}; kw...)
-#  # Step 1: Convert to {Any,Any,Any} so we can use AlgebraicRewriting's Var.
-#  #d′ = migrate(SummationDecapode{Any, Any, Any}, d,
-#  #  Dict(:Var => :Var, :TVar => :TVar, :Op1 => :Op1, :Op2 => :Op2, :Σ => :Σ, :Summand => :Summand, :Type => :Type, :Operator => :Operator, :Name => :Name),
-#  #  Dict(:src => :src, :tgt => :tgt, :proj1 => :proj1, :proj2 => :proj2, :res => :res, :incl => :incl, :op1 => :op1, :op2 => :op2, :type => :type, :name => :name, :summand => :summand, :summation => :summation, :sum => :sum))
-#  d′ = migrate(SummationDecapode{Any, Any, Any}, d,
-#    merge(
-#      Dict(SchSummationDecapode.generators.Ob .=> SchSummationDecapode.generators.Ob),
-#      Dict(SchSummationDecapode.generators.AttrType .=> SchSummationDecapode.generators.AttrType)),
-#    merge(
-#      Dict(SchSummationDecapode.generators.Hom .=> SchSummationDecapode.generators.Hom),
-#      Dict(SchSummationDecapode.generators.Attr .=> SchSummationDecapode.generators.Attr)))
-#
-#  # Step 2: Apply rules
-#  seq = Schedule[]
-#  append!(seq, RuleSchedule.(rules))
-#  #seq = Vector{Schedule}([RuleSchedule.(rules)])
-#  ar_step = ListSchedule(seq)
-#  end_condition(prev, curr) = :infer ∉ curr[:type]
-#  overall = WhileSchedule(ar_step, :main, end_condition)
-#  trajectory = apply_schedule(overall; G=d′, kw...)
-#  res = last(trajectory).G
-#  # Step 3: Convert back to {Any,Any,Symbol}.
-#  #migrate(SummationDecapode{Any, Any, Symbol}, res
-#  #  Dict(:Var => :Var, :TVar => :TVar, :Op1 => :Op1, :Op2 => :Op2, :Σ => :Σ, :Summand => :Summand, :Type => :Type, :Operator => :Operator, :Name => :Name),
-#  #  Dict(:src => :src, :tgt => :tgt, :proj1 => :proj1, :proj2 => :proj2, :res => :res, :incl => :incl, :op1 => :op1, :op2 => :op2, :type => :type, :name => :name, :summand => :summand, :summation => :summation, :sum => :sum))
-#  migrate(SummationDecapode{Any, Any, Symbol}, res,
-#    merge(
-#      Dict(SchSummationDecapode.generators.Ob .=> SchSummationDecapode.generators.Ob),
-#      Dict(SchSummationDecapode.generators.AttrType .=> SchSummationDecapode.generators.AttrType)),
-#    merge(
-#      Dict(SchSummationDecapode.generators.Hom .=> SchSummationDecapode.generators.Hom),
-#      Dict(SchSummationDecapode.generators.Attr .=> SchSummationDecapode.generators.Attr)))
-#end
-#
-#infer_types(d::SummationDecapode; kw...) =
-#  infer_types(d, default_op1_type_inference_rules; kw...)
-
-
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
 These are the default rules used to do type inference in the 1D exterior calculus.
 """
-default_op1_type_inference_rules_1D = [
-  # TODO: There are rules for op2s that must be written still.
+op1_inf_rules_1D = [
   # Rules for ∂ₜ where tgt is unknown.
   (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
   (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :∂ₜ),
@@ -375,7 +147,7 @@ default_op1_type_inference_rules_1D = [
   (src_type = :infer, tgt_type = :Form0, replacement_type = :DualForm1, op = :⋆),
   (src_type = :infer, tgt_type = :Form1, replacement_type = :DualForm0, op = :⋆)]
 
-default_op2_type_inference_rules_1D = [
+op2_inf_rules_1D = [
   # Rules for ∧ where proj1 is unknown. ∧₀₀, ∧₁₀, ∧₀₁
   (proj1_type = :infer, proj2_type = :Form0, res_type = :Form0, replacement_type = :Form0, op = :∧),
   (proj1_type = :infer, proj2_type = :Form0, res_type = :Form1, replacement_type = :Form1, op = :∧),
@@ -389,7 +161,6 @@ default_op2_type_inference_rules_1D = [
   (proj1_type = :Form1, proj2_type = :Form0, res_type = :infer, replacement_type = :Form1, op = :∧),
   (proj1_type = :Form0, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :∧),
 
-  # TODO: Overhaul since L apparently always needs a Form1 as it's first input
   # Rules for L where proj1 is unknown. L₀, L₁
   (proj1_type = :infer, proj2_type = :Form0, res_type = :Form0, replacement_type = :Form1, op = :L),
   (proj1_type = :infer, proj2_type = :Form1, res_type = :Form1, replacement_type = :Form1, op = :L),    
@@ -410,7 +181,7 @@ default_op2_type_inference_rules_1D = [
 """
 These are the default rules used to do type inference in the 2D exterior calculus.
 """
-default_op1_type_inference_rules_2D = [
+op1_inf_rules_2D = [
   # Rules for ∂ₜ where tgt is unknown.
   (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
   (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :∂ₜ),
@@ -446,7 +217,7 @@ default_op1_type_inference_rules_2D = [
 
 # WARNING: I'm combining 1D and 2D rules directly here since it seems op2 rules
 # are metric-free. If for some reason we can't make this assumption, this needs to change
-default_op2_type_inference_rules_2D = vcat(default_op2_type_inference_rules_1D, [
+op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   # Rules for ∧ where proj1 is unknown. ∧₁₁, ∧₂₀, ∧₀₂
   (proj1_type = :infer, proj2_type = :Form1, res_type = :Form2, replacement_type = :Form1, op = :∧),
   (proj1_type = :infer, proj2_type = :Form0, res_type = :Form2, replacement_type = :Form2, op = :∧),
@@ -460,7 +231,6 @@ default_op2_type_inference_rules_2D = vcat(default_op2_type_inference_rules_1D, 
   (proj1_type = :Form2, proj2_type = :Form0, res_type = :infer, replacement_type = :Form2, op = :∧),
   (proj1_type = :Form0, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :∧),
 
-  # TODO: Overhaul since L apparently always needs a Form1 as it's first input
   # Rules for L where proj1 is unknown. L₂
   (proj1_type = :infer, proj2_type = :Form2, res_type = :Form2, replacement_type = :Form1, op = :L),
   # Rules for L where proj2 is unknown. L₂
@@ -468,7 +238,6 @@ default_op2_type_inference_rules_2D = vcat(default_op2_type_inference_rules_1D, 
   # Rules for L where res is unknown. L₂
   (proj1_type = :Form1, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :L),
 
-  # TODO: Similar issue for i, where i always needs a Form1 as it's first input
   # Rules for i where proj1 is unknown. i₁
   (proj1_type = :infer, proj2_type = :Form2, res_type = :Form1, replacement_type = :Form1, op = :i),
   # Rules for i where proj2 is unknown. i₁
@@ -528,7 +297,7 @@ end
 
 function apply_op2_type_rules!(d::SummationDecapode, types_known::Vector{Bool}, proj1_type::Symbol, proj2_type::Symbol, res_type::Symbol, replacement_type::Symbol, op::Symbol)
   applied = false
-  # TODO: May want to add that an inference rule is valid, so that at least some variable is an infer type
+  # TODO: May want to add a check that an inference rule is valid, (at least some variable is an infer type.)
 
   for op2_idx in parts(d, :Op2)
     types_known[op2_idx] && continue
@@ -583,7 +352,6 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
       applied = applied || this_applied
     end
 
-    # TODO: Infer Op2 types.
     for rule in op2_rules
       this_applied = apply_op2_type_rules!(d, types_known_op2, rule...)
       applied = applied || this_applied
@@ -599,14 +367,14 @@ end
 # TODO: When SummationDecapodes are annotated with the degree of their space,
 # use dispatch to choose the correct set of rules.
 infer_types!(d::SummationDecapode) =
-  infer_types!(d, default_op1_type_inference_rules_2D, default_op2_type_inference_rules_2D)
+  infer_types!(d, op1_inf_rules_2D, op2_inf_rules_2D)
 
 # TODO: You could write a method which auto-generates these rules given degree N.
 
 """
 These are the default rules used to do function resolution in the 1D exterior calculus.
 """
-default_op1_overloading_resolution_rules_1D = [
+op1_res_rules_1D = [
   # Rules for d.
   (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = :d),
   (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = :dual_d₀, op = :d),
@@ -618,7 +386,9 @@ default_op1_overloading_resolution_rules_1D = [
   # Rules for δ.
   (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ)]
 
-default_op2_overloading_resolution_rules_1D = [
+# We merge 1D and 2D rules since it seems op2 rules are metric-free. If
+# this assumption is false, this needs to change.
+op2_res_rules_1D = [
   # Rules for ∧.
   (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, resolved_name = :∧₀₀, op = :∧),
   (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = :∧),
@@ -633,7 +403,7 @@ default_op2_overloading_resolution_rules_1D = [
 """
 These are the default rules used to do function resolution in the 2D exterior calculus.
 """
-default_op1_overloading_resolution_rules_2D = [
+op1_res_rules_2D = [
   # Rules for d.
   (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = :d),
   (src_type = :Form1, tgt_type = :Form2, resolved_name = :d₁, op = :d),
@@ -658,9 +428,9 @@ default_op1_overloading_resolution_rules_2D = [
   (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :Δ),
   (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :Δ)]
 
-# WARNING: I'm combining 1D and 2D rules directly here since it seems op2 rules
-# are metric-free. If for some reason we can't make this assumption, this needs to change
-default_op2_overloading_resolution_rules_2D = vcat(default_op2_overloading_resolution_rules_1D, [
+# We merge 1D and 2D rules directly here since it seems op2 rules
+# are metric-free. If this assumption is false, this needs to change.
+op2_res_rules_2D = vcat(op2_res_rules_1D, [
   # Rules for ∧.
   (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = :∧),
   (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :∧),
@@ -704,6 +474,6 @@ end
 # TODO: When SummationDecapodes are annotated with the degree of their space,
 # use dispatch to choose the correct set of rules.
 resolve_overloads!(d::SummationDecapode) =
-  resolve_overloads!(d, default_op1_overloading_resolution_rules_2D, default_op2_overloading_resolution_rules_2D)
+  resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
 
 +
