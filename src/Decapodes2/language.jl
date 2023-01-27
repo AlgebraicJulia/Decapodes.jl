@@ -5,8 +5,10 @@
 #   - way to represent this in a Decapode ACSet.
 @data Term begin
   Var(Symbol)
+  Lit(Symbol)
   Judge(Var, Symbol, Symbol) # Symbol 1: Form0 Symbol 2: X
   AppCirc1(Vector{Symbol}, Term)
+  # TODO: Is never called in the code, tagged for deletion
   # AppCirc2(Vector{Symbol}, Term, Term)
   App1(Symbol, Term)
   App2(Symbol, Term, Term)
@@ -26,7 +28,7 @@ struct DecaExpr
 end
 
 term(s::Symbol) = Var(normalize_unicode(s))
-term(s::Float64) = Var(Symbol(s))
+term(s::Number) = Lit(Symbol(s))
 
 term(expr::Expr) = begin
     @match expr begin
@@ -34,9 +36,11 @@ term(expr::Expr) = begin
         Expr(:call, :∂ₜ, b) => Tan(term(b))
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, Var(b))
         Expr(:call, a, b) => App1(a, term(b))
+        # TODO: Doesn't seem to every have been used, tagged for deletion
         # Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc1(f, Var(x), Var(y))
         Expr(:call, :+, xs...) => Plus(term.(xs))
         Expr(:call, f, x, y) => App2(f, term(x), term(y))
+        # TODO: Not sure what this does, don't think its used, tagged for deletion
         # Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
         x => error("Cannot construct term from  $x")
     end
@@ -74,6 +78,14 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
            syms[x]
         else
           res_var = add_part!(d, :Var, name = x, type=:infer)
+          syms[x] = res_var
+        end
+      end
+      Lit(x) => begin 
+        if haskey(syms, x)
+           syms[x]
+        else
+          res_var = add_part!(d, :Var, name = x, type=:Literal)
           syms[x] = res_var
         end
       end
