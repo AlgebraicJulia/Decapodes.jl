@@ -7,7 +7,7 @@
   Var(Symbol)
   Judge(Var, Symbol, Symbol) # Symbol 1: Form0 Symbol 2: X
   AppCirc1(Vector{Symbol}, Term)
-  AppCirc2(Vector{Symbol}, Term, Term)
+  # AppCirc2(Vector{Symbol}, Term, Term)
   App1(Symbol, Term)
   App2(Symbol, Term, Term)
   Plus(Vector{Term})
@@ -26,6 +26,7 @@ struct DecaExpr
 end
 
 term(s::Symbol) = Var(normalize_unicode(s))
+term(s::Float64) = Var(Symbol(s))
 
 term(expr::Expr) = begin
     @match expr begin
@@ -33,10 +34,10 @@ term(expr::Expr) = begin
         Expr(:call, :∂ₜ, b) => Tan(term(b))
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, Var(b))
         Expr(:call, a, b) => App1(a, term(b))
-        Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc1(f, Var(x), Var(y))
+        # Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc1(f, Var(x), Var(y))
         Expr(:call, :+, xs...) => Plus(term.(xs))
         Expr(:call, f, x, y) => App2(f, term(x), term(y))
-        Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
+        # Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
         x => error("Cannot construct term from  $x")
     end
 end
@@ -68,7 +69,14 @@ end
 reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
   let ! = reduce_term!
     @match t begin
-      Var(x) => syms[x]
+      Var(x) => begin 
+        if haskey(syms, x)
+           syms[x]
+        else
+          res_var = add_part!(d, :Var, name = x, type=:infer)
+          syms[x] = res_var
+        end
+      end
       App1(f, t) => begin
         res_var = add_part!(d, :Var, type=:infer)
         add_part!(d, :Op1, src=!(t,d,syms), tgt=res_var, op1=f)
@@ -84,11 +92,11 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
         add_part!(d, :Op1, src=!(t,d,syms), tgt=res_var, op1=fs)
         return res_var
       end
-      AppCirc2(f, t1, t2) => begin
+      #= AppCirc2(f, t1, t2) => begin
         res_var = add_part!(d, :Var, type=:infer)
         add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=fs)
         return res_var
-      end
+      end =#
       Plus(ts) => begin
         summands = [!(t,d,syms) for t in ts]
         res_var = add_part!(d, :Var, type=:infer, name=:sum)
