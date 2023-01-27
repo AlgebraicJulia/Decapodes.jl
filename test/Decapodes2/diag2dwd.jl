@@ -90,6 +90,7 @@ term(:(∧₀₁(C,V)))
     @test term(Expr(:ϕ)) == Var(:ϕ)
     @test typeof(term(:(d₀(C)))) == App1
     @test typeof(term(:(∘(k, d₀)(C)))) == AppCirc1
+    @test typeof(term(:(∘(k, d₀)(C,Φ)))) == AppCirc2
     # @test term(:(∘(k, d₀)(C))) == AppCirc1([:k, :d₀], Var(:C)) #(:App1, ((:Circ, :k, :d₀), Var(:C)))
     # @test term(:(∘(k, d₀{X})(C))) == (:App1, ((:Circ, :k, :(d₀{X})), Var(:C)))
     @test_throws MethodError term(:(Ċ == ∘(⋆₀⁻¹{X}, dual_d₁{X}, ⋆₁{X})(ϕ)))

@@ -8,8 +8,7 @@
   Lit(Symbol)
   Judge(Var, Symbol, Symbol) # Symbol 1: Form0 Symbol 2: X
   AppCirc1(Vector{Symbol}, Term)
-  # TODO: Is never called in the code, tagged for deletion
-  # AppCirc2(Vector{Symbol}, Term, Term)
+  AppCirc2(Vector{Symbol}, Term, Term)
   App1(Symbol, Term)
   App2(Symbol, Term, Term)
   Plus(Vector{Term})
@@ -36,8 +35,7 @@ term(expr::Expr) = begin
         Expr(:call, :∂ₜ, b) => Tan(term(b))
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, Var(b))
         Expr(:call, a, b) => App1(a, term(b))
-        # TODO: Doesn't seem to every have been used, tagged for deletion
-        # Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc1(f, Var(x), Var(y))
+        Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc2(f, Var(x), Var(y))
         Expr(:call, :+, xs...) => Plus(term.(xs))
         Expr(:call, f, x, y) => App2(f, term(x), term(y))
         # TODO: Not sure what this does, don't think its used, tagged for deletion
@@ -104,11 +102,11 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
         add_part!(d, :Op1, src=!(t,d,syms), tgt=res_var, op1=fs)
         return res_var
       end
-      #= AppCirc2(f, t1, t2) => begin
+      AppCirc2(fs, t1, t2) => begin
         res_var = add_part!(d, :Var, type=:infer)
         add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=fs)
         return res_var
-      end =#
+      end
       Plus(ts) => begin
         summands = [!(t,d,syms) for t in ts]
         res_var = add_part!(d, :Var, type=:infer, name=:sum)
