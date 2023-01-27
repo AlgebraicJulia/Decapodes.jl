@@ -31,15 +31,16 @@ term(s::Number) = Lit(Symbol(s))
 
 term(expr::Expr) = begin
     @match expr begin
+        # TODO: Is this expression ever used outside of the test
         Expr(a) => Var(normalize_unicode(a))
-        Expr(:call, :∂ₜ, b) => Tan(term(b))
-        Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, Var(b))
+        Expr(:call, :∂ₜ, b) => Tan(term(b)) 
+        Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, term(b))
         Expr(:call, a, b) => App1(a, term(b))
-        Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc2(f, Var(x), Var(y))
+        Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc2(f, term(x), term(y))
         Expr(:call, :+, xs...) => Plus(term.(xs))
         Expr(:call, f, x, y) => App2(f, term(x), term(y))
         # TODO: Not sure what this does, don't think its used, tagged for deletion
-        # Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
+        Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
         x => error("Cannot construct term from  $x")
     end
 end
@@ -209,4 +210,8 @@ function SummationDecapode(e::DecaExpr)
     d[:name] .= normalize_unicode.(d[:name])
     make_sum_unique!(d)
     return d
+end
+
+macro SummationDecapode(e)
+  :(SummationDecapode(parse_decapode($(Meta.quot(e)))))
 end
