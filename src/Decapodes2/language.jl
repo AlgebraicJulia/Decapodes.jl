@@ -12,6 +12,7 @@
   App1(Symbol, Term)
   App2(Symbol, Term, Term)
   Plus(Vector{Term})
+  Mult(Vector{Term})
   Tan(Term)
 end
 
@@ -33,12 +34,22 @@ term(expr::Expr) = begin
     @match expr begin
         # TODO: Is this expression ever used outside of the test
         Expr(a) => Var(normalize_unicode(a))
+
+        #TODO: Would we want ∂ₜ to be used with general expressions or just Vars?
         Expr(:call, :∂ₜ, b) => Tan(term(b)) 
+
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, term(b))
         Expr(:call, a, b) => App1(a, term(b))
+
+        # TODO: Not sure how to handle the results from this, is this an Op2 followed by Op1's?
         Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc2(f, term(x), term(y))
+
         Expr(:call, :+, xs...) => Plus(term.(xs))
         Expr(:call, f, x, y) => App2(f, term(x), term(y))
+
+        # TODO: Will later be converted to Op2's or schema has to be changed to include multiplication
+        Expr(:call, :*, xs...) => Mult(term.(xs))
+
         # TODO: Not sure what this does, don't think its used, tagged for deletion
         Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
         x => error("Cannot construct term from  $x")
@@ -52,7 +63,7 @@ function parse_decapode(expr::Expr)
             Expr(:(::), a::Symbol, b) => Judge(Var(a),b.args[1], b.args[2])
             Expr(:(::), a::Expr, b) => map(sym -> Judge(Var(sym), b.args[1], b.args[2]), a.args)
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
-            x => x
+            _ => error("The line $line is malformed")
         end
     end |> skipmissing |> collect
     judges = []
@@ -114,6 +125,20 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
         n = add_part!(d, :Σ, sum=res_var)
         map(summands) do s
           add_part!(d, :Summand, summand=s, summation=n)
+        end
+        return res_var
+      end
+      # TODO: Just for now assuming we have 2 or more terms
+      Mult(ts) => begin
+        multiplicands  = [!(t,d,syms) for t in ts]
+        res_var = add_part!(d, :Var, type=:infer, name=:mult)
+        m1,m2 = multiplicands[1:2]
+        add_part!(d, :Op2, proj1=m1, proj2=m2, res=res_var, op2=Symbol("*"))
+        for m in multiplicands[3:end]
+          m1 = res_var
+          m2 = m
+          res_var = add_part!(d, :Var, type=:infer, name=:mult)
+          add_part!(d, :Op2, proj1=m1, proj2=m2, res=res_var, op2=Symbol("*"))
         end
         return res_var
       end
