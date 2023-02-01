@@ -134,7 +134,7 @@ EnergyExprBody = quote
   (two, three, five)::Constant{X}
   # T == p/n/kᵥ
   #ṗ == 2*3 * (5/2*p*∘(⋆,d,⋆⁻¹)(V) + i₁(V, d(p))) #  - ρ*ν*3*kᵥ*(T-Tₑ) )
-  # TODO I changed fv to f .* v
+  # Note: I changed fv to f .* v
   ṗ == (((((two * three) * five) / two ) * p) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(V)) + ((two * three) * i₁′(V, d₀(p))) #  - ρ*ν*three*kᵥ*(T-Tₑ) )
   
   ∂ₜ(p) == ṗ
@@ -540,12 +540,14 @@ times = range(0.0, tₑ, length=150)
 colors = [findnode(soln(t), :P) for t in times]
 
 # Initial frame
-fig, ax, ob = GLMakie.mesh(primal_earth, color=colors[1], colorrange = (-0.0001, 0.0001), colormap=:jet)
+#fig, ax, ob = GLMakie.mesh(primal_earth, color=colors[1], colorrange = (-0.0001, 0.0001), colormap=:jet)
+fig, ax, ob = GLMakie.mesh(primal_earth, color=colors[1], colormap=:jet)
 Colorbar(fig[1,2], ob)
 framerate = 5
 
 # Animation
-record(fig, "weatherNS.gif", range(0.0, tₑ; length=150); framerate = 30) do t
+#record(fig, "weatherNS.gif", range(0.0, tₑ; length=150); framerate = 30) do t
+record(fig, "weatherNS.gif", range(0.0, 2.0; length=150); framerate = 30) do t
     ob.color = findnode(soln(t), :P)
 end
 end
