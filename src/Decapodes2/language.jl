@@ -33,7 +33,7 @@ term(s::Number) = Lit(Symbol(s))
 term(expr::Expr) = begin
     @match expr begin
         # TODO: Is this expression ever used outside of the test
-        Expr(a) => Var(normalize_unicode(a))
+        # Expr(a) => Var(normalize_unicode(a))
 
         #TODO: Would we want ∂ₜ to be used with general expressions or just Vars?
         Expr(:call, :∂ₜ, b) => Tan(term(b)) 
@@ -51,7 +51,7 @@ term(expr::Expr) = begin
         Expr(:call, :*, xs...) => Mult(term.(xs))
 
         # TODO: Not sure what this does, don't think its used, tagged for deletion
-        Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
+        # Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
         x => error("Cannot construct term from  $x")
     end
 end
@@ -160,6 +160,13 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int})
       rhs_ref = reduce_term!(t2,d,syms)
       deletions = []
       # Make rhs_ref equal to lhs_ref and adjust all its incidents
+
+      # Case rhs_ref is a Tan
+      # WARNING: Don't push to deletion here because all TanVars should have a 
+      # corresponding Op1. Pushing here would create a duplicate which breaks rem_parts!
+      for rhs in incident(d, rhs_ref, :incl)
+        d[rhs, :incl] = lhs_ref
+      end
       # Case rhs_ref is a Op1
       for rhs in incident(d, rhs_ref, :tgt)
         d[rhs, :tgt] = lhs_ref

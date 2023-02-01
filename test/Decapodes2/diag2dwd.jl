@@ -87,7 +87,7 @@ term(:(∧₀₁(C,V)))
 @testset "Term Construction" begin
     @test term(:(Ċ)) == Var(:Ċ)
     @test_throws ErrorException term(:(∂ₜ{Form0}))
-    @test term(Expr(:ϕ)) == Var(:ϕ)
+    # @test term(Expr(:ϕ)) == Var(:ϕ)
     @test typeof(term(:(d₀(C)))) == App1
     @test typeof(term(:(∘(k, d₀)(C)))) == AppCirc1
     @test typeof(term(:(∘(k, d₀)(C,Φ)))) == AppCirc2
