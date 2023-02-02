@@ -1,5 +1,4 @@
-#using AlgebraicRewriting
-#using AlgebraicRewriting: Var as ARVar
+using DataStructures
 
 @present SchDecapode(FreeSchema) begin
     (Var, TVar, Op1, Op2)::Ob
@@ -61,7 +60,8 @@ function make_sum_unique!(d::AbstractNamedDecapode)
 end
 
 function expand_operators(d::AbstractNamedDecapode)
-  e = SummationDecapode{Symbol, Symbol, Symbol}()
+  #e = SummationDecapode{Symbol, Symbol, Symbol}()
+  e = SummationDecapode{Any, Any, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op2))
   expand_operators!(e, d)
   return e
@@ -73,6 +73,8 @@ function expand_operators!(e::AbstractNamedDecapode, d::AbstractNamedDecapode)
   for op in parts(d, :Op1)
     if !isa(d[op,:op1], AbstractArray)
       add_part!(e, :Op1, op1=d[op,:op1], src=d[op, :src], tgt=d[op,:tgt])
+    elseif length(d[op, :op1]) == 1
+      add_part!(e, :Op1, op1=only(d[op,:op1]), src=d[op, :src], tgt=d[op,:tgt])
     else
       for (i, step) in enumerate(d[op, :op1])
         if i == 1
@@ -90,6 +92,8 @@ function expand_operators!(e::AbstractNamedDecapode, d::AbstractNamedDecapode)
   end
   return newvar
 end
+
+
 @present SchSummationDecapode <: SchNamedDecapode begin
   # Σ are the white nodes in the Decapode drawing
   # Summands are the edges that connect white nodes to variables (the projection maps)
@@ -105,10 +109,98 @@ end
 
 
 function expand_operators(d::SummationDecapode)
-  e = SummationDecapode{Symbol, Symbol, Symbol}()
+  #e = SummationDecapode{Symbol, Symbol, Symbol}()
+  e = SummationDecapode{Any, Any, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op2, :Σ, :Summand))
   expand_operators!(e, d)
   return e
+end
+
+"""
+  function contract_operators(d::SummationDecapode)
+
+Find chains of Op1s in the given Decapode, and replace them with
+a single Op1 with a vector of function names. After this process,
+all Vars that are not a part of any computation are removed.
+"""
+function contract_operators(d::SummationDecapode)
+  e = expand_operators(d)
+  contract_operators!(e)
+  #return e
+end
+
+function contract_operators!(d::SummationDecapode)
+  chains = find_chains(d)
+  filter!(x -> length(x) != 1, chains)
+  for chain in chains
+    add_part!(d, :Op1, src=d[:src][first(chain)], tgt=d[:tgt][last(chain)], op1=Vector{Symbol}(d[:op1][chain]))
+  end
+  rem_parts!(d, :Op1, sort!(vcat(chains...)))
+  remove_neighborless_vars!(d)
+end
+
+"""
+  function remove_neighborless_vars!(d::SummationDecapode)
+
+Remove all Vars from the given Decapode that are not part of any computation.
+"""
+function remove_neighborless_vars!(d::SummationDecapode)
+  neighborless_vars = setdiff(parts(d,:Var),
+                              union(d[:src],
+                                    d[:tgt],
+                                    d[:proj1],
+                                    d[:proj2],
+                                    d[:res],
+                                    d[:sum],
+                                    d[:summand],
+                                    d[:incl]))
+  #union(map(x -> t5_orig[x], [:src, :tgt])...) alternate syntax
+  #rem_parts!(d, :Var, neighborless_vars)
+  rem_parts!(d, :Var, sort!(neighborless_vars))
+  d
+end
+
+"""
+  function find_chains(d::SummationDecapode)
+
+Find chains of Op1s in the given Decapode. A chain ends when the
+target of the last Op1 is part of an Op2 or sum, or is a target
+of multiple Op1s.
+"""
+function find_chains(d::SummationDecapode)
+  chains = []
+  visited = falses(nparts(d, :Op1))
+  chain_starts = reduce(vcat, incident(d, Decapodes.infer_states(d), :src))
+  s = Stack{Int64}()
+  foreach(x -> push!(s, x), chain_starts)
+  while !isempty(s)
+    # Start a new chain.
+    op_to_visit = pop!(s)
+    curr_chain = []
+    while true
+      visited[op_to_visit] = true
+      append!(curr_chain, op_to_visit)
+
+      tgt = d[op_to_visit, :tgt]
+      next_op1s = incident(d, tgt, :src)
+      next_op2s = vcat(incident(d, tgt, :proj1), incident(d, tgt, :proj1))
+      if (length(next_op1s) != 1 ||
+          length(next_op2s) != 0 ||
+          is_tgt_of_many_ops(d, tgt) ||
+          !isempty(incident(d, tgt, :sum)) ||
+          !isempty(incident(d, tgt, :summand)))
+        # Terminate chain.
+        append!(chains, [curr_chain])
+        for next_op1 in next_op1s
+          visited[next_op1] || push!(s, next_op1)
+        end
+        break
+      end
+      # Try to continue chain.
+      op_to_visit = only(next_op1s)
+    end
+  end
+  return chains
 end
 
 function add_constant!(d::AbstractNamedDecapode, k::Symbol)

@@ -798,3 +798,65 @@ end
   op2s_expected_hx = [:*, :/, :/, :L₀, :/, :L₁′, :*, :/, :*, :i₁, :/, :*, :*, :L₀]
   @test op2s_hx == op2s_expected_hx
 end
+
+@testset "Compilation Transformation" begin
+
+  # contract_operators does not change the order of op1s.
+  Test1 = quote
+    (A,B)::Form0{X}
+    B == ∘(j,i,h,g,f)(A)
+  end
+  t1_orig = SummationDecapode(parse_decapode(Test1))
+  t1_expanded = expand_operators(t1_orig)
+  t1_contracted = contract_operators(t1_expanded)
+  @test t1_orig == t1_contracted
+  # contract_operators does not mutate its argument.
+  @test t1_contracted !== t1_expanded
+
+  # contract_operators works on multiple chains.
+  Test2 = quote
+    (A,B,C,D)::Form0{X}
+    B == ∘(d,d,⋆,d,d)(A)
+    D == ∘(d,d,⋆,d,d)(C)
+  end
+  t2_orig = SummationDecapode(parse_decapode(Test2))
+  t2_expanded = expand_operators(t2_orig)
+  t2_contracted = contract_operators(t2_expanded)
+  #@test t2_orig == t2_contracted
+  @test issetequal(
+                   [(t2_orig[:src][i], t2_orig[:tgt][i], t2_orig[:op1][i]) for i in parts(t2_orig, :Op1)],
+                   [(t2_contracted[:src][i], t2_contracted[:tgt][i], t2_contracted[:op1][i]) for i in parts(t2_contracted, :Op1)])
+
+
+  # contract_operators "absorbs ∘s".
+  t3_orig = SummationDecapode(parse_decapode(quote
+    (A,B)::Form0{X}
+    B == f(∘(g)(A))
+    #D == ∘(g)(f(C)) # Uncomment when parsing supports this
+  end))
+  t3_expanded = expand_operators(t3_orig)
+  t3_contracted = contract_operators(t3_expanded)
+  @test t3_contracted == SummationDecapode(parse_decapode(quote
+    (A,B)::Form0{X}
+    B == ∘(g,f)(A)
+  end))
+
+  # contract_operators does not contract through when a var is
+  # the target of multiple ops.
+  t4_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D)::Form0{X}
+    C == f(A)
+    C == g(B)
+    D == h(C)
+  end))
+  @test t4_orig == contract_operators(t4_orig)
+
+  # contract_operators does not contract through when a var is a summand.
+  t5_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D,E)::Form0{X}
+    B == f(A)
+    C == g(B)
+    E == B + D
+  end))
+  @test t5_orig == contract_operators(t5_orig)
+end
