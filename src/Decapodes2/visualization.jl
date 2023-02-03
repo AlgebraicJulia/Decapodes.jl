@@ -8,7 +8,7 @@ using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
 
 reg_to_sub = Dict('0'=>'₀', '1'=>"₁", '2'=>'₂', '3'=>'₃', '4'=>'₄',
-    '5'=>'₅', '6'=>'₆','7'=>'₇', '8'=>'₈', '9'=>'₉', 'r'=>'•')
+    '5'=>'₅', '6'=>'₆','7'=>'₇', '8'=>'₈', '9'=>'₉', 'r'=>'•', 'l'=>'L')
 
 toSub(digit::Char) = get(reg_to_sub, digit, digit)
 
