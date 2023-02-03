@@ -42,7 +42,7 @@ term(expr::Expr) = begin
         Expr(:call, a, b) => App1(a, term(b))
 
         # TODO: Not sure how to handle the results from this, is this an Op2 followed by Op1's?
-        Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc2(f, term(x), term(y))
+        # Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc2(f, term(x), term(y))
 
         Expr(:call, :+, xs...) => Plus(term.(xs))
         Expr(:call, f, x, y) => App2(f, term(x), term(y))
@@ -60,8 +60,14 @@ function parse_decapode(expr::Expr)
     stmts = map(expr.args) do line 
         @match line begin
             ::LineNumberNode => missing
-            Expr(:(::), a::Symbol, b) => Judge(Var(a),b.args[1], b.args[2])
+            # TODO: If user doesn't provide space, this gives a temp space so we can continue to construction
+            # For now spaces don't matter so this is fine but if they do, this will need to change
+            Expr(:(::), a::Symbol, b::Symbol) => Judge(Var(a), b, :I)
+            Expr(:(::), a::Expr, b::Symbol) => map(sym -> Judge(Var(sym), b, :I), a.args)
+
+            Expr(:(::), a::Symbol, b) => Judge(Var(a), b.args[1], b.args[2])
             Expr(:(::), a::Expr, b) => map(sym -> Judge(Var(sym), b.args[1], b.args[2]), a.args)
+
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
             _ => error("The line $line is malformed")
         end

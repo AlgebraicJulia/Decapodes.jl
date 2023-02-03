@@ -90,7 +90,7 @@ term(:(∧₀₁(C,V)))
     # @test term(Expr(:ϕ)) == Var(:ϕ)
     @test typeof(term(:(d₀(C)))) == App1
     @test typeof(term(:(∘(k, d₀)(C)))) == AppCirc1
-    @test typeof(term(:(∘(k, d₀)(C,Φ)))) == AppCirc2
+    # @test typeof(term(:(∘(k, d₀)(C,Φ)))) == AppCirc2
     # @test term(:(∘(k, d₀)(C))) == AppCirc1([:k, :d₀], Var(:C)) #(:App1, ((:Circ, :k, :d₀), Var(:C)))
     # @test term(:(∘(k, d₀{X})(C))) == (:App1, ((:Circ, :k, :(d₀{X})), Var(:C)))
     @test_throws MethodError term(:(Ċ == ∘(⋆₀⁻¹{X}, dual_d₁{X}, ⋆₁{X})(ϕ)))
@@ -98,7 +98,7 @@ term(:(∧₀₁(C,V)))
     # @test term(:(∂ₜ{Form0}(C))) == App1(:Tan, Var(:C))
 end
 
-@testset "Recursive Expr" begin
+#= @testset "Recursive Expr" begin
   Recursion = quote
     x::Form0{X}
     y::Form0{X}
@@ -116,7 +116,28 @@ end
   @test nparts(rdp, :Op1) == 5
   @test nparts(rdp, :Op2) == 2
   @test nparts(rdp, :Σ) == 1
+end =#
+
+@testset "Recursive Expr" begin
+  Recursion = quote
+    x::Form0{X}
+    y::Form0{X}
+    z::Form0{X}
+
+    ∂ₜ(z) == f1(x) + ∘(g, h)(y)
+    y == F(f2(x), ρ(x,z))
+  end
+
+  recExpr = parse_decapode(Recursion)
+  rdp = SummationDecapode(recExpr)
+
+  @test nparts(rdp, :Var) == 8
+  @test nparts(rdp, :TVar) == 1
+  @test nparts(rdp, :Op1) == 4
+  @test nparts(rdp, :Op2) == 2
+  @test nparts(rdp, :Σ) == 1
 end
+
 Recursion = quote
   x::Form0{X}
   y::Form0{X}
