@@ -44,7 +44,7 @@ end
 
 Diffusion = SummationDecapode(parse_decapode(DiffusionExprBody))
 to_graphviz(Diffusion)
-to_graphviz(Diffusion, graph_attrs=Dict(:rankdir => "LR"))
+#to_graphviz(Diffusion, graph_attrs=Dict(:rankdir => "LR"))
 
 # AdvectionExprBody = quote
 #   (V)::Form1{X}  #  M = ρV
@@ -54,14 +54,15 @@ to_graphviz(Diffusion, graph_attrs=Dict(:rankdir => "LR"))
 AdvectionExprBody = quote
   (V)::Form1{X}  #  M = ρV
   (ρ, ρ̇)::Form0{X}
+  (negone)::Constant{X}
   # ρ̇ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(ρ))))
   #ρ̇ == ρ*∘(⋆₁,d̃₁,⋆₀⁻¹)(V) + i₁′(V, d₀(ρ))
-  ρ̇ == ρ .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(V) + i₁′(V, d₀(ρ))
+  ρ̇ == (negone * ρ) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(V) + i₁′(V, d₀(ρ))
 end
 
 Advection = SummationDecapode(parse_decapode(AdvectionExprBody))
 to_graphviz(Advection)
-to_graphviz(Advection, graph_attrs=Dict(:rankdir => "LR"))
+#to_graphviz(Advection, graph_attrs=Dict(:rankdir => "LR"))
 
 SuperpositionExprBody = quote
   (T, Ṫ, Ṫ₁, Ṫₐ)::Form0{X}
@@ -70,7 +71,7 @@ SuperpositionExprBody = quote
 end
 Superposition = SummationDecapode(parse_decapode(SuperpositionExprBody))
 to_graphviz(Superposition)
-to_graphviz(Superposition, graph_attrs=Dict(:rankdir => "LR"))
+#to_graphviz(Superposition, graph_attrs=Dict(:rankdir => "LR"))
 
 compose_continuity = @relation () begin
   diffusion(ρ, ρ₁)
@@ -87,7 +88,7 @@ continuity_cospan = oapply(compose_continuity,
 
 Continuity = apex(continuity_cospan)
 to_graphviz(Continuity)
-to_graphviz(Continuity, graph_attrs=Dict(:rankdir => "LR"))
+#to_graphviz(Continuity, graph_attrs=Dict(:rankdir => "LR"))
 
 # NavierStokesExprBody = quote
 #   (V, V̇, G, V)::Form1{X}
@@ -113,7 +114,8 @@ NavierStokesExprBody = quote
   (two,three,kᵥ)::Constant{X}
   ∂ₜ(V) == V̇
   V̇ == neg₁(L₁′(V, V)) +     # advective term 1 of velocity
-        d₀(i₁′(V, V)/two) +  # advective term 2
+        #d₀(i₁′(V, V)/two) +  # advective term 2
+        neg₁(d₀(i₁′(V, V)/two)) +  # advective term 2
         kᵥ*(Δ₁(V) + d₀(δ₁(V))/three) +   # diffusive term of velocity
         neg₁(d₀(p)) 
         # G 
@@ -125,7 +127,7 @@ end
 
 NavierStokes = SummationDecapode(parse_decapode(NavierStokesExprBody))
 to_graphviz(NavierStokes)
-to_graphviz(NavierStokes, graph_attrs=Dict(:rankdir => "LR"))
+#to_graphviz(NavierStokes, graph_attrs=Dict(:rankdir => "LR"))
 
 EnergyExprBody = quote
   (V)::Form1{X}
@@ -135,14 +137,15 @@ EnergyExprBody = quote
   # T == p/n/kᵥ
   #ṗ == 2*3 * (5/2*p*∘(⋆,d,⋆⁻¹)(V) + i₁(V, d(p))) #  - ρ*ν*3*kᵥ*(T-Tₑ) )
   # Note: I changed fv to f .* v
-  ṗ == (((((two * three) * five) / two ) * p) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(V)) + ((two * three) * i₁′(V, d₀(p))) #  - ρ*ν*three*kᵥ*(T-Tₑ) )
+  #ṗ == (((((two * three) * five) / two ) * p) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(V)) + ((two * three) * i₁′(V, d₀(p))) #  - ρ*ν*three*kᵥ*(T-Tₑ) )
+  ṗ == neg₁(((((two * three) * five) / two ) * p) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(V)) + neg₁(((two * three) * i₁′(V, d₀(p)))) #  - ρ*ν*three*kᵥ*(T-Tₑ) )
   
   ∂ₜ(p) == ṗ
 end
 
 Energy = SummationDecapode(parse_decapode(EnergyExprBody))
 to_graphviz(Energy)
-to_graphviz(Energy, graph_attrs=Dict(:rankdir => "LR"))
+#to_graphviz(Energy, graph_attrs=Dict(:rankdir => "LR"))
 
 
 compose_heatXfer = @relation () begin
@@ -160,7 +163,7 @@ heatXfer_cospan = oapply(compose_heatXfer,
 
 HeatXfer = apex(heatXfer_cospan)
 to_graphviz(HeatXfer)
-to_graphviz(HeatXfer, graph_attrs=Dict(:rankdir => "LR"))
+#to_graphviz(HeatXfer, graph_attrs=Dict(:rankdir => "LR"))
 to_graphviz(expand_operators(HeatXfer))
 
 radius = (6371+90) * 1e3  # to shell altitude: meters
@@ -171,7 +174,7 @@ nploc = argmax(x -> x[3], primal_earth[:point])
 orient!(primal_earth)
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
 subdivide_duals!(earth, Circumcenter())
-
+earth
 
 # x is a Form1, y is a DualForm0 or Form2
 # Returns a Form1.
@@ -516,9 +519,10 @@ my_constants = (kᵥ=1.2e-5,
   energy_two=2,
   energy_three=3,
   energy_five=5,
+  continuity_advection_negone=-1,
   continuity_diffusion_k=k₁)
+#fₘ(Nothing, u₀, my_constants, (0, 1e-8))
 prob = ODEProblem(fₘ,u₀,(0,1e-4),my_constants)
-fₘ(Nothing, u₀, my_constants, (0, 1e-8))
 soln = solve(prob, Tsit5())
 soln.retcode != :Unstable || error("Solver was not stable")
 @info("Solving")
@@ -541,13 +545,19 @@ colors = [findnode(soln(t), :P) for t in times]
 
 # Initial frame
 #fig, ax, ob = GLMakie.mesh(primal_earth, color=colors[1], colorrange = (-0.0001, 0.0001), colormap=:jet)
-fig, ax, ob = GLMakie.mesh(primal_earth, color=colors[1], colormap=:jet)
+fig, ax, ob = GLMakie.mesh(primal_earth, color=colors[1], colormap=:jet, colorrange=extrema(colors[1]))
 Colorbar(fig[1,2], ob)
 framerate = 5
+lab = Label(fig[1,1,Top()], "title")
+#ax = Axis3(fig[1,1], title="title")
+
 
 # Animation
 #record(fig, "weatherNS.gif", range(0.0, tₑ; length=150); framerate = 30) do t
-record(fig, "weatherNS.gif", range(0.0, 2.0; length=150); framerate = 30) do t
+using Printf
+record(fig, "weatherNS.gif", range(0.0, 2.1; length=150); framerate = 30) do t
     ob.color = findnode(soln(t), :P)
+    #ax.title = string(t)
+    lab.text = @sprintf("%.2f",t)
 end
 end
