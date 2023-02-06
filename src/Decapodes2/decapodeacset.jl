@@ -60,6 +60,15 @@ function make_sum_unique!(d::AbstractNamedDecapode)
   end
 end
 
+# Note: This hard-bakes in Form0 through Form2, and higher Forms are not
+# allowed.
+function recognize_types(d::AbstractNamedDecapode)
+  unrecognized_types = setdiff(d[:type], [:Form0, :Form1, :Form2, :DualForm0,
+                          :DualForm1, :DualForm2, :Literal, :Parameter, :infer])
+  isempty(unrecognized_types) ||
+    error("Types $unrecognized_types are not recognized.")
+end
+
 function expand_operators(d::AbstractNamedDecapode)
   e = SummationDecapode{Symbol, Symbol, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op2))

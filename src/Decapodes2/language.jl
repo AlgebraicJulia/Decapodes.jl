@@ -216,6 +216,7 @@ function Decapode(e::DecaExpr)
   for eq in e.equations
     eval_eq!(eq, d, symbol_table)
   end
+  recognize_types(d)
   return d
 end
 
@@ -231,6 +232,7 @@ function NamedDecapode(e::DecaExpr)
     end
     fill_names!(d)
     d[:name] = map(normalize_unicode,d[:name])
+    recognize_types(d)
     return d
 end
 
@@ -247,6 +249,7 @@ function SummationDecapode(e::DecaExpr)
     fill_names!(d)
     d[:name] .= normalize_unicode.(d[:name])
     make_sum_unique!(d)
+    recognize_types(d)
     return d
 end
 
