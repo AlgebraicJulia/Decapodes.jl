@@ -1,3 +1,7 @@
+using Logging: global_logger
+using TerminalLoggers: TerminalLogger
+global_logger(TerminalLogger())
+
 using Catlab
 using Catlab.CategoricalAlgebra
 using Catlab.Graphics
@@ -18,21 +22,12 @@ using SparseArrays
 using GeometryBasics: Point3
 Point3D = Point3{Float64}
 
-# Begin Navier Stokes
-
-# # Navier Stokes example
-# DiffusionExprBody = quote
-#   (T, Ṫ)::Form0{X}
-#   ϕ::DualForm1{X}
-#   k::Constant{X}
-#   # Fick's first law
-#   ϕ ==  ⋆₁(k*d₀(T))
-#   # Diffusion equation
-#   Ṫ == ⋆₀⁻¹(dual_d₁(ϕ))
-# end
+##############
+# Continuity #
+##############
 
 # Navier Stokes example
-DiffusionExprBody = quote
+Diffusion = SummationDecapode(parse_decapode(quote
   (ρ, ρ̇)::Form0{X}
   ϕ::DualForm1{X}
   k::Constant{X}
@@ -40,73 +35,45 @@ DiffusionExprBody = quote
   ϕ ==  ⋆₁(k*d₀(ρ)) # diffusion through a dual edge
   # Diffusion equation
   ρ̇ == ⋆₀⁻¹(dual_d₁(ϕ)) # total diffusion through all dual edges about a vertex
-end
-
-Diffusion = SummationDecapode(parse_decapode(DiffusionExprBody))
+end))
 to_graphviz(Diffusion)
-#to_graphviz(Diffusion, graph_attrs=Dict(:rankdir => "LR"))
 
-# AdvectionExprBody = quote
-#   (V)::Form1{X}  #  M = ρV
-#   (ρ, p)::Form0{X}
-#   Ṫ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(T))))
-# end
-AdvectionExprBody = quote
+Advection = SummationDecapode(parse_decapode(quote
   (V)::Form1{X}  #  M = ρV
   (ρ, ρ̇)::Form0{X}
   (negone)::Constant{X}
   # ρ̇ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(ρ))))
   #ρ̇ == ρ*∘(⋆₁,d̃₁,⋆₀⁻¹)(V) + i₁′(V, d₀(ρ))
   ρ̇ == (negone * ρ) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(V) + i₁′(V, d₀(ρ))
-end
-
-Advection = SummationDecapode(parse_decapode(AdvectionExprBody))
+end))
 to_graphviz(Advection)
-#to_graphviz(Advection, graph_attrs=Dict(:rankdir => "LR"))
 
-SuperpositionExprBody = quote
+Superposition = SummationDecapode(parse_decapode(quote
   (T, Ṫ, Ṫ₁, Ṫₐ)::Form0{X}
   Ṫ == Ṫ₁ + Ṫₐ
   ∂ₜ(T) == Ṫ 
-end
-Superposition = SummationDecapode(parse_decapode(SuperpositionExprBody))
+end))
 to_graphviz(Superposition)
-#to_graphviz(Superposition, graph_attrs=Dict(:rankdir => "LR"))
 
 compose_continuity = @relation () begin
   diffusion(ρ, ρ₁)
   advection(V, ρ, ρ₂)
   superposition(ρ, ρ̇, ρ₁, ρ₂)
 end
-#to_graphviz(compose_continuity, junction_labels=:variable, box_labels=:name, prog="neato")
 to_graphviz(compose_continuity, junction_labels=:variable, box_labels=:name, prog="circo")
 
 continuity_cospan = oapply(compose_continuity,
                 [Open(Diffusion, [:ρ, :ρ̇ ]),
                  Open(Advection, [:V, :ρ, :ρ̇ ]),
                  Open(Superposition, [:T, :Ṫ, :Ṫ₁, :Ṫₐ])])
-
 Continuity = apex(continuity_cospan)
 to_graphviz(Continuity)
-#to_graphviz(Continuity, graph_attrs=Dict(:rankdir => "LR"))
 
-# NavierStokesExprBody = quote
-#   (V, V̇, G, V)::Form1{X}
-#   (T, ρ, p, ṗ)::Form0{X}
-#   (two,three,kᵥ)::Constant{X}
-#   V == M/avg₀₁(ρ)   # change this, also correct for mass density units
-#   V̇ == neg₁(L₁′(V, V)) + 
-#         kᵥ*(Δ₁(V) + d₀(δ₁(V))/three) + # include div v for compressbile fluids?
-#         d₀(i₁′(V, V)/two) +
-#         neg₁(d₀(p)) +    # update p with p = ρkT
-#         G # + 
-#         # (q*V cross product B) # 1 form in primal mesh with 0 form in dual mesh
-#   ∂ₜ(V) == V̇
-#   ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(p)))) # *Lie(3Form) = Div(*3Form x v) --> conservation of pressure   where does this come from?
-#   ∂ₜ(p) == ṗ
-# end
+#################
+# Navier-Stokes #
+#################
 
-NavierStokesExprBody = quote
+NavierStokes = SummationDecapode(parse_decapode(quote
   # (G, B, V)::Form1{X}
   (V, V̇)::Form1{X}
   (p)::Form0{X}
@@ -122,13 +89,14 @@ NavierStokesExprBody = quote
   # ∂ₜ(M) == Ṁ
   # ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(p)))) # *Lie(3Form) = Div(*3Form x v) --> conservation of pressure
   # ∂ₜ(p) == ṗ
-end
-
-NavierStokes = SummationDecapode(parse_decapode(NavierStokesExprBody))
+end))
 to_graphviz(NavierStokes)
-#to_graphviz(NavierStokes, graph_attrs=Dict(:rankdir => "LR"))
 
-EnergyExprBody = quote
+##############################
+# Energy (Boltzmann moments) #
+##############################
+
+Energy = SummationDecapode(parse_decapode(quote
   (V)::Form1{X}
   # (p, ṗ, T, Tₑ)::Form0{X}
   (p, ṗ)::Form0{X}
@@ -140,19 +108,18 @@ EnergyExprBody = quote
   ṗ == neg₁(((((two * three) * five) / two ) * p) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(V)) + neg₁(((two * three) * i₁′(V, d₀(p)))) #  - ρ*ν*three*kᵥ*(T-Tₑ) )
   
   ∂ₜ(p) == ṗ
-end
-
-Energy = SummationDecapode(parse_decapode(EnergyExprBody))
+end))
 to_graphviz(Energy)
-#to_graphviz(Energy, graph_attrs=Dict(:rankdir => "LR"))
 
+#################
+# Heat Transfer #
+#################
 
 compose_heatXfer = @relation () begin
   continuity(V, ρ)
   navierstokes(V, P)
   energy(V, P)
 end
-#to_graphviz(compose_heatXtfer, junction_labels=:variable, box_labels=:name, prog="neato")
 to_graphviz(compose_heatXfer, junction_labels=:variable, box_labels=:name, prog="circo")
 
 heatXfer_cospan = oapply(compose_heatXfer,
@@ -162,18 +129,43 @@ heatXfer_cospan = oapply(compose_heatXfer,
 
 HeatXfer = apex(heatXfer_cospan)
 to_graphviz(HeatXfer)
-#to_graphviz(HeatXfer, graph_attrs=Dict(:rankdir => "LR"))
 to_graphviz(expand_operators(HeatXfer))
 
-radius = (6371+90) * 1e3  # to shell altitude: meters
+#################
+# Multi-Species #
+#################
 
-primal_earth = loadmesh(Icosphere(4, radius))
+compose_multi_ns = @relation () begin
+  hydrogen(hydrogen_P)
+  proton(proton_P)
+end
+to_graphviz(compose_multi_ns, junction_labels=:variable, box_labels=:name, prog="circo")
+
+multi_ns_cospan = oapply(compose_multi_ns,
+  [Open(HeatXfer, [:P]),
+  Open(HeatXfer, [:P])])
+multi_ns = apex(multi_ns_cospan)
+to_graphviz(multi_ns)
+
+################
+# Mesh Loading #
+################
+
+const EARTH_RADIUS = 6371
+const SHELL_ALTITUDE = 90
+const RADIUS = (EARTH_RADIUS+SHELL_ALTITUDE) * 1e3  # to shell altitude: meters
+
+primal_earth = loadmesh(Icosphere(3, RADIUS))
 nploc = argmax(x -> x[3], primal_earth[:point])
 
 orient!(primal_earth)
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
 subdivide_duals!(earth, Circumcenter())
 earth
+
+#############
+# Operators #
+#############
 
 # x is a Form1, y is a DualForm0 or Form2
 # Returns a Form1.
@@ -332,7 +324,6 @@ function avg_mat(::Type{Val{(0,1)}},s)
   sparse(I,J,V)
 end
 
-
 hodge = GeometricHodge()
 d₀(x,sd) = d(0,sd)*x
 d₁(x,sd) = d(1,sd)*x
@@ -341,20 +332,11 @@ d₁(x,sd) = d(1,sd)*x
 ⋆₂(x,sd,hodge) = ⋆(2,sd,hodge=hodge)*x
 ⋆₀⁻¹(x,sd,hodge) = inv_hodge_star(0,sd,hodge=hodge)*x
 ⋆₁⁻¹(x,sd,hodge) = inv_hodge_star(1,sd,hodge=hodge)*x
-#∧₁₁′(x,y,sd) = wedge_product(Tuple{1,1}, sd, x, y)
 ∧₁₁′(x,y,sd) = pd_wedge(Val{(1,1)}, sd, x, y)
 ∧₁₀′(x,y) = cp_2_1(x,y)
 i₀′(x,y,sd,hodge) = -1.0 * (∧₁₀′(x, ⋆₂(y,sd,hodge)))
-#i₁′(v,x) = inv_hodge_star(0,sd, hodge=hodge) * wedge_product(Tuple{1,1}, sd, v, ⋆(1, sd, hodge=hodge) * x) #⋆₀⁻¹{X}(∧₁₁′(F1, ⋆₁{X}(F1′)))
 i₁′(x,y,sd,hodge) = ⋆₀⁻¹(∧₁₁′(x, ⋆₁(y,sd,hodge), sd),sd,hodge) #⋆₀⁻¹{X}(∧₁₁′(F1, ⋆₁{X}(F1′)))
-#L₁′(x,y,sd,hodge) = i₀′(x,d₁(y,sd),sd,hodge) + d₀(i₁′(x,y,sd,hodge),sd)
 L1′(x,y,sd,hodge) = i₀′(x,d₁(y,sd),sd,hodge) + d₀(i₁′(x,y,sd,hodge),sd)
-boltzmann_constant = 1.38064852e-23
-mol_mass = 28.96
-density = 0.000210322
-kₜ = 0.0246295028571 # Thermal conductivity
-cₚ = 1004.703 # Specific Heat at constant pressure
-k₁ = kₜ / (density * cₚ) # Heat diffusion constant in fluid
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
@@ -447,12 +429,16 @@ end
 
 flatten_form(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
-physics = HeatXfer
+#physics = HeatXfer
+physics = multi_ns
 gensim(expand_operators(physics))
 sim = eval(gensim(expand_operators(physics)))
 
 fₘ = sim(earth, generate)
 
+######################
+# Initial Conditions #
+######################
 
 begin
   #vmag = 500
@@ -474,21 +460,18 @@ end
 
 #begin
 v = flatten_form(velocity, earth)
-#c_dist = MvNormal([radius/√(2), radius/√(2)], 20*[1, 1])
+#c_dist = MvNormal([RADIUS/√(2), RADIUS/√(2)], 20*[1, 1])
 #c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
 
 theta_start = 45*pi/180
 phi_start = 0*pi/180
-x = radius*cos(phi_start)*sin(theta_start)
-y = radius*sin(phi_start)*sin(theta_start)
-z = radius*cos(theta_start)
-c_dist₁ = MvNormal([x, y, z], 20*[1, 1, 1])
-c_dist₂ = MvNormal([x, y, -z], 20*[1, 1, 1])
+x = RADIUS*cos(phi_start)*sin(theta_start)
+y = RADIUS*sin(phi_start)*sin(theta_start)
+z = RADIUS*cos(theta_start)
+#c_dist₁ = MvNormal([x, y, z], 20*[1, 1, 1])
+#c_dist₂ = MvNormal([x, y, -z], 20*[1, 1, 1])
+#c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 
-c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
-
-t = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
-#pfield = 100000*[p[3] for p in earth[:point]]
 pfield = 100000*[abs(p[3]) for p in earth[:point]]
 
 # TODO What are good initial conditions for this?
@@ -498,9 +481,9 @@ pfield = 100000*[abs(p[3]) for p in earth[:point]]
 
 m = 8e22 # dipole moment units: A*m^2
 μ₀ = 4*π*1e-7 # permeability units: kg*m/s^2/A^2
-# Bθ(p) = -μ₀*m*sin(theta(p))/(4*π*radius^3)  # radius instead of r(p)*1000 
+# Bθ(p) = -μ₀*m*sin(theta(p))/(4*π*RADIUS^3)  # RADIUS instead of r(p)*1000 
 # B1Form = flatten_form(p->TangentBasis(CartesianPoint(p))(Bθ(CartesianPoint(p)), 0), earth)
-Br(p) = -μ₀*2*m*cos(theta(p))/(4*π*radius^3)  # radius instead of r(p)*1000 
+Br(p) = -μ₀*2*m*cos(theta(p))/(4*π*RADIUS^3)  # RADIUS instead of r(p)*1000 
 Br_flux = hodge_star(earth, TriForm(map(triangles(earth)) do t 
                         dual_pid = triangle_center(earth, t)
                         p = earth[dual_pid, :dual_point]
@@ -509,25 +492,53 @@ Br_flux = hodge_star(earth, TriForm(map(triangles(earth)) do t
 # B₀(p) = sqrt(Bθ(p)^2+Br(p)^2)
 
 
-u₀ = construct(PhysicsState, [VectorForm(ρ), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:ρ, :V, :P])
+#u₀ = construct(PhysicsState, [VectorForm(ρ), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:ρ, :V, :P])
+u₀ = construct(PhysicsState, [VectorForm(ρ), VectorForm(collect(v)), VectorForm(pfield), VectorForm(ρ), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:hydrogen_ρ, :hydrogen_V, :hydrogen_P, :proton_ρ, :proton_V, :proton_P])
 #mesh(primal_earth, color=findnode(u₀, :P), colormap=:plasma)
+
+##########################
+# Constants & Parameters #
+##########################
+
+boltzmann_constant = 1.38064852e-23
+mol_mass = 28.96
+density = 0.000210322
+kₜ = 0.0246295028571 # Thermal conductivity
+cₚ = 1004.703 # Specific Heat at constant pressure
+k₁ = kₜ / (density * cₚ) # Heat diffusion constant in fluid
+avagadros_number = 6.0221409e23
+R₀ = boltzmann_constant * avagadros_number / mol_mass / 1e3
+
+my_constants = (kᵥ=1.2e-5,
+  hydrogen_navierstokes_two=2,
+  hydrogen_navierstokes_three=3,
+  hydrogen_navierstokes_kᵥ=3,
+  proton_navierstokes_two=2,
+  proton_navierstokes_three=3,
+  proton_navierstokes_kᵥ=3,
+  proton_energy_two=2,
+  proton_energy_three=3,
+  proton_energy_five=5,
+  hydrogen_energy_two=2,
+  hydrogen_energy_three=3,
+  hydrogen_energy_five=5,
+  proton_continuity_advection_negone=-1,
+  hydrogen_continuity_advection_negone=-1,
+  proton_continuity_diffusion_k=k₁,
+  hydrogen_continuity_diffusion_k=k₁)
+
 #tₑ = 30.0
 #tₑ = 4.0
 tₑ = 10.0
 
+###########
+# Solving #
+###########
+
 @info("Precompiling Solver")
-my_constants = (kᵥ=1.2e-5,
-  navierstokes_two=2,
-  navierstokes_three=3,
-  navierstokes_kᵥ=3,
-  energy_two=2,
-  energy_three=3,
-  energy_five=5,
-  continuity_advection_negone=-1,
-  continuity_diffusion_k=k₁)
 #fₘ(Nothing, u₀, my_constants, (0, 1e-8))
 prob = ODEProblem(fₘ,u₀,(0,1e-4),my_constants)
-soln = solve(prob, Tsit5())
+soln = solve(prob, Tsit5(), progress=true)
 soln.retcode != :Unstable || error("Solver was not stable")
 @info("Solving")
 prob = ODEProblem(fₘ,u₀,(0,tₑ),my_constants)
@@ -535,56 +546,65 @@ soln = solve(prob, Tsit5())
 @info("Done")
 #end
 
-begin
-mass(soln, t, mesh, concentration=:P) = sum(⋆(0, mesh)*findnode(soln(t), concentration))
+#begin
+#mass(soln, t, mesh, concentration=:P) = sum(⋆(0, mesh)*findnode(soln(t), concentration))
+#
+#@show extrema(mass(soln, t, earth, :P) for t in 0:tₑ/150:tₑ)
+#end
+#mesh(primal_earth, color=findnode(soln(0), :P), colormap=:jet)
+#mesh(primal_earth, color=findnode(soln(0) - soln(tₑ), :P), colormap=:jet)
+#begin
 
-@show extrema(mass(soln, t, earth, :P) for t in 0:tₑ/150:tₑ)
-end
-mesh(primal_earth, color=findnode(soln(0), :P), colormap=:jet)
-mesh(primal_earth, color=findnode(soln(0) - soln(tₑ), :P), colormap=:jet)
-begin
+############
+# Plotting #
+############
+
 # Plot the result
 times = range(0.0, tₑ, length=150)
-#colors = [findnode(soln(t), :ρ) for t in times]
-colors = [inv_hodge_star(0,earth)*dual_derivative(1,earth)*hodge_star(1, earth, hodge=hodge)*findnode(soln(t), :V) for t in times]
+colors_proton = [findnode(soln(t), :proton_ρ) for t in times]
+colors_hydrogen = [findnode(soln(t), :hydrogen_ρ) for t in times]
 # Initial frame
-#fig, ax, ob = GLMakie.mesh(primal_earth, color=colors[1], colorrange = (-0.0001, 0.0001), colormap=:jet)
-fig, ax, ob = GLMakie.mesh(primal_earth, color=colors[1], colormap=:jet, colorrange=extrema(colors[1]))
-Colorbar(fig[1,2], ob)
-framerate = 5
-# TODO Add another label that says what we are plotting.
-lab = Label(fig[1,1,Top()], "")
-#ax = Axis3(fig[1,1], title="title")
-
+fig = GLMakie.Figure()
+p1 = GLMakie.mesh(fig[1,2], primal_earth, color=colors_proton[1], colormap=:jet, colorrange=extrema(colors_proton[1]))
+p2 = GLMakie.mesh(fig[1,3], primal_earth, color=colors_hydrogen[1], colormap=:jet, colorrange=extrema(colors_hydrogen[1]))
+Colorbar(fig[1,1], ob_proton)
+Colorbar(fig[1,4], ob_hydrogen)
+Label(fig[1,2,Top()], "Proton ρ")
+Label(fig[1,3,Top()], "Hydrogen ρ")
+lab1 = Label(fig[1,2,Bottom()], "")
+lab2 = Label(fig[1,3,Bottom()], "")
 
 # Animation
 using Printf
 record(fig, "weatherNS.gif", range(0.0, tₑ; length=150); framerate = 30) do t
-#record(fig, "weatherNS.gif", range(0.0, 2.1; length=150); framerate = 30) do t
-    #ob.color = findnode(soln(t), :V)
-    ob.color = inv_hodge_star(0,earth)*dual_derivative(1,earth)*hodge_star(1, earth, hodge=hodge)*findnode(soln(t), :V)
-    #ax.title = string(t)
-    lab.text = @sprintf("%.2f",t)
+    p1.plot.color = findnode(soln(t), :proton_ρ)
+    p2.plot.color = findnode(soln(t), :hydrogen_ρ)
+    lab1.text = @sprintf("%.2f",t)
+    lab2.text = @sprintf("%.2f",t)
 end
-end
+#end
 
-function interactive_sim_view(my_mesh::EmbeddedDeltaSet2D, tₑ, soln; loop_times = 1)
-  times = range(0.0, tₑ, length = 150)
-  colors = [findnode(soln(t), :ρ) for t in times]
-  fig, ax, ob = GLMakie.mesh(my_mesh, color=colors[1],
-    colorrange = extrema(colors[1]), colormap=:jet)
-  display(fig)
-  loop = range(0.0, tₑ; length=150)
-  for _ in 1:loop_times
-    for t in loop
-      ob.color = findnode(soln(t), :ρ)
-      sleep(0.05)
-    end
-    for t in reverse(loop)
-      ob.color = findnode(soln(t), :ρ)
-      sleep(0.05)
-    end
-  end
-end
+########################
+# Interactive Plotting #
+########################
 
-interactive_sim_view(primal_earth, tₑ, soln, loop_times = 10)
+#function interactive_sim_view(my_mesh::EmbeddedDeltaSet2D, tₑ, soln; loop_times = 1)
+#  times = range(0.0, tₑ, length = 150)
+#  colors = [findnode(soln(t), :ρ) for t in times]
+#  fig, ax, ob = GLMakie.mesh(my_mesh, color=colors[1],
+#    colorrange = extrema(colors[1]), colormap=:jet)
+#  display(fig)
+#  loop = range(0.0, tₑ; length=150)
+#  for _ in 1:loop_times
+#    for t in loop
+#      ob.color = findnode(soln(t), :ρ)
+#      sleep(0.05)
+#    end
+#    for t in reverse(loop)
+#      ob.color = findnode(soln(t), :ρ)
+#      sleep(0.05)
+#    end
+#  end
+#end
+#
+#interactive_sim_view(primal_earth, tₑ, soln, loop_times = 10)
