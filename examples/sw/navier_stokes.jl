@@ -114,7 +114,6 @@ NavierStokesExprBody = quote
   (two,three,kᵥ)::Constant{X}
   ∂ₜ(V) == V̇
   V̇ == neg₁(L₁′(V, V)) +     # advective term 1 of velocity
-        #d₀(i₁′(V, V)/two) +  # advective term 2
         neg₁(d₀(i₁′(V, V)/two)) +  # advective term 2
         kᵥ*(Δ₁(V) + d₀(δ₁(V))/three) +   # diffusive term of velocity
         neg₁(d₀(p)) 
@@ -168,7 +167,7 @@ to_graphviz(expand_operators(HeatXfer))
 
 radius = (6371+90) * 1e3  # to shell altitude: meters
 
-primal_earth = loadmesh(Icosphere(3, radius))
+primal_earth = loadmesh(Icosphere(4, radius))
 nploc = argmax(x -> x[3], primal_earth[:point])
 
 orient!(primal_earth)
@@ -546,13 +545,14 @@ mesh(primal_earth, color=findnode(soln(0) - soln(tₑ), :P), colormap=:jet)
 begin
 # Plot the result
 times = range(0.0, tₑ, length=150)
-colors = [findnode(soln(t), :P) for t in times]
-
+#colors = [findnode(soln(t), :ρ) for t in times]
+colors = [inv_hodge_star(0,earth)*dual_derivative(1,earth)*hodge_star(1, earth, hodge=hodge)*findnode(soln(t), :V) for t in times]
 # Initial frame
 #fig, ax, ob = GLMakie.mesh(primal_earth, color=colors[1], colorrange = (-0.0001, 0.0001), colormap=:jet)
 fig, ax, ob = GLMakie.mesh(primal_earth, color=colors[1], colormap=:jet, colorrange=extrema(colors[1]))
 Colorbar(fig[1,2], ob)
 framerate = 5
+# TODO Add another label that says what we are plotting.
 lab = Label(fig[1,1,Top()], "")
 #ax = Axis3(fig[1,1], title="title")
 
@@ -561,7 +561,8 @@ lab = Label(fig[1,1,Top()], "")
 using Printf
 record(fig, "weatherNS.gif", range(0.0, tₑ; length=150); framerate = 30) do t
 #record(fig, "weatherNS.gif", range(0.0, 2.1; length=150); framerate = 30) do t
-    ob.color = findnode(soln(t), :P)
+    #ob.color = findnode(soln(t), :V)
+    ob.color = inv_hodge_star(0,earth)*dual_derivative(1,earth)*hodge_star(1, earth, hodge=hodge)*findnode(soln(t), :V)
     #ax.title = string(t)
     lab.text = @sprintf("%.2f",t)
 end
@@ -569,18 +570,18 @@ end
 
 function interactive_sim_view(my_mesh::EmbeddedDeltaSet2D, tₑ, soln; loop_times = 1)
   times = range(0.0, tₑ, length = 150)
-  colors = [findnode(soln(t), :P) for t in times]
+  colors = [findnode(soln(t), :ρ) for t in times]
   fig, ax, ob = GLMakie.mesh(my_mesh, color=colors[1],
     colorrange = extrema(colors[1]), colormap=:jet)
   display(fig)
   loop = range(0.0, tₑ; length=150)
   for _ in 1:loop_times
     for t in loop
-      ob.color = findnode(soln(t), :P)
+      ob.color = findnode(soln(t), :ρ)
       sleep(0.05)
     end
     for t in reverse(loop)
-      ob.color = findnode(soln(t), :P)
+      ob.color = findnode(soln(t), :ρ)
       sleep(0.05)
     end
   end
