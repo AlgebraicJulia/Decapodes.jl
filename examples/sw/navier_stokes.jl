@@ -456,7 +456,8 @@ fₘ = sim(earth, generate)
 
 
 begin
-  vmag = 500
+  #vmag = 500
+  vmag = 5
   # velocity(p) = vmag*ϕhat(p)
   velocity(p) = TangentBasis(CartesianPoint(p))(vmag/4, vmag/4)
   # velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, -vmag/4, 0))
@@ -488,10 +489,13 @@ c_dist₂ = MvNormal([x, y, -z], 20*[1, 1, 1])
 c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 
 t = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
-pfield = 100000*[p[3] for p in earth[:point]]
+#pfield = 100000*[p[3] for p in earth[:point]]
+pfield = 100000*[abs(p[3]) for p in earth[:point]]
 
 # TODO What are good initial conditions for this?
-ρ = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
+#ρ = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
+#ρ = 100000*[p[3] for p in earth[:point]]
+ρ = 100000*[abs(p[3]) for p in earth[:point]]
 
 m = 8e22 # dipole moment units: A*m^2
 μ₀ = 4*π*1e-7 # permeability units: kg*m/s^2/A^2
@@ -509,7 +513,8 @@ Br_flux = hodge_star(earth, TriForm(map(triangles(earth)) do t
 u₀ = construct(PhysicsState, [VectorForm(ρ), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:ρ, :V, :P])
 #mesh(primal_earth, color=findnode(u₀, :P), colormap=:plasma)
 #tₑ = 30.0
-tₑ = 4.0
+#tₑ = 4.0
+tₑ = 10.0
 
 @info("Precompiling Solver")
 my_constants = (kᵥ=1.2e-5,
@@ -548,16 +553,37 @@ colors = [findnode(soln(t), :P) for t in times]
 fig, ax, ob = GLMakie.mesh(primal_earth, color=colors[1], colormap=:jet, colorrange=extrema(colors[1]))
 Colorbar(fig[1,2], ob)
 framerate = 5
-lab = Label(fig[1,1,Top()], "title")
+lab = Label(fig[1,1,Top()], "")
 #ax = Axis3(fig[1,1], title="title")
 
 
 # Animation
-#record(fig, "weatherNS.gif", range(0.0, tₑ; length=150); framerate = 30) do t
 using Printf
-record(fig, "weatherNS.gif", range(0.0, 2.1; length=150); framerate = 30) do t
+record(fig, "weatherNS.gif", range(0.0, tₑ; length=150); framerate = 30) do t
+#record(fig, "weatherNS.gif", range(0.0, 2.1; length=150); framerate = 30) do t
     ob.color = findnode(soln(t), :P)
     #ax.title = string(t)
     lab.text = @sprintf("%.2f",t)
 end
 end
+
+function interactive_sim_view(my_mesh::EmbeddedDeltaSet2D, tₑ, soln; loop_times = 1)
+  times = range(0.0, tₑ, length = 150)
+  colors = [findnode(soln(t), :P) for t in times]
+  fig, ax, ob = GLMakie.mesh(my_mesh, color=colors[1],
+    colorrange = extrema(colors[1]), colormap=:jet)
+  display(fig)
+  loop = range(0.0, tₑ; length=150)
+  for _ in 1:loop_times
+    for t in loop
+      ob.color = findnode(soln(t), :P)
+      sleep(0.05)
+    end
+    for t in reverse(loop)
+      ob.color = findnode(soln(t), :P)
+      sleep(0.05)
+    end
+  end
+end
+
+interactive_sim_view(primal_earth, tₑ, soln, loop_times = 10)
