@@ -252,7 +252,7 @@ end
 
   # We use set equality because we do not care about the order of the Var table.
   names_types_1 = Set(zip(t1[:name], t1[:type]))
-  names_types_expected_1 = Set([(:Ċ, :Form0), (:C, :Form0)])
+  names_types_expected_1 = Set([(:Ċ, :Form0)])
   @test issetequal(names_types_1, names_types_expected_1)
 
   # The type of the src of ∂ₜ is inferred.
@@ -265,7 +265,7 @@ end
   infer_types!(t2)
 
   names_types_2 = Set(zip(t2[:name], t2[:type]))
-  names_types_expected_2 = Set([(:Ċ, :Form0), (:C, :Form0)])
+  names_types_expected_2 = Set([(:Ċ, :Form0)])
   @test issetequal(names_types_2, names_types_expected_2)
 
   # The type of the tgt of d is inferred.

@@ -334,16 +334,16 @@ Test8 = SummationDecapode(parse_decapode(DecaTest8))
 Test8Res = average_rewrite(Test8)
 
 Test8Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
-  Var = 4
-  type = Any[:Form1, :Form2, :Form3, :infer]
-  name = [:D₁, :D₂, :F, :D₁̇]
+  Var = 3
+  type = Any[:Form1, :Form2, :Form3]
+  name = [:D₁, :D₂, :D₁̇ ]
 
   TVar = 1
-  incl = [4]
+  incl = [3]
 
   Op1 = 2
   src = [1, 2]
-  tgt = [4, 3]
+  tgt = [3, 3]
   op1 = Any[:∂ₜ, :c₂]
 end
 
@@ -388,7 +388,7 @@ Test10Res = average_rewrite(Test10)
 Test10Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 9
   type = Any[:Form0, :Form0, :Form0, :Form0, :Form0, :Form0, 
-  :Form0, :infer, :Form5]
+  :Form0, :Form5, :Form5]
   name = [:B, :D, :A, Symbol("••1"), Symbol("••2"), Symbol("••sum0"), :C, :Ḣ, :H]
 
   TVar = 1

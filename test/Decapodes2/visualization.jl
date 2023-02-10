@@ -49,10 +49,10 @@ end
 Test2 = SummationDecapode(parse_decapode(DecaTest2))
 t2 = to_graphviz(Test2)
 @test Graphviz.filter_statements(t2, Graphviz.Edge, :label) == ["∂ₜ", "π₁", "π₂", "k", "π₁", "π₂", "p", "π₁", "π₂", "-", "+"]
-@test Graphviz.filter_statements(t2, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₀", "C:Ω₀", "D:Ω₀", "Ḋ:Ω•", "1:ΩL", "•1:Ω•", "•2:Ω•", "sum_1:Ω•", "", "", "Ω₀×Ω₀", "Ω₀×Ω₀", "Ω•×ΩL", "Σ1"]
+@test Graphviz.filter_statements(t2, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₀", "C:Ω₀", "D:Ω₀", "Ḋ:Ω₀", "1:ΩL", "•1:Ω•", "•2:Ω•", "sum_1:Ω•", "", "", "Ω₀×Ω₀", "Ω₀×Ω₀", "Ω•×ΩL", "Σ1"]
 @test Graphviz.filter_statements(t2, Graphviz.Node, :shape) == ["none", "none", "rectangle", "rectangle", "rectangle", "circle"]
 
 t2_undirected = to_graphviz(Test2, directed = false)
 @test Graphviz.filter_statements(t2_undirected, Graphviz.Edge, :label) == ["∂ₜ", "π₁", "π₂", "k", "π₁", "π₂", "p", "π₁", "π₂", "-", "+"]
-@test Graphviz.filter_statements(t2_undirected, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₀", "C:Ω₀", "D:Ω₀", "Ḋ:Ω•", "1:ΩL", "•1:Ω•", "•2:Ω•", "sum_1:Ω•", "Ω₀×Ω₀", "Ω₀×Ω₀", "Ω•×ΩL", "Σ1"]
+@test Graphviz.filter_statements(t2_undirected, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₀", "C:Ω₀", "D:Ω₀", "Ḋ:Ω₀", "1:ΩL", "•1:Ω•", "•2:Ω•", "sum_1:Ω•", "Ω₀×Ω₀", "Ω₀×Ω₀", "Ω•×ΩL", "Σ1"]
 @test Graphviz.filter_statements(t2_undirected, Graphviz.Node, :shape) == ["rectangle", "rectangle", "rectangle", "circle"]

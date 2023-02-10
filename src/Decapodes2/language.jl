@@ -164,6 +164,16 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int})
     Eq(t1, t2) => begin
       lhs_ref = reduce_term!(t1,d,syms)
       rhs_ref = reduce_term!(t2,d,syms)
+
+      ref_pair = (t1, t2)
+      @match ref_pair begin
+        (Var(a), Var(b)) => return d
+        (t1, Var(b)) => begin
+          lhs_ref, rhs_ref = rhs_ref, lhs_ref
+        end
+        _ => nothing
+      end
+
       deletions = []
       # Make rhs_ref equal to lhs_ref and adjust all its incidents
 
