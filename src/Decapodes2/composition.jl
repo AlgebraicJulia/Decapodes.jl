@@ -149,7 +149,7 @@ function oapply_rename(relation::RelationDiagram, decapodes::Vector{D}) where D<
     box_name = r[b, :name]
     for v ∈ parts(decapodes_vars[b], :Var)
       var_name = decapodes_vars[b][v, :name]
-      decapodes_vars[b][v, :name] = Symbol(box_name, '_', var_name)
+      decapodes_vars[b][v, :name] = Symbol(box_name, '/', var_name)
     end
   end
 
@@ -171,7 +171,7 @@ function oapply_rename(relation::RelationDiagram, decapodes::Vector{D}) where D<
       # Note: only is not necessary but is a useful check the decapode is
       # well-formed. If we ever want e.g. X:Form0 and X:Form1 in a single
       # decapode, this will need refactoring.
-      name = Symbol(r[b, :name], '_', lname)
+      name = Symbol(r[b, :name], '/', lname)
       var = only(incident(pode_vars, name, :name))
       j = r[p, :junction]
       globalname = r[j, :variable]

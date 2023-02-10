@@ -19,20 +19,20 @@ spacename(d, v) = begin
 end
 
 varname(d, v; verbose = false) = begin 
-  name =  "$(d[v, :name]):$(spacename(d, v))"
+  name =  "$(d[v, :name])"
   
-  if(verbose)
-    cut_off_under = findlast('_', name)
+  if(!verbose)
+    cut_off_delim = findlast('/', name)
     cut_off_bullet = findfirst('•', name)
   
     if(!isnothing(cut_off_bullet))
-      name = "•:$(spacename(d, v))"
-    elseif(!isnothing(cut_off_under))
-      name = name[cut_off_under+1:end]
+      name = "•"
+    elseif(!isnothing(cut_off_delim))
+      name = name[cut_off_delim+1:end]
     end
   end
 
-  return name
+  return "$name:$(spacename(d, v))"
 end
 
 # TODO: Change orientation to print 
