@@ -35,19 +35,19 @@ end
 add new variable names to all the variables that don't have names.
 """
 function fill_names!(d::AbstractNamedDecapode)
-    bulletcount = 1
-    for i in parts(d, :Var)
+  bulletcount = 1
+  for i in parts(d, :Var)
         if !isassigned(d[:,:name],i)
-            d[i,:name] = Symbol("•$bulletcount")
-            bulletcount += 1
-        end
+      d[i,:name] = Symbol("•$bulletcount")
+      bulletcount += 1
     end
-    for e in incident(d, :∂ₜ, :op1)
-        s = d[e,:src]
-        t = d[e, :tgt]
-        d[t, :name] = append_dot(d[s,:name])
-    end
-    return d
+  end
+  for e in incident(d, :∂ₜ, :op1)
+    s = d[e,:src]
+    t = d[e, :tgt]
+    d[t, :name] = append_dot(d[s,:name])
+  end
+  return d
 end
 
 function make_sum_unique!(d::AbstractNamedDecapode)
@@ -64,7 +64,8 @@ end
 # allowed.
 function recognize_types(d::AbstractNamedDecapode)
   unrecognized_types = setdiff(d[:type], [:Form0, :Form1, :Form2, :DualForm0,
-                          :DualForm1, :DualForm2, :Literal, :Parameter, :infer])
+                          :DualForm1, :DualForm2, :Literal, :Parameter,
+                          :Constant, :infer])
   isempty(unrecognized_types) ||
     error("Types $unrecognized_types are not recognized.")
 end

@@ -12,13 +12,13 @@ draw(f::ACSetTransformation; kw...) =
 
 # No valid rewrites, return original decapode
 DecaTest0 = quote
-  A::Form1{X}
-  B::Form2{X}
-  C::Form3{X}
+  A::Form0{X}
+  B::Form1{X}
+  C::Form2{X}
   
-  D::Form1{X}
-  E::Form2{X}
-  F::Form3{X}
+  D::Form0{X}
+  E::Form1{X}
+  F::Form2{X}
 
   G::Form0{X}
   H::Form0{X}
@@ -40,9 +40,9 @@ Test0Res = average_rewrite(Test0)
 # Trivial rewrite test
 # Make sure var, op names and forms are preserved
 DecaTest1 = quote
-  D₁::Form1{X}
-  D₂::Form2{X}
-  F::Form3{X}
+  D₁::Form0{X}
+  D₂::Form1{X}
+  F::Form2{X}
 
   F == c₁(D₁)
   F == c₂(D₂)
@@ -53,7 +53,7 @@ Test1Res = average_rewrite(Test1)
 
 Test1Expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 6
-  type = [:Form1, :Form2, :Form3, :Form1, :Form2, :Form3]
+  type = [:Form0, :Form1, :Form2, :Form0, :Form1, :Form2]
   name = [:D₁, :D₂, :F, Symbol("••1"), Symbol("••2"), Symbol("••sum0")]
 
   Op1 = 3
@@ -119,9 +119,9 @@ DecaTest3 = quote
   B::Form0{X}
   C::Form0{X}
   D::Form0{X}
-  E::Form2{X}
-  F::Form3{X}
-  G::Form4{X}
+  E::Form1{X}
+  F::Form2{X}
+  G::Form2{X}
 
   G == ∧(A, B)
   G == k(C)
@@ -135,8 +135,8 @@ Test3Res = average_rewrite(Test3)
 Test3Expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 14
 
-  type = Any[:Form4, :Form4, :Form0, :Form0, :Form4, :Form4, 
-  :Form4, :Form0, :Form0, :Form4, :Form0, :Form0, :Form3, :Form2]
+  type = Any[:Form2, :Form2, :Form0, :Form0, :Form2, :Form2, 
+  :Form2, :Form0, :Form0, :Form2, :Form0, :Form0, :Form2, :Form1]
 
   name = [:Temp_0, :Temp_1, :C, :D, :G, Symbol("••1"), Symbol("••2"), 
   Symbol("••3"), Symbol("••4"), Symbol("••sum0"), :A, :B, :F, :E]
@@ -164,8 +164,8 @@ end
 
 # Test to ensure that ops from the same source are all preserved
 DecaTest4 = quote
-  C::Form9{X}
-  D::Form4{X}
+  C::Form0{X}
+  D::Form1{X}
 
   D == k(C)
   D == t(C)
@@ -177,7 +177,7 @@ Test4Res = average_rewrite(Test4)
 
 Test4Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 6
-  type = Any[:Form9, :Form4, :Form9, :Form9, :Form9, :Form4] 
+  type = Any[:Form0, :Form1, :Form0, :Form0, :Form0, :Form1] 
   name = [:C, :D, Symbol("••1"), Symbol("••2"), Symbol("••3"), Symbol("••sum0")]
 
   Op1 = 4
@@ -198,12 +198,12 @@ end
 # Test that larger nary rewrites function properly
 DecaTest5 = quote
   A::Form0{X}
-  B::Form1{X}
-  C::Form2{X}
-  D::Form3{X}
-  E::Form4{X}
-  F::Form5{X}
-  G::Form6{X}
+  B::Form0{X}
+  C::Form1{X}
+  D::Form2{X}
+  E::Form1{X}
+  F::Form0{X}
+  G::Form2{X}
 
   G == f(F)
   G == e(E)
@@ -218,8 +218,8 @@ Test5Res = average_rewrite(Test5)
 
 Test5Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 14
-  type = Any[:Form5, :Form4, :Form3, :Form2, :Form1, :Form0, 
-  :Form6, :Form5, :Form4, :Form3, :Form2, :Form1, :Form0, :Form6]
+  type = Any[:Form0, :Form1, :Form2, :Form1, :Form0, :Form0, 
+  :Form2, :Form0, :Form1, :Form2, :Form1, :Form0, :Form0, :Form2]
   name = [:F, :E, :D, :C, :B, :A, :G, Symbol("••1"), Symbol("••2"), Symbol("••3"), Symbol("••4"), Symbol("••5"), Symbol("••6"), Symbol("••sum0")]
 
   Op1 = 7
@@ -242,9 +242,9 @@ DecaTest6 = quote
   A::Form0{X}
   B::Form1{X}
   C::Form2{X}
-  D::Form3{X}
-  E::Form4{X}
-  F::Form5{X}
+  D::Form0{X}
+  E::Form1{X}
+  F::Form2{X}
 
   F == k(A)
   F == t(E)
@@ -257,8 +257,8 @@ Test6Res = average_rewrite(Test6)
 
 Test6Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 14
-  type = Any[:Form4, :Form4, :Form4, :Form4, :Form4, :Form4, 
-  :Form0, :Form5, :Form0, :Form4, :Form5, :Form1, :Form2, :Form3]
+  type = Any[:Form1, :Form1, :Form1, :Form1, :Form1, :Form1, 
+  :Form0, :Form2, :Form0, :Form1, :Form2, :Form1, :Form2, :Form0]
   name = [:Temp_0, :Temp_1, :E, Symbol("••1"), Symbol("••2"), Symbol("••sum0"), :A, :F, Symbol("••3"), Symbol("••4"), Symbol("••sum1"), :B, :C, :D]
 
   Op1 = 6
@@ -287,9 +287,9 @@ DecaTest7 = quote
   A::Form0{X}
   B::Form1{X}
   C::Form2{X}
-  D::Form3{X}
-  E::Form4{X}
-  F::Form5{X}
+  D::Form1{X}
+  E::Form0{X}
+  F::Form2{X}
 
   F == A + B
   F == C + D + E
@@ -300,8 +300,8 @@ Test7Res = average_rewrite(Test7)
 
 Test7Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 11
-  type = Any[:Form5, :Form5, :Form5, :Form5, :Form5, :Form5, 
-  :Form0, :Form1, :Form2, :Form3, :Form4]
+  type = Any[:Form2, :Form2, :Form2, :Form2, :Form2, :Form2, 
+  :Form0, :Form1, :Form2, :Form1, :Form0]
   name = [:Temp_0, :Temp_1, :F, Symbol("••1"), Symbol("••2"), Symbol("••sum0"), :A, :B, :C, :D, :E]
 
   Op1 = 3
@@ -324,7 +324,7 @@ end
 DecaTest8 = quote 
   D₁::Form1{X}
   D₂::Form2{X}
-  F::Form3{X}
+  F::Form0{X}
 
   ∂ₜ(D₁) == F
   F == c₂(D₂)
@@ -335,7 +335,7 @@ Test8Res = average_rewrite(Test8)
 
 Test8Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 3
-  type = Any[:Form1, :Form2, :Form3]
+  type = Any[:Form1, :Form2, :Form0]
   name = [:D₁, :D₂, :D₁̇ ]
 
   TVar = 1
@@ -373,8 +373,8 @@ DecaTest10 = quote
   B::Form0{X}
   C::Form0{X}
   D::Form0{X}
-  Ḣ::Form5{X}
-  H::Form5{X}
+  Ḣ::Form2{X}
+  H::Form2{X}
 
   A == b(B)
   A == d(D)
@@ -388,7 +388,7 @@ Test10Res = average_rewrite(Test10)
 Test10Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 9
   type = Any[:Form0, :Form0, :Form0, :Form0, :Form0, :Form0, 
-  :Form0, :Form5, :Form5]
+  :Form0, :Form2, :Form2]
   name = [:B, :D, :A, Symbol("••1"), Symbol("••2"), Symbol("••sum0"), :C, :Ḣ, :H]
 
   TVar = 1

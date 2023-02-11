@@ -149,7 +149,7 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
         return res_var
       end
       Tan(t) => begin 
-        # TODO: this is creating a spurious variablbe with the same name
+        # TODO: this is creating a spurious variable with the same name
         txv = add_part!(d, :Var, type=:infer)
         tx = add_part!(d, :TVar, incl=txv)
         tanop = add_part!(d, :Op1, src=!(t,d,syms), tgt=txv, op1=DerivOp)
@@ -159,7 +159,7 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
     end
   end
 
-function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}) 
+function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}, deletions::Vector{Int}) 
   @match eq begin
     Eq(t1, t2) => begin
       lhs_ref = reduce_term!(t1,d,syms)
@@ -174,7 +174,6 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int})
         _ => nothing
       end
 
-      deletions = []
       # Make rhs_ref equal to lhs_ref and adjust all its incidents
 
       # Case rhs_ref is a Tan
@@ -203,7 +202,7 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int})
       end
       # TODO: delete unused vars. The only thing stopping me from doing 
       # this is I don't know if CSet deletion preserves incident relations
-      rem_parts!(d, :Var, sort(deletions))
+      #rem_parts!(d, :Var, sort(deletions))
     end
   end
   return d
@@ -223,9 +222,11 @@ function Decapode(e::DecaExpr)
     var_id = add_part!(d, :Var, type=(judgement._2, judgement._3))
     symbol_table[judgement._1._1] = var_id
   end
+  deletions = Vector{Int64}()
   for eq in e.equations
-    eval_eq!(eq, d, symbol_table)
+    eval_eq!(eq, d, symbol_table, deletions)
   end
+  rem_parts!(d, :Var, sort(deletions))
   recognize_types(d)
   return d
 end
@@ -237,9 +238,11 @@ function NamedDecapode(e::DecaExpr)
       var_id = add_part!(d, :Var, name=judgement._1._1, type=judgement._2)
       symbol_table[judgement._1._1] = var_id
     end
+    deletions = Vector{Int64}()
     for eq in e.equations
-      eval_eq!(eq, d, symbol_table)
+      eval_eq!(eq, d, symbol_table, deletions)
     end
+    rem_parts!(d, :Var, sort(deletions))
     fill_names!(d)
     d[:name] = map(normalize_unicode,d[:name])
     recognize_types(d)
@@ -253,9 +256,11 @@ function SummationDecapode(e::DecaExpr)
       var_id = add_part!(d, :Var, name=judgement._1._1, type=judgement._2)
       symbol_table[judgement._1._1] = var_id
     end
+    deletions = Vector{Int64}()
     for eq in e.equations
-      eval_eq!(eq, d, symbol_table)
+      eval_eq!(eq, d, symbol_table, deletions)
     end
+    rem_parts!(d, :Var, sort(deletions))
     fill_names!(d)
     d[:name] .= normalize_unicode.(d[:name])
     make_sum_unique!(d)
