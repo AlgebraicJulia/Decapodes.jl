@@ -7,7 +7,7 @@ using MultiScaleArrays
 using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
-#using GLMakie
+using GLMakie
 using Logging
 using JLD2
 
@@ -102,7 +102,7 @@ One = ones(nv(sd))
 constants = (
   fourfour = 4.4,
   threefour = 3.4,
-  α = 10.0)
+  α = 0.001)
 
 # Generate the simulation.
 gensim(expand_operators(Brusselator))
@@ -116,9 +116,10 @@ u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(F₁), 
 # Visualize the initial conditions.
 # If GLMakie throws errors, then update your graphics drivers,
 # or use an alternative Makie backend like CairoMakie.
-GLMakie.mesh(s, color=findnode(u₀, :U), colormap=:plasma)
-GLMakie.mesh(s, color=findnode(u₀, :V), colormap=:plasma)
-GLMakie.mesh(s, color=findnode(u₀, :F), colormap=:plasma)
+fig_ic = GLMakie.Figure()
+p1 = GLMakie.mesh(fig_ic[1,2], s, color=findnode(u₀, :U), colormap=:jet)
+p2 = GLMakie.mesh(fig_ic[1,3], s, color=findnode(u₀, :V), colormap=:jet)
+p3 = GLMakie.mesh(fig_ic[1,4], s, color=findnode(u₀, :F), colormap=:jet)
 
 tₘ = 1.1
 
@@ -133,6 +134,37 @@ soln = solve(prob, Tsit5()) # ~37 seconds
 
 @save "brusselator_middle.jld2" soln
 
+GLMakie.mesh(s, color=findnode(soln(tₘ), :U), colormap=:plasma)
+
+begin # BEGIN Gif creation
+times = range(0.0, tₘ, length=150)
+colors_U = [findnode(soln(t), :U) for t in times]
+colors_V = [findnode(soln(t), :V) for t in times]
+# Initial frame
+fig = GLMakie.Figure(resolution = (1200, 800))
+p1 = GLMakie.mesh(fig[1,2], s, color=colors_U[1], colormap=:jet, colorrange=extrema(colors_U[1]))
+p2 = GLMakie.mesh(fig[1,4], s, color=colors_V[1], colormap=:jet, colorrange=extrema(colors_V[1]))
+ax1 = Axis(fig[1,2], width = 400, height = 400)
+ax2 = Axis(fig[1,4], width = 400, height = 400)
+hidedecorations!(ax1)
+hidedecorations!(ax2)
+hidespines!(ax1)
+hidespines!(ax2)
+Colorbar(fig[1,1])
+Colorbar(fig[1,5])
+Label(fig[1,2,Top()], "U")
+Label(fig[1,4,Top()], "V")
+lab1 = Label(fig[1,3], "")
+
+# Animation
+using Printf
+record(fig, "brusselator_middle.gif", range(0.0, tₘ; length=150); framerate = 15) do t
+    p1.plot.color = findnode(soln(t), :U)
+    p2.plot.color = findnode(soln(t), :V)
+    lab1.text = @sprintf("%.2f",t)
+end
+
+end # END Gif creation
 
 # TODO: Create problem and run sim for t ∈ [1.1,11.5].
 
