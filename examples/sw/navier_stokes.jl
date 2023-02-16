@@ -1,14 +1,12 @@
 #TODOs:
-# - Change all ρ to n
-# - Change all V to u, since u is "bulk velocity" specifically, and V actually means total velocity. No need for Fick's law after using this formulation.
 # - Calculate Temperature using PV = NRT.
 # - Multiply where appropriate by κ, Gaussian curvature, which for a sphere is
 # 1/r^2.
 # - κ is not constant for all meshes, store it as a 0form and do average over vertices.
 # - We should delete the Diffusion decapode entirely.
-using Logging: global_logger
-using TerminalLoggers: TerminalLogger
-global_logger(TerminalLogger())
+#using Logging: global_logger
+#using TerminalLoggers: TerminalLogger
+#global_logger(TerminalLogger())
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -36,49 +34,25 @@ Point3D = Point3{Float64}
 
 # Navier Stokes example
 
-# TODO: Change ρ to number density.
-Diffusion = SummationDecapode(parse_decapode(quote
-  (ρ, ρ̇)::Form0{X}
-  ϕ::DualForm1{X}
-  k::Constant{X}
-  # Fick's first law
-  ϕ ==  ⋆₁(k*d₀(ρ)) # diffusion through a dual edge
-  # Diffusion equation
-  ρ̇ == ⋆₀⁻¹(dual_d₁(ϕ)) # total diffusion through all dual edges about a vertex
-end))
-to_graphviz(Diffusion)
+#Diffusion = SummationDecapode(parse_decapode(quote
+#  (n, ṅ)::Form0{X}
+#  ϕ::DualForm1{X}
+#  k::Constant{X}
+#  # Fick's first law
+#  ϕ ==  ⋆₁(k*d₀(n)) # diffusion through a dual edge
+#  # Diffusion equation
+#  ṅ == ⋆₀⁻¹(dual_d₁(ϕ)) # total diffusion through all dual edges about a vertex
+#end))
+#to_graphviz(Diffusion)
 
-
-# TODO: Change ρ to number density.
-Advection = SummationDecapode(parse_decapode(quote
-  (V)::Form1{X}  #  M = ρV
-  (ρ, ρ̇)::Form0{X}
+Continuity = SummationDecapode(parse_decapode(quote
+  (u)::Form1{X}  #  M = ρu
+  (n, ṅ)::Form0{X}
   (negone)::Constant{X}
-  # ρ̇ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(ρ))))
-  #ρ̇ == ρ*∘(⋆₁,d̃₁,⋆₀⁻¹)(V) + i₁′(V, d₀(ρ))
-  ρ̇ == (negone * ρ) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(V) + i₁′(V, d₀(ρ))
+  # ṅ == neg₀(⋆₀⁻¹(L₀(u, ⋆₀(n))))
+  #ṅ == n*∘(⋆₁,d̃₁,⋆₀⁻¹)(u) + i₁′(u, d₀(n))
+  ṅ == (negone * n) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(u) + i₁′(u, d₀(n))
 end))
-to_graphviz(Advection)
-
-Superposition = SummationDecapode(parse_decapode(quote
-  (T, Ṫ, Ṫ₁, Ṫₐ)::Form0{X}
-  Ṫ == Ṫ₁ + Ṫₐ
-  ∂ₜ(T) == Ṫ 
-end))
-to_graphviz(Superposition)
-
-compose_continuity = @relation () begin
-  diffusion(ρ, ρ₁)
-  advection(V, ρ, ρ₂)
-  superposition(ρ, ρ̇, ρ₁, ρ₂)
-end
-to_graphviz(compose_continuity, junction_labels=:variable, box_labels=:name, prog="circo")
-
-continuity_cospan = oapply(compose_continuity,
-                [Open(Diffusion, [:ρ, :ρ̇ ]),
-                 Open(Advection, [:V, :ρ, :ρ̇ ]),
-                 Open(Superposition, [:T, :Ṫ, :Ṫ₁, :Ṫₐ])])
-Continuity = apex(continuity_cospan)
 to_graphviz(Continuity)
 
 #################
@@ -88,24 +62,24 @@ to_graphviz(Continuity)
 # TODO: Use equation 3.1b from Schunk.
 # NOTE: Equation 3.1b is dominated by collisions between species i and electrons.
 NavierStokes = SummationDecapode(parse_decapode(quote
-  # (G, B, V)::Form1{X}
-  (V, V̇, Vₙ)::Form1{X}
-  (ρ, p)::Form0{X}
+  # (G, B, u)::Form1{X}
+  (u, u̇, uₙ)::Form1{X}
+  (n, p)::Form0{X}
   ω::Form0{X}
-  # (ρ,  ṗ)::Form0{X}
-  (two,three,kᵥ,νᵢₙ,κ)::Constant{X} # TODO: κ is not constant for all meshes.
-  ∂ₜ(V) == V̇
-  V̇ == neg₁(L₁′(V, V)) +     # advective term 1 of velocity
-        neg₁(d₀(i₁′(V, V)/two)) +  # advective term 2
-        kᵥ*(((two * κ) * V) + Δ₁(V) + (d₀(δ₁(V))/three)) +   # diffusive term of velocity
-        neg₁(d₀(p)) -
-        (avg₀₁(ρ) .* (νᵢₙ * (V - Vₙ))) -# (ρ .* (νᵢₙ * (V - Vₙ)))
-        ⋆₁⁻¹(∧₁₀(V, ω)) # Dimension checking might not catch that this is dual when it should be primal (or vice versa).
+  # (n,  ṗ)::Form0{X}
+  (two,three,kᵥ,νᵢₙ,κ,m)::Constant{X} # TODO: κ is not constant for all meshes.
+  ∂ₜ(u) == u̇
+  u̇ == neg₁(L₁′(u, u)) +     # advective term 1 of velocity
+        neg₁(d₀(i₁′(u, u)/two)) +  # advective term 2
+        kᵥ*(((two * κ) * u) + Δ₁(u) + (d₀(δ₁(u))/three)) +   # diffusive term of velocity
+        ((neg₁(d₀(p) ./ avg₀₁(n)) / m)) -
+        (νᵢₙ * (u - uₙ)) -# (n .* (νᵢₙ * (u - uₙ)))
+        ⋆₁⁻¹(∧₁₀(u, ω)) # Dimension checking might not catch that this is dual when it should be primal (or vice versa).
         # G 
-        # (q*V cross product B) # 1 form in primal mesh with 0 form in dual mesh
+        # (q*u cross product B) # 1 form in primal mesh with 0 form in dual mesh
   #Ω = ∧(1,0, v, ω, earth, hodge)
   # ∂ₜ(M) == Ṁ
-  # ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(p)))) # *Lie(3Form) = Div(*3Form x v) --> conservation of pressure
+  # ṗ == neg₀(⋆₀⁻¹(L₀(u, ⋆₀(p)))) # *Lie(3Form) = Div(*3Form x v) --> conservation of pressure
   # ∂ₜ(p) == ṗ
 end))
 to_graphviz(NavierStokes)
@@ -114,29 +88,27 @@ to_graphviz(NavierStokes)
 # Energy (Boltzmann moments) #
 ##############################
 
-
-# TODO: Change ρ to number density.
-# TODO: Calculate T using P = (NRT)/V.
+# TODO: Calculate T using P = (NRT)/u.
 # TODO: Add equation 3.1c.
 Energy = SummationDecapode(parse_decapode(quote
-  (V, Vₙ)::Form1{X}
-  vdiff::Form1{X}
+  (u, uₙ)::Form1{X}
+  udiff::Form1{X}
   # (p, ṗ, T, Tₑ)::Form0{X}
   (T, Tₙ)::Form0{X}
-  ρ::Form0{X}
+  n::Form0{X}
   (p, ṗ)::Form0{X}
   # NOTE: νₙ is defined per pair of species.
-  (two, three, five, R, m, mₙ, νₙ, kᵥ)::Constant{X}
+  (two, three, five, kᵦ, m, mₙ, νₙ)::Constant{X}
   
-  T == (p ./ R) ./ ρ
+  T == (p ./ kᵦ) ./ n
 
-  vdiff == V - Vₙ
+  udiff == u - uₙ
 
   # T == p/n/kᵥ
-  #ṗ == 2*3 * (5/2*p*∘(⋆,d,⋆⁻¹)(V) + i₁(V, d(p))) #  - ρ*ν*3*kᵥ*(T-Tₑ) )
+  #ṗ == 2*3 * (5/2*p*∘(⋆,d,⋆⁻¹)(V) + i₁(V, d(p))) #  - n*ν*3*kᵥ*(T-Tₑ) )
   # Note: I changed fv to f .* v
-  #ṗ == (((((two * three) * five) / two ) * p) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(V)) + ((two * three) * i₁′(V, d₀(p))) #  - ρ*ν*three*kᵥ*(T-Tₑ) )
-  ṗ == neg₁(((((two * three) * five) / two ) * p) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(V)) + neg₁(((two * three) * i₁′(V, d₀(p)))) - (((ρ*m)*νₙ)/(m + mₙ)).*((three*kᵥ)*(T-Tₙ) - mₙ*i₁′(vdiff, vdiff))
+  #ṗ == (((((two * three) * five) / two ) * p) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(u)) + ((two * three) * i₁′(u, d₀(p))) #  - n*ν*three*kᵥ*(T-Tₑ) )
+  ṗ == neg₁(((((two * three) * five) / two ) * p) .* ∘(⋆₁,d̃₁,⋆₀⁻¹)(u)) + neg₁(((two * three) * i₁′(u, d₀(p)))) - (((n*m)*νₙ)/(m + mₙ)).*((three*kᵦ)*(T-Tₙ) - mₙ*i₁′(udiff, udiff))
   
   ∂ₜ(p) == ṗ
 end))
@@ -150,16 +122,16 @@ to_graphviz(Energy)
 # symbol for a name.
 
 compose_heatXfer = @relation () begin
-  continuity(V, ρ)
-  navierstokes(V, Vₙ, P, ρ)
-  energy(V, Vₙ, P, ρ)
+  continuity(u, n)
+  navierstokes(u, uₙ, P, n)
+  energy(u, uₙ, P, n)
 end
 to_graphviz(compose_heatXfer, junction_labels=:variable, box_labels=:name, prog="circo")
 
 heatXfer_cospan = oapply(compose_heatXfer,
-                [Open(Continuity, [:V, :ρ]),
-                 Open(NavierStokes, [:V, :Vₙ, :p, :ρ]),
-                 Open(Energy, [:V, :Vₙ, :p, :ρ])])
+                [Open(Continuity, [:u, :n]),
+                 Open(NavierStokes, [:u, :uₙ, :p, :n]),
+                 Open(Energy, [:u, :uₙ, :p, :n])])
 
 HeatXfer = apex(heatXfer_cospan)
 to_graphviz(HeatXfer)
@@ -170,27 +142,27 @@ to_graphviz(expand_operators(HeatXfer))
 #################
 
 compose_multi_ns = @relation () begin
-  N2(N2_P, N2_V, proton_V, N2_T, proton_T)
-  proton(proton_P, proton_V, N2_V, proton_T, N2_T)
+  N2(N2_P, N2_u, proton_u, N2_T, proton_T)
+  proton(proton_P, proton_u, N2_u, proton_T, N2_T)
 end
 to_graphviz(compose_multi_ns, junction_labels=:variable, box_labels=:name, prog="circo")
 
 multi_ns_cospan = oapply(compose_multi_ns,
-  [Open(HeatXfer, [:P, :V, :Vₙ, :energy_T, :energy_Tₙ]),
-   Open(HeatXfer, [:P, :V, :Vₙ, :energy_T, :energy_Tₙ])])
+  [Open(HeatXfer, [:P, :u, :uₙ, :energy_T, :energy_Tₙ]),
+   Open(HeatXfer, [:P, :u, :uₙ, :energy_T, :energy_Tₙ])])
 multi_ns = apex(multi_ns_cospan)
 to_graphviz(multi_ns)
 
 
 #compose_velocity = @relation () begin
-#  ns1(ns1_V, ns2_V)
-#  ns2(ns2_V, ns1_V)
+#  ns1(ns1_u, ns2_u)
+#  ns2(ns2_u, ns1_u)
 #end
 #to_graphviz(compose_velocity, junction_labels=:variable, box_labels=:name, prog="circo")
 #
 #continuity_cospan = oapply(compose_continuity,
-#                [Open(NavierStokes, [:ρ, :ρ̇ ]),
-#                 Open(NavierStokes, [:V, :ρ, :ρ̇ ]),
+#                [Open(NavierStokes, [:n, :ṅ ]),
+#                 Open(NavierStokes, [:u, :n, :ṅ ]),
 #                 Open(Superposition, [:T, :Ṫ, :Ṫ₁, :Ṫₐ])])
 #Continuity = apex(continuity_cospan)
 
@@ -501,6 +473,27 @@ sim = eval(gensim(expand_operators(physics)))
 
 fₘ = sim(earth, generate)
 
+##########################
+# Constants & Parameters #
+##########################
+
+boltzmann_constant = 1.38064852e-23
+kᵦ = boltzmann_constant
+N2_mol_mass = 28.014e-3
+proton_mol_mass = 1.007276466e-3
+density = 0.000210322 # TODO: Different for different species?
+kₜ = 0.0246295028571 # Thermal conductivity
+cₚ = 1004.703 # Specific Heat at constant pressure
+# TODO: Make sure k₁ is in the correct units. It was initially used for
+# temperature formulation. Toss this out when we toss out continuity.
+k₁ = kₜ / (density * cₚ) # Heat diffusion constant in fluid
+avagadros_number = 6.0221409e23
+# Our parameters are with respect to individual particles, not moles.
+#R₀ = kᵦ * avagadros_number
+N2_m = N2_mol_mass / avagadros_number
+proton_m = proton_mol_mass / avagadros_number
+κ = 1/(RADIUS^2)
+
 ######################
 # Initial Conditions #
 ######################
@@ -524,7 +517,7 @@ begin
 end
 
 #begin
-v = flatten_form(velocity, earth)
+u = flatten_form(velocity, earth)
 #c_dist = MvNormal([RADIUS/√(2), RADIUS/√(2)], 20*[1, 1])
 #c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
 
@@ -537,25 +530,30 @@ z = RADIUS*cos(theta_start)
 #c_dist₂ = MvNormal([x, y, -z], 20*[1, 1, 1])
 #c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 
-pfield = 100000*[abs(p[3]) for p in earth[:point]]
+#pfield = 100000*[abs(p[3]) for p in earth[:point]]
 
 # TODO What are good initial conditions for this?
-#ρ = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
-#ρ = 100000*[p[3] for p in earth[:point]]
-ρ = 100000*[abs(p[3]) for p in earth[:point]]
-# TODO: Set ρ of protons out of phase with ρ of N2.
+#n = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
+#n = 100000*[p[3] for p in earth[:point]]
+# Observe: Set n of protons out of phase with n of N2.
+N2_n = 100_000*[p[3] > 0.0 ? abs(p[3]) : 0.0 for p in earth[:point]]
+proton_n = 100_000*[p[3] < 0.0 ? abs(p[3]) : 0.0 for p in earth[:point]]
 
-m = 8e22 # dipole moment units: A*m^2
-μ₀ = 4*π*1e-7 # permeability units: kg*m/s^2/A^2
-# Bθ(p) = -μ₀*m*sin(theta(p))/(4*π*RADIUS^3)  # RADIUS instead of r(p)*1000 
-# B1Form = flatten_form(p->TangentBasis(CartesianPoint(p))(Bθ(CartesianPoint(p)), 0), earth)
-Br(p) = -μ₀*2*m*cos(theta(p))/(4*π*RADIUS^3)  # RADIUS instead of r(p)*1000 
-Br_flux = hodge_star(earth, TriForm(map(triangles(earth)) do t 
-                        dual_pid = triangle_center(earth, t)
-                        p = earth[dual_pid, :dual_point]
-                        return Br(CartesianPoint(p))
-                        end))
-# B₀(p) = sqrt(Bθ(p)^2+Br(p)^2)
+temperature = 300 # kelvin
+N2_pfield = N2_n * R₀ * temperature
+proton_pfield = proton_n * R₀ * temperature
+
+#m = 8e22 # dipole moment units: A*m^2
+#μ₀ = 4*π*1e-7 # permeability units: kg*m/s^2/A^2
+## Bθ(p) = -μ₀*m*sin(theta(p))/(4*π*RADIUS^3)  # RADIUS instead of r(p)*1000 
+## B1Form = flatten_form(p->TangentBasis(CartesianPoint(p))(Bθ(CartesianPoint(p)), 0), earth)
+#Br(p) = -μ₀*2*m*cos(theta(p))/(4*π*RADIUS^3)  # RADIUS instead of r(p)*1000 
+#Br_flux = hodge_star(earth, TriForm(map(triangles(earth)) do t 
+#                        dual_pid = triangle_center(earth, t)
+#                        p = earth[dual_pid, :dual_point]
+#                        return Br(CartesianPoint(p))
+#                        end))
+## B₀(p) = sqrt(Bθ(p)^2+Br(p)^2)
 
 rotation_rate_of_earth = 460 # m/s
 v⊥ = rotation_rate_of_earth
@@ -566,39 +564,30 @@ v⊥ = rotation_rate_of_earth
   v⊥ / RADIUS * sin(theta(CartesianPoint{Point3D}(p))),
 earth[:point]))
 # 2 * Ω × V is coriolis force. We can implement this using star of wedge.
-Ω = ∧(1,0, v, ω, earth, hodge)
+Ω = ∧(Tuple{1,0}, earth, u, ω)
 #Ω = ∧(ω, proj_k̂, earth, hodge)
 #Ω = proj(angular_frequency)*k̂
 #coriolis_parameter = VForm(Ω * sin(θ))
 #f = coriolis_parameter
 #fkcrossv = EForm(ones(ne(earth)))
 
-
-#u₀ = construct(PhysicsState, [VectorForm(ρ), VectorForm(collect(v)), VectorForm(pfield), VectorForm(ρ), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:N2_ρ, :N2_V, :N2_P, :proton_ρ, :proton_V, :proton_P])
-#u₀ = construct(PhysicsState, [VectorForm(ρ), VectorForm(collect(v)), VectorForm(pfield), VectorForm(50*ρ), VectorForm(collect(v)), VectorForm(50*pfield)],Float64[], [:N2_ρ, :N2_V, :N2_P, :proton_ρ, :proton_V, :proton_P])
-u₀ = construct(PhysicsState, [VectorForm(ρ), VectorForm(collect(v)), VectorForm(pfield), VectorForm(ρ), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:N2_ρ, :N2_V, :N2_P, :proton_ρ, :proton_V, :proton_P])
+#u₀ = construct(PhysicsState, [VectorForm(n), VectorForm(collect(v)), VectorForm(pfield), VectorForm(n), VectorForm(collect(v)), VectorForm(pfield)],Float64[], [:N2_n, :N2_V, :N2_P, :proton_n, :proton_V, :proton_P])
+#u₀ = construct(PhysicsState, [VectorForm(n), VectorForm(collect(v)), VectorForm(pfield), VectorForm(50*n), VectorForm(collect(v)), VectorForm(50*pfield)],Float64[], [:N2_n, :N2_V, :N2_P, :proton_n, :proton_V, :proton_P])
+u₀ = construct(PhysicsState,
+ [VectorForm(N2_n),
+  VectorForm(collect(u)),
+  VectorForm(N2_pfield),
+  VectorForm(proton_n),
+  VectorForm(collect(u)),
+  VectorForm(proton_pfield)],
+  Float64[],
+ [:N2_n,
+  :N2_u,
+  :N2_P,
+  :proton_n,
+  :proton_u,
+  :proton_P])
 #mesh(primal_earth, color=findnode(u₀, :P), colormap=:plasma)
-
-##########################
-# Constants & Parameters #
-##########################
-
-boltzmann_constant = 1.38064852e-23
-N2_mol_mass = 28.014e-3
-proton_mol_mass = 1.007276466e-3
-density = 0.000210322 # TODO: Different for different species?
-kₜ = 0.0246295028571 # Thermal conductivity
-cₚ = 1004.703 # Specific Heat at constant pressure
-# TODO: Make sure k₁ is in the correct units. It was initially used for
-# temperature formulation. Toss this out when we toss out continuity.
-k₁ = kₜ / (density * cₚ) # Heat diffusion constant in fluid
-avagadros_number = 6.0221409e23
-R₀ = boltzmann_constant * avagadros_number / mol_mass / 1e3
-N2_R = boltzmann_constant * avagadros_number / N2_mol_mass / 1e3
-proton_R = boltzmann_constant * avagadros_number / proton_mol_mass / 1e3
-N2_m = N2_mol_mass / avagadros_number
-proton_m = proton_mol_mass / avagadros_number
-κ = 1/(RADIUS^2)
 
 my_constants = (
   kᵥ=1.2e-5,
@@ -616,20 +605,20 @@ my_constants = (
   N2_energy_five=5,
   proton_continuity_advection_negone=-1,
   N2_continuity_advection_negone=-1,
+
+
   proton_continuity_diffusion_k=k₁, # TODO: k should be different for different species.
   N2_continuity_diffusion_k=k₁,
   N2_navierstokes_νᵢₙ = 1,
   proton_navierstokes_νᵢₙ = 1,
-  N2_energy_R = N2_R,
-  proton_energy_R = proton_R,
+  N2_energy_kᵦ = kᵦ,
+  proton_energy_kᵦ = kᵦ,
   N2_energy_m = N2_m,
   proton_energy_m = proton_m,
   N2_energy_mₙ = proton_m,
   proton_energy_mₙ = N2_m,
   proton_energy_νₙ = .01,
   N2_energy_νₙ = .01,
-  N2_energy_kᵥ = 1.2e-5,
-  proton_energy_kᵥ = 1.2e-5,
   N2_navierstokes_κ = κ,
   proton_navierstokes_κ = κ)
 
@@ -667,24 +656,24 @@ soln = solve(prob, Tsit5())
 
 # Plot the result
 times = range(0.0, tₑ, length=150)
-colors_proton = [findnode(soln(t), :proton_ρ) for t in times]
-colors_N2 = [findnode(soln(t), :N2_ρ) for t in times]
+colors_proton = [findnode(soln(t), :proton_n) for t in times]
+colors_N2 = [findnode(soln(t), :N2_n) for t in times]
 # Initial frame
 fig = GLMakie.Figure()
 p1 = GLMakie.mesh(fig[1,2], primal_earth, color=colors_proton[1], colormap=:jet, colorrange=extrema(colors_proton[1]))
 p2 = GLMakie.mesh(fig[1,3], primal_earth, color=colors_N2[1], colormap=:jet, colorrange=extrema(colors_N2[1]))
 Colorbar(fig[1,1], ob_proton)
 Colorbar(fig[1,4], ob_N2)
-Label(fig[1,2,Top()], "Proton ρ")
-Label(fig[1,3,Top()], "N2 ρ")
+Label(fig[1,2,Top()], "Proton n")
+Label(fig[1,3,Top()], "N2 n")
 lab1 = Label(fig[1,2,Bottom()], "")
 lab2 = Label(fig[1,3,Bottom()], "")
 
 # Animation
 using Printf
 record(fig, "weatherNS.gif", range(0.0, tₑ; length=150); framerate = 30) do t
-    p1.plot.color = findnode(soln(t), :proton_ρ)
-    p2.plot.color = findnode(soln(t), :N2_ρ)
+    p1.plot.color = findnode(soln(t), :proton_n)
+    p2.plot.color = findnode(soln(t), :N2_n)
     lab1.text = @sprintf("%.2f",t)
     lab2.text = @sprintf("%.2f",t)
 end
@@ -719,306 +708,21 @@ end
 
 #function interactive_sim_view(my_mesh::EmbeddedDeltaSet2D, tₑ, soln; loop_times = 1)
 #  times = range(0.0, tₑ, length = 150)
-#  colors = [findnode(soln(t), :ρ) for t in times]
+#  colors = [findnode(soln(t), :n) for t in times]
 #  fig, ax, ob = GLMakie.mesh(my_mesh, color=colors[1],
 #    colorrange = extrema(colors[1]), colormap=:jet)
 #  display(fig)
 #  loop = range(0.0, tₑ; length=150)
 #  for _ in 1:loop_times
 #    for t in loop
-#      ob.color = findnode(soln(t), :ρ)
+#      ob.color = findnode(soln(t), :n)
 #      sleep(0.05)
 #    end
 #    for t in reverse(loop)
-#      ob.color = findnode(soln(t), :ρ)
+#      ob.color = findnode(soln(t), :n)
 #      sleep(0.05)
 #    end
 #  end
 #end
 #
 #interactive_sim_view(primal_earth, tₑ, soln, loop_times = 10)
-
-function simulate(mesh, operators)
-  #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:147 =#
-  #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:148 =#
-  begin
-      #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:120 =#
-      d₀ = generate(mesh, :d₀)
-      (⋆₁) = generate(mesh, :⋆₁)
-      dual_d₁ = generate(mesh, :dual_d₁)
-      (⋆₀⁻¹) = generate(mesh, :⋆₀⁻¹)
-      (⋆₁) = generate(mesh, :⋆₁)
-      d̃₁ = generate(mesh, :d̃₁)
-      (⋆₀⁻¹) = generate(mesh, :⋆₀⁻¹)
-      d₀ = generate(mesh, :d₀)
-      neg₁ = generate(mesh, :neg₁)
-      d₀ = generate(mesh, :d₀)
-      neg₁ = generate(mesh, :neg₁)
-      Δ₁ = generate(mesh, :Δ₁)
-      δ₁ = generate(mesh, :δ₁)
-      d₀ = generate(mesh, :d₀)
-      d₀ = generate(mesh, :d₀)
-      neg₁ = generate(mesh, :neg₁)
-      avg₀₁ = generate(mesh, :avg₀₁)
-      (⋆₁) = generate(mesh, :⋆₁)
-      d̃₁ = generate(mesh, :d̃₁)
-      (⋆₀⁻¹) = generate(mesh, :⋆₀⁻¹)
-      neg₁ = generate(mesh, :neg₁)
-      d₀ = generate(mesh, :d₀)
-      neg₁ = generate(mesh, :neg₁)
-      d₀ = generate(mesh, :d₀)
-      (⋆₁) = generate(mesh, :⋆₁)
-      dual_d₁ = generate(mesh, :dual_d₁)
-      (⋆₀⁻¹) = generate(mesh, :⋆₀⁻¹)
-      (⋆₁) = generate(mesh, :⋆₁)
-      d̃₁ = generate(mesh, :d̃₁)
-      (⋆₀⁻¹) = generate(mesh, :⋆₀⁻¹)
-      d₀ = generate(mesh, :d₀)
-      neg₁ = generate(mesh, :neg₁)
-      d₀ = generate(mesh, :d₀)
-      neg₁ = generate(mesh, :neg₁)
-      Δ₁ = generate(mesh, :Δ₁)
-      δ₁ = generate(mesh, :δ₁)
-      d₀ = generate(mesh, :d₀)
-      d₀ = generate(mesh, :d₀)
-      neg₁ = generate(mesh, :neg₁)
-      avg₀₁ = generate(mesh, :avg₀₁)
-      (⋆₁) = generate(mesh, :⋆₁)
-      d̃₁ = generate(mesh, :d̃₁)
-      (⋆₀⁻¹) = generate(mesh, :⋆₀⁻¹)
-      neg₁ = generate(mesh, :neg₁)
-      d₀ = generate(mesh, :d₀)
-      neg₁ = generate(mesh, :neg₁)
-      #(.*) = operators(mesh, :.*)
-      i₁′ = operators(mesh, :i₁′)
-      L₁′ = operators(mesh, :L₁′)
-      i₁′ = operators(mesh, :i₁′)
-      #(.*) = operators(mesh, :.*)
-      #(./) = operators(mesh, :./)
-      #(./) = operators(mesh, :./)
-      #(.*) = operators(mesh, :.*)
-      i₁′ = operators(mesh, :i₁′)
-      i₁′ = operators(mesh, :i₁′)
-      #(.*) = operators(mesh, :.*)
-      #(.*) = operators(mesh, :.*)
-      i₁′ = operators(mesh, :i₁′)
-      L₁′ = operators(mesh, :L₁′)
-      i₁′ = operators(mesh, :i₁′)
-      #(.*) = operators(mesh, :.*)
-      #(./) = operators(mesh, :./)
-      #(./) = operators(mesh, :./)
-      #(.*) = operators(mesh, :.*)
-      i₁′ = operators(mesh, :i₁′)
-      i₁′ = operators(mesh, :i₁′)
-      #(.*) = operators(mesh, :.*)
-  end
-  #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:149 =#
-  return begin
-          #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:272 =#
-          f(du, u, p, t) = begin
-                  #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:272 =#
-                  #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:273 =#
-                  begin
-                      #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:105 =#
-                      N2_ρ = (findnode(u, :N2_ρ)).values
-                      N2_continuity_diffusion_k = p.N2_continuity_diffusion_k
-                      N2_V = (findnode(u, :N2_V)).values
-                      N2_continuity_advection_negone = p.N2_continuity_advection_negone
-                      proton_V = (findnode(u, :proton_V)).values
-                      N2_P = (findnode(u, :N2_P)).values
-                      N2_navierstokes_two = p.N2_navierstokes_two
-                      N2_navierstokes_three = p.N2_navierstokes_three
-                      N2_navierstokes_kᵥ = p.N2_navierstokes_kᵥ
-                      N2_navierstokes_νᵢₙ = p.N2_navierstokes_νᵢₙ
-                      N2_energy_two = p.N2_energy_two
-                      N2_energy_three = p.N2_energy_three
-                      N2_energy_five = p.N2_energy_five
-                      N2_energy_R = p.N2_energy_R
-                      N2_energy_m = p.N2_energy_m
-                      N2_energy_mₙ = p.N2_energy_mₙ
-                      N2_energy_νₙ = p.N2_energy_νₙ
-                      N2_energy_kᵥ = p.N2_energy_kᵥ
-                      proton_ρ = (findnode(u, :proton_ρ)).values
-                      proton_continuity_diffusion_k = p.proton_continuity_diffusion_k
-                      proton_continuity_advection_negone = p.proton_continuity_advection_negone
-                      proton_P = (findnode(u, :proton_P)).values
-                      proton_navierstokes_two = p.proton_navierstokes_two
-                      proton_navierstokes_three = p.proton_navierstokes_three
-                      proton_navierstokes_kᵥ = p.proton_navierstokes_kᵥ
-                      proton_navierstokes_νᵢₙ = p.proton_navierstokes_νᵢₙ
-                      proton_energy_two = p.proton_energy_two
-                      proton_energy_three = p.proton_energy_three
-                      proton_energy_five = p.proton_energy_five
-                      proton_energy_R = p.proton_energy_R
-                      proton_energy_m = p.proton_energy_m
-                      proton_energy_mₙ = p.proton_energy_mₙ
-                      proton_energy_νₙ = p.proton_energy_νₙ
-                      proton_energy_kᵥ = p.proton_energy_kᵥ
-                  end
-                  #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:274 =#
-                  var"N2_continuity_diffusion_•1" = d₀(N2_ρ)
-                  var"•_5_1" = (⋆₁)(N2_V)
-                  var"•_5_2" = d̃₁(var"•_5_1")
-                  var"N2_continuity_advection_•3" = (⋆₀⁻¹)(var"•_5_2")
-                  var"N2_continuity_advection_•5" = d₀(N2_ρ)
-                  var"N2_navierstokes_•10" = Δ₁(N2_V)
-                  var"N2_navierstokes_•13" = δ₁(N2_V)
-                  var"N2_navierstokes_•12" = d₀(var"N2_navierstokes_•13")
-                  var"N2_navierstokes_•15" = d₀(N2_P)
-                  var"N2_navierstokes_•14" = neg₁(var"N2_navierstokes_•15")
-                  var"N2_navierstokes_•17" = avg₀₁(N2_ρ)
-                  var"•_18_1" = (⋆₁)(N2_V)
-                  var"•_18_2" = d̃₁(var"•_18_1")
-                  var"N2_energy_•9" = (⋆₀⁻¹)(var"•_18_2")
-                  var"N2_energy_•14" = d₀(N2_P)
-                  var"proton_continuity_diffusion_•1" = d₀(proton_ρ)
-                  var"•_27_1" = (⋆₁)(proton_V)
-                  var"•_27_2" = d̃₁(var"•_27_1")
-                  var"proton_continuity_advection_•3" = (⋆₀⁻¹)(var"•_27_2")
-                  var"proton_continuity_advection_•5" = d₀(proton_ρ)
-                  var"proton_navierstokes_•10" = Δ₁(proton_V)
-                  var"proton_navierstokes_•13" = δ₁(proton_V)
-                  var"proton_navierstokes_•12" = d₀(var"proton_navierstokes_•13")
-                  var"proton_navierstokes_•15" = d₀(proton_P)
-                  var"proton_navierstokes_•14" = neg₁(var"proton_navierstokes_•15")
-                  var"proton_navierstokes_•17" = avg₀₁(proton_ρ)
-                  var"•_40_1" = (⋆₁)(proton_V)
-                  var"•_40_2" = d̃₁(var"•_40_1")
-                  var"proton_energy_•9" = (⋆₀⁻¹)(var"•_40_2")
-                  var"proton_energy_•14" = d₀(proton_P)
-                  var"N2_continuity_diffusion_•2" = N2_continuity_diffusion_k * var"N2_continuity_diffusion_•1"
-                  var"N2_continuity_advection_•2" = N2_continuity_advection_negone * N2_ρ
-                  var"N2_continuity_advection_•1" = var"N2_continuity_advection_•2" .* var"N2_continuity_advection_•3"
-                  var"N2_continuity_advection_•4" = i₁′(N2_V, var"N2_continuity_advection_•5")
-                  var"N2_navierstokes_•4" = L₁′(N2_V, N2_V)
-                  var"N2_navierstokes_•8" = i₁′(N2_V, N2_V)
-                  var"N2_navierstokes_•7" = var"N2_navierstokes_•8" / N2_navierstokes_two
-                  var"N2_navierstokes_•11" = var"N2_navierstokes_•12" / N2_navierstokes_three
-                  var"N2_navierstokes_•2" = N2_V - proton_V
-                  var"N2_navierstokes_•18" = N2_navierstokes_νᵢₙ * var"N2_navierstokes_•2"
-                  var"N2_navierstokes_•16" = var"N2_navierstokes_•17" .* var"N2_navierstokes_•18"
-                  var"N2_energy_•1" = N2_P ./ N2_energy_R
-                  N2_T = var"N2_energy_•1" ./ N2_ρ
-                  N2_energy_vdiff = N2_V - proton_V
-                  var"N2_energy_•8" = N2_energy_two * N2_energy_three
-                  var"N2_energy_•7" = var"N2_energy_•8" * N2_energy_five
-                  var"N2_energy_•6" = var"N2_energy_•7" / N2_energy_two
-                  var"N2_energy_•5" = var"N2_energy_•6" * N2_P
-                  var"N2_energy_•4" = var"N2_energy_•5" .* var"N2_energy_•9"
-                  var"N2_energy_•12" = N2_energy_two * N2_energy_three
-                  var"N2_energy_•13" = i₁′(N2_V, var"N2_energy_•14")
-                  var"N2_energy_•11" = var"N2_energy_•12" * var"N2_energy_•13"
-                  var"N2_energy_•18" = N2_ρ * N2_energy_m
-                  var"N2_energy_•17" = var"N2_energy_•18" * N2_energy_νₙ
-                  var"N2_energy_•21" = N2_energy_three * N2_energy_kᵥ
-                  var"N2_energy_•2" = i₁′(N2_energy_vdiff, N2_energy_vdiff)
-                  var"N2_energy_•23" = N2_energy_mₙ * var"N2_energy_•2"
-                  var"proton_continuity_diffusion_•2" = proton_continuity_diffusion_k * var"proton_continuity_diffusion_•1"
-                  var"proton_continuity_advection_•2" = proton_continuity_advection_negone * proton_ρ
-                  var"proton_continuity_advection_•1" = var"proton_continuity_advection_•2" .* var"proton_continuity_advection_•3"
-                  var"proton_continuity_advection_•4" = i₁′(proton_V, var"proton_continuity_advection_•5")
-                  var"proton_navierstokes_•4" = L₁′(proton_V, proton_V)
-                  var"proton_navierstokes_•8" = i₁′(proton_V, proton_V)
-                  var"proton_navierstokes_•7" = var"proton_navierstokes_•8" / proton_navierstokes_two
-                  var"proton_navierstokes_•11" = var"proton_navierstokes_•12" / proton_navierstokes_three
-                  var"proton_navierstokes_•2" = proton_V - N2_V
-                  var"proton_navierstokes_•18" = proton_navierstokes_νᵢₙ * var"proton_navierstokes_•2"
-                  var"proton_navierstokes_•16" = var"proton_navierstokes_•17" .* var"proton_navierstokes_•18"
-                  var"proton_energy_•1" = proton_P ./ proton_energy_R
-                  proton_T = var"proton_energy_•1" ./ proton_ρ
-                  proton_energy_vdiff = proton_V - N2_V
-                  var"proton_energy_•8" = proton_energy_two * proton_energy_three
-                  var"proton_energy_•7" = var"proton_energy_•8" * proton_energy_five
-                  var"proton_energy_•6" = var"proton_energy_•7" / proton_energy_two
-                  var"proton_energy_•5" = var"proton_energy_•6" * proton_P
-                  var"proton_energy_•4" = var"proton_energy_•5" .* var"proton_energy_•9"
-                  var"proton_energy_•12" = proton_energy_two * proton_energy_three
-                  var"proton_energy_•13" = i₁′(proton_V, var"proton_energy_•14")
-                  var"proton_energy_•11" = var"proton_energy_•12" * var"proton_energy_•13"
-                  var"proton_energy_•18" = proton_ρ * proton_energy_m
-                  var"proton_energy_•17" = var"proton_energy_•18" * proton_energy_νₙ
-                  var"proton_energy_•21" = proton_energy_three * proton_energy_kᵥ
-                  var"proton_energy_•22" = proton_T - N2_T
-                  var"proton_energy_•20" = var"proton_energy_•21" * var"proton_energy_•22"
-                  var"proton_energy_•2" = i₁′(proton_energy_vdiff, proton_energy_vdiff)
-                  var"proton_energy_•23" = proton_energy_mₙ * var"proton_energy_•2"
-                  var"proton_energy_•19" = var"proton_energy_•20" - var"proton_energy_•23"
-                  N2_continuity_ρ₂ = var"N2_continuity_advection_•1" + var"N2_continuity_advection_•4"
-                  N2_navierstokes_sum_1 = var"N2_navierstokes_•10" + var"N2_navierstokes_•11"
-                  N2_energy_sum_2 = N2_energy_m + N2_energy_mₙ
-                  proton_continuity_ρ₂ = var"proton_continuity_advection_•1" + var"proton_continuity_advection_•4"
-                  proton_navierstokes_sum_1 = var"proton_navierstokes_•10" + var"proton_navierstokes_•11"
-                  proton_energy_sum_2 = proton_energy_m + proton_energy_mₙ
-                  N2_continuity_diffusion_ϕ = (⋆₁)(var"N2_continuity_diffusion_•2")
-                  var"N2_continuity_diffusion_•3" = dual_d₁(N2_continuity_diffusion_ϕ)
-                  N2_continuity_ρ₁ = (⋆₀⁻¹)(var"N2_continuity_diffusion_•3")
-                  var"N2_navierstokes_•3" = neg₁(var"N2_navierstokes_•4")
-                  var"N2_navierstokes_•6" = d₀(var"N2_navierstokes_•7")
-                  var"N2_navierstokes_•5" = neg₁(var"N2_navierstokes_•6")
-                  var"N2_energy_•3" = neg₁(var"N2_energy_•4")
-                  var"N2_energy_•10" = neg₁(var"N2_energy_•11")
-                  proton_continuity_diffusion_ϕ = (⋆₁)(var"proton_continuity_diffusion_•2")
-                  var"proton_continuity_diffusion_•3" = dual_d₁(proton_continuity_diffusion_ϕ)
-                  proton_continuity_ρ₁ = (⋆₀⁻¹)(var"proton_continuity_diffusion_•3")
-                  var"proton_navierstokes_•3" = neg₁(var"proton_navierstokes_•4")
-                  var"proton_navierstokes_•6" = d₀(var"proton_navierstokes_•7")
-                  var"proton_navierstokes_•5" = neg₁(var"proton_navierstokes_•6")
-                  var"proton_energy_•3" = neg₁(var"proton_energy_•4")
-                  var"proton_energy_•10" = neg₁(var"proton_energy_•11")
-                  var"N2_navierstokes_•9" = N2_navierstokes_kᵥ * N2_navierstokes_sum_1
-                  var"N2_energy_•16" = var"N2_energy_•17" / N2_energy_sum_2
-                  var"N2_energy_•22" = N2_T - proton_T
-                  var"N2_energy_•20" = var"N2_energy_•21" * var"N2_energy_•22"
-                  var"N2_energy_•19" = var"N2_energy_•20" - var"N2_energy_•23"
-                  var"N2_energy_•15" = var"N2_energy_•16" .* var"N2_energy_•19"
-                  var"proton_navierstokes_•9" = proton_navierstokes_kᵥ * proton_navierstokes_sum_1
-                  var"proton_energy_•16" = var"proton_energy_•17" / proton_energy_sum_2
-                  var"proton_energy_•15" = var"proton_energy_•16" .* var"proton_energy_•19"
-                  N2_continuity_ρ̇ = N2_continuity_ρ₁ + N2_continuity_ρ₂
-                  N2_navierstokes_sum_2 = var"N2_navierstokes_•3" + var"N2_navierstokes_•5" + var"N2_navierstokes_•9" + var"N2_navierstokes_•14"
-                  N2_energy_sum_1 = var"N2_energy_•3" + var"N2_energy_•10"
-                  proton_continuity_ρ̇ = proton_continuity_ρ₁ + proton_continuity_ρ₂
-                  proton_navierstokes_sum_2 = var"proton_navierstokes_•3" + var"proton_navierstokes_•5" + var"proton_navierstokes_•9" + var"proton_navierstokes_•14"
-                  proton_energy_sum_1 = var"proton_energy_•3" + var"proton_energy_•10"
-                  N2_navierstokes_V̇ = N2_navierstokes_sum_2 - var"N2_navierstokes_•16"
-                  N2_energy_ṗ = N2_energy_sum_1 - var"N2_energy_•15"
-                  proton_navierstokes_V̇ = proton_navierstokes_sum_2 - var"proton_navierstokes_•16"
-                  proton_energy_ṗ = proton_energy_sum_1 - var"proton_energy_•15"
-                  #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:275 =#
-                  #du .= 0.0
-                  #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:276 =#
-                  #println(findnode(u, :proton_P).values)
-                  return N2_continuity_ρ̇, N2_navierstokes_V̇, N2_energy_ṗ, proton_continuity_ρ̇, proton_navierstokes_V̇, proton_energy_ṗ
-
-                  #begin
-                  #    #= /Users/luke.morris/julia-testing/Decapodes.jl/src/Decapodes2/simulation.jl:115 =#
-                  #    (findnode(du, :N2_ρ)).values .= N2_continuity_ρ̇
-                  #    (findnode(du, :N2_V)).values .= N2_navierstokes_V̇
-                  #    (findnode(du, :N2_P)).values .= N2_energy_ṗ
-                  #    (findnode(du, :proton_ρ)).values .= proton_continuity_ρ̇
-                  #    (findnode(du, :proton_V)).values .= proton_navierstokes_V̇
-                  #    (findnode(du, :proton_P)).values .= proton_energy_ṗ
-                  #end
-              end
-      end
-end
-
-foo = simulate(earth, generate)
-
-uₜ = u₀
-for i in 1:100
-  N2_continuity_ρ̇, N2_navierstokes_V̇, N2_energy_ṗ, proton_continuity_ρ̇, proton_navierstokes_V̇, proton_energy_ṗ = foo(nothing, uₜ, my_constants, nothing)
-  (findnode(uₜ, :N2_ρ)).values .= N2_continuity_ρ̇
-  (findnode(uₜ, :N2_V)).values .= N2_navierstokes_V̇
-  (findnode(uₜ, :N2_P)).values .= N2_energy_ṗ
-  (findnode(uₜ, :proton_ρ)).values .= proton_continuity_ρ̇
-  (findnode(uₜ, :proton_V)).values .= proton_navierstokes_V̇
-  (findnode(uₜ, :proton_P)).values .= proton_energy_ṗ
-end
-
-(findnode(u, :N2_ρ)).values .+=
-(findnode(u, :N2_V)).values .+=foo = simulate(earth, generate)
-(findnode(u, :N2_P)).values .+=
-(findnode(u, :proton_ρ)).valuesfoo([.1,.2],u₀,my_constants,(0,1e-4))
-(findnode(u, :proton_V)).values
-(findnode(u, :proton_P)).values
