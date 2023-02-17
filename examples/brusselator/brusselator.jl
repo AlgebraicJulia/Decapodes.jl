@@ -62,6 +62,7 @@ scaling_mat = Diagonal([1/maximum(x->x[1], s[:point]),
                         1/maximum(x->x[2], s[:point]),
                         1.0])
 s[:point] = map(x -> scaling_mat*x, s[:point])
+s[:edge_orientation] = false
 orient!(s)
 # Visualize the mesh.
 GLMakie.wireframe(s)
