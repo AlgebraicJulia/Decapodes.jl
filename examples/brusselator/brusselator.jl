@@ -12,7 +12,7 @@ using Logging
 using JLD2
 using Printf
 
-using GeometryBasics: Point2
+using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 
@@ -120,7 +120,7 @@ gensim(expand_operators(Brusselator))
 sim = eval(gensim(expand_operators(Brusselator)))
 fₘ = sim(sd, generate)
 
-# Create problem and run sim for t ∈ [0,1.1).
+# Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
 u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)], Float64[], [:U, :V, :One])
 
@@ -131,7 +131,6 @@ fig_ic = GLMakie.Figure()
 p1 = GLMakie.mesh(fig_ic[1,2], s, color=findnode(u₀, :U), colormap=:jet)
 p2 = GLMakie.mesh(fig_ic[1,3], s, color=findnode(u₀, :V), colormap=:jet)
 
-# Note: This is very easy to compute, so try e.g. 99.9.
 tₑ = 11.5
 
 @info("Precompiling Solver")
@@ -149,7 +148,7 @@ soln = solve(prob, Tsit5())
 GLMakie.mesh(s, color=findnode(soln(tₑ), :U), colormap=:jet)
 
 begin # BEGIN Gif creation
-frames = 800
+frames = 100
 # Initial frame
 fig = GLMakie.Figure(resolution = (1200, 800))
 p1 = GLMakie.mesh(fig[1,2], s, color=findnode(soln(0), :U), colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
@@ -167,7 +166,7 @@ Label(fig[1,4,Top()], "V")
 lab1 = Label(fig[1,3], "")
 
 # Animation
-record(fig, "brusselator.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
+record(fig, "brusselator.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
     p1.plot.color = findnode(soln(t), :U)
     p2.plot.color = findnode(soln(t), :V)
     lab1.text = @sprintf("%.2f",t)
@@ -176,6 +175,7 @@ end
 end # END Gif creation
 
 # Run on the sphere.
+# You can use lower resolution meshes, such as Icosphere(3).
 s = loadmesh(Icosphere(5))
 s[:edge_orientation] = false
 orient!(s)
@@ -228,7 +228,7 @@ constants_and_parameters = (
 # Generate the simulation.
 fₘ = sim(sd, generate)
 
-# Create problem and run sim for t ∈ [0,1.1).
+# Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
 u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)], Float64[], [:U, :V, :One])
 
@@ -239,7 +239,6 @@ fig_ic = GLMakie.Figure()
 p1 = GLMakie.mesh(fig_ic[1,2], s, color=findnode(u₀, :U), colormap=:jet)
 p2 = GLMakie.mesh(fig_ic[1,3], s, color=findnode(u₀, :V), colormap=:jet)
 
-# Note: This is very easy to compute, so try e.g. 99.9.
 tₑ = 11.5
 
 @info("Precompiling Solver")
