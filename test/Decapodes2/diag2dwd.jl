@@ -120,7 +120,7 @@ import Decapodes: DecaExpr
   end
   diffExpr3 = parse_decapode(DiffusionExprBody3)
   ddp3 = SummationDecapode(diffExpr3)
-  @test ddp3[:name] == [:C, :Ċ, :ϕ, Symbol("4"), Symbol("2"), Symbol("3"), Symbol("•1"), :mult, :mult]
+  @test ddp3[:name] == [:C, :Ċ, :ϕ, Symbol("4"), Symbol("2"), Symbol("3"), Symbol("•1"), :mult_1, :mult_2]
 
   # Variables need not be declared before use.
   DiffusionExprBody4 =  quote
@@ -160,16 +160,59 @@ import Decapodes: DecaExpr
   @test ddp7[:incl] == [2]
 
   # Vars can only be of certain types.
-  DiffusionExprBody6 =  quote
+  DiffusionExprBody8 =  quote
     (C)::Foo
     ϕ ==  2*d₀(C)
     Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
     Ċ == ∂ₜ(C)
   end
-  diffExpr6 = parse_decapode(DiffusionExprBody6)
-  @test_throws ErrorException SummationDecapode(diffExpr6)
-end
+  diffExpr8 = parse_decapode(DiffusionExprBody8)
+  @test_throws ErrorException SummationDecapode(diffExpr8)
 
+  # Multiple equality is not an accepted input
+  ParseTest1 = quote
+    (A, B, X)::Form0{X}
+    A == d(B) == f(X)
+  end
+  @test_throws ErrorException parse_decapode(ParseTest1)
+
+  # Just noting that the first decapode is denotes a X as an op1
+  # while the second is a multiplication between X and F
+  ParseTest2_1 = quote
+    (A, B, X)::Form0{X}
+    A == X(F)
+  end
+  pt2_1 = SummationDecapode(parse_decapode(ParseTest2_1))
+  ParseTest2_2 = quote
+    (A, B, X)::Form0{X}
+    A == (X)F
+  end
+  pt2_2 = SummationDecapode(parse_decapode(ParseTest2_2))
+  @test pt2_1 != pt2_2
+
+  # Chained Tvars test
+  # TODO: Do we want explict support for higher order Tvars?
+  ParseTest3 = quote
+    D == ∂ₜ(C)
+    E == ∂ₜ(D)
+  end
+  pt3 = SummationDecapode(parse_decapode(ParseTest3))
+  @test pt3[:name] == [:Ċ, :Ċ̇, :C]
+  @test pt3[:incl] == [1,2]
+  @test pt3[:src] == [3, 1]
+  @test pt3[:tgt] == [1, 2]
+
+  # TODO: We should eventually recognize this equivalence
+  #= ParseTest4 = quote
+    D == D + C
+    D + C == C
+  end
+  pt4 = SummationDecapode(parse_decapode(ParseTest4)) =#
+
+end
+Deca = quote
+  (A, B, C)::Form0
+end
 @testset "Term Construction" begin
     @test term(:(Ċ)) == Var(:Ċ)
     @test_throws ErrorException term(:(∂ₜ{Form0}))
@@ -224,12 +267,21 @@ end =#
   @test nparts(rdp, :Σ) == 1
 end
 
-Recursion = quote
+#= Recursion = quote
   x::Form0{X}
   y::Form0{X}
   z::Form0{X}
 
   ∂ₜ(k(z)) == f1(x) + ∘(g, h)(y)
+  y == F(f2(x), ρ(x,z))
+end =#
+
+Recursion = quote
+  x::Form0{X}
+  y::Form0{X}
+  z::Form0{X}
+
+  ∂ₜ(z) == f1(x) + ∘(g, h)(y)
   y == F(f2(x), ρ(x,z))
 end
 

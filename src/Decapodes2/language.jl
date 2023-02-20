@@ -8,7 +8,6 @@
   Lit(Symbol)
   Judge(Var, Symbol, Symbol) # Symbol 1: Form0 Symbol 2: X
   AppCirc1(Vector{Symbol}, Term)
-  AppCirc2(Vector{Symbol}, Term, Term)
   App1(Symbol, Term)
   App2(Symbol, Term, Term)
   Plus(Vector{Term})
@@ -32,17 +31,11 @@ term(s::Number) = Lit(Symbol(s))
 
 term(expr::Expr) = begin
     @match expr begin
-        # TODO: Is this expression ever used outside of the test
-        # Expr(a) => Var(normalize_unicode(a))
-
         #TODO: Would we want ∂ₜ to be used with general expressions or just Vars?
-        Expr(:call, :∂ₜ, b) => Tan(term(b)) 
+        Expr(:call, :∂ₜ, b) => Tan(Var(b)) 
 
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, term(b))
         Expr(:call, a, b) => App1(a, term(b))
-
-        # TODO: Not sure how to handle the results from this, is this an Op2 followed by Op1's?
-        # Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc2(f, term(x), term(y))
 
         Expr(:call, :+, xs...) => Plus(term.(xs))
         Expr(:call, f, x, y) => App2(f, term(x), term(y))
@@ -50,8 +43,6 @@ term(expr::Expr) = begin
         # TODO: Will later be converted to Op2's or schema has to be changed to include multiplication
         Expr(:call, :*, xs...) => Mult(term.(xs))
 
-        # TODO: Not sure what this does, don't think its used, tagged for deletion
-        # Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
         x => error("Cannot construct term from  $x")
     end
 end
@@ -84,7 +75,6 @@ function parse_decapode(expr::Expr)
     end
     DecaExpr(judges, eqns)
 end
-
 # to_decapode helper functions
 reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
   let ! = reduce_term!
@@ -105,7 +95,7 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
           syms[x] = res_var
         end
       end
-      App1(f, t) => begin
+      App1(f, t) || AppCirc1(f, t) => begin
         res_var = add_part!(d, :Var, type=:infer)
         add_part!(d, :Op1, src=!(t,d,syms), tgt=res_var, op1=f)
         return res_var
@@ -113,16 +103,6 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
       App2(f, t1, t2) => begin
         res_var = add_part!(d, :Var, type=:infer)
         add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=f)
-        return res_var
-      end
-      AppCirc1(fs, t) => begin
-        res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op1, src=!(t,d,syms), tgt=res_var, op1=fs)
-        return res_var
-      end
-      AppCirc2(fs, t1, t2) => begin
-        res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=fs)
         return res_var
       end
       Plus(ts) => begin
@@ -165,6 +145,9 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}, de
       lhs_ref = reduce_term!(t1,d,syms)
       rhs_ref = reduce_term!(t2,d,syms)
 
+      # Always let the a named variable take precedence 
+      # TODO: If we have variable to variable equality, we want
+      # some kind of way to check track of this equality
       ref_pair = (t1, t2)
       @match ref_pair begin
         (Var(a), Var(b)) => return d
@@ -252,19 +235,23 @@ end
 function SummationDecapode(e::DecaExpr)
     d = SummationDecapode{Any, Any, Symbol}()
     symbol_table = Dict{Symbol, Int}()
+
     for judgement in e.judgements
       var_id = add_part!(d, :Var, name=judgement._1._1, type=judgement._2)
       symbol_table[judgement._1._1] = var_id
     end
+
     deletions = Vector{Int64}()
     for eq in e.equations
       eval_eq!(eq, d, symbol_table, deletions)
     end
     rem_parts!(d, :Var, sort(deletions))
+
+    recognize_types(d)
+
     fill_names!(d)
     d[:name] .= normalize_unicode.(d[:name])
-    make_sum_unique!(d)
-    recognize_types(d)
+    make_sum_mult_unique!(d)
     return d
 end
 

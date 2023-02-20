@@ -50,12 +50,16 @@ function fill_names!(d::AbstractNamedDecapode)
   return d
 end
 
-function make_sum_unique!(d::AbstractNamedDecapode)
-  num = 1
+function make_sum_mult_unique!(d::AbstractNamedDecapode)
+  snum = 1
+  mnum = 1
   for (i, name) in enumerate(d[:name])
     if(name == :sum)
-      d[i, :name] = Symbol(join([String(name), string(num)] , "_"))
-      num += 1
+      d[i, :name] = Symbol("sum_$(snum)")
+      snum += 1
+    elseif(name == :mult)
+      d[i, :name] = Symbol("mult_$(mnum)")
+      mnum += 1
     end
   end
 end
