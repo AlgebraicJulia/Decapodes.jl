@@ -1,3 +1,4 @@
+using CombinatorialSpaces
 using MultiScaleArrays
 using OrdinaryDiffEq
 using GeometryBasics
