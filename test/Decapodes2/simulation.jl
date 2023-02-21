@@ -68,7 +68,7 @@ compile(expand_operators(ddp), [:C, :k])
 gensim(ddp)
 
 torus = loadmesh(Torus_30x10())
-c_dist = MvNormal([5, 5], [1.5, 1.5])
+c_dist = MvNormal([5, 5], LinearAlgebra.Diagonal(map(abs2, [1.5, 1.5])))
 c = [pdf(c_dist, [p[1], p[2]]) for p in torus[:point]]
 
 u₀ = construct(PhysicsState, [VectorForm(c)],Float64[], [:C])
