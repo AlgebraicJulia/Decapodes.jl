@@ -35,17 +35,11 @@ end
 add new variable names to all the variables that don't have names.
 """
 function fill_names!(d::AbstractNamedDecapode)
-    bulletcount = 1
-    for i in parts(d, :Var)
-        if !isassigned(d[:,:name],i) || isnothing(d[i, :name])
-            d[i,:name] = Symbol("•$bulletcount")
-            bulletcount += 1
-        end
-    end
-    for e in incident(d, :∂ₜ, :op1)
-        s = d[e,:src]
-        t = d[e, :tgt]
-        d[t, :name] = append_dot(d[s,:name])
+  bulletcount = 1
+  for i in parts(d, :Var)
+    if !isassigned(d[:,:name],i) || isnothing(d[i, :name])
+      d[i,:name] = Symbol("•$bulletcount")
+      bulletcount += 1
     end
   end
   for e in incident(d, :∂ₜ, :op1)
