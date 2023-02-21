@@ -135,7 +135,7 @@ end
 
 #gensim(d::AbstractNamedDecapode) = gensim(d, collect(infer_state_names(d)))
 gensim(d::AbstractNamedDecapode) = gensim(d,
-    vcat(collect(infer_state_names(d)), d[:name][incident(d, :Literal, :type)]))
+    vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]))
 
 function gensim(d::AbstractNamedDecapode, input_vars)
   d′ = expand_operators(d)
