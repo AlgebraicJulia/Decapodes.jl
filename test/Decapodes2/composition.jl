@@ -110,7 +110,7 @@ dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
 
 dif_adv_sup_expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 6
-  type = [:Form0, :Form1, :Form1, :Form1, :infer, :Form1]
+  type = [:Form0, :Form1, :Form1, :Form1, :Form0, :Form1]
   name = [:C, :ϕ₁, :V, :ϕ₂, :superposition_Ċ, :ϕ]
 
   TVar = 1

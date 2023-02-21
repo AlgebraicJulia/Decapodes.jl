@@ -1,3 +1,4 @@
+using CombinatorialSpaces
 using MultiScaleArrays
 using OrdinaryDiffEq
 using GeometryBasics
@@ -63,30 +64,20 @@ Base.Expr(c::VarargsCall) = begin
 end
 
 function infer_states(d::AbstractNamedDecapode)
-    vars = map(parts(d, :Var)) do v
-        if length(incident(d, v, :tgt)) == 0 &&
-            length(incident(d, v, :res)) == 0
-            # v isn't a derived value
-            return v
-        else
-            return nothing
-        end
+    filter(parts(d, :Var)) do v
+        length(incident(d, v, :tgt)) == 0 &&
+        length(incident(d, v, :res)) == 0 &&
+        d[v, :type] != :Literal
     end
-    return filter(!isnothing, vars)
 end
 
 function infer_states(d::SummationDecapode)
-    vars = map(parts(d, :Var)) do v
-        if length(incident(d, v, :tgt)) == 0 &&
-            length(incident(d, v, :res)) == 0 &&
-            length(incident(d, v, :sum)) == 0
-            # v isn't a derived value
-            return v
-        else
-            return nothing
-        end
+    filter(parts(d, :Var)) do v
+        length(incident(d, v, :tgt)) == 0 &&
+        length(incident(d, v, :res)) == 0 &&
+        length(incident(d, v, :sum)) == 0 &&
+        d[v, :type] != :Literal
     end
-    return filter(!isnothing, vars)
 end
 
 infer_state_names(d) = d[infer_states(d), :name]
@@ -95,10 +86,16 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
     stmts = map(vars) do s
         ssymbl = QuoteNode(s)
         if all(d[incident(d, s, :name) , :type] .== :Constant)
+        #if only(d[incident(d, s, :name) , :type]) == :Constant
             :($s = p.$s)
         elseif all(d[incident(d, s, :name) , :type] .== :Parameter)
             :($s = (p.$s)(t))
+        elseif all(d[incident(d, s, :name) , :type] .== :Literal)
+            # TODO: Fix this. We assume that all literals are Float64s.
+            :($s = $(parse(Float64, String(s))))
         else
+            # TODO: If names are not unique, then the type is assumed to be a
+            # form for all of the vars sharing a same name.
             :($s = findnode(u, $ssymbl).values)
         end
     end
@@ -137,10 +134,13 @@ function compile_env(d::AbstractNamedDecapode)
   return defs
 end
 
-gensim(d::AbstractNamedDecapode) = gensim(d, collect(infer_state_names(d)))
+#gensim(d::AbstractNamedDecapode) = gensim(d, collect(infer_state_names(d)))
+gensim(d::AbstractNamedDecapode) = gensim(d,
+    vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]))
 
 function gensim(d::AbstractNamedDecapode, input_vars)
   d′ = expand_operators(d)
+  #d′ = average_rewrite(d′)
   defs = compile_env(d′)
   rhs = compile(d′, input_vars)
   quote
@@ -208,26 +208,28 @@ function compile(d::NamedDecapode, inputs::Vector)
 end
 
 function compile(d::SummationDecapode, inputs::Vector)
+    # Get the Vars of the inputs (probably state Vars).
     input_numbers = incident(d, inputs, :name)
-    visited = falses(nparts(d, :Var))
-    visited[collect(flatten(input_numbers))] .= true
-    consumed1 = falses(nparts(d, :Op1))
-    consumed2 = falses(nparts(d, :Op2))
-    consumedΣ = falses(nparts(d, :Σ))
+    visited_Var = falses(nparts(d, :Var))
+    visited_Var[collect(flatten(input_numbers))] .= true
+    visited_Var[incident(d, :Literal, :type)] .= true
+    visited_1 = falses(nparts(d, :Op1))
+    visited_2 = falses(nparts(d, :Op2))
+    visited_Σ = falses(nparts(d, :Σ))
     # FIXME: this is a quadratic implementation of topological_sort inlined in here.
     op_order = []
-    for iter in 1:(nparts(d, :Op1) + nparts(d,:Op2)) + nparts(d, :Σ)
+    for _ in 1:(nparts(d, :Op1) + nparts(d,:Op2) + nparts(d, :Σ))
         for op in parts(d, :Op1)
             s = d[op, :src]
-            if !consumed1[op] && visited[s]
+            if !visited_1[op] && visited_Var[s]
                 # skip the derivative edges
                 operator = d[op, :op1]
                 t = d[op, :tgt]
+                visited_1[op] = true
                 if operator == DerivOp
                     continue
                 end
-                consumed1[op] = true
-                visited[t] = true
+                visited_Var[t] = true
                 sname = d[s, :name]
                 tname = d[t, :name]
                 c = UnaryCall(operator, sname, tname)
@@ -238,14 +240,14 @@ function compile(d::SummationDecapode, inputs::Vector)
         for op in parts(d, :Op2)
             arg1 = d[op, :proj1]
             arg2 = d[op, :proj2]
-            if !consumed2[op] && visited[arg1] && visited[arg2]
+            if !visited_2[op] && visited_Var[arg1] && visited_Var[arg2]
                 r = d[op, :res]
                 a1name = d[arg1, :name]
                 a2name = d[arg2, :name]
                 rname  = d[r, :name]
                 operator = d[op, :op2]
-                consumed2[op] = true
-                visited[r] = true
+                visited_2[op] = true
+                visited_Var[r] = true
                 c = BinaryCall(operator, a1name, a2name, rname)
                 push!(op_order, c)
             end
@@ -253,13 +255,13 @@ function compile(d::SummationDecapode, inputs::Vector)
 
         for op in parts(d, :Σ)
             args = subpart(d, incident(d, op, :summation), :summand)
-            if !consumedΣ[op] && all(visited[args])
+            if !visited_Σ[op] && all(visited_Var[args])
                 r = d[op, :sum]
                 argnames = d[args, :name]
                 rname  = d[r, :name]
                 operator = :(+)
-                consumedΣ[op] = true
-                visited[r] = true
+                visited_Σ[op] = true
+                visited_Var[r] = true
                 c = VarargsCall(operator, argnames, rname)
                 push!(op_order, c)
             end

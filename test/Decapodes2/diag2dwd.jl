@@ -17,79 +17,209 @@ using Base.Iterators
 using Decapodes
 import Decapodes: DecaExpr
 
-# @present DiffusionSpace2D(FreeExtCalc2D) begin
-#   X::Space
-#   k::Hom(Form1(X), Form1(X)) # diffusivity of space, usually constant (scalar multiplication)
-#   proj₁_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-#   proj₂_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-#   sum₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-#   prod₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-# end
+@testset "Parsing" begin
 
+  # @present DiffusionSpace2D(FreeExtCalc2D) begin
+  #   X::Space
+  #   k::Hom(Form1(X), Form1(X)) # diffusivity of space, usually constant (scalar multiplication)
+  #   proj₁_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
+  #   proj₂_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
+  #   sum₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
+  #   prod₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
+  # end
+  
+  
+  # Diffusion = @decapode DiffusionSpace2D begin
+  #     (C, Ċ₁, Ċ₂)::Form0{X}
+  #     Ċ₁ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(k(d₀{X}(C)))))
+  #     Ċ₂ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(d₀{X}(C))))
+  #     ∂ₜ{Form0{X}}(C) == Ċ₁ + Ċ₂
+  # end
+  
+  # Tests
+  #######
+  
+  # Construct roughly what the @decapode macro should return for Diffusion
+  js = [Judge(Var(:C), :Form0, :X), 
+        Judge(Var(:Ċ₁), :Form0, :X),
+        Judge(Var(:Ċ₂), :Form0, :X)
+  ]
+  # TODO: Do we need to handle the fact that all the functions are parameterized by a space?
+  eqs = [Eq(Var(:Ċ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
+         Eq(Var(:Ċ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
+         Eq(Tan(Var(:C)), Plus([Var(:Ċ₁), Var(:Ċ₂)]))
+  ]
+  diffusion_d = DecaExpr(js, eqs)
+  # diffusion_cset = Decapode(diffusion_d)
+  diffusion_cset_named = SummationDecapode(diffusion_d)
+  # A test with expressions on LHS (i.e. temporary variables must be made)
+  # TODO: we should be intelligent and realize that the LHS of the first two
+  # equations are the same and so can share a new variable
+  eqs = [Eq(Plus([Var(:Ċ₁), Var(:Ċ₂)]), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
+         Eq(Plus([Var(:Ċ₁), Var(:Ċ₂)]), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
+         Eq(Tan(Var(:C)), Plus([Var(:Ċ₁), Var(:Ċ₂)]))    
+  ]
+  test_d = DecaExpr(js, eqs)
+  # test_cset = Decapode(test_d)
+  test_cset_named = SummationDecapode(test_d)
+  
+  # TODO: Write tests for recursive expressions
+  
+  all(isassigned(test_cset_named[:name], i) for i in parts(test_cset_named,:Var))
+  
+  sup_js = js = [Judge(Var(:C), :Form0, :X), 
+  Judge(Var(:ϕ₁), :Form0, :X),
+  Judge(Var(:ϕ₂), :Form0, :X)
+  ]
+  sup_eqs = [Eq(Var(:ϕ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
+         Eq(Var(:ϕ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
+         Eq(Tan(Var(:C)), Plus([Var(:ϕ₁), Var(:ϕ₂)]))
+  ]
+  sup_d = DecaExpr(sup_js, sup_eqs)
+  # sup_cset = Decapode(sup_d)
+  sup_cset_named = SummationDecapode(sup_d)
+  
+  
+  Decapodes.compile(diffusion_cset_named, [:C,])
+  Decapodes.compile(test_cset_named, [:C,])
+  Decapodes.compile(sup_cset_named, [:C,])
+  
+  term(:(∧₀₁(C,V)))
 
-# Diffusion = @decapode DiffusionSpace2D begin
-#     (C, Ċ₁, Ċ₂)::Form0{X}
-#     Ċ₁ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(k(d₀{X}(C)))))
-#     Ċ₂ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(d₀{X}(C))))
-#     ∂ₜ{Form0{X}}(C) == Ċ₁ + Ċ₂
-# end
+  # No need to parameterize forms over a space (i.e. {X} syntax)
+  DiffusionExprBody1 =  quote
+    (C, Ċ)::Form0
+    ϕ::Form1
+    ϕ ==  ∘(k, d₀)(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+  diffExpr1 = parse_decapode(DiffusionExprBody1)
+  ddp1 = SummationDecapode(diffExpr1)
+  @test ddp1[:name] == [:C, :Ċ, :ϕ]
 
-# Tests
-#######
+  # Support parsing literals.
+  DiffusionExprBody2 =  quote
+    (C, Ċ)::Form0
+    ϕ::Form1
+    ϕ ==  2*d₀(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+  diffExpr2 = parse_decapode(DiffusionExprBody2)
+  ddp2 = SummationDecapode(diffExpr2)
+  @test ddp2[:name] == [:C, :Ċ, :ϕ, Symbol("•",1), Symbol(2)]
 
-# Construct roughly what the @decapode macro should return for Diffusion
-js = [Judge(Var(:C), :Form0, :X), 
-      Judge(Var(:Ċ₁), :Form0, :X),
-      Judge(Var(:Ċ₂), :Form0, :X)
-]
-# TODO: Do we need to handle the fact that all the functions are parameterized by a space?
-eqs = [Eq(Var(:Ċ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
-       Eq(Var(:Ċ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
-       Eq(Tan(Var(:C)), Plus([Var(:Ċ₁), Var(:Ċ₂)]))
-]
-diffusion_d = DecaExpr(js, eqs)
-# diffusion_cset = Decapode(diffusion_d)
-diffusion_cset_named = SummationDecapode(diffusion_d)
-# A test with expressions on LHS (i.e. temporary variables must be made)
-# TODO: we should be intelligent and realize that the LHS of the first two
-# equations are the same and so can share a new variable
-eqs = [Eq(Plus([Var(:Ċ₁), Var(:Ċ₂)]), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
-       Eq(Plus([Var(:Ċ₁), Var(:Ċ₂)]), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
-       Eq(Tan(Var(:C)), Plus([Var(:Ċ₁), Var(:Ċ₂)]))    
-]
-test_d = DecaExpr(js, eqs)
-# test_cset = Decapode(test_d)
-test_cset_named = SummationDecapode(test_d)
+  # Multiply without explicitly giving parentheses.
+  DiffusionExprBody3 =  quote
+    (C, Ċ)::Form0
+    ϕ::Form1
+    ϕ ==  4*2*3*d₀(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+  diffExpr3 = parse_decapode(DiffusionExprBody3)
+  ddp3 = SummationDecapode(diffExpr3)
+  @test ddp3[:name] == [:C, :Ċ, :ϕ, Symbol("4"), Symbol("2"), Symbol("3"), Symbol("•1"), :mult_1, :mult_2]
 
-# TODO: Write tests for recursive expressions
+  # Variables need not be declared before use.
+  DiffusionExprBody4 =  quote
+    Ċ::Form0
+    ϕ ==  2*d₀(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+  diffExpr4 = parse_decapode(DiffusionExprBody4)
+  ddp4 = SummationDecapode(diffExpr4)
+  DiffusionExprBody5 =  quote
+    ϕ ==  2*d₀(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+  diffExpr5 = parse_decapode(DiffusionExprBody5)
+  ddp5 = SummationDecapode(diffExpr5)
+  @test ddp5[:name] == [:ϕ, :Ċ, Symbol("2"), Symbol("•1"), :C]
 
-all(isassigned(test_cset_named[:name], i) for i in parts(test_cset_named,:Var))
+  # TVars can be parsed on either side of an equation.
+  DiffusionExprBody6 =  quote
+    ϕ ==  2*d₀(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    Ċ == ∂ₜ(C)
+  end
+  diffExpr6 = parse_decapode(DiffusionExprBody6)
+  ddp6 = SummationDecapode(diffExpr6)
+  @test ddp6[:name] == [:ϕ, :Ċ, Symbol("2"), Symbol("•1"), :C]
+  @test ddp6[:incl] == [2]
+  DiffusionExprBody7 =  quote
+    ϕ ==  2*d₀(C)
+    ∂ₜ(C) == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+  end
+  diffExpr7 = parse_decapode(DiffusionExprBody7)
+  ddp7 = SummationDecapode(diffExpr7)
+  @test ddp7[:name] == [:ϕ, :Ċ, Symbol("2"), Symbol("•2"), :C]
+  @test ddp7[:incl] == [2]
 
-sup_js = js = [Judge(Var(:C), :Form0, :X), 
-Judge(Var(:ϕ₁), :Form0, :X),
-Judge(Var(:ϕ₂), :Form0, :X)
-]
-sup_eqs = [Eq(Var(:ϕ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
-       Eq(Var(:ϕ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
-       Eq(Tan(Var(:C)), Plus([Var(:ϕ₁), Var(:ϕ₂)]))
-]
-sup_d = DecaExpr(sup_js, sup_eqs)
-# sup_cset = Decapode(sup_d)
-sup_cset_named = SummationDecapode(sup_d)
+  # Vars can only be of certain types.
+  DiffusionExprBody8 =  quote
+    (C)::Foo
+    ϕ ==  2*d₀(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    Ċ == ∂ₜ(C)
+  end
+  diffExpr8 = parse_decapode(DiffusionExprBody8)
+  @test_throws ErrorException SummationDecapode(diffExpr8)
 
+  # Multiple equality is not an accepted input
+  ParseTest1 = quote
+    (A, B, X)::Form0{X}
+    A == d(B) == f(X)
+  end
+  @test_throws ErrorException parse_decapode(ParseTest1)
 
-Decapodes.compile(diffusion_cset_named, [:C,])
-Decapodes.compile(test_cset_named, [:C,])
-Decapodes.compile(sup_cset_named, [:C,])
+  # Just noting that the first decapode is denotes a X as an op1
+  # while the second is a multiplication between X and F
+  ParseTest2_1 = quote
+    (A, B, X)::Form0{X}
+    A == X(F)
+  end
+  pt2_1 = SummationDecapode(parse_decapode(ParseTest2_1))
+  ParseTest2_2 = quote
+    (A, B, X)::Form0{X}
+    A == (X)F
+  end
+  pt2_2 = SummationDecapode(parse_decapode(ParseTest2_2))
+  @test pt2_1 != pt2_2
 
-term(:(∧₀₁(C,V)))
+  # Chained Tvars test
+  # TODO: Do we want explict support for higher order Tvars?
+  ParseTest3 = quote
+    D == ∂ₜ(C)
+    E == ∂ₜ(D)
+  end
+  pt3 = SummationDecapode(parse_decapode(ParseTest3))
+  @test pt3[:name] == [:Ċ, :Ċ̇, :C]
+  @test pt3[:incl] == [1,2]
+  @test pt3[:src] == [3, 1]
+  @test pt3[:tgt] == [1, 2]
 
+  # TODO: We should eventually recognize this equivalence
+  #= ParseTest4 = quote
+    D == D + C
+    D + C == C
+  end
+  pt4 = SummationDecapode(parse_decapode(ParseTest4)) =#
+
+end
+Deca = quote
+  (A, B, C)::Form0
+end
 @testset "Term Construction" begin
     @test term(:(Ċ)) == Var(:Ċ)
     @test_throws ErrorException term(:(∂ₜ{Form0}))
-    @test term(Expr(:ϕ)) == Var(:ϕ)
+    # @test term(Expr(:ϕ)) == Var(:ϕ)
     @test typeof(term(:(d₀(C)))) == App1
     @test typeof(term(:(∘(k, d₀)(C)))) == AppCirc1
+    # @test typeof(term(:(∘(k, d₀)(C,Φ)))) == AppCirc2
     # @test term(:(∘(k, d₀)(C))) == AppCirc1([:k, :d₀], Var(:C)) #(:App1, ((:Circ, :k, :d₀), Var(:C)))
     # @test term(:(∘(k, d₀{X})(C))) == (:App1, ((:Circ, :k, :(d₀{X})), Var(:C)))
     @test_throws MethodError term(:(Ċ == ∘(⋆₀⁻¹{X}, dual_d₁{X}, ⋆₁{X})(ϕ)))
@@ -97,7 +227,7 @@ term(:(∧₀₁(C,V)))
     # @test term(:(∂ₜ{Form0}(C))) == App1(:Tan, Var(:C))
 end
 
-@testset "Recursive Expr" begin
+#= @testset "Recursive Expr" begin
   Recursion = quote
     x::Form0{X}
     y::Form0{X}
@@ -115,13 +245,43 @@ end
   @test nparts(rdp, :Op1) == 5
   @test nparts(rdp, :Op2) == 2
   @test nparts(rdp, :Σ) == 1
+end =#
+
+@testset "Recursive Expr" begin
+  Recursion = quote
+    x::Form0{X}
+    y::Form0{X}
+    z::Form0{X}
+
+    ∂ₜ(z) == f1(x) + ∘(g, h)(y)
+    y == F(f2(x), ρ(x,z))
+  end
+
+  recExpr = parse_decapode(Recursion)
+  rdp = SummationDecapode(recExpr)
+
+  @test nparts(rdp, :Var) == 8
+  @test nparts(rdp, :TVar) == 1
+  @test nparts(rdp, :Op1) == 4
+  @test nparts(rdp, :Op2) == 2
+  @test nparts(rdp, :Σ) == 1
 end
-Recursion = quote
+
+#= Recursion = quote
   x::Form0{X}
   y::Form0{X}
   z::Form0{X}
 
   ∂ₜ(k(z)) == f1(x) + ∘(g, h)(y)
+  y == F(f2(x), ρ(x,z))
+end =#
+
+Recursion = quote
+  x::Form0{X}
+  y::Form0{X}
+  z::Form0{X}
+
+  ∂ₜ(z) == f1(x) + ∘(g, h)(y)
   y == F(f2(x), ρ(x,z))
 end
 
@@ -230,7 +390,7 @@ end
 
   # We use set equality because we do not care about the order of the Var table.
   names_types_1 = Set(zip(t1[:name], t1[:type]))
-  names_types_expected_1 = Set([(:Ċ, :Form0), (:C, :Form0)])
+  names_types_expected_1 = Set([(:Ċ, :Form0)])
   @test issetequal(names_types_1, names_types_expected_1)
 
   # The type of the src of ∂ₜ is inferred.
@@ -243,7 +403,7 @@ end
   infer_types!(t2)
 
   names_types_2 = Set(zip(t2[:name], t2[:type]))
-  names_types_expected_2 = Set([(:Ċ, :Form0), (:C, :Form0)])
+  names_types_expected_2 = Set([(:Ċ, :Form0)])
   @test issetequal(names_types_2, names_types_expected_2)
 
   # The type of the tgt of d is inferred.
@@ -621,7 +781,7 @@ end
   DiffusionExprBody = quote
     (T, Ṫ)::Form0{X}
     ϕ::DualForm1{X}
-    k::Constant{X}
+    k::Parameter{X}
     # Fick's first law
     ϕ ==  ⋆(k*d(T))
     # Diffusion equation
@@ -656,7 +816,7 @@ end
   NavierStokesExprBody = quote
     (M, Ṁ, G, V)::Form1{X}
     (T, ρ, p, ṗ)::Form0{X}
-    (two,three,kᵥ)::Constant{X}
+    (two,three,kᵥ)::Parameter{X}
     V == M/avg(ρ)
     Ṁ == neg(L(V, V))*avg(ρ) + 
           kᵥ*(Δ(V) + d(δ(V))/three) +
@@ -708,77 +868,30 @@ end
   (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :/),
   (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :/),
   (proj1_type = :Form2, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :/),
-  (proj1_type = :Constant, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :/),
-  (proj1_type = :Constant, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :/),
-  (proj1_type = :Constant, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :/),
-  (proj1_type = :Form0, proj2_type = :Constant, res_type = :infer, replacement_type = :Form0, op = :/),
-  (proj1_type = :Form1, proj2_type = :Constant, res_type = :infer, replacement_type = :Form1, op = :/),
-  (proj1_type = :Form2, proj2_type = :Constant, res_type = :infer, replacement_type = :Form2, op = :/),
+  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :/),
+  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :/),
+  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :/),
+  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form0, op = :/),
+  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form1, op = :/),
+  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form2, op = :/),
   # Rules for * where res is unknown.
   (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :*),
   (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :*),
   (proj1_type = :Form2, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :*),
-  (proj1_type = :Constant, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :*),
-  (proj1_type = :Constant, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :*),
-  (proj1_type = :Constant, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :*),
-  (proj1_type = :Form0, proj2_type = :Constant, res_type = :infer, replacement_type = :Form0, op = :*),
-  (proj1_type = :Form1, proj2_type = :Constant, res_type = :infer, replacement_type = :Form1, op = :*),
-  (proj1_type = :Form2, proj2_type = :Constant, res_type = :infer, replacement_type = :Form2, op = :*)]
+  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :*),
+  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :*),
+  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :*),
+  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form0, op = :*),
+  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form1, op = :*),
+  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form2, op = :*)]
 
   infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
     vcat(bespoke_op2_inf_rules, op2_inf_rules_2D))
 
-  names_types_hx = Set(zip(HeatXfer[:name], HeatXfer[:type]))
+  names_types_hx = zip(HeatXfer[:name], HeatXfer[:type])
 
   names_types_expected_hx = [
-  (Symbol("continuity_advection_•4"), :Form0),
-  (:navierstokes_G, :Form1),
-  (Symbol("navierstokes_•8"), :Form1),
-  (Symbol("navierstokes_•18"), :Form1),
-  (Symbol("navierstokes_•3"), :Form1),
-  (Symbol("navierstokes_•13"), :Form0),
-  (Symbol("navierstokes_•10"), :Form0),
-  (Symbol("continuity_diffusion_•2"), :Form1),
-  (:continuity_Ṫₐ, :Form0),
-  (Symbol("navierstokes_•15"), :Form1),
-  (Symbol("continuity_advection_•2"), :Form0),
-  (Symbol("navierstokes_•1"), :Form1),
-  (Symbol("continuity_diffusion_•1"), :Form1),
-  (Symbol("continuity_advection_•3"), :DualForm2),
-  (:navierstokes_Ṁ, :Form1),
-  (:ρ, :Form0),
-  (:T, :Form0),
-  (:continuity_diffusion_k, :Constant),
-  (Symbol("navierstokes_•7"), :Form1),
-  (Symbol("navierstokes_•22"), :DualForm2),
-  (Symbol("continuity_diffusion_•3"), :DualForm2),
-  (Symbol("navierstokes_•20"), :DualForm2),
-  (:continuity_Ṫ, :Form0),
-  (:M, :Form1),
-  (:navierstokes_three, :Constant),
-  (:navierstokes_kᵥ, :Constant),
-  (Symbol("navierstokes_•12"), :Form1),
-  (:navierstokes_ṗ, :Form0),
-  (Symbol("navierstokes_•11"), :Form1),
-  (Symbol("navierstokes_•17"), :Form1),
-  (Symbol("navierstokes_•6"), :Form1),
-  (Symbol("navierstokes_•19"), :Form1),
-  (:navierstokes_two, :Constant),
-  (:navierstokes_sum_1, :Form1),
-  (Symbol("navierstokes_•2"), :Form1),
-  (Symbol("navierstokes_•5"), :Form1),
-  (Symbol("continuity_advection_•1"), :Form1),
-  (Symbol("navierstokes_•4"), :Form1),
-  (Symbol("navierstokes_•16"), :Form1),
-  (:P, :Form0),
-  (:continuity_diffusion_ϕ, :DualForm1),
-  (Symbol("navierstokes_•9"), :Form1),
-  (:navierstokes_V, :Form1),
-  (:continuity_Ṫ₁, :Form0),
-  (Symbol("continuity_advection_•5"), :DualForm2),
-  (:continuity_advection_V, :Form1),
-  (Symbol("navierstokes_•14"), :Form0),
-  (Symbol("navierstokes_•21"), :Form0)]
+    (:T, :Form0), (:continuity_Ṫ₁, :Form0), (:continuity_diffusion_ϕ, :DualForm1), (:continuity_diffusion_k, :Parameter), (Symbol("continuity_diffusion_•1"), :DualForm2), (Symbol("continuity_diffusion_•2"), :Form1), (Symbol("continuity_diffusion_•3"), :Form1), (:M, :Form1), (:continuity_advection_V, :Form1), (:ρ, :Form0), (:P, :Form0), (:continuity_Ṫₐ, :Form0), (Symbol("continuity_advection_•1"), :Form0), (Symbol("continuity_advection_•2"), :Form1), (Symbol("continuity_advection_•3"), :DualForm2), (Symbol("continuity_advection_•4"), :Form0), (Symbol("continuity_advection_•5"), :DualForm2), (:continuity_Ṫ, :Form0), (:navierstokes_Ṁ, :Form1), (:navierstokes_G, :Form1), (:navierstokes_V, :Form1), (:navierstokes_ṗ, :Form0), (:navierstokes_two, :Parameter), (:navierstokes_three, :Parameter), (:navierstokes_kᵥ, :Parameter), (Symbol("navierstokes_•1"), :DualForm2), (Symbol("navierstokes_•2"), :Form1), (Symbol("navierstokes_•3"), :Form1), (Symbol("navierstokes_•4"), :Form1), (Symbol("navierstokes_•5"), :Form1), (Symbol("navierstokes_•6"), :Form1), (Symbol("navierstokes_•7"), :Form1), (Symbol("navierstokes_•8"), :Form1), (Symbol("navierstokes_•9"), :Form1), (Symbol("navierstokes_•10"), :Form1), (Symbol("navierstokes_•11"), :Form0), (:navierstokes_sum_1, :Form1), (Symbol("navierstokes_•12"), :Form1), (Symbol("navierstokes_•13"), :Form1), (Symbol("navierstokes_•14"), :Form0), (Symbol("navierstokes_•15"), :Form0), (Symbol("navierstokes_•16"), :Form1), (Symbol("navierstokes_•17"), :Form1), (Symbol("navierstokes_•18"), :Form1), (Symbol("navierstokes_•19"), :Form1), (Symbol("navierstokes_•20"), :Form1), (:navierstokes_sum_2, :Form0), (Symbol("navierstokes_•21"), :DualForm2)]
 
   @test issetequal(names_types_hx, names_types_expected_hx)
 
