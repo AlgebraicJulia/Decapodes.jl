@@ -171,10 +171,11 @@ function find_chains(d::SummationDecapode)
   chains = []
   visited = falses(nparts(d, :Op1))
   # TODO: Re-write this without two reduce-vcats.
-  chain_starts = reduce(vcat, reduce(vcat,
+  chain_starts = unique(reduce(vcat, reduce(vcat,
                         #[incident(d, Decapodes.infer_states(d), :src),
                         [incident(d, Vector{Int64}(filter(i -> !isnothing(i), Decapodes.infer_states(d))), :src),
-                         incident(d, d[:res], :src)]))
+                         incident(d, d[:res], :src),
+                         incident(d, d[:sum], :src)])))
   
   s = Stack{Int64}()
   foreach(x -> push!(s, x), chain_starts)
