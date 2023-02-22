@@ -5,12 +5,13 @@
 #   - way to represent this in a Decapode ACSet.
 @data Term begin
   Var(Symbol)
+  Lit(Symbol)
   Judge(Var, Symbol, Symbol) # Symbol 1: Form0 Symbol 2: X
   AppCirc1(Vector{Symbol}, Term)
-  AppCirc2(Vector{Symbol}, Term, Term)
   App1(Symbol, Term)
   App2(Symbol, Term, Term)
   Plus(Vector{Term})
+  Mult(Vector{Term})
   Tan(Term)
 end
 
@@ -26,17 +27,22 @@ struct DecaExpr
 end
 
 term(s::Symbol) = Var(normalize_unicode(s))
+term(s::Number) = Lit(Symbol(s))
 
 term(expr::Expr) = begin
     @match expr begin
-        Expr(a) => Var(normalize_unicode(a))
-        Expr(:call, :∂ₜ, b) => Tan(term(b))
-        Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, Var(b))
+        #TODO: Would we want ∂ₜ to be used with general expressions or just Vars?
+        Expr(:call, :∂ₜ, b) => Tan(Var(b)) 
+
+        Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, term(b))
         Expr(:call, a, b) => App1(a, term(b))
-        Expr(:call, Expr(:call, :∘, f...), x, y) => AppCirc1(f, Var(x), Var(y))
+
         Expr(:call, :+, xs...) => Plus(term.(xs))
         Expr(:call, f, x, y) => App2(f, term(x), term(y))
-        Expr(:call, :∘, a...) => (:AppCirc1, map(term, a))
+
+        # TODO: Will later be converted to Op2's or schema has to be changed to include multiplication
+        Expr(:call, :*, xs...) => Mult(term.(xs))
+
         x => error("Cannot construct term from  $x")
     end
 end
@@ -45,10 +51,16 @@ function parse_decapode(expr::Expr)
     stmts = map(expr.args) do line 
         @match line begin
             ::LineNumberNode => missing
-            Expr(:(::), a::Symbol, b) => Judge(Var(a),b.args[1], b.args[2])
+            # TODO: If user doesn't provide space, this gives a temp space so we can continue to construction
+            # For now spaces don't matter so this is fine but if they do, this will need to change
+            Expr(:(::), a::Symbol, b::Symbol) => Judge(Var(a), b, :I)
+            Expr(:(::), a::Expr, b::Symbol) => map(sym -> Judge(Var(sym), b, :I), a.args)
+
+            Expr(:(::), a::Symbol, b) => Judge(Var(a), b.args[1], b.args[2])
             Expr(:(::), a::Expr, b) => map(sym -> Judge(Var(sym), b.args[1], b.args[2]), a.args)
+
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
-            x => x
+            _ => error("The line $line is malformed")
         end
     end |> skipmissing |> collect
     judges = []
@@ -63,13 +75,27 @@ function parse_decapode(expr::Expr)
     end
     DecaExpr(judges, eqns)
 end
-
 # to_decapode helper functions
 reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
   let ! = reduce_term!
     @match t begin
-      Var(x) => syms[x]
-      App1(f, t) => begin
+      Var(x) => begin 
+        if haskey(syms, x)
+           syms[x]
+        else
+          res_var = add_part!(d, :Var, name = x, type=:infer)
+          syms[x] = res_var
+        end
+      end
+      Lit(x) => begin 
+        if haskey(syms, x)
+           syms[x]
+        else
+          res_var = add_part!(d, :Var, name = x, type=:Literal)
+          syms[x] = res_var
+        end
+      end
+      App1(f, t) || AppCirc1(f, t) => begin
         res_var = add_part!(d, :Var, type=:infer)
         add_part!(d, :Op1, src=!(t,d,syms), tgt=res_var, op1=f)
         return res_var
@@ -77,16 +103,6 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
       App2(f, t1, t2) => begin
         res_var = add_part!(d, :Var, type=:infer)
         add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=f)
-        return res_var
-      end
-      AppCirc1(fs, t) => begin
-        res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op1, src=!(t,d,syms), tgt=res_var, op1=fs)
-        return res_var
-      end
-      AppCirc2(f, t1, t2) => begin
-        res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=fs)
         return res_var
       end
       Plus(ts) => begin
@@ -98,8 +114,22 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
         end
         return res_var
       end
+      # TODO: Just for now assuming we have 2 or more terms
+      Mult(ts) => begin
+        multiplicands  = [!(t,d,syms) for t in ts]
+        res_var = add_part!(d, :Var, type=:infer, name=:mult)
+        m1,m2 = multiplicands[1:2]
+        add_part!(d, :Op2, proj1=m1, proj2=m2, res=res_var, op2=Symbol("*"))
+        for m in multiplicands[3:end]
+          m1 = res_var
+          m2 = m
+          res_var = add_part!(d, :Var, type=:infer, name=:mult)
+          add_part!(d, :Op2, proj1=m1, proj2=m2, res=res_var, op2=Symbol("*"))
+        end
+        return res_var
+      end
       Tan(t) => begin 
-        # TODO: this is creating a spurious variablbe with the same name
+        # TODO: this is creating a spurious variable with the same name
         txv = add_part!(d, :Var, type=:infer)
         tx = add_part!(d, :TVar, incl=txv)
         tanop = add_part!(d, :Op1, src=!(t,d,syms), tgt=txv, op1=DerivOp)
@@ -109,13 +139,32 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
     end
   end
 
-function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}) 
+function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}, deletions::Vector{Int}) 
   @match eq begin
     Eq(t1, t2) => begin
       lhs_ref = reduce_term!(t1,d,syms)
       rhs_ref = reduce_term!(t2,d,syms)
-      deletions = []
+
+      # Always let the a named variable take precedence 
+      # TODO: If we have variable to variable equality, we want
+      # some kind of way to check track of this equality
+      ref_pair = (t1, t2)
+      @match ref_pair begin
+        (Var(a), Var(b)) => return d
+        (t1, Var(b)) => begin
+          lhs_ref, rhs_ref = rhs_ref, lhs_ref
+        end
+        _ => nothing
+      end
+
       # Make rhs_ref equal to lhs_ref and adjust all its incidents
+
+      # Case rhs_ref is a Tan
+      # WARNING: Don't push to deletion here because all TanVars should have a 
+      # corresponding Op1. Pushing here would create a duplicate which breaks rem_parts!
+      for rhs in incident(d, rhs_ref, :incl)
+        d[rhs, :incl] = lhs_ref
+      end
       # Case rhs_ref is a Op1
       for rhs in incident(d, rhs_ref, :tgt)
         d[rhs, :tgt] = lhs_ref
@@ -136,7 +185,7 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int})
       end
       # TODO: delete unused vars. The only thing stopping me from doing 
       # this is I don't know if CSet deletion preserves incident relations
-      rem_parts!(d, :Var, sort(deletions))
+      #rem_parts!(d, :Var, sort(deletions))
     end
   end
   return d
@@ -156,9 +205,12 @@ function Decapode(e::DecaExpr)
     var_id = add_part!(d, :Var, type=(judgement._2, judgement._3))
     symbol_table[judgement._1._1] = var_id
   end
+  deletions = Vector{Int64}()
   for eq in e.equations
-    eval_eq!(eq, d, symbol_table)
+    eval_eq!(eq, d, symbol_table, deletions)
   end
+  rem_parts!(d, :Var, sort(deletions))
+  recognize_types(d)
   return d
 end
 
@@ -169,26 +221,40 @@ function NamedDecapode(e::DecaExpr)
       var_id = add_part!(d, :Var, name=judgement._1._1, type=judgement._2)
       symbol_table[judgement._1._1] = var_id
     end
+    deletions = Vector{Int64}()
     for eq in e.equations
-      eval_eq!(eq, d, symbol_table)
+      eval_eq!(eq, d, symbol_table, deletions)
     end
+    rem_parts!(d, :Var, sort(deletions))
     fill_names!(d)
     d[:name] = map(normalize_unicode,d[:name])
+    recognize_types(d)
     return d
 end
 
 function SummationDecapode(e::DecaExpr)
     d = SummationDecapode{Any, Any, Symbol}()
     symbol_table = Dict{Symbol, Int}()
+
     for judgement in e.judgements
       var_id = add_part!(d, :Var, name=judgement._1._1, type=judgement._2)
       symbol_table[judgement._1._1] = var_id
     end
+
+    deletions = Vector{Int64}()
     for eq in e.equations
-      eval_eq!(eq, d, symbol_table)
+      eval_eq!(eq, d, symbol_table, deletions)
     end
+    rem_parts!(d, :Var, sort(deletions))
+
+    recognize_types(d)
+
     fill_names!(d)
     d[:name] .= normalize_unicode.(d[:name])
-    make_sum_unique!(d)
+    make_sum_mult_unique!(d)
     return d
+end
+
+macro SummationDecapode(e)
+  :(SummationDecapode(parse_decapode($(Meta.quot(e)))))
 end
