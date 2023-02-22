@@ -27,7 +27,8 @@ end
 Base.Expr(c::UnaryCall) = begin
     operator = c.operator
     if isa(c.operator, AbstractArray)
-        operator = :(compose($operator))
+        #operator = :(compose($operator))
+        operator = Expr(:call, :∘, Symbol(join(operator, ", ")))
     end
     return :($(c.output) = $operator($(c.input)))
 end
@@ -140,7 +141,9 @@ end
 gensim(d::AbstractNamedDecapode) = gensim(d, collect(infer_state_names(d)))
 
 function gensim(d::AbstractNamedDecapode, input_vars)
-  d′ = expand_operators(d)
+  #d′ = expand_operators(d)
+  d′ = d
+  #d′ = average_rewrite(d′)
   defs = compile_env(d′)
   rhs = compile(d′, input_vars)
   quote

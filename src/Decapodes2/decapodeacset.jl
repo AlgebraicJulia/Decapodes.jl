@@ -170,7 +170,12 @@ of multiple Op1s.
 function find_chains(d::SummationDecapode)
   chains = []
   visited = falses(nparts(d, :Op1))
-  chain_starts = reduce(vcat, incident(d, Decapodes.infer_states(d), :src))
+  # TODO: Re-write this without two reduce-vcats.
+  chain_starts = reduce(vcat, reduce(vcat,
+                        #[incident(d, Decapodes.infer_states(d), :src),
+                        [incident(d, Vector{Int64}(filter(i -> !isnothing(i), Decapodes.infer_states(d))), :src),
+                         incident(d, d[:res], :src)]))
+  
   s = Stack{Int64}()
   foreach(x -> push!(s, x), chain_starts)
   while !isempty(s)
@@ -183,7 +188,7 @@ function find_chains(d::SummationDecapode)
 
       tgt = d[op_to_visit, :tgt]
       next_op1s = incident(d, tgt, :src)
-      next_op2s = vcat(incident(d, tgt, :proj1), incident(d, tgt, :proj1))
+      next_op2s = vcat(incident(d, tgt, :proj1), incident(d, tgt, :proj2))
       if (length(next_op1s) != 1 ||
           length(next_op2s) != 0 ||
           is_tgt_of_many_ops(d, tgt) ||
