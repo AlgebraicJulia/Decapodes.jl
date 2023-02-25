@@ -27,8 +27,7 @@ end
 Base.Expr(c::UnaryCall) = begin
     operator = c.operator
     if isa(c.operator, AbstractArray)
-        #operator = :(compose($operator))
-        operator = Expr(:call, :∘, Symbol(join(operator, ", ")))
+        operator = Expr(:call, :∘, reverse(operator)...)
     end
     return :($(c.output) = $operator($(c.input)))
 end
@@ -121,6 +120,14 @@ function compile_env(d::AbstractNamedDecapode)
   defs = quote end
   for op in d[:op1]
     if op == DerivOp
+      continue
+    end
+    if typeof(op) <: AbstractArray
+      for sub_op in op
+        ops = QuoteNode(sub_op)
+        def = :($sub_op = generate(mesh, $ops))
+        push!(defs.args, def)
+      end
       continue
     end
     ops = QuoteNode(op)
