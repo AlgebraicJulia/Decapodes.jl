@@ -13,7 +13,7 @@ Point3D = Point3{Float64}
 
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
-function generate(sd, my_symbol; hodge=GeometricHodge())
+#= function generate(sd, my_symbol; hodge=GeometricHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
   op = @match my_symbol begin
     :k => x->2000x
@@ -36,6 +36,15 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :debug => (args...)->begin println(args[1], length.(args[2:end])) end
   end
   # return (args...) -> begin println("applying $my_symbol"); println("arg length $(length.(args))"); op(args...);end
+  return (args...) ->  op(args...)
+end =#
+
+function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :k => x->2000x
+    _ => default_dec_generate(sd, my_symbol, hodge)
+  end
+
   return (args...) ->  op(args...)
 end
 

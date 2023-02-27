@@ -319,3 +319,74 @@ function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, In
     end / sum(dual_lengths)
   end
 end
+
+function default_dec_generate(sd, my_symbol, hodge)
+
+    # TODO: Need to change to cahced version
+    i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
+    
+    op = @match my_symbol begin
+
+        # Regular Hodge Stars
+        :⋆₀ => begin 
+                tmphodge0 = ⋆(0,sd,hodge=hodge)
+                x-> tmphodge0 * x
+        end
+        :⋆₁ => begin 
+                tmphodge1 = ⋆(1,sd,hodge=hodge)
+                x-> tmphodge1 * x
+        end
+
+        # Inverse Hodge Stars
+        :⋆₀⁻¹ => begin
+                tmpinvhodge0 = inv_hodge_star(0,sd,hodge=hodge)
+                x-> tmpinvhodge0 * x
+        end
+        :⋆₁⁻¹ => begin
+                tmpinvhodge1 = inv_hodge_star(1,sd,hodge=hodge)
+                x-> tmpinvhodge1 * x
+        end
+
+        # Differentials
+        :d₀ => begin 
+                tmpd0 = d(0,sd)
+                x-> tmpd0 * x
+        end
+        :d₁ => begin 
+                tmpd1 = d(1,sd)
+                x-> tmpd1 * x
+        end
+
+        # Dual Differentials
+        :dual_d₀ => begin 
+                tmpduald0 = dual_derivative(0,sd)
+                x-> tmpduald0 * x
+        end
+        :dual_d₁ => begin 
+                tmpduald1 = dual_derivative(1,sd)
+                x-> tmpduald1 * x
+        end
+
+        # TODO: Switch these out for cached versions if possible, maybe pass precomputed parameters?
+        :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
+
+        :(-) => x-> -x
+
+        #Lie Derivative
+        :L₀ => begin 
+            tmphodge1 = ⋆(1,sd,hodge=hodge)
+            (v,x)-> tmphodge1 * wedge_product(Tuple{1,0}, sd, v, x)
+        end
+
+        # TODO: Switch out for cached versions
+        :i₀ => i0 
+
+        # TODO: Switch these out for cached versions
+        :Δ₀ => x -> δ(1, sd, d(0, sd)*x, hodge=hodge)
+        :Δ₁ => x -> δ(2, sd, d(1, sd)*x, hodge=hodge) + d(0, sd)*δ(1, sd, x, hodge=hodge)
+  
+        x=> error("Unmatched operator $my_symbol")
+    end
+
+    return (args...) ->  op(args...)
+  end
