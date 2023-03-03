@@ -56,7 +56,7 @@ end =#
   
 begin
     RADIUS = 6371+90
-    primal_earth = loadmesh(Icosphere(5, RADIUS))
+    primal_earth = loadmesh(Icosphere(4, RADIUS))
     nploc = argmax(x -> x[3], primal_earth[:point])
     primal_earth[:edge_orientation] .= false
     orient!(primal_earth)
@@ -112,6 +112,10 @@ function man_simulate(mesh, operators)
         dual_d₁ = x -> tmpdd1 * x
         L₀ = (v, x) -> tmpstar1*wedge_product(Tuple{1,0}, earth, v, x) =#
 
+        tmpstar1 = ⋆(1, mesh, hodge=GeometricHodge())
+        s, pv, c = p_wedge_product(1, mesh)
+        L₀ = (v, x) -> tmpstar1 * c_wedge_product(1, x, v, s, pv, c)
+
         end
     return begin
         f(du, u, p, t) = begin
@@ -136,9 +140,9 @@ function man_simulate(mesh, operators)
 end
 
 # TODO: Code actually just uses this simulate function, not the above
-# fₘ = eval(man_simulate(earth, generate))
-sim = eval(gensim(advdiffdp, [:C, :V]))
-fₘ = sim(earth, generate)
+fₘ = eval(man_simulate(earth, generate))
+# sim = eval(gensim(advdiffdp, [:C, :V]))
+# fₘ = sim(earth, generate)
 
 begin
     c_dist = MvNormal(nploc[[1,2]], 100[1, 1])
@@ -149,7 +153,31 @@ begin
     v = flatten(velocity, earth)
 
     u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(collect(v))],Float64[], [:C, :V])
-    tₑ = 100
+    tₑ = 10
     prob = ODEProblem(fₘ,u₀,(0, tₑ))
     soln = solve(prob, Tsit5())
+end
+
+function p_wedge_product(k, mesh)
+    simples = simplices(k, mesh)
+
+    #These are a memory killers!!
+    subsimples = map(x -> subsimplices(k, mesh, x), simples)
+    primal_vertexes = map(x -> primal_vertex(k, mesh, x), subsimples)
+
+    # Finding coeffs in wedge product is brutal on memory, around 345976 allocations for one map
+    vols = map(x -> volume(k,mesh,x), simples)
+    dual_vols = map(y -> map(x -> dual_volume(k,mesh,x), y), subsimples)
+    coeffs = dual_vols ./ vols
+    return (simples, primal_vertexes, coeffs)
+end
+
+function c_wedge_product(k, f, α, simples, primal_vertexes, coeffs)
+    f_terms = map(x -> f[x], primal_vertexes)
+
+    # TODO: Not sure if we can use simples to index here 
+    lhs = map(x -> dot(coeffs[x], f_terms[x]), simples)
+    rhs = map(x -> α[x], simples)
+
+    return lhs .* rhs ./ factorial(k)
 end
