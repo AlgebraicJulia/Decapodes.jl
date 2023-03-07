@@ -1,6 +1,7 @@
 using MultiScaleArrays
 using OrdinaryDiffEq
 using GeometryBasics
+import Catlab.Programs.GenerateJuliaPrograms: compile
 
 struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
     values::Vector{B}
@@ -366,6 +367,19 @@ function default_dec_generate(sd, my_symbol, hodge)
                 tmpduald1 = dual_derivative(1,sd)
                 x-> tmpduald1 * x
         end
+
+        # Codifferential
+        # TODO: Why do we have a final parameter which is unused?
+        :δ₀ => begin
+            tmpcod0 = δ(0, sd, hodge, nothing)
+            x -> tmpcod0 * x
+        end
+
+        :δ₁ => begin
+            tmpcod1 = δ(1, sd, hodge, nothing)
+            x -> tmpcod1 * x
+        end
+
 
         # TODO: Switch these out for cached versions if possible, maybe pass precomputed parameters?
         :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)

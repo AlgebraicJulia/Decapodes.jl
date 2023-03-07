@@ -64,28 +64,30 @@ begin
     subdivide_duals!(earth, Circumcenter())
 end
 
-AdvDiff = quote
-    C::Form0{X}
-    Ċ::Form0{X}
-    V::Form1{X}
-    ϕ::Form1{X}
-    ϕ₁::Form1{X}
-    ϕ₂::Form1{X}
-    starC::DualForm2{X}
-    lvc::Form1{X}
-    # Fick's first law
-    ϕ₁ ==  ∘(d₀,k,⋆₁)(C)
-    # Advective Flux
-    ϕ₂ == -(L₀(V, C))
-    # Superposition Principle
-    ϕ == plus(ϕ₁ , ϕ₂)
-    # Conservation of Mass
-    Ċ == ∘(dual_d₁,⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
-end
+begin
+    AdvDiff = quote
+        C::Form0{X}
+        Ċ::Form0{X}
+        V::Form1{X}
+        ϕ::Form1{X}
+        ϕ₁::Form1{X}
+        ϕ₂::Form1{X}
+        starC::DualForm2{X}
+        lvc::Form1{X}
+        # Fick's first law
+        ϕ₁ ==  ∘(d₀,k,⋆₁)(C)
+        # Advective Flux
+        ϕ₂ == -(L₀(V, C))
+        # Superposition Principle
+        ϕ == plus(ϕ₁ , ϕ₂)
+        # Conservation of Mass
+        Ċ == ∘(dual_d₁,⋆₀⁻¹)(ϕ)
+        ∂ₜ(C) == Ċ
+    end
 
-advdiff = parse_decapode(AdvDiff)
-advdiffdp = SummationDecapode(advdiff)
+    advdiff = parse_decapode(AdvDiff)
+    advdiffdp = SummationDecapode(advdiff)
+end
 
 function man_simulate(mesh, operators)
     begin
@@ -113,8 +115,8 @@ function man_simulate(mesh, operators)
         L₀ = (v, x) -> tmpstar1*wedge_product(Tuple{1,0}, earth, v, x) =#
 
         tmpstar1 = ⋆(1, mesh, hodge=GeometricHodge())
-        s, pv, c = p_wedge_product(1, mesh)
-        L₀ = (v, x) -> tmpstar1 * c_wedge_product(1, x, v, s, pv, c)
+        val_pack = p_wedge_product(1, mesh)
+        L₀ = (v, x) -> tmpstar1 * c_wedge_product(1, x, v, val_pack)
 
         end
     return begin
@@ -159,25 +161,36 @@ begin
 end
 
 function p_wedge_product(k, mesh)
+
+    # Gets a list of all of the 0 -> vertices, 1 -> edges, 2 -> triangles on mesh
     simples = simplices(k, mesh)
 
     #These are a memory killers!!
+
+    # For 1 -> edges, grabs the two dual edges that form the primal edge 
+    # For 2 -> triangles, grabs all of the edges that radiate from the triangle center 
     subsimples = map(x -> subsimplices(k, mesh, x), simples)
+
+    # For 1 -> edges, gets the primal vertices of the dual edges 
     primal_vertexes = map(x -> primal_vertex(k, mesh, x), subsimples)
 
     # Finding coeffs in wedge product is brutal on memory, around 345976 allocations for one map
-    vols = map(x -> volume(k,mesh,x), simples)
-    dual_vols = map(y -> map(x -> dual_volume(k,mesh,x), y), subsimples)
+    #vols = map(x -> volume(k,mesh,x), simples)
+    vols = volume(k,mesh,simples)
+    dual_vols = map(y -> dual_volume(k,mesh,y), subsimples)
     coeffs = dual_vols ./ vols
-    return (simples, primal_vertexes, coeffs)
+    return (primal_vertexes, coeffs)
 end
 
-function c_wedge_product(k, f, α, simples, primal_vertexes, coeffs)
+function c_wedge_product(k, f, α, val_pack)
+    primal_vertexes, coeffs = val_pack
     f_terms = map(x -> f[x], primal_vertexes)
 
     # TODO: Not sure if we can use simples to index here 
-    lhs = map(x -> dot(coeffs[x], f_terms[x]), simples)
-    rhs = map(x -> α[x], simples)
+    #lhs = map(x -> dot(coeffs[x], f_terms[x]), simples)
+    lhs = dot.(coeffs, f_terms)
+    #rhs = map(x -> α[x], simples)
+    rhs = α
 
-    return lhs .* rhs ./ factorial(k)
+    return (lhs .* rhs) ./ factorial(k)
 end
