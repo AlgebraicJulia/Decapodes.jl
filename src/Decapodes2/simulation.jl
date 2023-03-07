@@ -3,6 +3,8 @@ using MultiScaleArrays
 using OrdinaryDiffEq
 using GeometryBasics
 
+import Catlab.Programs.GenerateJuliaPrograms: compile
+
 struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
     values::Vector{B}
 end
