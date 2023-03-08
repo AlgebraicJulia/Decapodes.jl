@@ -328,79 +328,128 @@ function default_dec_generate(sd, my_symbol, hodge)
     
     op = @match my_symbol begin
 
+        :plus => (+)
+        :(-) => x-> -x
+
         # Regular Hodge Stars
-        :⋆₀ => begin 
-                tmphodge0 = ⋆(0,sd,hodge=hodge)
-                x-> tmphodge0 * x
-        end
-        :⋆₁ => begin 
-                tmphodge1 = ⋆(1,sd,hodge=hodge)
-                x-> tmphodge1 * x
-        end
+        :⋆₀ => dec_hodge(0, sd, hodge)
+        :⋆₁ => dec_hodge(1, sd, hodge)
 
         # Inverse Hodge Stars
-        :⋆₀⁻¹ => begin
-                tmpinvhodge0 = inv_hodge_star(0,sd,hodge=hodge)
-                x-> tmpinvhodge0 * x
-        end
-        :⋆₁⁻¹ => begin
-                tmpinvhodge1 = inv_hodge_star(1,sd,hodge=hodge)
-                x-> tmpinvhodge1 * x
-        end
+        :⋆₀⁻¹ => dec_inverse_hodge(0, sd, hodge)
+        :⋆₁⁻¹ => dec_inverse_hodge(1, sd, hodge)
 
         # Differentials
-        :d₀ => begin 
-                tmpd0 = d(0,sd)
-                x-> tmpd0 * x
-        end
-        :d₁ => begin 
-                tmpd1 = d(1,sd)
-                x-> tmpd1 * x
-        end
+        :d₀ => dec_differential(0, sd)
+        :d₁ => dec_differential(1, sd)
 
         # Dual Differentials
-        :dual_d₀ => begin 
-                tmpduald0 = dual_derivative(0,sd)
-                x-> tmpduald0 * x
-        end
-        :dual_d₁ => begin 
-                tmpduald1 = dual_derivative(1,sd)
-                x-> tmpduald1 * x
-        end
+        :dual_d₀ => dec_dual_differential(0, sd)
+        :dual_d₁ => dec_dual_differential(1, sd)
 
         # Codifferential
         # TODO: Why do we have a final parameter which is unused?
-        :δ₀ => begin
-            tmpcod0 = δ(0, sd, hodge, nothing)
-            x -> tmpcod0 * x
-        end
+        :δ₀ => dec_codifferential(0, sd, hodge)
+        :δ₁ => dec_codifferential(1, sd, hodge)
 
-        :δ₁ => begin
-            tmpcod1 = δ(1, sd, hodge, nothing)
-            x -> tmpcod1 * x
-        end
+        :Δ₀ => dec_laplace_de_rham(0, sd)
+        :Δ₁ => dec_laplace_de_rham(1, sd)
+        :Δ₂ => dec_laplace_de_rham(2, sd)
 
-
+        :∧₀₀ => (f, g) -> wedge_product(Tuple{0,0}, sd, x, y)
         # TODO: Switch these out for cached versions if possible, maybe pass precomputed parameters?
-        :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
-
-        :(-) => x-> -x
+        :∧₀₁ => dec_wedge_product(Tuple{0, 1}, sd)
+        :∧₁₀ => dec_wedge_product(Tuple{1, 0}, sd)
 
         #Lie Derivative
         :L₀ => begin 
             tmphodge1 = ⋆(1,sd,hodge=hodge)
-            (v,x)-> tmphodge1 * wedge_product(Tuple{1,0}, sd, v, x)
+            tmpwedge10 = dec_wedge_product(Tuple{1, 0}, sd)
+            (v,x)-> tmphodge1 * tmpwedge10(v, x)
         end
 
         # TODO: Switch out for cached versions
         :i₀ => i0 
 
-        # TODO: Switch these out for cached versions
-        :Δ₀ => x -> δ(1, sd, d(0, sd)*x, hodge=hodge)
-        :Δ₁ => x -> δ(2, sd, d(1, sd)*x, hodge=hodge) + d(0, sd)*δ(1, sd, x, hodge=hodge)
-  
         x=> error("Unmatched operator $my_symbol")
     end
 
     return (args...) ->  op(args...)
-  end
+end
+
+function dec_hodge(k, sd::HasDeltaSet, hodge)
+    hodge = ⋆(k,sd,hodge=hodge)
+    x-> hodge * x
+end
+
+function dec_inverse_hodge(k, sd::HasDeltaSet, hodge)
+    invhodge = inv_hodge_star(k,sd,hodge)
+    x-> invhodge * x
+end
+
+function dec_differential(k, sd::HasDeltaSet)
+    diff = d(k,sd)
+    x-> diff * x
+end
+
+function dec_dual_differential(k, sd::HasDeltaSet)
+    dualdiff = dual_derivative(k,sd)
+    x-> dualdiff * x
+end
+
+function dec_codifferential(k, sd::HasDeltaSet, hodge)
+    codiff = δ(k, sd, hodge, nothing)
+    x -> codiff * x
+end
+
+function dec_laplace_de_rham(k, sd::HasDeltaSet)
+    lpdr = Δ(k, sd)
+    x -> lpdr * x
+end
+
+function dec_laplace_beltrami(k, sd::HasDeltaSet)
+    lpbt = ∇²(k, sd)
+    x -> lpbt * x
+end
+
+function dec_p_wedge_product_zero(k, sd)
+
+    # Gets a list of all of the 0 -> vertices, 1 -> edges, 2 -> triangles on mesh
+    simples = simplices(k, sd)
+
+    #These are a memory killers!!
+
+    # For 1 -> edges, grabs the two dual edges that form the primal edge 
+    # For 2 -> triangles, grabs all of the edges that radiate from the triangle center 
+    subsimples = map(x -> subsimplices(k, sd, x), simples)
+
+    # For 1 -> edges, gets the primal vertices of the dual edges 
+    primal_vertices = map(x -> primal_vertex(k, sd, x), subsimples)
+
+    # Finding coeffs in wedge product is brutal on memory, around 345976 allocations for one map
+    #vols = map(x -> volume(k,sd,x), simples)
+    vols = CombinatorialSpaces.volume(k,sd,simples)
+    dual_vols = map(y -> dual_volume(k,sd,y), subsimples)
+    coeffs = dual_vols ./ vols
+    return (primal_vertices, coeffs)
+end
+
+function dec_c_wedge_product_zero(k, f, α, val_pack)
+    primal_vertices, coeffs = val_pack
+    f_terms = map(x -> f[x], primal_vertices)
+
+    lhs = dot.(coeffs, f_terms)
+    return (lhs .*  α) ./ factorial(k)
+end
+
+function dec_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where k
+    val_pack = dec_p_wedge_product_zero(k, sd)
+    (α, g) -> dec_c_wedge_product_zero(k, g, α, val_pack)
+end
+
+function dec_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where k
+    val_pack = dec_p_wedge_product_zero(k, sd)
+    (f, β) -> dec_c_wedge_product_zero(k, f, β, val_pack)
+end
+
+function dec_

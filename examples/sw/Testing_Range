@@ -9,6 +9,8 @@ using Distributions
 using LinearAlgebra
 using GeometryBasics: Point3
 
+using Catlab.CategoricalAlgebra
+
 Point3D = Point3{Float64}
 
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
@@ -172,25 +174,20 @@ function p_wedge_product(k, mesh)
     subsimples = map(x -> subsimplices(k, mesh, x), simples)
 
     # For 1 -> edges, gets the primal vertices of the dual edges 
-    primal_vertexes = map(x -> primal_vertex(k, mesh, x), subsimples)
+    primal_vertices = map(x -> primal_vertex(k, mesh, x), subsimples)
 
     # Finding coeffs in wedge product is brutal on memory, around 345976 allocations for one map
     #vols = map(x -> volume(k,mesh,x), simples)
     vols = volume(k,mesh,simples)
     dual_vols = map(y -> dual_volume(k,mesh,y), subsimples)
     coeffs = dual_vols ./ vols
-    return (primal_vertexes, coeffs)
+    return (primal_vertices, coeffs)
 end
 
 function c_wedge_product(k, f, α, val_pack)
-    primal_vertexes, coeffs = val_pack
-    f_terms = map(x -> f[x], primal_vertexes)
+    primal_vertices, coeffs = val_pack
+    f_terms = map(x -> f[x], primal_vertices)
 
-    # TODO: Not sure if we can use simples to index here 
-    #lhs = map(x -> dot(coeffs[x], f_terms[x]), simples)
     lhs = dot.(coeffs, f_terms)
-    #rhs = map(x -> α[x], simples)
-    rhs = α
-
-    return (lhs .* rhs) ./ factorial(k)
+    return (lhs .*  α) ./ factorial(k)
 end
