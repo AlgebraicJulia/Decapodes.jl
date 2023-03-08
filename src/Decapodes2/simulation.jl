@@ -451,5 +451,3 @@ function dec_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where k
     val_pack = dec_p_wedge_product_zero(k, sd)
     (f, β) -> dec_c_wedge_product_zero(k, f, β, val_pack)
 end
-
-function dec_
