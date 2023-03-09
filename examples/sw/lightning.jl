@@ -1,3 +1,14 @@
+#https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/1999JA900129
+
+# Andrew advice:
+# (Ask what operations you will want to be doing to this to determine.)
+# Specify typeso f physical values and justify!
+# Don't break the DEC's typing. Preserve elegance!
+
+#TODO:
+# Model Bᵩ as a Dual2Form, then take ⋆ to get a 0Form, then take d to get a
+# 1Form. i.e. 
+
 using Catlab
 using Catlab.CategoricalAlgebra
 using Catlab.Graphics
@@ -13,11 +24,116 @@ using LinearAlgebra
 using GLMakie
 using Logging
 using SparseArrays
+using Base.MathConstants: e, π
 # using CairoMakie 
 
 using GeometryBasics: Point3
 Point3D = Point3{Float64}
 Point2D = Point2{Float64}
+
+#################
+# Heidler Model #
+#################
+# This defines J for us.
+# Takes in rise time, fall time, and peak current of the lightning strike (i nought).
+
+# See Veronis section 2.
+# Determine normalizing constant
+imax = MAX_r
+dr = Δr
+HeidlerForη = t -> (t / T1)^n / (1 + ((t / T1)^n)) * exp(-1.0 * t / T2)
+ddtHeidlerForη = t -> (exp(-1.0 * t / T2) * (t/T1)^n * ((t*(-1.0 * (t/T1)^n - 1)) + n*T2)) /
+  (t * T2 * ((t/T1)^n + 1)^2)
+time_for_k = find_zero(ddtHeidlerForη, (1.0, 100.0))
+k = HeidlerForη(time_for_k)
+#max_index = imax/c * dr/dt; # Determine the last time index to be used
+#time_vector = 0:dt:(max_index-1)*dt; # Make a vector for each time instance
+I_norm_vector = ((time_vector./T1).^10)./(1+(time_vector./T1).^10).*exp(-time_vector./T2); # Calculate the outputs of the Heidlar equation without the scaling constants
+#I_max = max(I_norm_vector); # Find the max value of the nonscaled heidlar equation
+#I_max_index = find(I_norm_vector == I_max); # Find the index at which the max value s reached
+#I_max_time = dt*(I_max_index-1); # At what time instance does the max value occur
+k = I_max; # Normalization factor typically notated as eta according to danny thesis Eq 5-14
+I_max =k 
+η = k # Not impedance of free space.
+Δz = 100.0 / 20.0
+Δr = 400.0 / 30.0
+z₀ = 3 * Δz # TODO: We can generalize to not use this particular grid spacing.
+r₀ = 3 * Δr # TODO: We can generalize to not use this particular grid spacing.
+t = 0.05
+zvec = collect(0.0:Δz:100.0)
+tret = t .- zvec./v # Current time instance
+n = 10
+temp = (tret./T1).^n   # within parenthesis of Heidlar equation |n = 10
+I = Io/k * temp./(1+temp) .* exp(-tret./T2) .* (tret > 0);        
+Jₛ₀ = I
+
+vmag = 5
+velocity(p) = TangentBasis(CartesianPoint(p))(vmag/4, vmag/4)
+# velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, -vmag/4, 0))
+
+#begin
+u = flatten_form(velocity, earth)
+
+
+# Call this for all edges.
+function compute_J_mask(r, z)
+  a = 10.0e3
+  if z < a
+    Jₛ₀ * e ^ (-1.0 * r^2 / r₀^2)
+  else
+    Jₛ₀ * e ^ ((-1.0 * r^2 / r₀^2) - ((z - a)^2 / z₀^2))
+  end
+end
+
+Heidler = SummationDecapode(parse_decapode(quote
+  (I, J_mask, Jₛ)::Form1{X} # (In the z direction)
+  (Z, flux)::Form0{X} # Height (i.e. distance from ground)
+  (τ₁, τ₂, I₀, v, c, one, negone, n, k, e)::Constant{X}
+  (t, tret)::Parameter{X}
+
+  #I == I₀ * (one / η) * (t / τ₁)^n / (1 + (t / τ₁)^n) * e ^ (negone * t / τ₂)
+  #tret == m * dt - zvec./v # Current time instance
+  tret == t - zvec./v # Current time instance
+  temp == (tret./T1).^10   # within parenthesis of Heidlar equation |n = 10
+  I == I₀/k * temp./(1+temp) .* exp(-tret./T2) .* (tret > 0);        
+  ∂ᵨ₀()
+
+  Jₛ == I .* J_mask
+  #flux == I .* J_mask
+  #Jₛ == d(flux)
+
+end))
+
+#############
+# Constants #
+#############
+temp = (return_time ./ rise_time) .^ 10 # Relative time difference.
+peak_current = I₀
+Io = 250.0  # Pulled from Danny thesis page 107 [kA]
+T1 = 50.0   # From Danny thesis Table 5-1 column 1 [us]
+T2 = 1000.0 # [us]
+ε₀ = 8.854e-12    # Permittivity of free space (F m-1)
+μ₀ = 4*π*1e-7    # Permeability of free space (H m-1)
+c = sqrt(1/ε₀/μ₀) # Speed of light
+
+constants_and_parameters = (
+  one = 1.0,
+  negone = -1.0,
+  qₑ = 1.602e-19,    # Charge of electron (coul)
+  mₑ = 9.109e-31,    # Mass of electron (kg)
+  ε₀ = ε₀,    # Permittivity of free space (F m-1)
+  μ₀ = μ₀,    # Permeability of free space (H m-1)
+  η = sqrt(μ₀ / ε₀), # Impedance of free space
+  kB = 8.617e-5,     # Boltzmann constant (eV K-1)
+  c = c, # Speed of light
+  n = 10.0, # Normalizing constant for Heilder.
+  e = e,
+  # convert inputs to proper units
+  I₀ = Io .*1e3,     # Convert from input integer to kA
+  τ₁ = T1 .*1e-6,    # Convert from input integer to us
+  τ₂ = T2 .*1e-6,    # Convert from input integer to us
+  v = 2/3 * c        # Approximate speed of prop. of lightning strike through medium.
+  )
 
 # We assume cylindrical symmetry.
 MAX_Z = 100 # km
