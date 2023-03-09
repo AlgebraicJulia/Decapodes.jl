@@ -31,15 +31,7 @@ soln = solve(prob, Tsit5())
 function generate(sd, my_symbol)
   op = @match my_symbol begin
     :k => x->x/20
-    :⋆₀ => x->⋆(0,sd,hodge=DiagonalHodge())*x
-    :⋆₁ => x->⋆(1, sd, hodge=DiagonalHodge())*x
-    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=DiagonalHodge())
-    :⋆₁⁻¹ => x->inv_hodge_star(1,sd,hodge=DiagonalHodge())*x
-    :d₀ => x->d(0,sd)*x
-    :dual_d₀ => x->dual_derivative(0,sd)*x
-    :dual_d₁ => x->dual_derivative(1,sd)*x
-    :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
-    :plus => (+)
+    _ => default_dec_generate(sd, my_symbol, hodge)
   end
   # return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
   return (args...) ->  op(args...)

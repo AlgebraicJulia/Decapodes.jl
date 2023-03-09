@@ -68,23 +68,22 @@ sim = eval(gensim(Brusselator))
 fₘ = sim(earth, generate)
  
 begin
-    sd = earth
-    U = map(sd[:point]) do (_,y,_)
+    U = map(earth[:point]) do (_,y,_)
       abs(y)
     end
     
-    V = map(sd[:point]) do (x,_,_)
+    V = map(earth[:point]) do (x,_,_)
       abs(x)
     end
     
     # TODO: Try making this sparse.
-    F₁ = map(sd[:point]) do (_,_,z)
+    F₁ = map(earth[:point]) do (_,_,z)
       z ≥ 0.8 ? 5.0 : 0.0
     end
 
-    F₂ = zeros(nv(sd))
+    F₂ = zeros(nv(earth))
 
-    One = ones(nv(sd))
+    One = ones(nv(earth))
 
     constants_and_parameters = (
         fourfour = 4.4,

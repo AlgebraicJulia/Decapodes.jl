@@ -118,6 +118,8 @@ end
 
 function compile_env(d::AbstractNamedDecapode)
   assumed_ops = Set([:+, :*, :-, :/])
+  defined_ops = Set()
+
   defs = quote end
   for op in d[:op1]
     if op == DerivOp
@@ -125,23 +127,37 @@ function compile_env(d::AbstractNamedDecapode)
     end
     if typeof(op) <: AbstractArray
       for sub_op in op
+        if(sub_op in defined_ops)
+            continue
+        end
+
         ops = QuoteNode(sub_op)
         def = :($sub_op = generate(mesh, $ops))
         push!(defs.args, def)
+
+        push!(defined_ops, sub_op)
       end
       continue
     end
+    if(op in defined_ops)
+        continue
+    end
+
     ops = QuoteNode(op)
     def = :($op = generate(mesh, $ops))
     push!(defs.args, def)
+
+    push!(defined_ops, op)
   end
   for op in d[:op2]
-    if op in assumed_ops
+    if op in assumed_ops || op in defined_ops
       continue
     end
     ops = QuoteNode(op)
     def = :($op = operators(mesh, $ops))
     push!(defs.args, def)
+
+    push!(defined_ops, op)
   end
   return defs
 end
@@ -343,38 +359,32 @@ function default_dec_generate(sd, my_symbol, hodge)
         :⋆₁⁻¹ => dec_inverse_hodge(1, sd, hodge)
 
         # Differentials
-        :d₀ || :d̃₀ => dec_differential(0, sd)
-        :d₁ || :d̃₁ => dec_differential(1, sd)
+        :d₀ => dec_differential(0, sd)
+        :d₁ => dec_differential(1, sd)
 
         # Dual Differentials
-        :dual_d₀ => dec_dual_differential(0, sd)
-        :dual_d₁ => dec_dual_differential(1, sd)
+        :dual_d₀ || :d̃₀ => dec_dual_differential(0, sd)
+        :dual_d₁ || :d̃₁ => dec_dual_differential(1, sd)
 
         # Codifferential
-        # TODO: Why do we have a final parameter which is unused?
+        # TODO: Why do we have a matrix type parameter which is unused?
         :δ₀ => dec_codifferential(0, sd, hodge)
         :δ₁ => dec_codifferential(1, sd, hodge)
 
+        # Laplace-de Rham
         :Δ₀ => dec_laplace_de_rham(0, sd)
         :Δ₁ => dec_laplace_de_rham(1, sd)
         :Δ₂ => dec_laplace_de_rham(2, sd)
 
+        # Wedge products
         :∧₀₀ => (f, g) -> wedge_product(Tuple{0,0}, sd, x, y)
-        # TODO: Switch these out for cached versions if possible, maybe pass precomputed parameters?
         :∧₀₁ => dec_wedge_product(Tuple{0, 1}, sd)
         :∧₁₀ => dec_wedge_product(Tuple{1, 0}, sd)
 
-        #Lie Derivative
-        :L₀ => begin 
-            tmphodge1 = ⋆(1,sd,hodge=hodge)
-            tmpwedge10 = dec_wedge_product(Tuple{1, 0}, sd)
-            (v,x)-> tmphodge1 * tmpwedge10(v, x)
-        end
+        # Lie Derivative 0
+        :L₀ => dec_lie_derivative_zero(sd, hodge)
 
-        # TODO: Switch out for cached versions
-        :i₀ => i0 
-
-        x=> error("Unmatched operator $my_symbol")
+        x => error("Unmatched operator $my_symbol")
     end
 
     return (args...) ->  op(args...)
@@ -414,6 +424,13 @@ function dec_laplace_beltrami(k, sd::HasDeltaSet)
     lpbt = ∇²(k, sd)
     x -> lpbt * x
 end
+
+function dec_lie_derivative_zero(sd::HasDeltaSet, hodge)
+    tmphodge1 = dec_hodge(1, sd, hodge)
+    tmpwedge10 = dec_wedge_product(Tuple{1, 0}, sd)
+    (v, x)-> tmphodge1(tmpwedge10(v, x))
+end
+
 
 function dec_p_wedge_product_zero(k, sd)
 
