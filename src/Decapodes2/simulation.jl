@@ -330,18 +330,21 @@ function default_dec_generate(sd, my_symbol, hodge)
 
         :plus => (+)
         :(-) => x-> -x
+        :.* => (x,y) -> x .* y
+        :./ => (x,y) -> x ./ y
 
         # Regular Hodge Stars
         :⋆₀ => dec_hodge(0, sd, hodge)
         :⋆₁ => dec_hodge(1, sd, hodge)
+        :⋆₂ => dec_hodge(1, sd, hodge)
 
         # Inverse Hodge Stars
         :⋆₀⁻¹ => dec_inverse_hodge(0, sd, hodge)
         :⋆₁⁻¹ => dec_inverse_hodge(1, sd, hodge)
 
         # Differentials
-        :d₀ => dec_differential(0, sd)
-        :d₁ => dec_differential(1, sd)
+        :d₀ || :d̃₀ => dec_differential(0, sd)
+        :d₁ || :d̃₁ => dec_differential(1, sd)
 
         # Dual Differentials
         :dual_d₀ => dec_dual_differential(0, sd)
