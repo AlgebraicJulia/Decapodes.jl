@@ -15,7 +15,6 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
-        :k => x->2000x
         _ => default_dec_generate(sd, my_symbol, hodge)
     end
   
@@ -23,8 +22,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
 end
 
 begin
-    RADIUS = 6371+90
-    primal_earth = loadmesh(Icosphere(2, RADIUS))
+    primal_earth = loadmesh(Icosphere(5))
     nploc = argmax(x -> x[3], primal_earth[:point])
     primal_earth[:edge_orientation] .= false
     orient!(primal_earth)
@@ -91,11 +89,11 @@ begin
     constants_and_parameters = (
         fourfour = 4.4,
         threefour = 3.4,
-        α = 0.01,
+        α = 0.001,
         F = t -> t ≥ 1.1 ? F₁ : F₂)
 
     u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)],Float64[], [:U, :V, :One])
-    tₑ = 0.01
+    tₑ = 11.5
     prob = ODEProblem(fₘ,u₀,(0, tₑ), constants_and_parameters)
     soln = solve(prob, Tsit5())
 end
