@@ -25,9 +25,11 @@ using GLMakie
 using Logging
 using SparseArrays
 using Base.MathConstants: e, π
+using Roots
+using Interpolations
 # using CairoMakie 
 
-using GeometryBasics: Point3
+using GeometryBasics: Point2, Point3
 Point3D = Point3{Float64}
 Point2D = Point2{Float64}
 
@@ -48,42 +50,68 @@ time_for_k = find_zero(ddtHeidlerForη, (1.0, 100.0))
 k = HeidlerForη(time_for_k)
 #max_index = imax/c * dr/dt; # Determine the last time index to be used
 #time_vector = 0:dt:(max_index-1)*dt; # Make a vector for each time instance
-I_norm_vector = ((time_vector./T1).^10)./(1+(time_vector./T1).^10).*exp(-time_vector./T2); # Calculate the outputs of the Heidlar equation without the scaling constants
+#I_norm_vector = ((time_vector./T1).^10)./(1+(time_vector./T1).^10).*exp(-time_vector./T2); # Calculate the outputs of the Heidlar equation without the scaling constants
 #I_max = max(I_norm_vector); # Find the max value of the nonscaled heidlar equation
 #I_max_index = find(I_norm_vector == I_max); # Find the index at which the max value s reached
 #I_max_time = dt*(I_max_index-1); # At what time instance does the max value occur
-k = I_max; # Normalization factor typically notated as eta according to danny thesis Eq 5-14
+#k = I_max; # Normalization factor typically notated as eta according to danny thesis Eq 5-14
 I_max =k 
 η = k # Not impedance of free space.
-Δz = 100.0 / 20.0
-Δr = 400.0 / 30.0
+#Δz = 100000.0 / 20.0
+#Δr = 400000.0 / 30.0
+Δz = 0.2e3
+Δr = 1.0e3
 z₀ = 3 * Δz # TODO: We can generalize to not use this particular grid spacing.
 r₀ = 3 * Δr # TODO: We can generalize to not use this particular grid spacing.
-t = 0.05
-zvec = collect(0.0:Δz:100.0)
+t = 0.5
+#zvec = collect(0.0:Δz:100.0)
+zvec = collect(0.0:Δz:100_000.0)
 tret = t .- zvec./v # Current time instance
 n = 10
 temp = (tret./T1).^n   # within parenthesis of Heidlar equation |n = 10
-I = Io/k * temp./(1+temp) .* exp(-tret./T2) .* (tret > 0);        
+I = Io/k * temp./(1 .+ temp) .* exp.(-tret./T2) .* (tret .> 0)
 Jₛ₀ = I
 
-vmag = 5
-velocity(p) = TangentBasis(CartesianPoint(p))(vmag/4, vmag/4)
+#vmag = 5
+#velocity(p) = TangentBasis(CartesianPoint(p))(vmag/4, vmag/4)
 # velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, -vmag/4, 0))
 
 #begin
 u = flatten_form(velocity, earth)
 
-
 # Call this for all edges.
-function compute_J_mask(r, z)
+function compute_J(ρ, z, t)
+  #zvec = collect(0.0:Δz:100.0)
+  #zvec = collect(0.0:Δz:100_000.0)
+  #tret = t .- zvec./v # Current time instance
+  tret = t - z / v
+  n = 10
+  temp = (tret/T1)^n   # within parenthesis of Heidlar equation |n = 10
+  #I = Io/k * temp./(1 .+ temp) .* exp.(-tret./T2) .* (tret .> 0)
+  I = Io/k * temp/(1 + temp) * exp(-tret/T2) * (tret > 0)
+  Jₛ₀ = I
   a = 10.0e3
   if z < a
-    Jₛ₀ * e ^ (-1.0 * r^2 / r₀^2)
+    #return Jₛ₀ * e ^ (-1.0 * ρ^2 / ρ₀^2)
+    return Jₛ₀ * e ^ (-ρ^2)
   else
-    Jₛ₀ * e ^ ((-1.0 * r^2 / r₀^2) - ((z - a)^2 / z₀^2))
+    # Decay after 10.0e3 is more extreme.
+    #return Jₛ₀ * e ^ ((-1.0 * ρ^2 / ρ₀^2) - ((z - a)^2 / z₀^2))
+    return Jₛ₀ * e ^ ((-ρ^2) - ((z - a)^2))
   end
 end
+
+J_testing = map(s[:point]) do p
+  #compute_J(p[1], p[2], 20.0)
+  compute_J(p[1] *1e3, p[3] *1e3, 50.0)
+end
+extrema(J_testing)
+mesh(s, color=J_testing)#, colorrange=(0.0, 130.0))
+mesh(s, color=log.(J_testing))#, colorrange=(0.0, 130.0))
+
+#velocity(p) = TangentBasis(CartesianPoint(p))(vmag/4, vmag/4)
+flatten_form(vfield::Function, mesh) =  ♭(mesh,
+  DualVectorField(vfield.(sd[triangle_center(sd),:dual_point])))
 
 Heidler = SummationDecapode(parse_decapode(quote
   (I, J_mask, Jₛ)::Form1{X} # (In the z direction)
@@ -104,6 +132,56 @@ Heidler = SummationDecapode(parse_decapode(quote
 
 end))
 
+###########
+# Veronis #
+###########
+# Primal_time: J,B,Nₑ
+# Dual_time: E,Nₑ
+# Optional flag that has symbols of TVars you want to compute.
+# (i.e. this gaurantees that you don't compute things you don't want.)
+# This meshes well with https://docs.sciml.ai/DiffEqDocs/latest/solvers/dynamical_solve/
+# This would also come into play with DEC -> plotting toolkit.
+# Tonti tried to formalize such using 3D layout of diagrams.
+# (~ fields on primal-space-primal-time, or dual-space-dual-time)
+# (~ particles on primal-space-dual-time, or dual-space-primal-time)
+# "Dual things happening on dual steps makes sense."
+# Default would be to compute primals on primal time, duals on dual time.
+
+# Always keep in mind: B_into - B_outof = E_rightwards
+# i.e. Keep your subtractions consistent.
+
+# Assumptions that allow for cylindrical "pseudo-3D":
+# - Lightning can be restricted to plane.
+# - Magnetic field is orthogonal to this plane.
+Veronis = SummationDecapode(parse_decapode(quote
+  # Note: Double check units on these (esp. w.r.t. σ being integrated along
+  # edges.)
+  B::DualForm0{X}
+  E::Form1{X}
+  # NOTE: You might just need σ for updating E, no need to recalculate on the
+  # other time step.
+  σ::Form1{X} # TODO: Maybe Define this as a Form0 to avoid issue of integrating
+  # conductivity.
+  J::Form1{X}
+  #(σ,c,ε₀)::Constant
+  (c,ε₀)::Constant{X}
+  dt::Constant{X}
+
+  # Equations 1 & 2
+  #∂ₜ(E) == -(J - σ * E)/ε₀ + (c * c)*(⋆(d(B)))
+  Ė == -(J - σ .* E)./ε₀ + (c * c).*(⋆₁⁻¹(d₀(B)))
+  Ė == ∂ₜ(E)
+
+  #TODO: Handle half-timestepping in compile.
+  # See SimplecticIntegrators
+  # J and B must be updated on the same space, but different time. (E separate
+  # also.)
+  Eₕ == E + (Ė)*dt
+  # Equation 3
+  Ḃ == ⋆₂(d₁(E))
+  Ḃ == ∂ₜ(B)
+end))
+
 #############
 # Constants #
 #############
@@ -115,6 +193,7 @@ T2 = 1000.0 # [us]
 ε₀ = 8.854e-12    # Permittivity of free space (F m-1)
 μ₀ = 4*π*1e-7    # Permeability of free space (H m-1)
 c = sqrt(1/ε₀/μ₀) # Speed of light
+v = 2/3 * c
 
 constants_and_parameters = (
   one = 1.0,
@@ -436,7 +515,8 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return (args...) ->  op(args...)
 end
 
-flatten_form(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
+flatten_form(vfield::Function, mesh) =  ♭(mesh,
+  DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
 ##########################
 # Constants & Parameters #
