@@ -1,4 +1,3 @@
-
 name: Documentation
 
 on: [push, pull_request]
@@ -9,9 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: "Set up Julia"
-        uses: julia-actions/setup-julia@latest
+        uses: julia-actions/setup-julia@v1
         with:
-          version: '1.8'
+          version: "1.8"
       - name: "Install system dependencies"
         run: |
           sudo apt-get update
