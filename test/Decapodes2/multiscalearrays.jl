@@ -31,7 +31,7 @@ soln = solve(prob, Tsit5())
 function generate(sd, my_symbol)
   op = @match my_symbol begin
     :k => x->x/20
-    _ => default_dec_generate(sd, my_symbol, hodge)
+    _ => default_dec_generate(sd, my_symbol)
   end
   # return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
   return (args...) ->  op(args...)
@@ -54,6 +54,7 @@ DiffusionExprBody =  quote
     ϕ::Form1{X}
 
     # Fick's first law
+
     ϕ ==  ∘(d₀, k)(C)
     # Diffusion equation
     Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)

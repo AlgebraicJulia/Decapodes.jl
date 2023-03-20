@@ -15,7 +15,7 @@ using MultiScaleArrays
 
 function generate(sd, my_symbol)
   op = @match my_symbol begin
-    _ => default_dec_generate(sd, my_symbol, hodge)
+    _ => default_dec_generate(sd, my_symbol)
     #= :⋆₀ => x->⋆(0,sd,hodge=DiagonalHodge())*x
     :⋆₁ => x->⋆(1, sd, hodge=DiagonalHodge())*x
     :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=DiagonalHodge())
@@ -103,7 +103,7 @@ gensim(ddp)
 f = eval(gensim(expand_operators(ddp)))
 fₘₚ = f(torus, generate)
 
-@test norm(fₘₛ(du, u₀, (k = _ -> 2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
+@test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
 
 DiffusionExprBody =  quote
     (C, Ċ)::Form0{X}

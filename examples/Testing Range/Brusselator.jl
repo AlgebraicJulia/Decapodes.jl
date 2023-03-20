@@ -92,7 +92,8 @@ begin
         F = t -> t ≥ 1.1 ? F₁ : F₂)
 
     u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)],Float64[], [:U, :V, :One])
-    tₑ = 11.5
+    # tₑ = 11.5
+    tₑ = 250
     prob = ODEProblem(fₘ,u₀,(0, tₑ), constants_and_parameters)
     soln = solve(prob, Tsit5())
 end

@@ -337,7 +337,7 @@ function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, In
   end
 end
 
-function default_dec_generate(sd, my_symbol, hodge)
+function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
 
     # TODO: Need to change to cahced version
     i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
