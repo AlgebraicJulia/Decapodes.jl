@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Pipe Flow · Decapodes.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><script src="../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Decapodes.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Decapodes.jl</a></li><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../bc_debug/">Misc Features</a></li><li class="is-active"><a class="tocitem" href>Pipe Flow</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Creating-the-Poiseuille-Equations"><span>Creating the Poiseuille Equations</span></a></li><li class="toplevel"><a class="tocitem" href="#Defining-the-Semantics"><span>Defining the Semantics</span></a></li><li><a class="tocitem" href="#A-Single-Pipe-Segment"><span>A Single Pipe Segment</span></a></li><li><a class="tocitem" href="#A-Linear-Pipe-with-Multiple-Segments"><span>A Linear Pipe with Multiple Segments</span></a></li><li><a class="tocitem" href="#A-Distribution-Network"><span>A Distribution Network</span></a></li><li><a class="tocitem" href="#Multiphysics"><span>Multiphysics</span></a></li></ul></li><li><a class="tocitem" href="../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Pipe Flow</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Pipe Flow</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/poiseuille.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Poissuille-Flow-for-Fluid-Mechanics"><a class="docs-heading-anchor" href="#Poissuille-Flow-for-Fluid-Mechanics">Poissuille Flow for Fluid Mechanics</a><a id="Poissuille-Flow-for-Fluid-Mechanics-1"></a><a class="docs-heading-anchor-permalink" href="#Poissuille-Flow-for-Fluid-Mechanics" title="Permalink"></a></h1><p>When modeling a fluid flowing in pipe, one can ignore the multidimensional structure of the pipe and approximate the system as a 1 dimensional flow along the pipe. The noslip boundary condition and the geometry of the pipe enter a 1D equation in the form of a resistance term.</p><pre><code class="language-julia hljs">using CombinatorialSpaces
+using CombinatorialSpaces.ExteriorCalculus
+import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
+using CombinatorialSpaces.DiscreteExteriorCalculus: ∧
+using Catlab.Theories
+using Catlab.Present
+using Catlab.Graphics
+using Catlab.Syntax
+using Catlab.CategoricalAlgebra
+using LinearAlgebra
+
+using Decapodes.Simulations
+using Decapodes.Examples
+using Decapodes.Diagrams
+using Decapodes.Schedules
+
+# Julia community libraries
+
+using CairoMakie
+using Decapodes.Debug
+using OrdinaryDiffEq
+
+
+&quot;&quot;&quot; Decapodes1D
+A schema which includes any homomorphisms that may be added by the @decapode
+macro.
+
+TODO: This should be chipped away at as more of this tooling takes advantage
+of the Catlab GAT system
+&quot;&quot;&quot;
+
+@present Decapodes1D(FreeExtCalc1D) begin
+  X::Space
+  proj₁_⁰⁰₀::Hom(Form0(X)⊗Form0(X),Form0(X))
+  proj₂_⁰⁰₀::Hom(Form0(X)⊗Form0(X),Form0(X))
+  proj₁_⁰⁰₀⁺::Hom(Form0(X)⊕Form0(X),Form0(X))
+  proj₂_⁰⁰₀⁺::Hom(Form0(X)⊕Form0(X),Form0(X))
+  proj₁_⁰¹₀::Hom(Form0(X)⊗Form1(X),Form0(X))
+  proj₂_⁰¹₁::Hom(Form0(X)⊗Form1(X),Form1(X))
+  proj₁_⁰¹₀⁺::Hom(Form0(X)⊕Form1(X),Form0(X))
+  proj₂_⁰¹₁⁺::Hom(Form0(X)⊕Form1(X),Form1(X))
+  proj₁_⁰⁰̃₀::Hom(Form0(X)⊗DualForm0(X),Form0(X))
+  proj₂_⁰⁰̃₀̃::Hom(Form0(X)⊗DualForm0(X),DualForm0(X))
+  proj₁_⁰⁰̃₀⁺::Hom(Form0(X)⊕DualForm0(X),Form0(X))
+  proj₂_⁰⁰̃₀̃⁺::Hom(Form0(X)⊕DualForm0(X),DualForm0(X))
+  proj₁_⁰¹̃₀::Hom(Form0(X)⊗DualForm1(X),Form0(X))
+  proj₂_⁰¹̃₁̃::Hom(Form0(X)⊗DualForm1(X),DualForm1(X))
+  proj₁_⁰¹̃₀⁺::Hom(Form0(X)⊕DualForm1(X),Form0(X))
+  proj₂_⁰¹̃₁̃⁺::Hom(Form0(X)⊕DualForm1(X),DualForm1(X))
+  proj₁_¹⁰₁::Hom(Form1(X)⊗Form0(X),Form1(X))
+  proj₂_¹⁰₀::Hom(Form1(X)⊗Form0(X),Form0(X))
+  proj₁_¹⁰₁⁺::Hom(Form1(X)⊕Form0(X),Form1(X))
+  proj₂_¹⁰₀⁺::Hom(Form1(X)⊕Form0(X),Form0(X))
+  proj₁_¹¹₁::Hom(Form1(X)⊗Form1(X),Form1(X))
+  proj₂_¹¹₁::Hom(Form1(X)⊗Form1(X),Form1(X))
+  proj₁_¹¹₁⁺::Hom(Form1(X)⊕Form1(X),Form1(X))
+  proj₂_¹¹₁⁺::Hom(Form1(X)⊕Form1(X),Form1(X))
+  proj₁_¹⁰̃₁::Hom(Form1(X)⊗DualForm0(X),Form1(X))
+  proj₂_¹⁰̃₀̃::Hom(Form1(X)⊗DualForm0(X),DualForm0(X))
+  proj₁_¹⁰̃₁⁺::Hom(Form1(X)⊕DualForm0(X),Form1(X))
+  proj₂_¹⁰̃₀̃⁺::Hom(Form1(X)⊕DualForm0(X),DualForm0(X))
+  proj₁_¹¹̃₁::Hom(Form1(X)⊗DualForm1(X),Form1(X))
+  proj₂_¹¹̃₁̃::Hom(Form1(X)⊗DualForm1(X),DualForm1(X))
+  proj₁_¹¹̃₁⁺::Hom(Form1(X)⊕DualForm1(X),Form1(X))
+  proj₂_¹¹̃₁̃⁺::Hom(Form1(X)⊕DualForm1(X),DualForm1(X))
+  proj₁_⁰̃⁰₀̃::Hom(DualForm0(X)⊗Form0(X),DualForm0(X))
+  proj₂_⁰̃⁰₀::Hom(DualForm0(X)⊗Form0(X),Form0(X))
+  proj₁_⁰̃⁰₀̃⁺::Hom(DualForm0(X)⊕Form0(X),DualForm0(X))
+  proj₂_⁰̃⁰₀⁺::Hom(DualForm0(X)⊕Form0(X),Form0(X))
+  proj₁_⁰̃¹₀̃::Hom(DualForm0(X)⊗Form1(X),DualForm0(X))
+  proj₂_⁰̃¹₁::Hom(DualForm0(X)⊗Form1(X),Form1(X))
+  proj₁_⁰̃¹₀̃⁺::Hom(DualForm0(X)⊕Form1(X),DualForm0(X))
+  proj₂_⁰̃¹₁⁺::Hom(DualForm0(X)⊕Form1(X),Form1(X))
+  proj₁_⁰̃⁰̃₀̃::Hom(DualForm0(X)⊗DualForm0(X),DualForm0(X))
+  proj₂_⁰̃⁰̃₀̃::Hom(DualForm0(X)⊗DualForm0(X),DualForm0(X))
+  proj₁_⁰̃⁰̃₀̃⁺::Hom(DualForm0(X)⊕DualForm0(X),DualForm0(X))
+  proj₂_⁰̃⁰̃₀̃⁺::Hom(DualForm0(X)⊕DualForm0(X),DualForm0(X))
+  proj₁_⁰̃¹̃₀̃::Hom(DualForm0(X)⊗DualForm1(X),DualForm0(X))
+  proj₂_⁰̃¹̃₁̃::Hom(DualForm0(X)⊗DualForm1(X),DualForm1(X))
+  proj₁_⁰̃¹̃₀̃⁺::Hom(DualForm0(X)⊕DualForm1(X),DualForm0(X))
+  proj₂_⁰̃¹̃₁̃⁺::Hom(DualForm0(X)⊕DualForm1(X),DualForm1(X))
+  proj₁_¹̃⁰₁̃::Hom(DualForm1(X)⊗Form0(X),DualForm1(X))
+  proj₂_¹̃⁰₀::Hom(DualForm1(X)⊗Form0(X),Form0(X))
+  proj₁_¹̃⁰₁̃⁺::Hom(DualForm1(X)⊕Form0(X),DualForm1(X))
+  proj₂_¹̃⁰₀⁺::Hom(DualForm1(X)⊕Form0(X),Form0(X))
+  proj₁_¹̃¹₁̃::Hom(DualForm1(X)⊗Form1(X),DualForm1(X))
+  proj₂_¹̃¹₁::Hom(DualForm1(X)⊗Form1(X),Form1(X))
+  proj₁_¹̃¹₁̃⁺::Hom(DualForm1(X)⊕Form1(X),DualForm1(X))
+  proj₂_¹̃¹₁⁺::Hom(DualForm1(X)⊕Form1(X),Form1(X))
+  proj₁_¹̃⁰̃₁̃::Hom(DualForm1(X)⊗DualForm0(X),DualForm1(X))
+  proj₂_¹̃⁰̃₀̃::Hom(DualForm1(X)⊗DualForm0(X),DualForm0(X))
+  proj₁_¹̃⁰̃₁̃⁺::Hom(DualForm1(X)⊕DualForm0(X),DualForm1(X))
+  proj₂_¹̃⁰̃₀̃⁺::Hom(DualForm1(X)⊕DualForm0(X),DualForm0(X))
+  proj₁_¹̃¹̃₁̃::Hom(DualForm1(X)⊗DualForm1(X),DualForm1(X))
+  proj₂_¹̃¹̃₁̃::Hom(DualForm1(X)⊗DualForm1(X),DualForm1(X))
+  proj₁_¹̃¹̃₁̃⁺::Hom(DualForm1(X)⊕DualForm1(X),DualForm1(X))
+  proj₂_¹̃¹̃₁̃⁺::Hom(DualForm1(X)⊕DualForm1(X),DualForm1(X))
+  sum₀::Hom(Form0(X)⊗Form0(X),Form0(X))
+  sum₁::Hom(Form1(X)⊗Form1(X),Form1(X))
+  sum₀̃::Hom(DualForm0(X)⊗DualForm0(X),DualForm0(X))
+  sum₁̃::Hom(DualForm1(X)⊗DualForm1(X),DualForm1(X))
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Presentation{CombinatorialSpaces.ExteriorCalculus.ThExtCalc1D, Symbol}(CombinatorialSpaces.ExteriorCalculus.FreeExtCalc1D, (Ob = CombinatorialSpaces.ExteriorCalculus.FreeExtCalc1D.Ob{:generator}[], Hom = CombinatorialSpaces.ExteriorCalculus.FreeExtCalc1D.Hom{:generator}[proj₁_⁰⁰₀, proj₂_⁰⁰₀, proj₁_⁰⁰₀⁺, proj₂_⁰⁰₀⁺, proj₁_⁰¹₀, proj₂_⁰¹₁, proj₁_⁰¹₀⁺, proj₂_⁰¹₁⁺, proj₁_⁰⁰̃₀, proj₂_⁰⁰̃₀̃  …  proj₁_¹̃⁰̃₁̃⁺, proj₂_¹̃⁰̃₀̃⁺, proj₁_¹̃¹̃₁̃, proj₂_¹̃¹̃₁̃, proj₁_¹̃¹̃₁̃⁺, proj₂_¹̃¹̃₁̃⁺, sum₀, sum₁, sum₀̃, sum₁̃], Space = CombinatorialSpaces.ExteriorCalculus.FreeExtCalc1D.Space{:generator}[X]), Dict(:proj₁_¹̃⁰₁̃⁺ =&gt; (:Hom =&gt; 51), :proj₁_⁰¹̃₀⁺ =&gt; (:Hom =&gt; 15), :proj₁_¹̃¹₁̃ =&gt; (:Hom =&gt; 53), :proj₁_⁰¹₀ =&gt; (:Hom =&gt; 5), :proj₂_⁰⁰̃₀̃⁺ =&gt; (:Hom =&gt; 12), :proj₁_⁰̃¹̃₀̃ =&gt; (:Hom =&gt; 45), :proj₂_¹⁰₀ =&gt; (:Hom =&gt; 18), :proj₁_⁰̃⁰₀̃⁺ =&gt; (:Hom =&gt; 35), :proj₁_⁰̃¹₀̃⁺ =&gt; (:Hom =&gt; 39), :sum₁ =&gt; (:Hom =&gt; 66)…), Pair[])</code></pre><h1 id="Creating-the-Poiseuille-Equations"><a class="docs-heading-anchor" href="#Creating-the-Poiseuille-Equations">Creating the Poiseuille Equations</a><a id="Creating-the-Poiseuille-Equations-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-the-Poiseuille-Equations" title="Permalink"></a></h1><p>The first step is to present an extension of the generic Decapodes1D presentation with specific named linear operators for the viscosity effect and the drag effect. This is purely syntactic, we will add the corresponding matrices later. </p><p>The <code>@decapode</code> macro creates the data structure representing the equations of Poiseuille flow. The first block declares variables, the second block defines intermediate terms and the last block is the core equation.</p><pre><code class="language-julia hljs">@present Poiseuille &lt;: Decapodes1D begin
+  (R, μ̃)::Hom(Form1(X), Form1(X))
+  # μ̃ = negative viscosity per unit area
+  # R = drag of pipe boundary
+end;
+
+Poise = @decapode Poiseuille begin
+  (∇P)::Form1{X}
+  (q, q̇, Δq)::Form1{X}
+  P::Form0{X}
+
+  # Laplacian of q for the viscous effect
+  Δq == d₀{X}(⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(q))))
+  # Gradient of P for the pressure driving force
+  ∇P == d₀{X}(P)
+  # definition of time derivative of q
+  ∂ₜ{Form1{X}}(q) == q̇
+
+  # the core equation
+  q̇ == sum₁(sum₁(μ̃(Δq), ∇P),R(q))
+end;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Diagram{Any}(FinFunctor(CombinatorialSpaces.ExteriorCalculus.FreeExtCalc1D.Ob[Form1(X), Form1(X), Form1(X), Form1(X), Form0(X), Form1(X), otimes(Form1(X),Form1(X)), Form1(X), Form1(X), otimes(Form1(X),Form1(X))], CombinatorialSpaces.ExteriorCalculus.FreeExtCalc1D.Hom[compose(⋆₁(X),dual_d₀(X),⋆₀⁻¹(X),d₀(X)), d₀(X), ∂ₜ(Form1(X)), μ̃, proj₁_¹¹₁, proj₂_¹¹₁, sum₁, R, proj₁_¹¹₁, proj₂_¹¹₁, sum₁], FinCat(Catlab.Programs.DiagrammaticPrograms.NamedGraph{Symbol, Union{Nothing, Symbol}} {V = 10, E = 11}), FinCat(Presentation{ThExtCalc1D, Symbol}(CombinatorialSpaces.ExteriorCalculus.FreeExtCalc1D, (Ob = CombinatorialSpaces.ExteriorCalculus.FreeExtCalc1D.Ob{:generator}[], Hom = CombinatorialSpaces.ExteriorCalculus.FreeExtCalc1D.Hom{:generator}[proj₁_⁰⁰₀, proj₂_⁰⁰₀, proj₁_⁰⁰₀⁺, proj₂_⁰⁰₀⁺, proj₁_⁰¹₀, proj₂_⁰¹₁, proj₁_⁰¹₀⁺, proj₂_⁰¹₁⁺, proj₁_⁰⁰̃₀, proj₂_⁰⁰̃₀̃  …  proj₁_¹̃¹̃₁̃, proj₂_¹̃¹̃₁̃, proj₁_¹̃¹̃₁̃⁺, proj₂_¹̃¹̃₁̃⁺, sum₀, sum₁, sum₀̃, sum₁̃, R, μ̃], Space = CombinatorialSpaces.ExteriorCalculus.FreeExtCalc1D.Space{:generator}[X]), Dict(:proj₁_¹̃⁰₁̃⁺=&gt;(:Hom=&gt;51), :proj₁_⁰¹̃₀⁺=&gt;(:Hom=&gt;15), :proj₁_¹̃¹₁̃=&gt;(:Hom=&gt;53), :proj₁_⁰¹₀=&gt;(:Hom=&gt;5), :proj₂_⁰⁰̃₀̃⁺=&gt;(:Hom=&gt;12), :proj₁_⁰̃¹̃₀̃=&gt;(:Hom=&gt;45), :proj₂_¹⁰₀=&gt;(:Hom=&gt;18), :proj₁_⁰̃⁰₀̃⁺=&gt;(:Hom=&gt;35), :proj₁_⁰̃¹₀̃⁺=&gt;(:Hom=&gt;39), :sum₁=&gt;(:Hom=&gt;66)…), Pair[]))))</code></pre><h1 id="Defining-the-Semantics"><a class="docs-heading-anchor" href="#Defining-the-Semantics">Defining the Semantics</a><a id="Defining-the-Semantics-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-Semantics" title="Permalink"></a></h1><p>In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The operator funcs code below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. </p><pre><code class="language-julia hljs">&quot;&quot;&quot;    boundary_edges(ds)
+
+Compute the edges of a 1D simplicial set that are either incident to in-degree 1 or out-degree 1 nodes.
+For a graph, these are boundary vertices meaning leaf nodes. For our pipeflow problems,
+these are the edges where material can enter the pipe network.
+&quot;&quot;&quot;
+function boundary_edges(ds)
+  out_degree(x) = length(incident(ds, x, :∂v1))
+  in_degree(x) = length(incident(ds, x, :∂v0))
+  bpoints = findall(x -&gt; out_degree(x) == 0 || in_degree(x) == 0, 1:nv(ds))
+  sedges = vcat(incident(ds,bpoints,:∂v0)...)
+  tedges = vcat(incident(ds,bpoints,:∂v1)...)
+  bedges = collect(union(sedges, tedges))
+  return bedges
+end
+
+&quot;&quot;&quot;    mask_boundary_edges(ds)
+
+Provides the `boundary_edges(ds)` as a vector of 0/1 entries to use as a mask.
+&quot;&quot;&quot;
+function mask_boundary_edges(ds)
+  D = ones(Int, ne(ds))
+  D[boundary_edges(ds)] .= 0
+  return D
+end
+
+
+opbind(f, T) = Dict(:operator=&gt;f, :type=&gt;T)
+
+function create_funcs(ds, hodge=DiagonalHodge())
+  funcs = Dict{Symbol, Dict}()
+  funcs[:⋆₁] = opbind(⋆(Val{1}, ds, hodge=hodge), MatrixFunc())
+  funcs[:⋆₁] = opbind(⋆(Val{1}, ds, hodge=hodge), MatrixFunc())
+  funcs[:⋆₀] = opbind(⋆(Val{0}, ds, hodge=hodge), MatrixFunc())
+  funcs[:⋆₀⁻¹] = opbind(inv(⋆(Val{0}, ds, hodge=hodge)), MatrixFunc())
+  funcs[:⋆₁⁻¹] = opbind(inv(⋆(Val{1}, ds, hodge=hodge)), MatrixFunc())
+  funcs[:d₀] = opbind(d(Val{0}, ds), MatrixFunc())
+  funcs[:dual_d₀] = opbind(dual_derivative(Val{0}, ds), MatrixFunc());
+  funcs[:sum₁] = opbind((x′, x, y)-&gt;(x′ .= x .+ y), InPlaceFunc())
+  funcs[:∧₀₁] = opbind((r, c, v) -&gt; r .= -∧(Tuple{0,1}, ds, c, v), InPlaceFunc())
+  return funcs
+end
+
+##
+function create_funcs(ds, operators, boundaries, hodge=DiagonalHodge())
+  funcs = create_funcs(ds, hodge)
+  merge!(funcs, operators, boundaries)
+  return funcs
+end
+
+function operator_funcs(ds)
+  F = Dict(
+    :μ̃ =&gt; opbind(0.5 *  Diagonal(mask_boundary_edges(ds)), MatrixFunc()),
+    :R =&gt; opbind(-0.1 * I(ne(ds)), MatrixFunc()),
+    :¬ =&gt; opbind(-I(ne(ds)), MatrixFunc()),
+    :k =&gt; opbind(1.0 * I(nv(ds)), MatrixFunc()))
+  B = Dict(
+    :∂ρ =&gt; opbind((ρᵇ, ρ) -&gt; begin ρᵇ .= ρ; ρᵇ[1] = 0; ρᵇ[end] = 0; return ρᵇ end, InPlaceFunc())
+  )
+  create_funcs(ds, F, B)
+end
+form2dim = Dict(:Scalar =&gt; x-&gt;1,
+                :Form0 =&gt; nv,
+                :Form1 =&gt; ne,
+                :DualForm1 =&gt; nv,
+                :DualForm0 =&gt; ne)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Symbol, Function} with 5 entries:
+  :Scalar    =&gt; #11
+  :DualForm0 =&gt; ne
+  :DualForm1 =&gt; nv
+  :Form0     =&gt; nv
+  :Form1     =&gt; ne</code></pre><h2 id="A-Single-Pipe-Segment"><a class="docs-heading-anchor" href="#A-Single-Pipe-Segment">A Single Pipe Segment</a><a id="A-Single-Pipe-Segment-1"></a><a class="docs-heading-anchor-permalink" href="#A-Single-Pipe-Segment" title="Permalink"></a></h2><p>We create a mesh with one pipe segment to see if we get the right answer. This simulation can be validated with the Poiseuille equation for a single pipe. First we create the mesh.</p><pre><code class="language-julia hljs">Point3D = Point3{Float64}
+s = EmbeddedDeltaSet1D{Bool,Point3D}()
+add_vertices!(s, 2, point=[Point3D(-1, 0, 0), Point3D(+1, 0, 0)])
+add_edge!(s, 1, 2, edge_orientation=true)
+
+ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+subdivide_duals!(ds, Circumcenter())
+ds</code></pre><div class="c-set">
+<span class="c-set-summary">CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, Point3{Float64}} with elements V = 1:2, E = 1:1, DualV = 1:3, DualE = 1:2</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">V</th>
+      <th style = "text-align: right;">vertex_center</th>
+      <th style = "text-align: right;">point</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">[-1.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">[1.0, 0.0, 0.0]</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">E</th>
+      <th style = "text-align: right;">∂v0</th>
+      <th style = "text-align: right;">∂v1</th>
+      <th style = "text-align: right;">edge_center</th>
+      <th style = "text-align: right;">edge_orientation</th>
+      <th style = "text-align: right;">length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">2.0</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">DualV</th>
+      <th style = "text-align: right;">dual_point</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">[-1.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">[1.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">[0.0, 0.0, 0.0]</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">DualE</th>
+      <th style = "text-align: right;">D_∂v0</th>
+      <th style = "text-align: right;">D_∂v1</th>
+      <th style = "text-align: right;">D_edge_orientation</th>
+      <th style = "text-align: right;">dual_length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Then we solve the equations.</p><pre><code class="language-julia hljs">funcs = operator_funcs(ds)
+func, code = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P]);
+prob = ODEProblem(func, [2.], (0.0, 10000.0), [1.,11.])
+sol = solve(prob, Tsit5(); progress=true);
+sol.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">298-element Vector{Vector{Float64}}:
+ [2.0]
+ [2.7106419940054254]
+ [9.019792514008321]
+ [22.015494275870303]
+ [37.74666213433175]
+ [53.33116695605528]
+ [67.75173412798583]
+ [79.45834439512184]
+ [88.09022043946834]
+ [93.75580862332563]
+ ⋮
+ [99.97374576313877]
+ [99.97374574821696]
+ [99.9737457398868]
+ [99.97374574913388]
+ [99.97374576497258]
+ [99.973745765431]
+ [99.97374575050922]
+ [99.97374575316468]
+ [99.98158323657836]</code></pre><h2 id="A-Linear-Pipe-with-Multiple-Segments"><a class="docs-heading-anchor" href="#A-Linear-Pipe-with-Multiple-Segments">A Linear Pipe with Multiple Segments</a><a id="A-Linear-Pipe-with-Multiple-Segments-1"></a><a class="docs-heading-anchor-permalink" href="#A-Linear-Pipe-with-Multiple-Segments" title="Permalink"></a></h2><p>We then move on to a linear sequence of pipe segments. You can visualize this as the discretization of a single long pipe into <code>n</code> segments. First we define the mesh:</p><pre><code class="language-julia hljs">function linear_pipe(n::Int)
+  s = EmbeddedDeltaSet1D{Bool,Point3D}()
+  add_vertices!(s, n, point=[Point3D(i, 0, 0) for i in 1:n])
+  add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
+  orient!(s)
+  ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(ds, Circumcenter())
+  funcs = operator_funcs(ds)
+  func, _ = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
+  return ds, func, funcs
+end
+
+ds, func, funcs = linear_pipe(10)
+ds</code></pre><div class="c-set">
+<span class="c-set-summary">CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, Point3{Float64}} with elements V = 1:10, E = 1:9, DualV = 1:19, DualE = 1:18</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">V</th>
+      <th style = "text-align: right;">vertex_center</th>
+      <th style = "text-align: right;">point</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">[1.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">[2.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">[3.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">[4.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">[5.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">[6.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">[7.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">[8.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">[9.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">[10.0, 0.0, 0.0]</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">E</th>
+      <th style = "text-align: right;">∂v0</th>
+      <th style = "text-align: right;">∂v1</th>
+      <th style = "text-align: right;">edge_center</th>
+      <th style = "text-align: right;">edge_orientation</th>
+      <th style = "text-align: right;">length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">19</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">DualV</th>
+      <th style = "text-align: right;">dual_point</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">[1.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">[2.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">[3.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">[4.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">[5.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">[6.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">[7.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">[8.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">[9.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">[10.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">[1.5, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">[2.5, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">[3.5, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">[4.5, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">[5.5, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">[6.5, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">17</td>
+      <td style = "text-align: right;">[7.5, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">18</td>
+      <td style = "text-align: right;">[8.5, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">19</td>
+      <td style = "text-align: right;">[9.5, 0.0, 0.0]</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">DualE</th>
+      <th style = "text-align: right;">D_∂v0</th>
+      <th style = "text-align: right;">D_∂v1</th>
+      <th style = "text-align: right;">D_edge_orientation</th>
+      <th style = "text-align: right;">dual_length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">19</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">17</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">18</td>
+      <td style = "text-align: right;">19</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Then we solve the equation. Notice that the equilibrium flow is constant down the length of the pipe. This must be true because of conservation of mass. The segments are all the same length and the total flow in must equal the total flow out of each segment.</p><pre><code class="language-julia hljs">prob = ODEProblem(func, [5,3,4,2,5,2,8,4,3], (0.0, 10000.0), [10. *i for i in 1:10])
+sol = solve(prob, Tsit5(); progress=true);
+sol.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5779-element Vector{Vector{Float64}}:
+ [5.0, 3.0, 4.0, 2.0, 5.0, 2.0, 8.0, 4.0, 3.0]
+ [5.724256641142273, 3.847170987085286, 4.627632506652886, 2.9238851021851784, 5.514370133501365, 3.0653112169124896, 8.343882586158493, 4.834747625642598, 3.739504149376847]
+ [7.204989994930977, 5.542474806875029, 5.965198417237554, 4.738472865132697, 6.667155494066853, 5.107791074611042, 9.176817075885879, 6.4796929243794805, 5.251410836929525]
+ [9.142697207033786, 7.70212271137947, 7.7989832626349225, 6.999420802994697, 8.33047218816962, 7.567356913045741, 10.474121736472481, 8.53836297291468, 7.2299118850766035]
+ [11.598091498584374, 10.370060554743798, 10.212963127069312, 9.741406040600587, 10.604720002095501, 10.443496189248993, 12.357881505034815, 11.04764653209383, 9.736998688028255]
+ [14.61643591915233, 13.57999543342225, 13.261083166859128, 13.00040304264209, 13.547993215633829, 13.74937246417452, 14.912661815580098, 14.04847404446436, 12.818887201660795]
+ [18.26403648366051, 17.396192317233176, 17.002636124434435, 16.85275002526223, 17.210120411740363, 17.558591066534415, 18.209421442040803, 17.624141918294594, 16.54327935700073]
+ [22.615914856442387, 21.897127215457655, 21.496084905544006, 21.39057434113556, 21.634601197240762, 21.97825817092037, 22.3075448418476, 21.87977150920997, 20.986776221841172]
+ [27.779423719301906, 27.195869350913974, 26.830091924326716, 26.735257441692262, 26.89800423631836, 27.156408593684123, 27.292735688934666, 26.954838712896944, 26.258990534445104]
+ [33.896056214131164, 33.43802070329567, 33.12942492411564, 33.03289212749873, 33.122058203417886, 33.27060950234036, 33.29222816839367, 33.01695992786331, 32.50439423969183]
+ ⋮
+ [99.99999999999996, 99.98492542468219, 100.0278541831949, 99.96360675582062, 100.03939176364305, 99.96360675582062, 100.0278541831949, 99.98492542468219, 99.99999999999996]
+ [99.99999999999996, 99.98492543161584, 100.02785417038312, 99.96360677256008, 100.0393917455244, 99.96360677256008, 100.02785417038312, 99.98492543161584, 99.99999999999996]
+ [99.99999999999996, 99.98492542971854, 100.02785417388884, 99.96360676797954, 100.03939175048238, 99.96360676797954, 100.02785417388884, 99.98492542971854, 99.99999999999996]
+ [99.99999999999996, 99.98492543160599, 100.02785417040135, 99.96360677253614, 100.03939174555033, 99.96360677253614, 100.02785417040135, 99.98492543160599, 99.99999999999996]
+ [99.99999999999996, 99.98492543727804, 100.02785415992068, 99.96360678622989, 100.0393917307283, 99.96360678622989, 100.02785415992068, 99.98492543727804, 99.99999999999996]
+ [99.99999999999996, 99.98492543411922, 100.02785416575747, 99.9636067786037, 100.03939173898286, 99.9636067786037, 100.02785416575747, 99.98492543411922, 99.99999999999996]
+ [99.99999999999996, 99.98492543474505, 100.02785416460105, 99.96360678011462, 100.03939173734747, 99.96360678011462, 100.02785416460105, 99.98492543474505, 99.99999999999996]
+ [99.99999999999996, 99.9849254391556, 100.02785415645145, 99.96360679076257, 100.03939172582217, 99.96360679076257, 100.02785415645145, 99.9849254391556, 99.99999999999996]
+ [99.99999999999996, 99.99723987350599, 100.0051000487499, 99.99333646518423, 100.00721255811094, 99.99333646518423, 100.0051000487499, 99.99723987350599, 99.99999999999996]</code></pre><h2 id="A-Distribution-Network"><a class="docs-heading-anchor" href="#A-Distribution-Network">A Distribution Network</a><a id="A-Distribution-Network-1"></a><a class="docs-heading-anchor-permalink" href="#A-Distribution-Network" title="Permalink"></a></h2><p>To model a distribution network such as residential drinking water or natural gas, we will build a binary tree of pipes that at each junction have a bifurcation into two pipes. We expect that the flow will be divided by two at each level of the tree. First we make the mesh.</p><pre><code class="language-julia hljs">function binary_pipe(depth::Int)
+  s = EmbeddedDeltaSet1D{Bool,Point3D}()
+  add_vertex!(s, point=Point3D(0, 0, 0))
+  for n in 1:depth
+    for prev_v in vertices(s)[end-2^(n-1)+1:end]
+      x, y, _ = s[:point][prev_v]
+      vs = add_vertices!(s, 2, point=[Point3D(sgn*3^0.5 + x, y+1, 0)
+                                 for sgn in [1,-1]])
+      add_edges!(s, vs, [prev_v,prev_v], edge_orientation=true)
+    end
+  end
+  v = add_vertex!(s, point=Point3D(3^0.5, -1, 0))
+  add_edge!(s, 1, v, edge_orientation=true)
+  orient!(s)
+  ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(ds, Circumcenter())
+  funcs = operator_funcs(ds)
+  func, _ = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
+  return ds, func, funcs
+end
+ds, func, funcs = binary_pipe(2);
+ds</code></pre><div class="c-set">
+<span class="c-set-summary">CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, Point3{Float64}} with elements V = 1:8, E = 1:7, DualV = 1:15, DualE = 1:14</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">V</th>
+      <th style = "text-align: right;">vertex_center</th>
+      <th style = "text-align: right;">point</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">[0.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">[1.73205, 1.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">[-1.73205, 1.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">[3.4641, 2.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">[0.0, 2.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">[0.0, 2.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">[-3.4641, 2.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">[1.73205, -1.0, 0.0]</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">E</th>
+      <th style = "text-align: right;">∂v0</th>
+      <th style = "text-align: right;">∂v1</th>
+      <th style = "text-align: right;">edge_center</th>
+      <th style = "text-align: right;">edge_orientation</th>
+      <th style = "text-align: right;">length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">2.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">2.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">2.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">2.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">2.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">2.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">2.0</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">DualV</th>
+      <th style = "text-align: right;">dual_point</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">[0.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">[1.73205, 1.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">[-1.73205, 1.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">[3.4641, 2.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">[0.0, 2.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">[0.0, 2.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">[-3.4641, 2.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">[1.73205, -1.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">[0.866025, 0.5, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">[-0.866025, 0.5, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">[2.59808, 1.5, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">[0.866025, 1.5, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">[-0.866025, 1.5, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">[-2.59808, 1.5, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">[0.866025, -0.5, 0.0]</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">DualE</th>
+      <th style = "text-align: right;">D_∂v0</th>
+      <th style = "text-align: right;">D_∂v1</th>
+      <th style = "text-align: right;">D_edge_orientation</th>
+      <th style = "text-align: right;">dual_length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Then we solve the equations.</p><pre><code class="language-julia hljs">prob = ODEProblem(func,
+                 [5. for _ in 1:ne(ds)],
+                 (0.0, 10000.0),
+                 Float64[2^(7-p[2]) for p in ds[:point]])
+
+sol = solve(prob, Tsit5(); progress=true);
+sol.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">999-element Vector{Vector{Float64}}:
+ [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0]
+ [8.807384484055456, 8.807384484055456, 6.888702539334596, 6.888702539334596, 6.888702539334596, 6.888702539334596, 12.644748373497173]
+ [44.62391658910311, 44.62391658910311, 24.65595862294091, 24.65595862294091, 24.65595862294091, 24.65595862294091, 84.5598325214275]
+ [124.17377071554176, 124.17377071554176, 64.11769728408764, 64.11769728408764, 64.11769728408764, 64.11769728408764, 244.28591757845007]
+ [224.6483755247943, 224.6483755247943, 113.95943037844128, 113.95943037844128, 113.95943037844128, 113.95943037844128, 446.0262658175005]
+ [324.79923311438773, 324.79923311438773, 163.64056445831847, 163.64056445831847, 163.64056445831847, 163.64056445831847, 647.1165704265271]
+ [419.6112960467277, 419.6112960467277, 210.673320086172, 210.673320086172, 210.673320086172, 210.673320086172, 837.487247967839]
+ [497.64204511142395, 497.64204511142395, 249.3814869450372, 249.3814869450372, 249.3814869450372, 249.3814869450372, 994.1631614441984]
+ [556.2508131723423, 556.2508131723423, 278.45512779415424, 278.45512779415424, 278.45512779415424, 278.45512779415424, 1111.8421839287194]
+ [595.3520021109638, 595.3520021109638, 297.8517805747299, 297.8517805747299, 297.8517805747299, 297.8517805747299, 1190.3524451834303]
+ ⋮
+ [640.31458432774, 640.31458432774, 319.9999999999999, 319.9999999999999, 319.9999999999999, 319.9999999999999, 1279.9999999999995]
+ [640.3145842119771, 640.3145842119771, 319.9999999999999, 319.9999999999999, 319.9999999999999, 319.9999999999999, 1279.9999999999995]
+ [640.3145840172317, 640.3145840172317, 319.9999999999999, 319.9999999999999, 319.9999999999999, 319.9999999999999, 1279.9999999999995]
+ [640.3145841384136, 640.3145841384136, 319.9999999999999, 319.9999999999999, 319.9999999999999, 319.9999999999999, 1279.9999999999995]
+ [640.3145843122501, 640.3145843122501, 319.9999999999999, 319.9999999999999, 319.9999999999999, 319.9999999999999, 1279.9999999999995]
+ [640.3145844071047, 640.3145844071047, 319.9999999999999, 319.9999999999999, 319.9999999999999, 319.9999999999999, 1279.9999999999995]
+ [640.3145844229776, 640.3145844229776, 319.9999999999999, 319.9999999999999, 319.9999999999999, 319.9999999999999, 1279.9999999999995]
+ [640.3145846231413, 640.3145846231413, 319.9999999999999, 319.9999999999999, 319.9999999999999, 319.9999999999999, 1279.9999999999995]
+ [640.1957948442067, 640.1957948442067, 319.9999999999999, 319.9999999999999, 319.9999999999999, 319.9999999999999, 1279.9999999999995]</code></pre><h2 id="Multiphysics"><a class="docs-heading-anchor" href="#Multiphysics">Multiphysics</a><a id="Multiphysics-1"></a><a class="docs-heading-anchor-permalink" href="#Multiphysics" title="Permalink"></a></h2><p>Decapodes really shines when you want to extend or refine your physics. We will change our physics by adding in a term for density of the material and the corresponding changes in pressure. This is not the only formulation for including a dynamic pressure effect into this system. If you can think of a better way to include this effect, we invite you to try it as an exercise!</p><p>Because the pressure is no longer being supplied as a parameter of the system controlled by the operators, we need to introduce a density term and a boundary condition for that density. In this system you can think of forcing a prescribed amount of material per unit time through the openings of the pipe and allowing the flow (q) and the pressure (P) to fluctuate. Before we were enforcing a fixed pressure gradient and and letting the flow fluctuate to achieve equilibrium. In the prior model, we were not accounting for the amount of material that had to flow in order to achieve that (flow, pressure) combination.</p><p>The Decapode can be visualized with graphviz, note that the boundary conditions are explicitly represented in the Decapode as operators that implement a masking operation. This is not consistent with the Diagrammatic Equations in Physics paper [PBHF22]. This approach is more directly tied to the computational method and will eventually be replaced with one based on morphisms of diagrams.</p><pre><code class="language-julia hljs">@present Poiseuille &lt;: Decapodes1D begin
+  (R, μ̃, ¬)::Hom(Form1(X), Form1(X))
+  k::Hom(Form0(X), Form0(X))
+  # μ̃ = negative viscosity per unit area
+  # R = drag of pipe boundary
+  # k = pressure as a function of density
+  # boundary conditions
+  ∂ρ::Hom(Form0(X), Form0(X))
+end;
+
+Poise = @decapode Poiseuille begin
+  (∇P)::Form1{X}
+  (q, q̇, Δq)::Form1{X}
+  (P, ρ, ρ̇)::Form0{X}
+
+  # Poiseuille Flow
+  Δq == d₀{X}(⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(q))))
+  ∂ₜ{Form1{X}}(q) == q̇
+  ∇P == d₀{X}(P)
+  q̇ == sum₁(sum₁(μ̃(Δq), ¬(∇P)),R(q))
+
+  # Pressure/Density Coupling
+  P == k(ρ)
+  ∂ₜ{Form0{X}}(ρ) == ρ̇
+  ρ̇ == ⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(∧₀₁{X}(ρ,q)))) # advection
+
+  # Boundary conditions
+  ρᵇ::Form0{X}
+  ∂ρ(ρ̇) == ρᵇ
+end;
+
+to_graphviz(Poise, node_labels=true, prog=&quot;neato&quot;, node_attrs=Dict(:shape=&gt;&quot;oval&quot;))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="519pt" height="211pt"
+ viewBox="0.00 0.00 518.77 210.81" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 206.81)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-206.81 514.77,-206.81 514.77,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="190.92" cy="-42.26" rx="64.19" ry="10.71"/>
+<text text-anchor="middle" x="190.92" y="-38.56" font-family="Times,serif" font-size="14.00">∇P:Form1(X)</text>
+</g>
+<!-- n9 -->
+<g id="node9" class="node">
+<title>n9</title>
+<ellipse fill="none" stroke="black" cx="225.75" cy="-15" rx="86.95" ry="10.71"/>
+<text text-anchor="middle" x="225.75" y="-11.3" font-family="Times,serif" font-size="14.00">%23%23575:Form1(X)</text>
+</g>
+<!-- n1&%2345;&gt;n9 -->
+<g id="edge5" class="edge">
+<title>n1&%2345;&gt;n9</title>
+<path fill="none" stroke="black" d="M204.29,-31.8C205.59,-30.78 206.93,-29.73 208.27,-28.69"/>
+<polygon fill="black" stroke="black" points="209.39,-30.03 212.25,-25.57 207.23,-27.27 209.39,-30.03"/>
+<text text-anchor="middle" x="199.78" y="-19.04" font-family="Times,serif" font-size="14.00">¬</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="279.63" cy="-122.88" rx="57.05" ry="10.71"/>
+<text text-anchor="middle" x="279.63" y="-119.18" font-family="Times,serif" font-size="14.00">q:Form1(X)</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="312.05" cy="-103.31" rx="57.05" ry="10.71"/>
+<text text-anchor="middle" x="312.05" y="-99.61" font-family="Times,serif" font-size="14.00">q̇:Form1(X)</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M296.6,-112.64C296.66,-112.6 296.72,-112.56 296.78,-112.53"/>
+<polygon fill="black" stroke="black" points="293.59,-116.5 296.97,-112.42 291.78,-113.5 293.59,-116.5"/>
+<text text-anchor="middle" x="252.19" y="-101.38" font-family="Times,serif" font-size="14.00">∂ₜ(Form1(X))</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="269.06" cy="-84.61" rx="64.19" ry="10.71"/>
+<text text-anchor="middle" x="269.06" y="-80.91" font-family="Times,serif" font-size="14.00">Δq:Form1(X)</text>
+</g>
+<!-- n2&%2345;&gt;n4 -->
+<g id="edge1" class="edge">
+<title>n2&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M276.63,-112.02C275.62,-108.35 274.46,-104.18 273.37,-100.22"/>
+<polygon fill="black" stroke="black" points="275.05,-99.72 272.03,-95.37 271.68,-100.66 275.05,-99.72"/>
+<text text-anchor="middle" x="137.5" y="-94.92" font-family="Times,serif" font-size="14.00">compose(⋆₁(X),dual_d₀(X),⋆₀⁻¹(X),d₀(X))</text>
+</g>
+<!-- n12 -->
+<g id="node12" class="node">
+<title>n12</title>
+<ellipse fill="none" stroke="black" cx="322.24" cy="-119.66" rx="86.95" ry="10.71"/>
+<text text-anchor="middle" x="322.24" y="-115.96" font-family="Times,serif" font-size="14.00">%23%23578:Form1(X)</text>
+</g>
+<!-- n2&%2345;&gt;n12 -->
+<g id="edge9" class="edge">
+<title>n2&%2345;&gt;n12</title>
+<path fill="none" stroke="black" d="M322.12,-119.67C322.14,-119.67 322.16,-119.67 322.17,-119.67"/>
+<polygon fill="black" stroke="black" points="317.36,-121.8 322.21,-119.66 317.09,-118.31 317.36,-121.8"/>
+<text text-anchor="middle" x="316.65" y="-123.47" font-family="Times,serif" font-size="14.00">R</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="none" stroke="black" cx="268.19" cy="-46.21" rx="86.95" ry="10.71"/>
+<text text-anchor="middle" x="268.19" y="-42.51" font-family="Times,serif" font-size="14.00">%23%23574:Form1(X)</text>
+</g>
+<!-- n4&%2345;&gt;n8 -->
+<g id="edge4" class="edge">
+<title>n4&%2345;&gt;n8</title>
+<path fill="none" stroke="black" d="M268.81,-73.71C268.73,-70.11 268.64,-66.03 268.55,-62.14"/>
+<polygon fill="black" stroke="black" points="270.3,-61.97 268.43,-57.01 266.8,-62.05 270.3,-61.97"/>
+<text text-anchor="middle" x="263.68" y="-56.73" font-family="Times,serif" font-size="14.00">μ̃</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="181.35" cy="-84.45" rx="57.05" ry="10.71"/>
+<text text-anchor="middle" x="181.35" y="-80.75" font-family="Times,serif" font-size="14.00">P:Form0(X)</text>
+</g>
+<!-- n5&%2345;&gt;n1 -->
+<g id="edge3" class="edge">
+<title>n5&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M183.77,-73.8C184.85,-69.04 186.14,-63.33 187.33,-58.09"/>
+<polygon fill="black" stroke="black" points="189.08,-58.31 188.47,-53.05 185.66,-57.54 189.08,-58.31"/>
+<text text-anchor="middle" x="168.05" y="-54.74" font-family="Times,serif" font-size="14.00">d₀(X)</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="201" cy="-122.04" rx="56.64" ry="10.71"/>
+<text text-anchor="middle" x="201" y="-118.34" font-family="Times,serif" font-size="14.00">ρ:Form0(X)</text>
+</g>
+<!-- n6&%2345;&gt;n5 -->
+<g id="edge13" class="edge">
+<title>n6&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M195.43,-111.37C193.5,-107.69 191.31,-103.49 189.23,-99.52"/>
+<polygon fill="black" stroke="black" points="190.74,-98.64 186.88,-95.02 187.64,-100.26 190.74,-98.64"/>
+<text text-anchor="middle" x="187.83" y="-109.24" font-family="Times,serif" font-size="14.00">k</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="black" cx="209.83" cy="-157.75" rx="56.64" ry="10.71"/>
+<text text-anchor="middle" x="209.83" y="-154.05" font-family="Times,serif" font-size="14.00">ρ̇:Form0(X)</text>
+</g>
+<!-- n6&%2345;&gt;n7 -->
+<g id="edge14" class="edge">
+<title>n6&%2345;&gt;n7</title>
+<path fill="none" stroke="black" d="M203.7,-132.95C204.39,-135.72 205.13,-138.75 205.87,-141.71"/>
+<polygon fill="black" stroke="black" points="204.25,-142.47 207.15,-146.91 207.65,-141.63 204.25,-142.47"/>
+<text text-anchor="middle" x="160.28" y="-126.13" font-family="Times,serif" font-size="14.00">∂ₜ(Form0(X))</text>
+</g>
+<!-- n15 -->
+<g id="node15" class="node">
+<title>n15</title>
+<ellipse fill="none" stroke="black" cx="194.12" cy="-192.2" rx="60.21" ry="10.71"/>
+<text text-anchor="middle" x="194.12" y="-188.5" font-family="Times,serif" font-size="14.00">ρᵇ:Form0(X)</text>
+</g>
+<!-- n7&%2345;&gt;n15 -->
+<g id="edge18" class="edge">
+<title>n7&%2345;&gt;n15</title>
+<path fill="none" stroke="black" d="M204.86,-168.65C203.69,-171.21 202.42,-173.99 201.18,-176.71"/>
+<polygon fill="black" stroke="black" points="199.49,-176.21 199,-181.49 202.67,-177.66 199.49,-176.21"/>
+<text text-anchor="middle" x="195.02" y="-176.48" font-family="Times,serif" font-size="14.00">∂ρ</text>
+</g>
+<!-- n10 -->
+<g id="node10" class="node">
+<title>n10</title>
+<ellipse fill="none" stroke="black" cx="271.26" cy="-14.26" rx="178.8" ry="10.71"/>
+<text text-anchor="middle" x="271.26" y="-10.56" font-family="Times,serif" font-size="14.00">%23%23576:otimes(Form1(X),Form1(X))</text>
+</g>
+<!-- n10&%2345;&gt;n8 -->
+<g id="edge6" class="edge">
+<title>n10&%2345;&gt;n8</title>
+<path fill="none" stroke="black" d="M270.22,-25.08C270.06,-26.74 269.89,-28.49 269.72,-30.24"/>
+<polygon fill="black" stroke="black" points="267.96,-30.26 269.23,-35.41 271.45,-30.6 267.96,-30.26"/>
+<text text-anchor="middle" x="298.47" y="-31.46" font-family="Times,serif" font-size="14.00">proj₁_¹¹₁</text>
+</g>
+<!-- n10&%2345;&gt;n9 -->
+<g id="edge7" class="edge">
+<title>n10&%2345;&gt;n9</title>
+<path fill="none" stroke="black" d="M225.88,-15C225.86,-15 225.84,-15 225.83,-15"/>
+<polygon fill="black" stroke="black" points="230.75,-13.16 225.78,-15 230.82,-16.66 230.75,-13.16"/>
+<text text-anchor="middle" x="197.35" y="-3.8" font-family="Times,serif" font-size="14.00">proj₂_¹¹₁</text>
+</g>
+<!-- n11 -->
+<g id="node11" class="node">
+<title>n11</title>
+<ellipse fill="none" stroke="black" cx="313.97" cy="-31.37" rx="86.95" ry="10.71"/>
+<text text-anchor="middle" x="313.97" y="-27.67" font-family="Times,serif" font-size="14.00">%23%23577:Form1(X)</text>
+</g>
+<!-- n10&%2345;&gt;n11 -->
+<g id="edge8" class="edge">
+<title>n10&%2345;&gt;n11</title>
+<path fill="none" stroke="black" d="M297.58,-24.8C297.65,-24.83 297.72,-24.86 297.79,-24.89"/>
+<polygon fill="black" stroke="black" points="292.7,-24.73 297.99,-24.97 294,-21.48 292.7,-24.73"/>
+<text text-anchor="middle" x="279.69" y="-13.65" font-family="Times,serif" font-size="14.00">sum₁</text>
+</g>
+<!-- n13 -->
+<g id="node13" class="node">
+<title>n13</title>
+<ellipse fill="none" stroke="black" cx="331.87" cy="-73.46" rx="178.8" ry="10.71"/>
+<text text-anchor="middle" x="331.87" y="-69.76" font-family="Times,serif" font-size="14.00">%23%23579:otimes(Form1(X),Form1(X))</text>
+</g>
+<!-- n13&%2345;&gt;n3 -->
+<g id="edge12" class="edge">
+<title>n13&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M324.71,-84.24C323.88,-85.49 323.02,-86.78 322.16,-88.08"/>
+<polygon fill="black" stroke="black" points="320.57,-87.32 319.26,-92.45 323.48,-89.25 320.57,-87.32"/>
+<text text-anchor="middle" x="341.44" y="-89.96" font-family="Times,serif" font-size="14.00">sum₁</text>
+</g>
+<!-- n13&%2345;&gt;n11 -->
+<g id="edge10" class="edge">
+<title>n13&%2345;&gt;n11</title>
+<path fill="none" stroke="black" d="M327.35,-62.84C325.29,-57.99 322.81,-52.15 320.55,-46.83"/>
+<polygon fill="black" stroke="black" points="322.12,-46.05 318.55,-42.13 318.9,-47.42 322.12,-46.05"/>
+<text text-anchor="middle" x="352.45" y="-58.63" font-family="Times,serif" font-size="14.00">proj₁_¹¹₁</text>
+</g>
+<!-- n13&%2345;&gt;n12 -->
+<g id="edge11" class="edge">
+<title>n13&%2345;&gt;n12</title>
+<path fill="none" stroke="black" d="M329.64,-84.17C328.42,-90 326.89,-97.33 325.54,-103.81"/>
+<polygon fill="black" stroke="black" points="323.77,-103.75 324.46,-109 327.2,-104.46 323.77,-103.75"/>
+<text text-anchor="middle" x="356.09" y="-82.79" font-family="Times,serif" font-size="14.00">proj₂_¹¹₁</text>
+</g>
+<!-- n14 -->
+<g id="node14" class="node">
+<title>n14</title>
+<ellipse fill="none" stroke="black" cx="240.44" cy="-137.52" rx="178.8" ry="10.71"/>
+<text text-anchor="middle" x="240.44" y="-133.82" font-family="Times,serif" font-size="14.00">%23%23580:otimes(Form0(X),Form1(X))</text>
+</g>
+<!-- n14&%2345;&gt;n2 -->
+<g id="edge16" class="edge">
+<title>n14&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M268.5,-127.03C268.55,-127.02 268.6,-127 268.65,-126.98"/>
+<polygon fill="black" stroke="black" points="264.73,-130.32 268.8,-126.93 263.5,-127.04 264.73,-130.32"/>
+<text text-anchor="middle" x="297.08" y="-130.81" font-family="Times,serif" font-size="14.00">proj₂_⁰¹₁</text>
+</g>
+<!-- n14&%2345;&gt;n6 -->
+<g id="edge15" class="edge">
+<title>n14&%2345;&gt;n6</title>
+<path fill="none" stroke="black" d="M213.48,-126.94C213.43,-126.92 213.37,-126.9 213.32,-126.87"/>
+<polygon fill="black" stroke="black" points="218.45,-127.01 213.16,-126.81 217.17,-130.27 218.45,-127.01"/>
+<text text-anchor="middle" x="184.9" y="-115.71" font-family="Times,serif" font-size="14.00">proj₁_⁰¹₀</text>
+</g>
+<!-- n14&%2345;&gt;n7 -->
+<g id="edge17" class="edge">
+<title>n14&%2345;&gt;n7</title>
+<path fill="none" stroke="black" d="M224.42,-148.11C224.36,-148.14 224.3,-148.18 224.24,-148.22"/>
+<polygon fill="black" stroke="black" points="227.28,-144.12 224.07,-148.34 229.21,-147.04 227.28,-144.12"/>
+<text text-anchor="middle" x="365.33" y="-151.96" font-family="Times,serif" font-size="14.00">compose(∧₀₁(X),⋆₁(X),dual_d₀(X),⋆₀⁻¹(X))</text>
+</g>
+</g>
+</svg>
+'/><p>Then we can create the mesh and solve the equation.</p><pre><code class="language-julia hljs">function linear_pipe(n::Int)
+  s = EmbeddedDeltaSet1D{Bool,Point3D}()
+  add_vertices!(s, n, point=[Point3D(i, 0, 0) for i in 1:n])
+  add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
+  orient!(s)
+  ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(ds, Circumcenter())
+  funcs = operator_funcs(ds)
+  func, _ = gen_sim(diag2dwd(Poise, in_vars=[:q, :ρ]), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
+  return ds, func, funcs
+end
+
+ds, func, funcs = linear_pipe(10)
+
+prob = ODEProblem(func, [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5], (0.0, 10000.0), [10. *i for i in 1:10])
+sol = solve(prob, Tsit5(); progress=true);
+sol.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">29719-element Vector{Vector{Float64}}:
+ [5.0, 3.0, 4.0, 2.0, 5.0, 2.0, 3.0, 4.0, 3.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 5.0, 5.0, 5.0, 5.0]
+ [4.979105692324585, 3.214139591035935, 3.895410342363656, 2.2973289557184904, 4.75990233566112, 2.17148807704204, 2.982886544009205, 3.8786238921136484, 2.990492586600647, 10.0, 10.581343100515712, 7.770656854383336, 8.184011611780276, 5.060155545866156, 6.165358090275091, 4.743432354639931, 4.626602731019528, 5.319260310084807, 5.0]
+ [4.811267618560539, 3.5837976985336155, 3.7008092990605084, 2.776316227134651, 4.356459407882009, 2.4521816792402586, 2.9884615552169915, 3.687342702308086, 3.00429157235558, 10.0, 12.294767292369182, 7.865993789468923, 9.427951271421364, 4.293851566697769, 7.258416394165629, 4.712407760789754, 4.189959355539159, 5.577053647733368, 5.0]
+ [4.438945113989584, 4.08232989659147, 3.4613335747109097, 3.4461482262177627, 3.8049827456478478, 2.822506321615044, 3.0583029501206034, 3.4156812101467486, 3.0410597930899073, 10.0, 13.62311116889696, 8.738630897541409, 10.551624328424657, 4.073519695886319, 8.052253208778755, 5.059657626427391, 3.7897457082295776, 5.683354347756958, 5.0]
+ [3.9430444363437505, 4.462521047658273, 3.3427871895783703, 4.139361572139164, 3.2923935947545617, 3.1603362964694184, 3.2250519839000944, 3.125011185540974, 3.0807627023244875, 10.0, 13.565919877874995, 10.584545075719062, 11.211715993505429, 4.905255624817152, 8.26436822519266, 5.796919712501126, 3.673693178155549, 5.559198925135074, 5.0]
+ [3.520135379958299, 4.428306510516059, 3.4886756906415686, 4.647358909625236, 3.042490721317417, 3.365618713830559, 3.4747840464973607, 2.903289330021425, 3.0950724067384883, 10.0, 11.892687243569188, 12.699760859689665, 11.341379648885978, 7.03329608078295, 8.046138941621233, 6.692002759811172, 4.072180573133976, 5.264361806938788, 5.0]
+ [3.360725769631408, 3.897155478847106, 3.8566166787185314, 4.764428167417088, 3.2285177651208223, 3.4414225728566374, 3.7228638489916417, 2.850164599493607, 3.066744974764688, 10.0, 9.690604591129526, 13.502822558161265, 11.035592897770147, 10.166893163295008, 8.047294619271065, 7.383178124580082, 5.125970403624485, 5.0023183730201755, 5.0]
+ [3.4615499383764248, 3.247076034592382, 4.15290312981382, 4.421625211411053, 3.7508313047554878, 3.551065572612396, 3.8393091283237437, 3.0166758357519634, 3.020690605942699, 10.0, 8.617204506462706, 12.169137649490647, 10.42265251246955, 12.759629343183029, 9.143149877978049, 7.767314571320398, 6.63434277626492, 5.1031637850343605, 5.0]
+ [3.6119220194863755, 2.95448035457324, 4.13615884480486, 3.8252119247234573, 4.16343201055047, 3.892497394694179, 3.8112087287341443, 3.3479198695073515, 3.044523461001375, 10.0, 9.146690962068222, 9.813261948328272, 9.762921263066591, 12.960875225034728, 11.323395756739606, 8.478688791755706, 8.207646836488525, 5.91172592220247, 5.0]
+ [3.5851480863295415, 3.1868799669766688, 3.8342701916846003, 3.4100280970383627, 4.038374519409311, 4.292509142519671, 3.8130280338006193, 3.6656712664407722, 3.278433326888256, 10.0, 10.440488868932807, 8.30435200839094, 9.441027421438763, 11.007103122666809, 12.411512846696253, 10.129442377261363, 9.450965679321545, 7.489145142759757, 5.0]
+ ⋮
+ [4.550966595121221, 4.772061175485826, 5.027939868042554, 5.332690230760552, 5.673248700307954, 6.096415481556348, 6.643972839988582, 7.275735338716164, 8.215232012724423, 10.0, 9.542684685158024, 9.07000382605131, 8.625994732756956, 8.102082466196844, 7.5130496354412575, 7.032244124121426, 6.442041512831795, 5.796070652629099, 5.0]
+ [4.549420709675286, 4.776496059561629, 5.02714422380143, 5.3209627166901035, 5.687069772003303, 6.103977006445925, 6.621918190465459, 7.281676762762214, 8.218005114870095, 10.0, 9.550849586703391, 9.088354290679538, 8.573260711379096, 8.112765186599718, 7.603921726437196, 6.957210743566758, 6.382803403496456, 5.854498045513105, 5.0]
+ [4.550135789675045, 4.771783287262216, 5.03243034544272, 5.3275611159849765, 5.669075901772431, 6.108393167262535, 6.64085661090567, 7.267686687346848, 8.219732772100867, 10.0, 9.537321724565377, 9.086934068565641, 8.624154606085831, 8.062524393242706, 7.550243112231858, 7.065589857305795, 6.388280908221062, 5.791775542766012, 5.0]
+ [4.550479279611947, 4.775331203546439, 5.024229728067998, 5.328224478232214, 5.6856227810362885, 6.093363586083572, 6.630891758783243, 7.285384071318459, 8.214040591123165, 10.0, 9.55212368687306, 9.07088054530008, 8.590789816892157, 8.137092859475253, 7.54989200453791, 6.957260290165479, 6.4382817721556584, 5.839517311468511, 5.0]
+ [4.549177705919437, 4.774034509862987, 5.032852649060528, 5.32045569325461, 5.675716453589717, 6.1141911001598, 6.629044276794892, 7.269281499580368, 8.221973417791657, 10.0, 9.54060919592213, 9.09946631225801, 8.596363653120656, 8.061451812252256, 7.603359325506571, 7.033164040880287, 6.347732734975395, 5.821425840445077, 5.0]
+ [4.551027168289729, 4.7726944584345485, 5.026478327989626, 5.33280196033949, 5.676224528680801, 6.093693468288879, 6.642232933367036, 7.2788745531121295, 8.214218340395677, 10.0, 9.545331476569574, 9.06713073004213, 8.620033415888932, 8.115471493141884, 7.51283928010369, 7.013048873781034, 6.450906778073843, 5.804598759645224, 5.0]
+ [4.549189265356545, 4.776261242617347, 5.02868530647215, 5.319569125392785, 5.685337431245722, 6.107628563768121, 6.62163576860282, 7.27880659835836, 8.219410890751199, 10.0, 9.54879297050233, 9.093423035519084, 8.574274900619951, 8.099374466520553, 7.613257510524481, 6.970842891755694, 6.366732034762155, 5.851253226096298, 5.0]
+ [4.550463476894141, 4.771547691698764, 5.0312987050650335, 5.329737846209078, 5.669190806198719, 6.104748161222492, 6.643173957736319, 7.26941626019651, 8.218350151247687, 10.0, 9.538162143710677, 9.081198289785114, 8.628318100870427, 8.072129602066317, 7.534264115509111, 7.061872076319281, 6.406644693182779, 5.7888349141058315, 5.0]
+ [4.550930221154759, 4.773260017832386, 5.025904995157453, 5.331985649482422, 5.678143162901886, 6.093604027540463, 6.6397401269111755, 7.280431469633021, 8.21410562507492, 10.0, 9.54686805507164, 9.067652389560438, 8.61385522931188, 8.12052877709496, 7.520292410479428, 7.000468155854036, 6.449127985945534, 5.812178803213056, 5.0]</code></pre><p>Notice that the solution contains both a vector of flows and a vector of pressures.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../bc_debug/">« Misc Features</a><a class="docs-footer-nextpage" href="../api/">Library Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 20 March 2023 16:03">Monday 20 March 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
