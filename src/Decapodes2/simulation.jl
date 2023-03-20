@@ -304,11 +304,71 @@ function compile(d::SummationDecapode, inputs::Vector)
     end; end
 end
 
+"""
+    function find_unreachable_tvars(d)
+
+Determine if the given Decapode can be compiled to an explicit time-stepping
+simulation. Use the simple check that one can traverse the Decapode starting
+from the state variables and reach all TVars (ignoring ∂ₜ edges).
+"""
+function find_unreachable_tvars(d)
+  states = infer_states(d)
+  visited = falses(nparts(d, :Var))
+  s = Stack{Int64}()
+  foreach(v -> push!(s, v), states)
+  while true
+    curr_var = pop!(s)
+    visited[curr_var] = true
+    op1s = incident(d, curr_var, :src)
+    filter!(x -> d[x, :op1] == :∂ₜ, op1s)
+    for op1 in op1s
+      (!visited[d[op1, :tgt]]) && push!(s, d[op1, :tgt])
+    end
+  end
+  TVars = d[:incl]
+end
+
+"""
+    function recursive_delete!(d::SummationDecapode, to_delete::Vector{Int64})
+
+Delete the given nodes, and their parents in the decapode recursively.
+"""
+function recursive_delete!(d::SummationDecapode, to_delete::Vector{Int64})
+  curr = first(to_delete)
+  parents = reduce(vcat,
+                   [d[incident(d, curr, :tgt), :src],
+                    d[incident(d, curr, :res), :proj1],
+                    d[incident(d, curr, :res), :proj2],
+                    d[incident(d, curr, :sum), :summand]])
+
+  # Remove the operations which have curr as result.
+  rem_parts!(d, :TVar, incident(d, curr, :incl))
+  rem_parts!(d, :Op1,  incident(d, curr, :tgt))
+  rem_parts!(d, :Op2,  incident(d, curr, :proj1))
+  rem_parts!(d, :Op2,  incident(d, curr, :proj2))
+  rem_parts!(d, :Op2,  incident(d, curr, :res))
+  rem_parts!(d, :Summation,  incident(d, curr, :sum))
+
+  # Do not remove parents which are used in some other computation.
+  # We rely on the fact that a parent is guaranteed to point to curr. That is
+  # why we can call unique and check that the length is 1 to determine that the
+  # parent does not point to any other nodes.
+  # Note that we must check for each combination of parent-of and child-of relation (e.g. src and tgt).
+  filter!(parents) do p
+    length(unique!(d[incident(d, p, :src), :tgt])) == 1
+    # TODO: Create a conjunction with the rest of the combinations.
+  end
+  rem_parts!(d, sort!(unique!(parents)))
+
+  rem_part!(d, :Var, curr)
+end
+
 function closest_point(p1, p2, dims)
     p_res = collect(p2)
     for i in 1:length(dims)
         if dims[i] != Inf
             p = p1[i] - p2[i]
+function recursive_delete!(d::SummationDecapode, to_delete::Vector{Int64})
             f, n = modf(p / dims[i])
             p_res[i] += dims[i] * n
             if abs(f) > 0.5
