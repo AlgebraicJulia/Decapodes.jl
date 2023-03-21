@@ -132,6 +132,15 @@ Heidler = SummationDecapode(parse_decapode(quote
 
 end))
 
+# Initialize reduced electric field, θ
+θ = nothing
+E₀ = nothing
+# Linear model of the reduced electric field
+#if option == 3
+  E₀ = E
+  θ = 1e21/1e6 * E ./ avg₀₁(density[:gas]) # Danny Dissert p 91 theta = E/n
+#end
+
 qe = 1.602e-19 # Charge of electron (coul)
 # Initial conductivity
 sigma = zeros(nv(s))
@@ -150,7 +159,8 @@ end
 # Veronis #
 ###########
 # Primal_time: J,B,Nₑ
-# Dual_time: E,Nₑ
+# Dual_time: E,Nₑ,θ,σ
+
 # Optional flag that has symbols of TVars you want to compute.
 # (i.e. this gaurantees that you don't compute things you don't want.)
 # This meshes well with https://docs.sciml.ai/DiffEqDocs/latest/solvers/dynamical_solve/
@@ -178,12 +188,14 @@ Veronis = SummationDecapode(parse_decapode(quote
   # conductivity.
   J::Form1{X}
   #(σ,c,ε₀)::Constant
-  (c,ε₀)::Constant{X}
+  (qe,c,ε₀)::Constant{X}
   dt::Constant{X}
+  θ::Form1{X} # The reduced electric field. This has units of Volts*M*M
+  ρ_gas::Form0{X}
 
   # Equations 1 & 2
   #∂ₜ(E) == -(J - σ * E)/ε₀ + (c * c)*(⋆(d(B)))
-  Ė == -(J - σ .* E)./ε₀ + (c * c).*(⋆₁⁻¹(d₀(B)))
+  Ė == -(J - σ .* E)./ε₀ + (c^2).*(⋆₁⁻¹(d₀(B)))
   Ė == ∂ₜ(E)
 
   #TODO: Handle half-timestepping in compile.
@@ -194,6 +206,26 @@ Veronis = SummationDecapode(parse_decapode(quote
   # Equation 3
   Ḃ == ⋆₂(d₁(E))
   Ḃ == ∂ₜ(B)
+
+  # Danny Dissert p 91 theta = E/n
+  # Note: Updating θ with E means we are using the nonlinear model.  Were we to
+  # instead update with E₀, then we would be using the linear model (that does
+  # not consider electron temperature variation nor species density variation.)
+  θ == 1e21/1e6 * E ./ avg₀₁(ρ_gas)
+
+
+  # Note: There may be a way to compute more efficiently with knowledge of which
+  # values will be masked.
+  Eq5_2a_mask == theta .> (0.0603 * sqrt(200 ./ Tn))
+  Eq5_2b_mask == invert_mask(Eq5_2a_mask)
+  # Danny Dissert p 92 5-2a
+  Eq5_2a == qe * ρ_e ./ ρ_gas *
+    10 .^( 50.97 + 3.026 * log10( 1e-21*θ )
+      + 8.4733e-2 * log10( 1e-21*θ ).^2 )
+  # Danny Dissert p 92 5-2b
+  Eq5_2b == qe * 3.656e25 * ρ_e ./ ρ_gas .* sqrt(200.0 ./ Tn)
+
+  σ == (Eq5_2a_mask .*  Eq5_2a) + (Eq5_2b_mask .*  Eq5_2b)
 end))
 
 #############
@@ -441,6 +473,7 @@ L1′(x,y,sd,hodge) = i₀′(x,d₁(y,sd),sd,hodge) + d₀(i₁′(x,y,sd,hodge
 function generate(sd, my_symbol; hodge=GeometricHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
   op = @match my_symbol begin
+    :invert_mask => x -> (!).(x)
     :k => x->2000x
     :μ => x->-0.0001x
     # :μ => x->-2000x
