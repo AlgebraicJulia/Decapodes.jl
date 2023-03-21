@@ -334,33 +334,50 @@ end
 Delete the given nodes, and their parents in the decapode recursively.
 """
 function recursive_delete!(d::SummationDecapode, to_delete::Vector{Int64})
-  curr = first(to_delete)
-  parents = reduce(vcat,
-                   [d[incident(d, curr, :tgt), :src],
-                    d[incident(d, curr, :res), :proj1],
-                    d[incident(d, curr, :res), :proj2],
-                    d[incident(d, curr, :sum), :summand]])
+  # TODO: We assume to_delete vars have no children. Is that okay?
+  vars_to_remove = Vector{Int64}()
+  s = Stack{Int64}()
+  foreach(v -> push!(s, v), to_delete)
+  while true
+    println(s)
+    curr = pop!(s)
+    parents = reduce(vcat,
+                     [d[incident(d, curr, :tgt), :src],
+                      d[incident(d, curr, :res), :proj1],
+                      d[incident(d, curr, :res), :proj2],
+                      d[incident(d, curr, :sum), :summand]])
 
-  # Remove the operations which have curr as result.
-  rem_parts!(d, :TVar, incident(d, curr, :incl))
-  rem_parts!(d, :Op1,  incident(d, curr, :tgt))
-  rem_parts!(d, :Op2,  incident(d, curr, :proj1))
-  rem_parts!(d, :Op2,  incident(d, curr, :proj2))
-  rem_parts!(d, :Op2,  incident(d, curr, :res))
-  rem_parts!(d, :Summation,  incident(d, curr, :sum))
+    # Remove the operations which have curr as the result.
+    rem_parts!(d, :TVar, incident(d, curr, :incl))
+    rem_parts!(d, :Op1,  incident(d, curr, :tgt))
+    rem_parts!(d, :Op2,  incident(d, curr, :proj1))
+    rem_parts!(d, :Op2,  incident(d, curr, :proj2))
+    rem_parts!(d, :Op2,  incident(d, curr, :res))
+    rem_parts!(d, :Summation,  incident(d, curr, :sum))
 
-  # Do not remove parents which are used in some other computation.
-  # We rely on the fact that a parent is guaranteed to point to curr. That is
-  # why we can call unique and check that the length is 1 to determine that the
-  # parent does not point to any other nodes.
-  # Note that we must check for each combination of parent-of and child-of relation (e.g. src and tgt).
-  filter!(parents) do p
-    length(unique!(d[incident(d, p, :src), :tgt])) == 1
-    # TODO: Create a conjunction with the rest of the combinations.
+    # Do not remove parents which are used in some other computation.  We rely
+    # on the fact that a parent is guaranteed to point to curr. That is why we
+    # can call unique and check that the length is 1 to determine that the
+    # parent does not point to any other nodes.  Note that we must check for
+    # each combination of parent-of and child-of relation (e.g. src and tgt).
+    println(parents)
+    filter!(parents) do p
+      # p must not be the src of any Op1.
+      isempty(incident(d, p, :src)) &&
+      # p must not be a proj of any Op2.
+      isempty(incident(d, p, :proj1)) &&
+      isempty(incident(d, p, :proj2)) &&
+      # p must not be a summand of any summation.
+      isempty(incident(d, p, :summand))
+    end
+    println(parents)
+    foreach(p -> push!(s, p), parents)
+
+    push!(vars_to_remove, curr)
+
+    isempty(s) && break
   end
-  rem_parts!(d, sort!(unique!(parents)))
-
-  rem_part!(d, :Var, curr)
+  rem_parts!(d, :Var, sort!(unique!(vars_to_remove)))
 end
 
 function closest_point(p1, p2, dims)
