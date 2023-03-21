@@ -368,7 +368,6 @@ function closest_point(p1, p2, dims)
     for i in 1:length(dims)
         if dims[i] != Inf
             p = p1[i] - p2[i]
-function recursive_delete!(d::SummationDecapode, to_delete::Vector{Int64})
             f, n = modf(p / dims[i])
             p_res[i] += dims[i] * n
             if abs(f) > 0.5
