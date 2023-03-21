@@ -132,6 +132,20 @@ Heidler = SummationDecapode(parse_decapode(quote
 
 end))
 
+qe = 1.602e-19 # Charge of electron (coul)
+# Initial conductivity
+sigma = zeros(nv(s))
+for p in vertices(s)
+  # Note: This is assuming that points in s are in Cartesian coordinates.
+  if s[p, :point][2] < 60.0
+    sigma[p] = 0.0
+  else
+    # From Danny Dissert p.92 eq 5-2b
+    # Note: Pasko et al. 1997 go into this equation.
+    sigma[p] = qe * 3.656e25 * density[p, :e] ./ density[p, :gas] .* sqrt(200.0 / Tn[p])
+  end
+end
+
 ###########
 # Veronis #
 ###########
