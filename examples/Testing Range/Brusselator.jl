@@ -9,6 +9,9 @@ using Distributions
 using LinearAlgebra
 using GeometryBasics: Point3
 using GLMakie
+using TerminalLoggers
+using Logging
+global_logger(TerminalLogger())
 
 Point3D = Point3{Float64}
 
@@ -24,7 +27,7 @@ end
 
 begin
     # primal_earth = loadmesh(Icosphere(5))
-    primal_earth = EmbeddedDeltaSet2D("Ico8.obj")
+    primal_earth = EmbeddedDeltaSet2D("Icosphere8.obj")
     nploc = argmax(x -> x[3], primal_earth[:point])
     primal_earth[:edge_orientation] .= false
     orient!(primal_earth)
@@ -79,9 +82,9 @@ function man_simulate(mesh, operators)
         var"•6" = Vector{Float64}(undef, nv(mesh))
         var"•5" = Vector{Float64}(undef, nv(mesh))
         sum_1 = Vector{Float64}(undef, nv(mesh))
-        V̇ = Vector{Float64}(undef, nv(mesh))
+        #V̇ = Vector{Float64}(undef, nv(mesh))
         var"•3" = Vector{Float64}(undef, nv(mesh))
-        U̇ = Vector{Float64}(undef, nv(mesh))
+        #U̇ = Vector{Float64}(undef, nv(mesh))
     end
     return begin
         f(du, u, p, t) = begin
@@ -96,6 +99,10 @@ function man_simulate(mesh, operators)
             end
             # println("--------------------")
             # var"•2" = Δ₀(U)
+            # var"•2" .= Δ₀(U) #TODO: Does this run at the same speed as mul!
+            # TODO: Maybe add @inline to default_dec_generate functions? Note:
+            # you would have to move where the matrices are allocated from
+            # outside of the functions.
             mul!(var"•2", lpdr0, U)
             var"•1" .= U .* U
             U2V .= var"•1" .* V
@@ -104,14 +111,16 @@ function man_simulate(mesh, operators)
             var"•6" .= threefour .* U
             var"•5" .= var"•6" .- U2V
             sum_1 .= One .+ U2V
-            V̇ .= var"•5" .+ aTU
+            #V̇ .= var"•5" .+ aTU
+            (findnode(du, :V)).values .= var"•5" .+ aTU
             var"•3" .= sum_1 .- var"•4"
-            U̇ .= var"•3" .+ aTU .+ F
-            du .= 0.0
-            begin
-                (findnode(du, :U)).values .= U̇
-                (findnode(du, :V)).values .= V̇
-            end
+            #U̇ .= var"•3" .+ aTU .+ F
+            (findnode(du, :U)).values .= var"•3" .+ aTU .+ F
+            #du .= 0.0
+            #begin
+            #    (findnode(du, :U)).values .= U̇
+            #    (findnode(du, :V)).values .= V̇
+            #end
         end
     end
 end
@@ -145,10 +154,12 @@ begin
         F = t -> t ≥ 1.1 ? F₁ : F₂)
 
     u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)],Float64[], [:U, :V, :One])
+    #v₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)],Float64[], [:U, :V, :One])
+    #@btime fₘ(v₀, u₀, constants_and_parameters, 0.0)
     # tₑ = 11.5
     tₑ = 15
     prob = ODEProblem(fₘ,u₀,(0, tₑ), constants_and_parameters)
-    soln = solve(prob, Tsit5())
+    solve(prob, Tsit5(), progress=true, progress_steps=1)
 end
 
 fig, ax, ob = GLMakie.mesh(primal_earth, color = findnode(soln(0), :U))
@@ -156,3 +167,24 @@ for t in range(0.0, tₑ; length=300)
     sleep(0.001)
     ob.color = findnode(soln(t), :U)
 end
+
+
+#UnicodePlots.scatterplot(soln.t[begin+1:end] - soln.t[begin:end-1])
+     ┌─────────────────────────────────────────────┐ 
+0.07 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠐⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢐⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡏⠂⠀⠀⠀⠀⠀⠀⠀⠀⢀⡄⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⢡⣄⣠⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⡤⠤⠖⠁⣦⣀⣀⣀⣀⣀⣀⣀⣀⡼⣁⣀⣀⡀⠀⠀⠀⠀⠀│ 
+     │⠚⠀⢉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠚⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⠆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⠀⠀⠀⠀⠀│ 
+   0 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+     └─────────────────────────────────────────────┘ 
+     ⠀0⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀600⠀ 
