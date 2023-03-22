@@ -8,6 +8,7 @@ using MLStyle
 using Distributions
 using LinearAlgebra
 using GeometryBasics: Point3
+using GLMakie
 
 Point3D = Point3{Float64}
 
@@ -22,12 +23,13 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
 end
 
 begin
-    primal_earth = loadmesh(Icosphere(5))
+    # primal_earth = loadmesh(Icosphere(5))
+    primal_earth = EmbeddedDeltaSet2D("Ico8.obj")
     nploc = argmax(x -> x[3], primal_earth[:point])
     primal_earth[:edge_orientation] .= false
     orient!(primal_earth)
     earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
-    subdivide_duals!(earth, Circumcenter())
+    subdivide_duals!(earth, Circumcenter());
 end
 
 begin
@@ -64,55 +66,55 @@ begin
     resolve_overloads!(Brusselator)
 end
   
-man_simulate = eval(quote
-#= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:174 =#
-function simulate(mesh, operators)
-    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:174 =#
-    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:175 =#
+function man_simulate(mesh, operators)
     begin
-        #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:123 =#
-        Δ₀ = generate(mesh, :Δ₀)
+        # Δ₀ = generate(mesh, :Δ₀)
+        lpdr0 = Δ(0, mesh)
+        var"•2" = Vector{Float64}(undef, nv(mesh))
+        U2V = Vector{Float64}(undef, nv(mesh))
+        var"•1" = Vector{Float64}(undef, nv(mesh))
+        U2V = Vector{Float64}(undef, nv(mesh))
+        aTU = Vector{Float64}(undef, nv(mesh))
+        var"•4" = Vector{Float64}(undef, nv(mesh))
+        var"•6" = Vector{Float64}(undef, nv(mesh))
+        var"•5" = Vector{Float64}(undef, nv(mesh))
+        sum_1 = Vector{Float64}(undef, nv(mesh))
+        V̇ = Vector{Float64}(undef, nv(mesh))
+        var"•3" = Vector{Float64}(undef, nv(mesh))
+        U̇ = Vector{Float64}(undef, nv(mesh))
     end
-    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:176 =#
     return begin
-            #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:299 =#
-            f(du, u, p, t) = begin
-                    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:299 =#
-                    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:300 =#
-                    begin
-                        #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:106 =#
-                        U = (findnode(u, :U)).values
-                        V = (findnode(u, :V)).values
-                        One = (findnode(u, :One)).values
-                        fourfour = p.fourfour
-                        threefour = p.threefour
-                        α = p.α
-                        F = p.F(t)
-                    end
-                    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:301 =#
-                    var"•2" = Δ₀(U)
-                    var"•1" = U .* U
-                    U2V = var"•1" .* V
-                    aTU = α * var"•2"
-                    var"•4" = fourfour * U
-                    var"•6" = threefour * U
-                    var"•5" = var"•6" - U2V
-                    sum_1 = One + U2V
-                    V̇ = var"•5" + aTU
-                    var"•3" = sum_1 - var"•4"
-                    U̇ = var"•3" + aTU + F
-                    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:302 =#
-                    du .= 0.0
-                    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:303 =#
-                    begin
-                        #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:116 =#
-                        (findnode(du, :U)).values .= U̇
-                        (findnode(du, :V)).values .= V̇
-                    end
-                end
+        f(du, u, p, t) = begin
+            begin
+                U = (findnode(u, :U)).values
+                V = (findnode(u, :V)).values
+                One = (findnode(u, :One)).values
+                fourfour = p.fourfour
+                threefour = p.threefour
+                α = p.α
+                F = p.F(t)
+            end
+            # println("--------------------")
+            # var"•2" = Δ₀(U)
+            mul!(var"•2", lpdr0, U)
+            var"•1" .= U .* U
+            U2V .= var"•1" .* V
+            aTU .= α .* var"•2"
+            var"•4" .= fourfour .* U
+            var"•6" .= threefour .* U
+            var"•5" .= var"•6" .- U2V
+            sum_1 .= One .+ U2V
+            V̇ .= var"•5" .+ aTU
+            var"•3" .= sum_1 .- var"•4"
+            U̇ .= var"•3" .+ aTU .+ F
+            du .= 0.0
+            begin
+                (findnode(du, :U)).values .= U̇
+                (findnode(du, :V)).values .= V̇
+            end
         end
+    end
 end
-end)
 
 # sim = eval(gensim(Brusselator))
 # fₘ = sim(earth, generate)
@@ -144,7 +146,13 @@ begin
 
     u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)],Float64[], [:U, :V, :One])
     # tₑ = 11.5
-    tₑ = 20
+    tₑ = 15
     prob = ODEProblem(fₘ,u₀,(0, tₑ), constants_and_parameters)
     soln = solve(prob, Tsit5())
+end
+
+fig, ax, ob = GLMakie.mesh(primal_earth, color = findnode(soln(0), :U))
+for t in range(0.0, tₑ; length=300)
+    sleep(0.001)
+    ob.color = findnode(soln(t), :U)
 end
