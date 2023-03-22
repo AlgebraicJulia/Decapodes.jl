@@ -64,9 +64,60 @@ begin
     resolve_overloads!(Brusselator)
 end
   
-sim = eval(gensim(Brusselator))
-fₘ = sim(earth, generate)
- 
+man_simulate = eval(quote
+#= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:174 =#
+function simulate(mesh, operators)
+    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:174 =#
+    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:175 =#
+    begin
+        #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:123 =#
+        Δ₀ = generate(mesh, :Δ₀)
+    end
+    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:176 =#
+    return begin
+            #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:299 =#
+            f(du, u, p, t) = begin
+                    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:299 =#
+                    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:300 =#
+                    begin
+                        #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:106 =#
+                        U = (findnode(u, :U)).values
+                        V = (findnode(u, :V)).values
+                        One = (findnode(u, :One)).values
+                        fourfour = p.fourfour
+                        threefour = p.threefour
+                        α = p.α
+                        F = p.F(t)
+                    end
+                    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:301 =#
+                    var"•2" = Δ₀(U)
+                    var"•1" = U .* U
+                    U2V = var"•1" .* V
+                    aTU = α * var"•2"
+                    var"•4" = fourfour * U
+                    var"•6" = threefour * U
+                    var"•5" = var"•6" - U2V
+                    sum_1 = One + U2V
+                    V̇ = var"•5" + aTU
+                    var"•3" = sum_1 - var"•4"
+                    U̇ = var"•3" + aTU + F
+                    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:302 =#
+                    du .= 0.0
+                    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:303 =#
+                    begin
+                        #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\Decapodes2\simulation.jl:116 =#
+                        (findnode(du, :U)).values .= U̇
+                        (findnode(du, :V)).values .= V̇
+                    end
+                end
+        end
+end
+end)
+
+# sim = eval(gensim(Brusselator))
+# fₘ = sim(earth, generate)
+fₘ = man_simulate(earth, generate)
+
 begin
     U = map(earth[:point]) do (_,y,_)
       abs(y)
@@ -93,7 +144,7 @@ begin
 
     u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)],Float64[], [:U, :V, :One])
     # tₑ = 11.5
-    tₑ = 250
+    tₑ = 20
     prob = ODEProblem(fₘ,u₀,(0, tₑ), constants_and_parameters)
     soln = solve(prob, Tsit5())
 end
