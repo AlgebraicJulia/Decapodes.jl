@@ -60,9 +60,9 @@ I_max =k
 #Δz = 100000.0 / 20.0
 #Δr = 400000.0 / 30.0
 Δz = 0.2e3
-Δr = 1.0e3
+Δρ = 1.0e3
 z₀ = 3 * Δz # TODO: We can generalize to not use this particular grid spacing.
-r₀ = 3 * Δr # TODO: We can generalize to not use this particular grid spacing.
+ρ₀ = 3 * Δρ # TODO: We can generalize to not use this particular grid spacing.
 t = 0.5
 #zvec = collect(0.0:Δz:100.0)
 zvec = collect(0.0:Δz:100_000.0)
@@ -79,6 +79,9 @@ Jₛ₀ = I
 #begin
 u = flatten_form(velocity, earth)
 
+# TODO: Call (or dump the entirety of?) this inside the Heidler Decapode.
+# Perhaps we may need to use a parameter for z.
+# Even though we could pre-calculate these, this would be memory intensive.
 # Call this for all edges.
 function compute_J(ρ, z, t)
   #zvec = collect(0.0:Δz:100.0)
@@ -90,28 +93,57 @@ function compute_J(ρ, z, t)
   #I = Io/k * temp./(1 .+ temp) .* exp.(-tret./T2) .* (tret .> 0)
   I = Io/k * temp/(1 + temp) * exp(-tret/T2) * (tret > 0)
   Jₛ₀ = I
-  a = 10.0e3
+  a = 10.0 * 1e3
+  # Note that these ρ₀ and z₀ are chosen for numerical stability.
+  # For a rectangular grid discretization, good values are 3Δρ, 3Δz.
+  # They do not "break the paradigm" in any unusual way.
+  #a = 1.0e3
+  # If the altitude is less than a, there is no decay in the in the z direction.
   if z < a
-    #return Jₛ₀ * e ^ (-1.0 * ρ^2 / ρ₀^2)
-    return Jₛ₀ * e ^ (-ρ^2)
+    return Jₛ₀ * e ^ (-1.0 * ρ^2 / ρ₀^2)
+    #return Jₛ₀ * e ^ (-ρ^2)
   else
     # Decay after 10.0e3 is more extreme.
-    #return Jₛ₀ * e ^ ((-1.0 * ρ^2 / ρ₀^2) - ((z - a)^2 / z₀^2))
-    return Jₛ₀ * e ^ ((-ρ^2) - ((z - a)^2))
+    return Jₛ₀ * e ^ ((-1.0 * ρ^2 / ρ₀^2) - ((z - a)^2 / z₀^2))
+    #if (z < 10.0e3+20)
+    #  println(Jₛ₀ * e ^ ((-ρ^2) - ((z - a)^2)))
+    #end
+    #return Jₛ₀ * e ^ ((-ρ^2) - ((z - a)^2))
   end
 end
 
-J_testing = map(s[:point]) do p
-  #compute_J(p[1], p[2], 20.0)
+J_testing = map(sd[:point]) do p
+  #compute_J(p[1] *1e3, p[3] *1e3, 50.0)
   compute_J(p[1] *1e3, p[3] *1e3, 50.0)
 end
+J_testing_just_dual = map(sd[:dual_point]) do p
+  #compute_J(p[1], p[2], 20.0)
+  #compute_J(p[1] *1e3, p[3] *1e3, 50.0)
+  # Note: This assumes Cartesian coordinates.
+  #compute_J(p[1] *1e3, p[2] *1e3, 50.0)
+  #compute_J(p[1] *1e3, p[3] *1e3, 50.0)
+  compute_J(p[1] *1e3, p[3] *1e3, 50.0)
+end
+#Jₛ₀ = J_testing
 extrema(J_testing)
-mesh(s, color=J_testing)#, colorrange=(0.0, 130.0))
+mesh(s, color=J_testing)
+#save("J_initial.png", mesh(s, color=J_testing))
 mesh(s, color=log.(J_testing))#, colorrange=(0.0, 130.0))
 
 #velocity(p) = TangentBasis(CartesianPoint(p))(vmag/4, vmag/4)
+# Note that depending on where origin/ orientation of grid, these values may be
+# pointing in the direction anti-parallel to what you expect.
+# i.e. You might need to flip the sign of the argument to flatten_form.
 flatten_form(vfield::Function, mesh) =  ♭(mesh,
   DualVectorField(vfield.(sd[triangle_center(sd),:dual_point])))
+
+# Note: This is written assuming the coordinates are Cartesian.
+scatter(map(x -> compute_J(x[1]*1e3, x[3]*1e3, 50.0), sd[triangle_center(sd),:dual_point]))
+any(Jₛ .!= 0.0)
+#Jₛ = flatten_form(x -> [0.0, 0.0, compute_J(x[1]*1e3, x[2]*1e3, 100.0)], sd)
+Jₛ = flatten_form(x -> [0.0, 0.0, compute_J(x[1]*1e3, x[3]*1e3, 50.0)], sd)
+# Plot the divergence of Jₛ. i.e. ⋆(d(Jₛ))
+save("J_flattened_divergence.png", mesh(s, color=inv_hodge_star(0,sd,hodge=GeometricHodge()) * dual_derivative(1, sd) * Jₛ)
 
 Heidler = SummationDecapode(parse_decapode(quote
   (I, J_mask, Jₛ)::Form1{X} # (In the z direction)
