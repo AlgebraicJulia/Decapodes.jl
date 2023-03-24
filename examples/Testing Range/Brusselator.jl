@@ -11,6 +11,8 @@ using GeometryBasics: Point3
 using GLMakie
 using TerminalLoggers
 using Logging
+using CUDA
+using StaticArrays
 global_logger(TerminalLogger())
 
 Point3D = Point3{Float64}
@@ -26,8 +28,8 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
 end
 
 begin
-    # primal_earth = loadmesh(Icosphere(5))
-    primal_earth = EmbeddedDeltaSet2D("Icosphere8.obj")
+    primal_earth = loadmesh(Icosphere(5))
+    #primal_earth = EmbeddedDeltaSet2D("Icosphere8.obj")
     nploc = argmax(x -> x[3], primal_earth[:point])
     primal_earth[:edge_orientation] .= false
     orient!(primal_earth)
@@ -72,26 +74,30 @@ end
 function man_simulate(mesh, operators)
     begin
         # Δ₀ = generate(mesh, :Δ₀)
-        lpdr0 = Δ(0, mesh)
-        var"•2" = Vector{Float64}(undef, nv(mesh))
-        U2V = Vector{Float64}(undef, nv(mesh))
-        var"•1" = Vector{Float64}(undef, nv(mesh))
-        U2V = Vector{Float64}(undef, nv(mesh))
-        aTU = Vector{Float64}(undef, nv(mesh))
-        var"•4" = Vector{Float64}(undef, nv(mesh))
-        var"•6" = Vector{Float64}(undef, nv(mesh))
-        var"•5" = Vector{Float64}(undef, nv(mesh))
-        sum_1 = Vector{Float64}(undef, nv(mesh))
-        #V̇ = Vector{Float64}(undef, nv(mesh))
-        var"•3" = Vector{Float64}(undef, nv(mesh))
+        mesh = earth
+        lpdr0   = cu(Δ(0, mesh))
+        var"•2" = cu(Vector{Float32}(undef, nv(mesh)))
+        U2V     = cu(Vector{Float32}(undef, nv(mesh)))
+        var"•1" = cu(Vector{Float32}(undef, nv(mesh)))
+        U2V     = cu(Vector{Float32}(undef, nv(mesh)))
+        aTU     = cu(Vector{Float32}(undef, nv(mesh)))
+        var"•4" = cu(Vector{Float32}(undef, nv(mesh)))
+        var"•6" = cu(Vector{Float32}(undef, nv(mesh)))
+        var"•5" = cu(Vector{Float32}(undef, nv(mesh)))
+        sum_1   = cu(Vector{Float32}(undef, nv(mesh)))
+        var"•3" = cu(Vector{Float32}(undef, nv(mesh)))
         #U̇ = Vector{Float64}(undef, nv(mesh))
+        #V̇ = Vector{Float64}(undef, nv(mesh))
     end
     return begin
         f(du, u, p, t) = begin
             begin
-                U = (findnode(u, :U)).values
-                V = (findnode(u, :V)).values
-                One = (findnode(u, :One)).values
+                #U = (findnode(u, :U)).values
+                #V = (findnode(u, :V)).values
+                #One = (findnode(u, :One)).values
+                U   = u[1:2562]
+                V   = u[2563:5124]
+                One = u[5125:7686]
                 fourfour = p.fourfour
                 threefour = p.threefour
                 α = p.α
@@ -112,10 +118,11 @@ function man_simulate(mesh, operators)
             var"•5" .= var"•6" .- U2V
             sum_1 .= One .+ U2V
             #V̇ .= var"•5" .+ aTU
-            (findnode(du, :V)).values .= var"•5" .+ aTU
+            #(findnode(du, :V)).values .= var"•5" .+ aTU
+            du[2563:5124] .= var"•5" .+ aTU
             var"•3" .= sum_1 .- var"•4"
             #U̇ .= var"•3" .+ aTU .+ F
-            (findnode(du, :U)).values .= var"•3" .+ aTU .+ F
+            du[1:2562] .= var"•3" .+ aTU .+ F
             #du .= 0.0
             #begin
             #    (findnode(du, :U)).values .= U̇
@@ -129,7 +136,7 @@ end
 # fₘ = sim(earth, generate)
 fₘ = man_simulate(earth, generate)
 
-begin
+#begin
     U = map(earth[:point]) do (_,y,_)
       abs(y)
     end
@@ -137,15 +144,20 @@ begin
     V = map(earth[:point]) do (x,_,_)
       abs(x)
     end
-    
-    # TODO: Try making this sparse.
-    F₁ = map(earth[:point]) do (_,_,z)
-      z ≥ 0.8 ? 5.0 : 0.0
-    end
-
-    F₂ = zeros(nv(earth))
 
     One = ones(nv(earth))
+    
+    vals = Vector{Float64}(undef, nv(earth)*3)
+    vals[1:2562] .= U
+    vals[2563:5124] .= V
+    vals[5125:7686] .= One
+    
+    # TODO: Try making this sparse.
+    F₁ = cu(map(earth[:point]) do (_,_,z)
+      z ≥ 0.8 ? 5.0 : 0.0
+    end)
+
+    F₂ = cu(zeros(nv(earth)))
 
     constants_and_parameters = (
         fourfour = 4.4,
@@ -153,14 +165,24 @@ begin
         α = 0.001,
         F = t -> t ≥ 1.1 ? F₁ : F₂)
 
-    u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)],Float64[], [:U, :V, :One])
+    #u₀ = construct(PhysicsState, [cu(U), cu(V), cu(One)],Float64[], [:U, :V, :One])
+    #u₀ = construct(PhysicsState, [U, V, One], Float64[], [:U, :V, :One])
+    #u₀ = Dict{Symbol, CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}}()
+    #u₀[:U] = U
+    #u₀[:V] = V
+    #u₀[:One] = One
+    #u₀ = [U, V, One]
+    #u₀ = [U]
+    u₀ = cu(vals)
     #v₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)],Float64[], [:U, :V, :One])
     #@btime fₘ(v₀, u₀, constants_and_parameters, 0.0)
     # tₑ = 11.5
     tₑ = 15
+    #tₑ = 0.5
     prob = ODEProblem(fₘ,u₀,(0, tₑ), constants_and_parameters)
-    solve(prob, Tsit5(), progress=true, progress_steps=1)
-end
+    #prob = ODEProblem(fₘ,U,(0, tₑ), constants_and_parameters)
+    solve(prob, Tsit5())
+#end
 
 fig, ax, ob = GLMakie.mesh(primal_earth, color = findnode(soln(0), :U))
 for t in range(0.0, tₑ; length=300)
