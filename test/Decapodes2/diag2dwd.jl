@@ -159,16 +159,6 @@ import Decapodes: DecaExpr
   @test ddp7[:name] == [:ϕ, :Ċ, Symbol("2"), Symbol("•2"), :C]
   @test ddp7[:incl] == [2]
 
-  # Vars can only be of certain types.
-  DiffusionExprBody8 =  quote
-    (C)::Foo
-    ϕ ==  2*d₀(C)
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-    Ċ == ∂ₜ(C)
-  end
-  diffExpr8 = parse_decapode(DiffusionExprBody8)
-  @test_throws ErrorException SummationDecapode(diffExpr8)
-
   # Multiple equality is not an accepted input
   ParseTest1 = quote
     (A, B, X)::Form0{X}

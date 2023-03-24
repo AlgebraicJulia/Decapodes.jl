@@ -131,4 +131,21 @@ fₘₚ = f(torus, generate)
 # using OrdinaryDiffEq
 # prob = ODEProblem(fₘₛ,u₀, (0,tₑ), (k=2.0,))
 # soln = solve(prob, Tsit5())
+
+
+# Vars can only be of certain types.
+DiffusionMalformedExprBody =  quote
+    (C, Ċ)::Foo{X}
+    ϕ::Form1{X}
+    k::Constant{ℝ}
+    ϕ == k * d₀(C)
+    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
+    ∂ₜ(C) == Ċ
+end
+
+diff_malformedExpr = parse_decapode(DiffusionMalformedExprBody)
+ddp_malformed = SummationDecapode(diff_malformedExpr)
+
+@test_throws ErrorException gensim(ddp_malformed)
+
 end

@@ -210,7 +210,6 @@ function Decapode(e::DecaExpr)
     eval_eq!(eq, d, symbol_table, deletions)
   end
   rem_parts!(d, :Var, sort(deletions))
-  recognize_types(d)
   return d
 end
 
@@ -228,7 +227,6 @@ function NamedDecapode(e::DecaExpr)
     rem_parts!(d, :Var, sort(deletions))
     fill_names!(d)
     d[:name] = map(normalize_unicode,d[:name])
-    recognize_types(d)
     return d
 end
 
@@ -246,8 +244,6 @@ function SummationDecapode(e::DecaExpr)
       eval_eq!(eq, d, symbol_table, deletions)
     end
     rem_parts!(d, :Var, sort(deletions))
-
-    recognize_types(d)
 
     fill_names!(d)
     d[:name] .= normalize_unicode.(d[:name])

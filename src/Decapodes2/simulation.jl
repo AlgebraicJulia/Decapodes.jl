@@ -141,6 +141,7 @@ gensim(d::AbstractNamedDecapode) = gensim(d,
     vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]))
 
 function gensim(d::AbstractNamedDecapode, input_vars)
+  recognize_types(d)
   d′ = expand_operators(d)
   #d′ = average_rewrite(d′)
   defs = compile_env(d′)
