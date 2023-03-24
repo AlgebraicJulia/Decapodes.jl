@@ -329,38 +329,43 @@ function find_unreachable_tvars(d)
 end
 
 """
-    function recursive_delete!(d::SummationDecapode, to_delete::Vector{Int64})
+    function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
 
-Delete the given nodes, and their parents in the decapode recursively.
+Delete the given nodes and their parents in the decapode, recursively.
 """
-function recursive_delete!(d::SummationDecapode, to_delete::Vector{Int64})
+function recursive_delete_parents(d::SummationDecapode, to_delete::Vector{Int64})
+  e = SummationDecapode{Any, Any, Symbol}()
+  copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
+  isempty(to_delete) || recursive_delete_parents!(e, to_delete)
+  return e
+end
+
+function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
   # TODO: We assume to_delete vars have no children. Is that okay?
+  # TODO: Explicitly check that a Var in to_delete is not a summand.
   vars_to_remove = Vector{Int64}()
   s = Stack{Int64}()
   foreach(v -> push!(s, v), to_delete)
   while true
-    println(s)
     curr = pop!(s)
     parents = reduce(vcat,
                      [d[incident(d, curr, :tgt), :src],
                       d[incident(d, curr, :res), :proj1],
                       d[incident(d, curr, :res), :proj2],
-                      d[incident(d, curr, :sum), :summand]])
+                      d[incident(d, curr, [:summation, :sum]), :summand]])
 
     # Remove the operations which have curr as the result.
-    rem_parts!(d, :TVar, incident(d, curr, :incl))
-    rem_parts!(d, :Op1,  incident(d, curr, :tgt))
-    rem_parts!(d, :Op2,  incident(d, curr, :proj1))
-    rem_parts!(d, :Op2,  incident(d, curr, :proj2))
-    rem_parts!(d, :Op2,  incident(d, curr, :res))
-    rem_parts!(d, :Summation,  incident(d, curr, :sum))
+    rem_parts!(d, :TVar,    incident(d, curr, :incl))
+    rem_parts!(d, :Op1,     incident(d, curr, :tgt))
+    rem_parts!(d, :Op2,     incident(d, curr, :proj1))
+    rem_parts!(d, :Op2,     incident(d, curr, :proj2))
+    rem_parts!(d, :Op2,     incident(d, curr, :res))
+    # Note: Delete Summands before Σs.
+    rem_parts!(d, :Summand, incident(d, curr, [:summation, :sum]))
+    rem_parts!(d, :Σ,       incident(d, curr, :sum))
 
-    # Do not remove parents which are used in some other computation.  We rely
-    # on the fact that a parent is guaranteed to point to curr. That is why we
-    # can call unique and check that the length is 1 to determine that the
-    # parent does not point to any other nodes.  Note that we must check for
-    # each combination of parent-of and child-of relation (e.g. src and tgt).
-    println(parents)
+    # Do not remove parents which are used in some other computation. We rely
+    # on the fact that a parent is guaranteed to point to curr.
     filter!(parents) do p
       # p must not be the src of any Op1.
       isempty(incident(d, p, :src)) &&
@@ -370,7 +375,6 @@ function recursive_delete!(d::SummationDecapode, to_delete::Vector{Int64})
       # p must not be a summand of any summation.
       isempty(incident(d, p, :summand))
     end
-    println(parents)
     foreach(p -> push!(s, p), parents)
 
     push!(vars_to_remove, curr)

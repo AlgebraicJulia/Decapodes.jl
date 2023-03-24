@@ -859,4 +859,178 @@ end
     E == B + D
   end))
   @test t5_orig == contract_operators(t5_orig)
+
+  # recursive_delete_parents does not change an empty Decapode.
+  t6_orig = SummationDecapode(parse_decapode(quote
+
+  end))
+  t6_rec_del = recursive_delete_parents(t6_orig, Vector{Int64}())
+  @test t6_orig == SummationDecapode{Any, Any, Symbol}()
+  # recursive_delete_parents does not mutate its argument.
+  @test t6_orig !== t6_rec_del
+
+  # recursive_delete_parents deletes a chain of single-child parents.
+  t7_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C)::Form0{X}
+    B == f(A)
+    C == g(B)
+  end))
+  t7_rec_del = recursive_delete_parents(t7_orig, incident(t7_orig, :C, :name))
+  @test t7_rec_del == SummationDecapode{Any, Any, Symbol}()
+
+  # recursive_delete_parents deletes a chain of single-child parents until a
+  # multi-child parent is found.
+  t8_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D,E)::Form0{X}
+    B == f(A)
+    C == g(B)
+    D == h(C)
+
+    E == i(B)
+  end))
+  t8_rec_del = recursive_delete_parents(t8_orig, incident(t8_orig, :D, :name))
+  @test t8_rec_del == SummationDecapode(parse_decapode(quote
+    (A, B, E)::Form0{X}
+    B == f(A)
+
+    E == i(B)
+  end))
+
+  # recursive_delete_parents deletes a multi-child parent if all its children are
+  # deleted.
+  t9_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D,E)::Form0{X}
+    B == f(A)
+    C == g(B)
+
+    D == i(A)
+    E == j(D)
+  end))
+  t9_rec_del = recursive_delete_parents(t9_orig,
+                                reduce(vcat, incident(t9_orig, [:C, :E], :name)))
+  @test t9_rec_del == SummationDecapode{Any, Any, Symbol}()
+
+  # recursive_delete_parents deletes π₁ and π₂ of an Op2 with missing result.
+  t10_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D)::Form0{X}
+    C == f(A,B)
+    D == g(C)
+  end))
+  t10_rec_del = recursive_delete_parents(t10_orig, incident(t10_orig, :D, :name))
+  @test t10_rec_del == SummationDecapode{Any, Any, Symbol}()
+
+  # recursive_delete_parents only deletes an π₁ or π₂ of an Op2 if it is not used in
+  # another Op2.
+  t11_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D,E)::Form0{X}
+    D == f(A,B)
+    E == g(B,C)
+  end))
+  t11_rec_del = recursive_delete_parents(t11_orig, incident(t11_orig, :D, :name))
+  # We should test if Decapodes are isomorphic, but Catlab
+  # doesn't do this yet.
+  #@test t11_rec_del == SummationDecapode(parse_decapode(quote
+  #  (B,C,E)::Form0{X}
+  #  E == g(B,C)
+  #end))
+  @test t11_rec_del == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var  = 3
+    Op2  = 1
+
+    type = [:Form0, :Form0, :Form0]
+    name = [:E, :B, :C]
+
+    proj1 = [2]
+    proj2 = [3]
+    res   = [1]
+    op2   = [:g]
+  end
+
+  # If π₁ and π₂ of an Op2 point to the same Var, that Var is used in some
+  # other computation, but this Op2 has deleted result, then delete the Op2,
+  # but not the Var.
+  t12_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D)::Form0{X}
+    C == f(A,A)
+    D == g(A,B)
+  end))
+  t12_rec_del = recursive_delete_parents(t12_orig, incident(t12_orig, :C, :name))
+  @test t12_rec_del == SummationDecapode(parse_decapode(quote
+    (A,B,D)::Form0{X}
+    D == g(A,B)
+  end))
+
+  # recursive_delete_parents does not delete a Var if it is used in a summation.
+  t13_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D,E)::Form0{X}
+    D == A + B + C
+
+    E == f(A)
+  end))
+  t13_rec_del = recursive_delete_parents(t13_orig, incident(t13_orig, :E, :name))
+  @test t13_rec_del == SummationDecapode(parse_decapode(quote
+    (A,B,C,D)::Form0{X}
+    D == A + B + C
+  end))
+
+  # Test recursive_delete_parents on a real physics.
+  Veronis = SummationDecapode(parse_decapode(quote
+    B::DualForm0{X}
+    E::Form1{X}
+    σ::Form1{X}
+    J::Form1{X}
+    (negone,c,ε₀)::Constant{X}
+
+    ∂ₜ(E) == ((negone * (J - σ .* E))./ε₀) + ((c * c).*(⋆₁⁻¹(d₀(B))))
+
+    ∂ₜ(B) == ⋆₂(d₁(E))
+  end))
+  Veronis_rec_del = recursive_delete_parents(Veronis, incident(Veronis, :Ḃ, :name))
+  @test Veronis_rec_del == SummationDecapode(parse_decapode(quote
+    B::DualForm0{X}
+    E::Form1{X}
+    σ::Form1{X}
+    J::Form1{X}
+    (negone,c,ε₀)::Constant{X}
+
+    ∂ₜ(E) == ((negone * (J - σ .* E))./ε₀) + ((c * c).*(⋆₁⁻¹(d₀(B))))
+  end))
+
+  # Test recursive_delete_parents on a real physics.
+  Veronis = SummationDecapode(parse_decapode(quote
+    B::DualForm0{X}
+    E::Form1{X}
+    σ::Form1{X}
+    J::Form1{X}
+    (negone,c,ε₀)::Constant{X}
+
+    ∂ₜ(E) == ((negone * (J - σ .* E))./ε₀) + ((c * c).*(⋆₁⁻¹(d₀(B))))
+
+    ∂ₜ(B) == ⋆₂(d₁(E))
+  end))
+  Veronis_rec_del = recursive_delete_parents(Veronis, incident(Veronis, :Ė, :name))
+  # We should test if Decapodes are isomorphic, but Catlab
+  # doesn't do this yet.
+  #@test Veronis_rec_del == SummationDecapode(parse_decapode(quote
+  #  B::DualForm0{X}
+  #  E::Form1{X}
+
+  #  ∂ₜ(B) == ⋆₂(d₁(E))
+  #end))
+  @test Veronis_rec_del ==  @acset SummationDecapode{Any, Any, Symbol} begin
+    Var  = 4
+    TVar = 1
+    Op1  = 3
+
+    type = [:DualForm0, :Form1, :infer, :infer]
+    name = [:B, :E, :Ḃ, Symbol("•11")]
+    
+    incl = [3]
+
+    src = [4, 1, 2]
+    tgt = [3, 3, 4]
+
+    op1 = [:⋆₂, :∂ₜ, :d₁]
+  end
 end
+
