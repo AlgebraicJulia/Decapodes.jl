@@ -181,13 +181,13 @@ fₘ = man_simulate(earth, generate)
     #tₑ = 0.5
     prob = ODEProblem(fₘ,u₀,(0, tₑ), constants_and_parameters)
     #prob = ODEProblem(fₘ,U,(0, tₑ), constants_and_parameters)
-    solve(prob, Tsit5())
+    soln = solve(prob, Tsit5())
 #end
 
-fig, ax, ob = GLMakie.mesh(primal_earth, color = findnode(soln(0), :U))
+fig, ax, ob = GLMakie.mesh(primal_earth, color = Array(soln(0)[1:nv(earth)]))
 for t in range(0.0, tₑ; length=300)
-    sleep(0.001)
-    ob.color = findnode(soln(t), :U)
+    sleep(0.01)
+    ob.color = Array(soln(t)[1:nv(earth)])
 end
 
 
