@@ -6,8 +6,6 @@ using Catlab.Programs
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
-using CombinatorialSpaces
-using CombinatorialSpaces.ExteriorCalculus
 using LinearAlgebra
 using MLStyle
 using Base.Iterators

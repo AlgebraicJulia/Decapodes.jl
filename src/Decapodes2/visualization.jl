@@ -7,15 +7,21 @@ import Decapodes: infer_states, infer_state_names
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
 
-reg_to_sub = Dict('0'=>'₀', '1'=>"₁", '2'=>'₂', '3'=>'₃', '4'=>'₄',
-    '5'=>'₅', '6'=>'₆','7'=>'₇', '8'=>'₈', '9'=>'₉', 'r'=>'•')
+#= reg_to_sub = Dict('0'=>'₀', '1'=>"₁", '2'=>'₂', '3'=>'₃', '4'=>'₄',
+    '5'=>'₅', '6'=>'₆','7'=>'₇', '8'=>'₈', '9'=>'₉', 'r'=>'•', 'l'=>'L', ) =#
 
-toSub(digit::Char) = get(reg_to_sub, digit, digit)
+reg_to_sub = Dict("Form0"=>'₀', "Form1"=>"₁", "Form2"=>'₂', "Form3"=>'₃', 
+                  "DualForm0"=>'₀', "DualForm1"=>"₁", "DualForm2"=>'₂', "DualForm3"=>'₃', 
+                  "infer"=>'•', "Literal"=>'L', "Constant"=>'C', "Parameter"=>'P', )
+
+toSub(digit::String) = get(reg_to_sub, digit, digit)
 
 spacename(d, v) = begin
     t = d[v, :type]
-    subscript = toSub(last(String(t)))
+    subscript = toSub(String(t))
     dom = startswith(String(t), "Dual") ? "Ω̃" : "Ω"
+    # TODO: To get rid of omega for non-form types
+    # dom = endswith(String(t), r"[0-9]") ? dom : ""
     return "$dom$subscript"
 end
 varname(d, v) = "$(d[v, :name]):$(spacename(d, v))"

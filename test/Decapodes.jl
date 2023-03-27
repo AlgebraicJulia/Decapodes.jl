@@ -52,8 +52,12 @@ module DecapodesTest
 	add_vertices!(s, 4, point=points)
 	glue_sorted_triangle!(s, 1,2,3)
 	glue_sorted_triangle!(s, 2,3,4)
-
-	sd = dual(s);
+  s[:edge_orientation] = false
+  s[:tri_orientation] = false
+  orient!(s)
+  sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}(s)
+  subdivide_duals!(sd, Barycenter())
+	#sd = dual(s);
 
 	funcs = sym2func(sd)
 	funcs[:k] = Dict(:operator => 1.0 * I(ne(sd)), :type => MatrixFunc())

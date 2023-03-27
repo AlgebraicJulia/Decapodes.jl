@@ -34,29 +34,43 @@ end
 add new variable names to all the variables that don't have names.
 """
 function fill_names!(d::AbstractNamedDecapode)
-    bulletcount = 1
-    for i in parts(d, :Var)
-        if !isassigned(d[:,:name],i) || isnothing(d[i, :name])
-            d[i,:name] = Symbol("•$bulletcount")
-            bulletcount += 1
-        end
-    end
-    for e in incident(d, :∂ₜ, :op1)
-        s = d[e,:src]
-        t = d[e, :tgt]
-        d[t, :name] = append_dot(d[s,:name])
-    end
-    return d
-end
-
-function make_sum_unique!(d::AbstractNamedDecapode)
-  num = 1
-  for (i, name) in enumerate(d[:name])
-    if(name == :sum)
-      d[i, :name] = Symbol(join([String(name), string(num)] , "_"))
-      num += 1
+  bulletcount = 1
+  for i in parts(d, :Var)
+    if !isassigned(d[:,:name],i) || isnothing(d[i, :name])
+      d[i,:name] = Symbol("•$bulletcount")
+      bulletcount += 1
     end
   end
+  for e in incident(d, :∂ₜ, :op1)
+    s = d[e,:src]
+    t = d[e, :tgt]
+    d[t, :name] = append_dot(d[s,:name])
+  end
+  return d
+end
+
+function make_sum_mult_unique!(d::AbstractNamedDecapode)
+  snum = 1
+  mnum = 1
+  for (i, name) in enumerate(d[:name])
+    if(name == :sum)
+      d[i, :name] = Symbol("sum_$(snum)")
+      snum += 1
+    elseif(name == :mult)
+      d[i, :name] = Symbol("mult_$(mnum)")
+      mnum += 1
+    end
+  end
+end
+
+# Note: This hard-bakes in Form0 through Form2, and higher Forms are not
+# allowed.
+function recognize_types(d::AbstractNamedDecapode)
+  unrecognized_types = setdiff(d[:type], [:Form0, :Form1, :Form2, :DualForm0,
+                          :DualForm1, :DualForm2, :Literal, :Parameter,
+                          :Constant, :infer])
+  isempty(unrecognized_types) ||
+    error("Types $unrecognized_types are not recognized.")
 end
 
 function expand_operators(d::AbstractNamedDecapode)
@@ -574,4 +588,3 @@ end
 resolve_overloads!(d::SummationDecapode) =
   resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
 
-+
