@@ -244,6 +244,10 @@ function compile(d::SummationDecapode, inputs::Vector)
     # FIXME: this is a quadratic implementation of topological_sort inlined in here.
     op_order = []
     for iter in 1:(nparts(d, :Op1) + nparts(d,:Op2)) + nparts(d, :Σ)
+        # TODO: Here we need to check the type of the target
+        # If it is typed with a form, then we can assign the proper vector 
+        # and we can grab the matrix of the operator and use a mul! operation
+        # If we want to ignore the optimization, then we just create as normal
         for op in parts(d, :Op1)
             s = d[op, :src]
             if !consumed1[op] && visited[s]
@@ -262,6 +266,9 @@ function compile(d::SummationDecapode, inputs::Vector)
             end
         end
 
+        # TODO: Only thing we can really do here is vectorize any base op2s,
+        # this includes +, -, *, / If we know the type of the result, then 
+        # preallocate the array and vectorize the whole line, .= included
         for op in parts(d, :Op2)
             arg1 = d[op, :proj1]
             arg2 = d[op, :proj2]
@@ -278,6 +285,7 @@ function compile(d::SummationDecapode, inputs::Vector)
             end
         end
 
+        # Since this is just summation, this is similar to the above
         for op in parts(d, :Σ)
             args = subpart(d, incident(d, op, :summation), :summand)
             if !consumedΣ[op] && all(visited[args])
