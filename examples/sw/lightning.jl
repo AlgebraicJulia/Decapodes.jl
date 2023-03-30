@@ -41,13 +41,28 @@ Point2D = Point2{Float64}
 
 # See Veronis section 2.
 # Determine normalizing constant
+# TODO: Can we use Convex.jl instead?
 imax = MAX_r
-dr = Δr
-HeidlerForη = t -> (t / T1)^n / (1 + ((t / T1)^n)) * exp(-1.0 * t / T2)
-ddtHeidlerForη = t -> (exp(-1.0 * t / T2) * (t/T1)^n * ((t*(-1.0 * (t/T1)^n - 1)) + n*T2)) /
-  (t * T2 * ((t/T1)^n + 1)^2)
-time_for_k = find_zero(ddtHeidlerForη, (1.0, 100.0))
-k = HeidlerForη(time_for_k)
+#dr = Δr
+# TODO: Should this distribution should reach its max at 50 microseconds?
+HeidlerForη = t -> (t / τ₁)^n / (1 + ((t /τ₁)^n)) * exp(-1.0 * t / τ₁)
+ddtHeidlerForη = t -> (exp(-1.0 * t / τ₁) * (t/τ₁)^n * ((t*(-1.0 * (t/τ₁)^n - 1)) + n*τ₂)) /
+  (t * τ₂ * ((t/τ₁)^n + 1)^2)
+#HeidlerForη = t -> (t / T1)^n / (1 + ((t /T1)^n)) * exp(-1.0 * t / T1)
+#ddtHeidlerForη = t -> (exp(-1.0 * t / T1) * (t/T1)^n * ((t*(-1.0 * (t/T1)^n - 1)) + n*T2)) /
+#  (t * T2 * ((t/T1)^n + 1)^2)
+#time_for_k = find_zero(ddtHeidlerForη, (1.0, 100.0))
+time_for_k = find_zero(ddtHeidlerForη, (1.0e-6, 100.0e-6))
+plot(0.0:1.0e-8:100.0e-6, HeidlerForη)
+plot(0.0:1.0e-5:1.5e-3, x -> log(HeidlerForη(x)*1e6))
+a = map(0.0:1.0e-5:1.5e-3) do x
+  log(HeidlerForη(x)*1e6)
+end
+#a[1] = a[2] # Set this manually to something not -Inf
+plot(0.0:1.0e-5:1.5e-3, a)
+plot(0.0:1.0e-5:1.5e-3, a, ylims=(-17,13))
+plot(0.0:1.0e-8:100.0e-6, ddtHeidlerForη)
+k = HeidlerForη(time_for_k) # Risetime?
 #max_index = imax/c * dr/dt; # Determine the last time index to be used
 #time_vector = 0:dt:(max_index-1)*dt; # Make a vector for each time instance
 #I_norm_vector = ((time_vector./T1).^10)./(1+(time_vector./T1).^10).*exp(-time_vector./T2); # Calculate the outputs of the Heidlar equation without the scaling constants
@@ -55,22 +70,24 @@ k = HeidlerForη(time_for_k)
 #I_max_index = find(I_norm_vector == I_max); # Find the index at which the max value s reached
 #I_max_time = dt*(I_max_index-1); # At what time instance does the max value occur
 #k = I_max; # Normalization factor typically notated as eta according to danny thesis Eq 5-14
-I_max =k 
+I_max = k 
 η = k # Not impedance of free space.
 #Δz = 100000.0 / 20.0
 #Δr = 400000.0 / 30.0
-Δz = 0.2e3
-Δρ = 1.0e3
-z₀ = 3 * Δz # TODO: We can generalize to not use this particular grid spacing.
-ρ₀ = 3 * Δρ # TODO: We can generalize to not use this particular grid spacing.
+#Δz = 0.2e3
+#Δρ = 1.0e3
+#z₀ = 3 * Δz # TODO: We can generalize to not use this particular grid spacing.
+#ρ₀ = 3 * Δρ # TODO: We can generalize to not use this particular grid spacing.
+z₀ = 1.0e3
+ρ₀ = 1.0e3
 t = 0.5
 #zvec = collect(0.0:Δz:100.0)
-zvec = collect(0.0:Δz:100_000.0)
-tret = t .- zvec./v # Current time instance
+#zvec = collect(0.0:Δz:100_000.0)
+#tret = t .- zvec./v # Current time instance
 n = 10
-temp = (tret./T1).^n   # within parenthesis of Heidlar equation |n = 10
-I = Io/k * temp./(1 .+ temp) .* exp.(-tret./T2) .* (tret .> 0)
-Jₛ₀ = I
+#temp = (tret./T1).^n   # within parenthesis of Heidlar equation |n = 10
+#I = I₀/k * temp./(1 .+ temp) .* exp.(-tret./T2) .* (tret .> 0)
+#Jₛ₀ = I
 
 #vmag = 5
 #velocity(p) = TangentBasis(CartesianPoint(p))(vmag/4, vmag/4)
@@ -89,9 +106,10 @@ function compute_J(ρ, z, t)
   #tret = t .- zvec./v # Current time instance
   tret = t - z / v
   n = 10
-  temp = (tret/T1)^n   # within parenthesis of Heidlar equation |n = 10
+  #temp = (tret/τ₁)^n   # within parenthesis of Heidlar equation |n = 10
+  temp = (tret/τ₁)^n   # within parenthesis of Heidlar equation |n = 10
   #I = Io/k * temp./(1 .+ temp) .* exp.(-tret./T2) .* (tret .> 0)
-  I = Io/k * temp/(1 + temp) * exp(-tret/T2) * (tret > 0)
+  I = I₀/k * temp/(1 + temp) * exp(-tret/τ₂) * (tret > 0)
   Jₛ₀ = I
   a = 10.0 * 1e3
   # Note that these ρ₀ and z₀ are chosen for numerical stability.
@@ -99,7 +117,8 @@ function compute_J(ρ, z, t)
   # They do not "break the paradigm" in any unusual way.
   #a = 1.0e3
   # If the altitude is less than a, there is no decay in the in the z direction.
-  if z < a
+  #if z < a
+  if z ≤ a
     return Jₛ₀ * e ^ (-1.0 * ρ^2 / ρ₀^2)
     #return Jₛ₀ * e ^ (-ρ^2)
   else
@@ -114,16 +133,16 @@ end
 
 J_testing = map(sd[:point]) do p
   #compute_J(p[1] *1e3, p[3] *1e3, 50.0)
-  compute_J(p[1] *1e3, p[3] *1e3, 50.0)
+  compute_J(p[1] *1e3, p[3] *1e3, 500.0e-6)
 end
-J_testing_just_dual = map(sd[:dual_point]) do p
-  #compute_J(p[1], p[2], 20.0)
-  #compute_J(p[1] *1e3, p[3] *1e3, 50.0)
-  # Note: This assumes Cartesian coordinates.
-  #compute_J(p[1] *1e3, p[2] *1e3, 50.0)
-  #compute_J(p[1] *1e3, p[3] *1e3, 50.0)
-  compute_J(p[1] *1e3, p[3] *1e3, 50.0)
-end
+#J_testing_just_dual = map(sd[:dual_point]) do p
+#  #compute_J(p[1], p[2], 20.0)
+#  #compute_J(p[1] *1e3, p[3] *1e3, 50.0)
+#  # Note: This assumes Cartesian coordinates.
+#  #compute_J(p[1] *1e3, p[2] *1e3, 50.0)
+#  #compute_J(p[1] *1e3, p[3] *1e3, 50.0)
+#  compute_J(p[1] *1e3, p[3] *1e3, 50.0)
+#end
 #Jₛ₀ = J_testing
 extrema(J_testing)
 mesh(s, color=J_testing)
@@ -141,9 +160,13 @@ flatten_form(vfield::Function, mesh) =  ♭(mesh,
 scatter(map(x -> compute_J(x[1]*1e3, x[3]*1e3, 50.0), sd[triangle_center(sd),:dual_point]))
 any(Jₛ .!= 0.0)
 #Jₛ = flatten_form(x -> [0.0, 0.0, compute_J(x[1]*1e3, x[2]*1e3, 100.0)], sd)
-Jₛ = flatten_form(x -> [0.0, 0.0, compute_J(x[1]*1e3, x[3]*1e3, 50.0)], sd)
+Jₛ = flatten_form(x -> [0.0, 0.0, compute_J(x[1]*1e3, x[3]*1e3, 500.0e-6)], sd)
 # Plot the divergence of Jₛ. i.e. ⋆(d(Jₛ))
-save("J_flattened_divergence.png", mesh(s, color=inv_hodge_star(0,sd,hodge=GeometricHodge()) * dual_derivative(1, sd) * Jₛ)
+mesh(s, color=inv_hodge_star(0,sd,hodge=GeometricHodge()) * dual_derivative(1, sd) * Jₛ, colormap=:jet)
+save("J_flattened_divergence.png", mesh(s, color=inv_hodge_star(0,sd,hodge=GeometricHodge()) * dual_derivative(1, sd) * Jₛ))
+#Jₛ = flatten_form(x -> [0.0, 0.0, -0.2], sd)
+#mesh(s, color=Jₛ)
+any(Jₛ .!= 0.0)
 
 Heidler = SummationDecapode(parse_decapode(quote
   (I, J_mask, Jₛ)::Form1{X} # (In the z direction)
@@ -155,14 +178,16 @@ Heidler = SummationDecapode(parse_decapode(quote
   #tret == m * dt - zvec./v # Current time instance
   tret == t - zvec./v # Current time instance
   temp == (tret./T1).^10   # within parenthesis of Heidlar equation |n = 10
-  I == I₀/k * temp./(1+temp) .* exp(-tret./T2) .* (tret > 0);        
+  I == I₀/k * temp./(1+temp) .* exp(-tret./T2) .* (tret > 0)
   ∂ᵨ₀()
 
   Jₛ == I .* J_mask
   #flux == I .* J_mask
   #Jₛ == d(flux)
-
 end))
+
+E = VForm(zeros(ne(s)))
+B = DualForm1(zeros(ne(sd)))
 
 # Initialize reduced electric field, θ
 θ = nothing
@@ -173,6 +198,8 @@ E₀ = nothing
   θ = 1e21/1e6 * E ./ avg₀₁(density[:gas]) # Danny Dissert p 91 theta = E/n
 #end
 
+# Note: Tn is assumed of same dimensions as other 0-Forms.
+Tn = zeros(nv(s))
 qe = 1.602e-19 # Charge of electron (coul)
 # Initial conductivity
 sigma = zeros(nv(s))
@@ -183,7 +210,7 @@ for p in vertices(s)
   else
     # From Danny Dissert p.92 eq 5-2b
     # Note: Pasko et al. 1997 go into this equation.
-    sigma[p] = qe * 3.656e25 * density[p, :e] ./ density[p, :gas] .* sqrt(200.0 / Tn[p])
+    sigma[p] = qe * 3.656e25 * density[:e][p] / density[:gas][p] * sqrt(200.0 / Tn[p])
   end
 end
 
@@ -192,7 +219,6 @@ end
 ###########
 # Primal_time: J,B,Nₑ
 # Dual_time: E,Nₑ,θ,σ
-
 # Optional flag that has symbols of TVars you want to compute.
 # (i.e. this gaurantees that you don't compute things you don't want.)
 # This meshes well with https://docs.sciml.ai/DiffEqDocs/latest/solvers/dynamical_solve/
@@ -223,7 +249,9 @@ Veronis = SummationDecapode(parse_decapode(quote
   (qe,c,ε₀)::Constant{X}
   dt::Constant{X}
   θ::Form1{X} # The reduced electric field. This has units of Volts*M*M
+  ρ_e::Form0{X}
   ρ_gas::Form0{X}
+  Tn::Form0{X}
 
   # Equations 1 & 2
   #∂ₜ(E) == -(J - σ * E)/ε₀ + (c * c)*(⋆(d(B)))
@@ -231,10 +259,10 @@ Veronis = SummationDecapode(parse_decapode(quote
   Ė == ∂ₜ(E)
 
   #TODO: Handle half-timestepping in compile.
-  # See SimplecticIntegrators
+  # See SymplecticIntegrators
   # J and B must be updated on the same space, but different time. (E separate
   # also.)
-  Eₕ == E + (Ė)*dt
+  #Eₕ == E + (Ė)*dt
   # Equation 3
   Ḃ == ⋆₂(d₁(E))
   Ḃ == ∂ₜ(B)
@@ -245,10 +273,11 @@ Veronis = SummationDecapode(parse_decapode(quote
   # not consider electron temperature variation nor species density variation.)
   θ == 1e21/1e6 * E ./ avg₀₁(ρ_gas)
 
-
   # Note: There may be a way to compute more efficiently with knowledge of which
   # values will be masked.
-  Eq5_2a_mask == theta .> (0.0603 * sqrt(200 ./ Tn))
+  # Note: You may also be able to use parameters to encode things that directly
+  # depend on coordinates.
+  Eq5_2a_mask == θ .> (0.0603 * sqrt(200 ./ Tn))
   Eq5_2b_mask == invert_mask(Eq5_2a_mask)
   # Danny Dissert p 92 5-2a
   Eq5_2a == qe * ρ_e ./ ρ_gas *
@@ -259,15 +288,18 @@ Veronis = SummationDecapode(parse_decapode(quote
 
   σ == (Eq5_2a_mask .*  Eq5_2a) + (Eq5_2b_mask .*  Eq5_2b)
 end))
+to_graphviz(Veronis)
 
 #############
 # Constants #
 #############
 temp = (return_time ./ rise_time) .^ 10 # Relative time difference.
 peak_current = I₀
-Io = 250.0  # Pulled from Danny thesis page 107 [kA]
+I₀ = 250.0e3  # Pulled from Danny thesis page 107 [kA]     # Convert from input integer to kA by multiplying by e3
 T1 = 50.0   # From Danny thesis Table 5-1 column 1 [us]
 T2 = 1000.0 # [us]
+τ₁ = T1 .*1e-6    # Convert from input integer to us
+τ₂ = T2 .*1e-6    # Convert from input integer to us
 ε₀ = 8.854e-12    # Permittivity of free space (F m-1)
 μ₀ = 4*π*1e-7    # Permeability of free space (H m-1)
 c = sqrt(1/ε₀/μ₀) # Speed of light
@@ -286,9 +318,7 @@ constants_and_parameters = (
   n = 10.0, # Normalizing constant for Heilder.
   e = e,
   # convert inputs to proper units
-  I₀ = Io .*1e3,     # Convert from input integer to kA
-  τ₁ = T1 .*1e-6,    # Convert from input integer to us
-  τ₂ = T2 .*1e-6,    # Convert from input integer to us
+  I₀ = I₀,
   v = 2/3 * c        # Approximate speed of prop. of lightning strike through medium.
   )
 
@@ -305,14 +335,19 @@ scaling_mat_to_unit_square = Diagonal([1/maximum(p -> p[1], s[:point]),
 scaling_mat_to_final_dimensions = Diagonal([MAX_r,
                                             MAX_Z,
                                             1.0])
+#scaling_mat_to_final_dimensions = Diagonal([5,
+#                                            20, #TODO
+#                                            1.0])
 scaling_mats = scaling_mat_to_final_dimensions * scaling_mat_to_unit_square
 s[:point] = map(x -> scaling_mats * x, s[:point])
 s[:edge_orientation] = false
 orient!(s)
 # Visualize the mesh.
 GLMakie.wireframe(s)
-sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
+sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Circumcenter())
+sd[:point] = map(x -> Point3{Float64}([x[1], x[3], x[2]]), sd[:point])
+sd[:dual_point] = map(x -> Point3{Float64}([x[1], x[3], x[2]]), sd[:dual_point])
 sd
 
 #############
@@ -506,7 +541,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
   op = @match my_symbol begin
     :invert_mask => x -> (!).(x)
-    :k => x->2000x
     :μ => x->-0.0001x
     # :μ => x->-2000x
     :β => x->2000*x
