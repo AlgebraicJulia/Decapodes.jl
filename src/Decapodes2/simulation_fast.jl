@@ -6,6 +6,7 @@ using LinearAlgebra
 using Base.Iterators
 using Decapodes
 using Catlab.ACSetInterface
+using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
 
 struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
@@ -33,14 +34,14 @@ end
 
 Base.Expr(c::UnaryCall) = begin
     operator = c.operator
-    if isa(operator, AbstractArray)
+    #= if isa(operator, AbstractArray)
         operator = Expr(:call, :∘, reverse(operator)...)
-    end
+    end =#
     if(c.equality == :.=)
-        return Expr(:call, :mul!, c.output, operator, c.input)
+        Expr(:call, :mul!, c.output, operator, c.input)
+    else
+        Expr(c.equality, c.output, Expr(:call, operator, c.input))
     end
-
-    return Expr(c.equality, c.output, Expr(:call, c.operator, c.input))
 end
                 
 struct BinaryCall <: AbstractCall 
@@ -70,18 +71,6 @@ Base.Expr(c::VarargsCall) = begin
         operator = :(compose($(c.operator)))
     end =#
     return Expr(c.equality, c.output, Expr(:call, c.operator, c.inputs...))
-end
-
-Base.Expr(c::NonBroadcastingVarargsCall) = begin
-    operator = c.operator
-    arglist = c.inputs
-    return :($(c.output) = $operator($(arglist...)))
-end
-
-Base.Expr(c::BroadcastingVarargsCall) = begin
-    operator = c.operator
-    arglist = c.inputs
-    return :($(c.output) .= $operator($(arglist...)))
 end
 
 # TODO: Need to figure out how to deal with duals
@@ -130,6 +119,10 @@ function is_infer(d::SummationDecapode, var_name::Symbol)
     return is_infer(d, var_id)
 end
 
+function add_stub(stub_name::Symbol, var_name::Symbol)
+    return Symbol("$(stub_name)_$(var_name)")
+end
+
 
 function infer_states(d::SummationDecapode)
     vars = map(parts(d, :Var)) do v
@@ -148,7 +141,7 @@ end
 infer_state_names(d) = d[infer_states(d), :name]
 
 # This will be the function generation and the matrix, vector preallocation
-function compile_env(d::AbstractNamedDecapode)
+function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol})
     assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./])
     defined_ops = Set()
   
@@ -177,6 +170,7 @@ function compile_env(d::AbstractNamedDecapode)
   
       ops = QuoteNode(op)
       def = :($op = operators(mesh, $ops))
+        
       push!(defs.args, def)
   
       push!(defined_ops, op)
@@ -227,7 +221,7 @@ function set_tanvars_code(d::AbstractNamedDecapode)
     return stmts
 end
 
-function compile(d::SummationDecapode, inputs::Vector)
+function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symbol})
     # Get the Vars of the inputs (probably state Vars).
     visited_Var = falses(nparts(d, :Var))
 
@@ -243,7 +237,9 @@ function compile(d::SummationDecapode, inputs::Vector)
                                   :.+ => :.+, :.- => :.-, :.* => :.*, :./ => :./, :.= => :.=)
 
     optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₁⁻¹, 
-    :d₀, :d₁, :dual_d₀, :d̃₀, ])
+                                    :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
+                                    :δ₀, :δ₁,
+                                    :Δ₀, :Δ₁, :Δ₂])
 
     # FIXME: this is a quadratic implementation of topological_sort inlined in here.
     op_order = []
@@ -259,15 +255,23 @@ function compile(d::SummationDecapode, inputs::Vector)
                     continue
                 end
 
+                equality = :(=)
+
                 # TODO: Check to see if this is a DEC operator
-                if(is_form(d, t))
-                    equality = promote_arithmetic_map[equality]
+                if(operator in optimizable_dec_operators)
+                    push!(dec_matrices, operator)
+
+                    if(is_form(d, t))
+                        equality = promote_arithmetic_map[equality]
+                        operator = add_stub(:M, operator)
+                    end
                 end
+
                 sname = d[s, :name]
                 tname = d[t, :name]
 
                 visited_Var[t] = true
-                c = UnaryCall(operator, :(=), sname, tname)
+                c = UnaryCall(operator, equality, sname, tname)
                 push!(op_order, c)
             end
         end
@@ -370,14 +374,17 @@ function gensim(d::AbstractNamedDecapode, input_vars)
     infer_types!(d′)
     resolve_overloads!(d′)
 
+    dec_matrices = Vector{Symbol}();
+
     vars = get_vars_code(d′, input_vars)
     tars = set_tanvars_code(d′)
     # We need to run this after we grab the constants and parameters out
-    resolve_types_compiler!(d::SummationDecapode)
+    resolve_types_compiler!(d)
 
-    defs = compile_env(d′)
     # rhs = compile(d′, input_vars)
-    equations = compile(d′, input_vars)
+    equations = compile(d′, input_vars, dec_matrices)
+    println(dec_matrices)
+    defs = compile_env(d′, dec_matrices)
     quote
         function simulate(mesh, operators)
             $defs
