@@ -31,19 +31,15 @@ struct UnaryCall <: AbstractCall
     output
 end
 
-#= Base.Expr(c::UnaryCall) = begin
-    operator = c.operator
-    if isa(c.operator, AbstractArray)
-        operator = Expr(:call, :∘, reverse(operator)...)
-    end
-    return :($(c.output) = $operator($(c.input)))
-end =#
-
 Base.Expr(c::UnaryCall) = begin
     operator = c.operator
     if isa(operator, AbstractArray)
         operator = Expr(:call, :∘, reverse(operator)...)
     end
+    if(c.equality == :.=)
+        return Expr(:call, :mul!, c.output, operator, c.input)
+    end
+
     return Expr(c.equality, c.output, Expr(:call, c.operator, c.input))
 end
                 
@@ -70,7 +66,6 @@ struct VarargsCall <: AbstractCall
 end
 
 Base.Expr(c::VarargsCall) = begin
-    # equality = c.equality
     #= if isa(c.operator, AbstractArray)
         operator = :(compose($(c.operator)))
     end =#
@@ -124,6 +119,15 @@ end
 function is_literal(d::SummationDecapode, var_name::Symbol)
     var_id = first(incident(d, var_name, :name))
     return is_literal(d, var_id)
+end
+
+function is_infer(d::SummationDecapode, var_id::Int)
+    return (d[var_id, :type] == :infer)
+end
+
+function is_infer(d::SummationDecapode, var_name::Symbol)
+    var_id = first(incident(d, var_name, :name))
+    return is_infer(d, var_id)
 end
 
 
@@ -235,7 +239,11 @@ function compile(d::SummationDecapode, inputs::Vector)
     visited_2 = falses(nparts(d, :Op2))
     visited_Σ = falses(nparts(d, :Σ))
 
-    promote_arithmetic_map = Dict(:(+) => :.+, :(-) => :.-, :(*) => :.*, :(/) => :./, :(=) => :.=)
+    promote_arithmetic_map = Dict(:(+) => :.+, :(-) => :.-, :(*) => :.*, :(/) => :./, :(=) => :.=,
+                                  :.+ => :.+, :.- => :.-, :.* => :.*, :./ => :./, :.= => :.=)
+
+    optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₁⁻¹, 
+    :d₀, :d₁, :dual_d₀, :d̃₀, ])
 
     # FIXME: this is a quadratic implementation of topological_sort inlined in here.
     op_order = []
@@ -250,17 +258,20 @@ function compile(d::SummationDecapode, inputs::Vector)
                 if operator == DerivOp
                     continue
                 end
-                visited_Var[t] = true
+
+                # TODO: Check to see if this is a DEC operator
+                if(is_form(d, t))
+                    equality = promote_arithmetic_map[equality]
+                end
                 sname = d[s, :name]
                 tname = d[t, :name]
+
+                visited_Var[t] = true
                 c = UnaryCall(operator, :(=), sname, tname)
                 push!(op_order, c)
             end
         end
 
-        # TODO: Only thing we can really do here is vectorize any base op2s,
-        # this includes +, -, *, / If we know the type of the result, then 
-        # preallocate the array and vectorize the whole line, .= included
         for op in parts(d, :Op2)
             arg1 = d[op, :proj1]
             arg2 = d[op, :proj2]
@@ -269,15 +280,35 @@ function compile(d::SummationDecapode, inputs::Vector)
                 a1name = d[arg1, :name]
                 a2name = d[arg2, :name]
                 rname  = d[r, :name]
+
                 operator = d[op, :op2]
+                equality = :(=)
+
+                # TODO: Add call to preallocate result
+                # TODO: Check to make sure that this logic never breaks
+                if(is_form(d, r))
+                    if(operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-)
+                        operator = promote_arithmetic_map[operator]
+                        equality = promote_arithmetic_map[equality]
+
+                    elseif(operator == :(*) || operator == :(/) || operator == :.* || operator == :./)
+                        # WARNING: This part may break if we add more compiler types that have different 
+                        # operations for basic and broadcast modes, e.g. matrix multiplication vs broadcast
+                        if(!is_infer(d, arg1) && !is_infer(d, arg2))
+                            operator = promote_arithmetic_map[operator]
+                            equality = promote_arithmetic_map[equality]
+                        end
+                    end
+
+                end
+
                 visited_2[op] = true
                 visited_Var[r] = true
-                c = BinaryCall(operator, :(=), a1name, a2name, rname)
+                c = BinaryCall(operator, equality, a1name, a2name, rname)
                 push!(op_order, c)
             end
         end
 
-        # Since this is just summation, this is similar to the above
         for op in parts(d, :Σ)
             args = subpart(d, incident(d, op, :summation), :summand)
             if !visited_Σ[op] && all(visited_Var[args])
@@ -304,14 +335,6 @@ function compile(d::SummationDecapode, inputs::Vector)
     end
 
     return assigns = map(Expr, op_order)
-    # ret = :(return)
-    # ret.args = d[d[:,:incl], :name]
-    #= return quote f(du, u, p, t) = begin
-        $(get_vars_code(d, inputs))
-        $(assigns...)
-        du .= 0.0
-        $(set_tanvars_code(d, inputs))
-    end; end =#
 end
 
 function recognize_types(d::AbstractNamedDecapode)
@@ -361,7 +384,7 @@ function gensim(d::AbstractNamedDecapode, input_vars)
             f(du, u, p, t) = begin
                 $vars
                 $(equations...)
-                du .= 0.0
+                # du .= 0.0
                 $(tars...)
             end;
         end
@@ -370,3 +393,75 @@ end
 
 gensim(d::AbstractNamedDecapode) = gensim(d,
     vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]))
+
+function compiler_dec_matrix_generate(sd, my_symbol, hodge=GeometricHodge())
+    
+    op = @match my_symbol begin
+
+        # Regular Hodge Stars
+        :⋆₀ => dec_hodge(0, sd, hodge)
+        :⋆₁ => dec_hodge(1, sd, hodge)
+        :⋆₂ => dec_hodge(1, sd, hodge)
+
+        # Inverse Hodge Stars
+        :⋆₀⁻¹ => dec_inverse_hodge(0, sd, hodge)
+        :⋆₁⁻¹ => dec_inverse_hodge(1, sd, hodge)
+
+        # Differentials
+        :d₀ => dec_differential(0, sd)
+        :d₁ => dec_differential(1, sd)
+
+        # Dual Differentials
+        :dual_d₀ || :d̃₀ => dec_dual_differential(0, sd)
+        :dual_d₁ || :d̃₁ => dec_dual_differential(1, sd)
+
+        # Codifferential
+        # TODO: Why do we have a matrix type parameter which is unused?
+        :δ₀ => dec_codifferential(0, sd, hodge)
+        :δ₁ => dec_codifferential(1, sd, hodge)
+
+        # Laplace-de Rham
+        :Δ₀ => dec_laplace_de_rham(0, sd)
+        :Δ₁ => dec_laplace_de_rham(1, sd)
+        :Δ₂ => dec_laplace_de_rham(2, sd)
+
+        x => error("Unmatched operator $my_symbol")
+    end
+
+    return (args...) ->  op(args...)
+end
+
+function dec_hodge(k, sd::HasDeltaSet, hodge)
+    hodge = ⋆(k,sd,hodge=hodge)
+    return (hodge, x-> hodge * x)
+end
+
+function dec_inverse_hodge(k, sd::HasDeltaSet, hodge)
+    invhodge = inv_hodge_star(k,sd,hodge)
+    return (invhodge, x-> invhodge * x)
+end
+
+function dec_differential(k, sd::HasDeltaSet)
+    diff = d(k,sd)
+    return (diff, x-> diff * x)
+end
+
+function dec_dual_differential(k, sd::HasDeltaSet)
+    dualdiff = dual_derivative(k,sd)
+    return (dualdiff, x-> dualdiff * x)
+end
+
+function dec_codifferential(k, sd::HasDeltaSet, hodge)
+    codiff = δ(k, sd, hodge, nothing)
+    return (codiff, x-> codiff * x)
+end
+
+function dec_laplace_de_rham(k, sd::HasDeltaSet)
+    lpdr = Δ(k, sd)
+    return (lpdr, x-> lpdr * x)
+end
+
+function dec_laplace_beltrami(k, sd::HasDeltaSet)
+    lpbt = ∇²(k, sd)
+    return (lpbt, x-> lpbt * x)
+end
