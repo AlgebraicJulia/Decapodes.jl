@@ -1136,12 +1136,12 @@ end
     Op1  = 3
 
     type = [:DualForm0, :Form1, :infer, :infer]
-    name = [:B, :E, :Ḃ, Symbol("•11")]
+    name = [:B, :E, :sum_1, :Ḃ]
     
-    incl = [3]
+    incl = [4]
 
-    src = [4, 1, 2]
-    tgt = [3, 3, 4]
+    src = [3, 1, 2]
+    tgt = [4, 4, 3]
 
     op1 = [:⋆₂, :∂ₜ, :d₁]
   end

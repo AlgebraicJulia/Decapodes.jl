@@ -10,8 +10,9 @@ using LinearAlgebra
 using GeometryBasics: Point3
 using TerminalLoggers
 using Logging
-using CUDA
-using StaticArrays
+using BenchmarkTools
+using GLMakie
+
 global_logger(TerminalLogger())
 
 Point3D = Point3{Float64}
@@ -28,7 +29,7 @@ end
 
 begin
     primal_earth = loadmesh(Icosphere(5))
-    primal_earth = EmbeddedDeltaSet2D("Icosphere8.obj")
+    # primal_earth = EmbeddedDeltaSet2D("Icosphere8.obj")
     nploc = argmax(x -> x[3], primal_earth[:point])
     primal_earth[:edge_orientation] .= false
     orient!(primal_earth)
@@ -42,14 +43,14 @@ begin
         (U2V, One, aTU)::Form0{X}
         (U̇, V̇)::Form0{X}
 
-        (fourfour, threefour, α)::Constant{X}
+        (α)::Constant{X}
         F::Parameter{X}
 
         U2V == (U .* U) .* V
         aTU == α * Δ(U)
         
-        U̇ == One + U2V - (fourfour * U) + aTU + F
-        V̇ == (threefour * U) - U2V + aTU
+        U̇ == One + U2V - (4.4 * U) + aTU + F
+        V̇ == (3.4 * U) - U2V + aTU
 
         ∂ₜ(U) == U̇
         ∂ₜ(V) == V̇
@@ -93,8 +94,8 @@ function man_simulate(mesh, operators)
                 U = (findnode(u, :U)).values
                 V = (findnode(u, :V)).values
                 One = p.One
-                fourfour = p.fourfour
-                threefour = p.threefour
+                var"4.4" = 4.4
+                var"3.4" = 3.4
                 α = p.α
                 F = p.F(t)
             end
@@ -104,8 +105,8 @@ function man_simulate(mesh, operators)
             var"•1" .= U .* U
             U2V .= var"•1" .* V
             aTU .= α .* var"•2"
-            var"•4" .= fourfour .* U
-            var"•6" .= threefour .* U
+            var"•4" .= var"4.4" .* U
+            var"•6" .= var"3.4" .* U
             var"•5" .= var"•6" .- U2V
             sum_1 .= One .+ U2V
             (findnode(du, :V)).values .= var"•5" .+ aTU
@@ -137,8 +138,6 @@ begin
     F₂ = zeros(nv(earth))
 
     constants_and_parameters = (
-        fourfour = 4.4,
-        threefour = 3.4,
         α = 0.001,
         F = t -> t ≥ 1.1 ? F₁ : F₂,
         One = One)
@@ -146,12 +145,12 @@ begin
     u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V)],Float64[], [:U, :V])
     tₑ = 11.5
     prob = ODEProblem(fₘ,u₀,(0, tₑ), constants_and_parameters)
-    soln = solve(prob, Tsit5(), save_everystep = false)
+    soln = solve(prob, Tsit5())
 end
 
-fig, ax, ob = GLMakie.mesh(primal_earth, color = findnode(soln(tₑ), :U))
+fig, ax, ob = GLMakie.mesh(primal_earth, color = findnode(soln(0), :U))
 for t in range(0.0, tₑ; length=300)
-    sleep(0.1)
+    sleep(0.01)
     ob.color = findnode(soln(t), :U)
 end
 
