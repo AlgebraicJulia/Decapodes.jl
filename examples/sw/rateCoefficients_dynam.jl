@@ -1,3 +1,5 @@
+# TODO: Write this file as a Decapode
+
 rateCoef = Any[i for i in 1:167]
 
 function rateCoefficents_dynam(rateCoef, theta, Tn, Te, useTe)
@@ -108,11 +110,11 @@ function rateCoefficents_dynam(rateCoef, theta, Tn, Te, useTe)
     rateCoef[103] = 0.52 * 2.2e-7 * (300 ./Tn).^(0.2) .* (TeK./Tn).^(-0.39);
 
     rateCoef[104] = 0.05 * 3.5e-7 .* (300 ./Tn) .* (TeK./Tn).^(-0.69);
+    # This call to index is the same for 104 through 109
     index = (Te .> 1.25);
     rateCoef[104][index] = 0;
 
     rateCoef[105] = 0.95 * 3.5e-7 .* (300 ./Tn) .* (TeK./Tn).^(-0.69);
-    # This call to index is the same for 104 through 109
     #index = (Te .> 1.25);
 
     rateCoef[106] = zeros(size(Tn));
@@ -135,16 +137,16 @@ function rateCoefficents_dynam(rateCoef, theta, Tn, Te, useTe)
     rateCoef[111] = 4.2e-6 * (TeK./Tn).^(-0.48);
     rateCoef[112] = 6.5e-6 * (300 ./TeK).^(1/2);   # Recombination rate for cluster order n = 3
 
-    d_array = [10:31, 101:112]
-    d_array = reduce(vcat, collect.(d_array))
+    # Note: red_vec is always empty
+    # Note: This never runs
+    #d_array = [10:31, 101:112]
+    #d_array = reduce(vcat, collect.(d_array))
     #fields = fieldnames(rateCoef);
-    # TODO: red_vec is always empty
-    # TODO: This never runs
-    if(!isempty(red_vec))
-        for i = 1:length(red_vec)
-            reduce = find(red_vec(i) == d_array);
-            red_ind = 130+reduce; # 130 is the number of static rate coefficients
-            rateCoef.(fields{red_ind}) = zeros(size(rateCoef.(fields{red_ind})));
-        end
-    end
+    #if(!isempty(red_vec))
+    #    for i = 1:length(red_vec)
+    #        reduce = find(red_vec(i) == d_array);
+    #        red_ind = 130+reduce; # 130 is the number of static rate coefficients
+    #        rateCoef.(fields{red_ind}) = zeros(size(rateCoef.(fields{red_ind})));
+    #    end
+    #end
 end

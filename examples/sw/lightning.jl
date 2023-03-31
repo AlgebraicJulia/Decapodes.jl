@@ -87,9 +87,8 @@ n = 10.0          # Heidler normalizing constant
 # For a rectangular grid discretization, good values are 3Δρ, 3Δz.
 z₀ = 1.0e3        # [km] Heidler normalizing constant
 ρ₀ = 1.0e3        # [km] Heidler normalizing constant
-ρ₀ = 20.0e3        # [km] Heidler normalizing constant
 a = 10.0 * 1e3    # [km] Starting altitude of vertical decay for Heidler
-a = 10.0          # [m] Starting altitude of vertical decay for Heidler
+#a = 10.0          # [m] Starting altitude of vertical decay for Heidler
 
 constants_and_parameters = (
   qₑ = qₑ,
@@ -130,10 +129,9 @@ plot(0.0:1.0e-5:1.5e-3, a)
 plot(0.0:1.0e-8:100.0e-6, ddtHeidlerForη)
 k = HeidlerForη(time_for_k) # Risetime?
 
-# TODO: Move this inside the Heidler Decapode.
-# Perhaps we may need to use a parameter for z.
-# Even though we could pre-calculate these, this would be memory intensive.
-# Call this for all edges.
+# Note: The initial condition for J₀ does not need to be passed to the Decapode
+# at all, since it can be computed solely given the time t.
+# We just have this written in Julia for debugging/ visualization purposes.
 function compute_J(ρ, z, t)
   tret = t - z / v
   n = 10
@@ -151,7 +149,7 @@ J_testing = map(sd[:point]) do p
   compute_J(p[1] *1e3, p[3] *1e3, 150.0e-6)
 end
 extrema(J_testing)
-extrema(log.(J_testing .+ 0.001))
+extrema(log.(J_testing))
 #mesh(s, color=J_testing)
 #save("J_initial.png", mesh(s, color=J_testing))
 fig_mesh, ax_mesh, ob_mesh = mesh(s, color=log.(J_testing))
@@ -235,17 +233,20 @@ end
 ###########
 # Veronis #
 ###########
-#TODO: Handle half-timestepping in compile.
-# See SymplecticIntegrators
+# TODO: Handle half-timestepping in compile by passing an optional list that has
+# the symbols of the TVars that you want to compute.
+# See SymplecticIntegrators: 
+# https://docs.sciml.ai/DiffEqDocs/latest/solvers/dynamical_solve/
+
 # Primal_time: J,B,Nₑ
 # Dual_time: E,Nₑ,θ,σ
-# Optional flag that has symbols of TVars you want to compute.
-# (i.e. this gaurantees that you don't compute things you don't want.)
-# This meshes well with https://docs.sciml.ai/DiffEqDocs/latest/solvers/dynamical_solve/
-# This would also come into play with DEC -> plotting toolkit.
-# Tonti tried to formalize such using 3D layout of diagrams.
-# (~ fields on primal-space-primal-time, or dual-space-dual-time)
-# (~ particles on primal-space-dual-time, or dual-space-primal-time)
+
+# This will be useful also for the DEC -> plotting toolkit.
+
+# Tonti tried to formalize primal-vs-dual time via a 3D layout of diagrams.
+# (~ fields are on primal-space-primal-time, or dual-space-dual-time)
+# (~ particles are on primal-space-dual-time, or dual-space-primal-time)
+
 # "Dual things happening on dual steps makes sense."
 # Default would be to compute primals on primal time, duals on dual time.
 
@@ -254,23 +255,22 @@ end
 
 # Assumptions that allow for cylindrical "pseudo-3D":
 # - Lightning can be restricted to plane.
-# - Magnetic field is orthogonal to this plane.
+# - The magnetic field is orthogonal to this plane.
+
 Veronis = SummationDecapode(parse_decapode(quote
   # TODO: Double check units on these (esp. w.r.t. σ being integrated along
   # edges.)
   B::DualForm0{X}
   E::Form1{X}
-  # NOTE: You might just need σ for updating E, no need to recalculate on the
-  # other time step.
-  σ::Form1{X} # TODO: Maybe define this as a Form0 to avoid issue of integrating
-  # conductivity.
-  J::Form1{X}
-  (qe,c,ε₀)::Constant{X}
-  dt::Constant{X}
   θ::Form1{X}
-  ρ_e::Form0{X}
-  ρ_gas::Form0{X}
-  Tn::Form0{X}
+  J::Form1{X}
+  (ρ_e, ρ_gas, Tn)::Form0{X}
+  # Note: You just need σ for updating E, no need to recalculate on the other
+  # time step.
+  # TODO: Maybe define this as a Form0 to avoid the odd concept of integrated
+  # conductivity.
+  σ::Form1{X}
+  (qe,c,ε₀)::Constant{X}
 
   # See Veronis et al. Equations 1 & 2
   Ė == -(J - σ .* E)./ε₀ + (c^2).*(⋆₁⁻¹(d̃₀(B)))
@@ -351,9 +351,10 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :avg₀₁ => x -> begin
       avg_mat*x
     end
-    :invert_mask => x -> (!).(x)
     :.* => (x,y) -> x .* y
     :./ => (x,y) -> x ./ y
+    :- => x -> -1 * x
+    :invert_mask => x -> (!).(x)
 
     _ => error("Unmatched operator $my_symbol")
   end
