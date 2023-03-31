@@ -70,10 +70,10 @@ sd
 #############
 #temp = (return_time ./ rise_time) .^ 10 # Relative time difference.
 I₀ = 250.0e3      # [kA] See Kotovsky pp. 107
-T1 = 50.0         # [s] See Kotovsky Table 5-1 column 1
-T2 = 1000.0       # [s]
-τ₁ = T1 .*1e-6    # [us]
-τ₂ = T2 .*1e-6    # [us]
+T1 = 50.0         # [us] See Kotovsky Table 5-1 column 1
+T2 = 1000.0       # [us]
+τ₁ = T1 .*1e-6    # [s]
+τ₂ = T2 .*1e-6    # [s]
 ε₀ = 8.854e-12    # [F m⁻¹] Permittivity of free space
 μ₀ = 4*π*1e-7     # [H m⁻¹] Permeability of free space
 η = sqrt(μ₀/ε₀)   # Impedance of free space
