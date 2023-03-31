@@ -73,6 +73,22 @@ Base.Expr(c::VarargsCall) = begin
     return Expr(c.equality, c.output, Expr(:call, c.operator, c.inputs...))
 end
 
+struct AllocVecCall <: AbstractCall 
+    name
+    form
+end
+
+Base.Expr(c::AllocVecCall) = begin
+    if(c.form == 0)
+        return :($(c.name) = Vector{Float64}(undef, nv(mesh)))
+    elseif(c.form == 1)
+        return :($(c.name) = Vector{Float64}(undef, ne(mesh)))
+    elseif(c.form == 2)
+        return :($(c.name) = Vector{Float64}(undef, ntriangles(mesh)))
+    end
+    return :AllocVecCall_Error
+end
+
 # TODO: Need to figure out how to deal with duals
 function get_form_number(d::SummationDecapode, var_id::Int)
     type = d[var_id, :type]
@@ -125,27 +141,33 @@ end
 
 
 function infer_states(d::SummationDecapode)
-    vars = map(parts(d, :Var)) do v
-        if length(incident(d, v, :tgt)) == 0 &&
-            length(incident(d, v, :res)) == 0 &&
-            length(incident(d, v, :sum)) == 0
-            # v isn't a derived value
-            return v
-        else
-            return nothing
-        end
+    filter(parts(d, :Var)) do v
+        length(incident(d, v, :tgt)) == 0 &&
+        length(incident(d, v, :res)) == 0 &&
+        length(incident(d, v, :sum)) == 0 &&
+        d[v, :type] != :Literal
     end
-    return filter(!isnothing, vars)
 end
 
 infer_state_names(d) = d[infer_states(d), :name]
 
-# This will be the function generation and the matrix, vector preallocation
+# This will be the function and matrix generation
 function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol})
     assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./])
     defined_ops = Set()
-  
+
     defs = quote end
+
+    # Could turn this into a special call
+    for op in dec_matrices
+        # def = Expr(:(=), Expr(:tuple, add_stub(:M, op), op), Expr(:call, :compiler_dec_matrix_generate, :mesh, QuoteNode(op), :hodge))
+        quote_op = QuoteNode(op)
+        mat_op = add_stub(:M, op)
+        def = :(($mat_op, $op) = compiler_dec_matrix_generate(mesh, $quote_op, hodge))
+        push!(defs.args, def)
+        push!(defined_ops, op)
+    end
+
     for op in d[:op1]
       if op == DerivOp
         continue
@@ -188,6 +210,10 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol})
     return defs
   end
 
+function compile_var(d::AbstractNamedDecapode, alloc_vectors::Vector{AllocVecCall})
+    return quote $(map(Expr, alloc_vectors)...) end
+end
+
 # This is the block of parameter setting inside f
 # We need to pass this an extra type parameter that sets the type of the floats
 function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
@@ -221,12 +247,14 @@ function set_tanvars_code(d::AbstractNamedDecapode)
     return stmts
 end
 
-function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symbol})
+function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall})
     # Get the Vars of the inputs (probably state Vars).
     visited_Var = falses(nparts(d, :Var))
 
-    input_numbers = incident(d, inputs, :name)
-    visited_Var[collect(flatten(input_numbers))] .= true
+    # input_numbers = incident(d, inputs, :name)
+    input_numbers = reduce(vcat, incident(d, inputs, :name))
+    # visited_Var[collect(flatten(input_numbers))] .= true
+    visited_Var[input_numbers] .= true
     visited_Var[incident(d, :Literal, :type)] .= true
 
     visited_1 = falses(nparts(d, :Op1))
@@ -257,6 +285,9 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
 
                 equality = :(=)
 
+                sname = d[s, :name]
+                tname = d[t, :name]
+
                 # TODO: Check to see if this is a DEC operator
                 if(operator in optimizable_dec_operators)
                     push!(dec_matrices, operator)
@@ -264,11 +295,11 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                     if(is_form(d, t))
                         equality = promote_arithmetic_map[equality]
                         operator = add_stub(:M, operator)
+
+                        push!(alloc_vectors, AllocVecCall(tname, get_form_number(d, t)))
                     end
                 end
 
-                sname = d[s, :name]
-                tname = d[t, :name]
 
                 visited_Var[t] = true
                 c = UnaryCall(operator, equality, sname, tname)
@@ -294,13 +325,16 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                     if(operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-)
                         operator = promote_arithmetic_map[operator]
                         equality = promote_arithmetic_map[equality]
-
+                        push!(alloc_vectors, AllocVecCall(rname, get_form_number(d, r)))
+                    
+                    # TODO: Do we want to support the ability of a user to use the backslash operator?
                     elseif(operator == :(*) || operator == :(/) || operator == :.* || operator == :./)
                         # WARNING: This part may break if we add more compiler types that have different 
                         # operations for basic and broadcast modes, e.g. matrix multiplication vs broadcast
                         if(!is_infer(d, arg1) && !is_infer(d, arg2))
                             operator = promote_arithmetic_map[operator]
                             equality = promote_arithmetic_map[equality]
+                            push!(alloc_vectors, AllocVecCall(rname, get_form_number(d, r)))
                         end
                     end
 
@@ -328,6 +362,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                 if(is_form(d, r))
                     operator = promote_arithmetic_map[operator]
                     equality = promote_arithmetic_map[equality]
+                    push!(alloc_vectors, AllocVecCall(rname, get_form_number(d, r)))
                 end
 
                 visited_Σ[op] = true
@@ -338,7 +373,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
         end
     end
 
-    return assigns = map(Expr, op_order)
+    return map(Expr, op_order)
 end
 
 function recognize_types(d::AbstractNamedDecapode)
@@ -375,19 +410,23 @@ function gensim(d::AbstractNamedDecapode, input_vars)
     resolve_overloads!(d′)
 
     dec_matrices = Vector{Symbol}();
+    alloc_vectors = Vector{AllocVecCall}();
 
     vars = get_vars_code(d′, input_vars)
     tars = set_tanvars_code(d′)
     # We need to run this after we grab the constants and parameters out
-    resolve_types_compiler!(d)
+    resolve_types_compiler!(d′)
 
     # rhs = compile(d′, input_vars)
-    equations = compile(d′, input_vars, dec_matrices)
-    println(dec_matrices)
-    defs = compile_env(d′, dec_matrices)
+    equations = compile(d′, input_vars, dec_matrices, alloc_vectors)
+
+    func_defs = compile_env(d′, dec_matrices)
+    vect_defs = compile_var(d′, alloc_vectors)
+
     quote
-        function simulate(mesh, operators)
-            $defs
+        function simulate(mesh, operators, hodge=GeometricHodge())
+            $func_defs
+            $vect_defs
             f(du, u, p, t) = begin
                 $vars
                 $(equations...)
@@ -401,8 +440,11 @@ end
 gensim(d::AbstractNamedDecapode) = gensim(d,
     vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]))
 
+evalsim(d::AbstractNamedDecapode) = eval(gensim(d))
+evalsim(d::AbstractNamedDecapode, input_vars) = eval(gensim(d, input_vars))
+
+
 function compiler_dec_matrix_generate(sd, my_symbol, hodge=GeometricHodge())
-    
     op = @match my_symbol begin
 
         # Regular Hodge Stars
@@ -435,7 +477,7 @@ function compiler_dec_matrix_generate(sd, my_symbol, hodge=GeometricHodge())
         x => error("Unmatched operator $my_symbol")
     end
 
-    return (args...) ->  op(args...)
+    return op
 end
 
 function dec_hodge(k, sd::HasDeltaSet, hodge)

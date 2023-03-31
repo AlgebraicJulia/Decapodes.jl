@@ -21,6 +21,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
+        # :my_id => x -> id(x)
         _ => default_dec_generate(sd, my_symbol, hodge)
     end
   
@@ -40,11 +41,11 @@ end
 begin
     Brusselator = SummationDecapode(parse_decapode(quote
         (U, V)::Form0{X} 
-        (U2V, One, aTU)::Form0{X}
+        (U2V, aTU)::Form0{X}
         (U̇, V̇)::Form0{X}
 
-        (α)::Constant{X}
-        F::Parameter{X}
+        (α, One)::Constant{X}
+        (F)::Parameter{X}
 
         U2V == (U .* U) .* V
         aTU == α * Δ(U)
@@ -71,10 +72,9 @@ begin
     resolve_overloads!(Brusselator)
 end
   
-function man_simulate(mesh, operators)
+#= function man_simulate(mesh, operators)
     begin
         # Δ₀ = generate(mesh, :Δ₀)
-        mesh = earth
         lpdr0   = Δ(0, mesh)
         var"•2" = Vector{Float64}(undef, nv(mesh))
         U2V     = Vector{Float64}(undef, nv(mesh))
@@ -102,6 +102,7 @@ function man_simulate(mesh, operators)
             # println("--------------------")
             # var"•2" = Δ₀(U)
             mul!(var"•2", lpdr0, U)
+            #mul!(b, d₀, a)
             var"•1" .= U .* U
             U2V .= var"•1" .* V
             aTU .= α .* var"•2"
@@ -114,11 +115,11 @@ function man_simulate(mesh, operators)
             (findnode(du, :U)).values .= var"•3" .+ aTU .+ F
         end
     end
-end
+end =#
 
-# sim = eval(gensim(Brusselator))
-# fₘ = sim(earth, generate)
-fₘ = man_simulate(earth, generate)
+sim = eval(gensim(Brusselator))
+fₘ = sim(earth, generate)
+# fₘ = simulate(earth, generate)
 
 begin
     U = map(earth[:point]) do (_,y,_)
