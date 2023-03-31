@@ -41,8 +41,8 @@ Point3D = Point3{Float64}
 # Load the Mesh #
 #################
 # We assume cylindrical symmetry.
-MAX_r = 400 # km
-MAX_Z = 100 # km
+MAX_r = 400.0e3 # [km]
+MAX_Z = 100.0e3 # [km]
 
 s = loadmesh(Rectangle_30x10())
 scaling_mat_to_unit_square = Diagonal([
@@ -61,6 +61,7 @@ orient!(s)
 GLMakie.wireframe(s)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Circumcenter())
+# Notice that we are storing Z in the second position here.
 sd[:point] = map(x -> Point3{Float64}([x[1], x[3], x[2]]), sd[:point])
 sd[:dual_point] = map(x -> Point3{Float64}([x[1], x[3], x[2]]), sd[:dual_point])
 sd
@@ -119,15 +120,15 @@ constants_and_parameters = (
 HeidlerForη = t -> (t / τ₁)^n / (1 + ((t /τ₁)^n)) * exp(-1.0 * t / τ₁)
 ddtHeidlerForη = t -> (exp(-t / τ₁) * (t/τ₁)^n * ((t*(-(t/τ₁)^n - 1)) + n*τ₂)) /
   (t * τ₂ * ((t/τ₁)^n + 1)^2)
-time_for_k = find_zero(ddtHeidlerForη, (1.0e-6, 100.0e-6))
+time_for_k = find_zero(ddtHeidlerForη, (1.0e-6, 100.0e-6)) # 8.0878657...e-5
 plot(0.0:1.0e-8:100.0e-6, HeidlerForη)
-a = map(0.0:1.0e-5:1.5e-3) do x
+log_Heidler = map(0.0:1.0e-5:1.5e-3) do x
   log(HeidlerForη(x)*1e6)
 end
-a[1] = a[2] # Set this manually to something not -Inf
-plot(0.0:1.0e-5:1.5e-3, a)
+log_Heidler[1] = log_Heidler[2] # Set this manually to something not -Inf
+plot(0.0:1.0e-5:1.5e-3, log_Heidler)
 plot(0.0:1.0e-8:100.0e-6, ddtHeidlerForη)
-k = HeidlerForη(time_for_k) # Risetime?
+k = HeidlerForη(time_for_k) # Risetime? 0.196775...
 
 # Note: The initial condition for J₀ does not need to be passed to the Decapode
 # at all, since it can be computed solely given the time t.
@@ -146,18 +147,19 @@ function compute_J(ρ, z, t)
 end
 
 J_testing = map(sd[:point]) do p
-  compute_J(p[1] *1e3, p[3] *1e3, 150.0e-6)
+  #compute_J(p[1] *1e3, p[3] *1e3, 150.0e-6)
+  compute_J(p[1], p[3], 150.0e-6)
 end
 extrema(J_testing)
 extrema(log.(J_testing))
-#mesh(s, color=J_testing)
-#save("J_initial.png", mesh(s, color=J_testing))
-fig_mesh, ax_mesh, ob_mesh = mesh(s, color=log.(J_testing))
+fig_mesh, ax_mesh, ob_mesh = mesh(s, color=log.(J_testing), colormap=:jet)
 ax_mesh.title = "log(J) from Heidler Model"
+# Plot a red line at the altitude where vertical decay begins.
+lines!([0, MAX_r], [a, a], color=:red)
 for t ∈ range(7.0e-6, 150.0e-6; length=400)
   sleep(0.01)
   ob_mesh.color = log.(map(sd[:point]) do p
-    compute_J(p[1] *1e3, p[3] *1e3, t)
+    compute_J(p[1], p[3], t)
   end)
 end
 
@@ -169,17 +171,19 @@ flatten_form(vfield::Function, mesh) =  ♭(mesh,
 
 # Note: This is written assuming the coordinates are Cartesian.
 divergence_mat = inv_hodge_star(0,sd,hodge=GeometricHodge()) * dual_derivative(1, sd)
-Jₛ = flatten_form(x -> [0.0, 0.0, compute_J(x[1]*1e3, x[3]*1e3, 150.0e-6)], sd)
-## Plot the divergence of Jₛ. i.e. ⋆(d(Jₛ))
-mesh(s, color=divergence_mat * Jₛ, colormap=:jet)
-fig_mesh, ax_mesh, ob_mesh =mesh(s, colormap=:jet, color=log.(abs.(divergence_mat *
-  flatten_form(x -> [0.0, 0.0, compute_J(x[1]*1e3, x[3]*1e3, 150.0e-6)], sd))))
+Jₛ = flatten_form(x -> [0.0, 0.0, compute_J(x[1], x[3], 150.0e-6)], sd)
+# Plot the divergence of Jₛ. i.e. ⋆(d(Jₛ))
+fig_mesh, ax_mesh, ob_mesh = mesh(s, color=log.(abs.(divergence_mat *
+  flatten_form(x -> [0.0, 0.0, compute_J(x[1], x[3], 150.0e-6)], sd)) .+ 1e-15),
+  colormap=:jet)
 ax_mesh.title = "(log⋅abs⋅⋆⋅d)(J) from Heidler Model"
+# Plot a red line at the altitude where vertical decay begins.
+lines!([0, MAX_r], [a, a], color=:red)
 for t ∈ range(7.0e-6, 150.0e-6; length=400)
   sleep(0.001)
   #ob_mesh.color = map(sd[:point]) do p
   ob_mesh.color = log.(abs.(divergence_mat *
-    flatten_form(x -> [0.0, 0.0, compute_J(x[1]*1e3, x[3]*1e3, t)], sd)))
+    flatten_form(x -> [0.0, 0.0, compute_J(x[1], x[3], t)], sd)) .+ 1e-15)
 end
 
 Heidler = SummationDecapode(parse_decapode(quote
@@ -221,7 +225,7 @@ E₀ = nothing
 sigma = zeros(nv(s))
 for p in vertices(s)
   # Note: This is assuming that points in s are in Cartesian coordinates.
-  if s[p, :point][2] < 60.0
+  if s[p, :point][2] < 60.0e3
     sigma[p] = 0.0
   else
     # See Kotovsky pp.92 eq 5-2b

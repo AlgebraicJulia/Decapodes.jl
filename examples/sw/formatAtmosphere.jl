@@ -46,7 +46,7 @@ for curr_species ∈ setdiff(species, [:gas])
   interp_linear = linear_interpolation(chi_zs[:], chi_densities[String(curr_species)][:])
   output_density = VForm(map(sd[:point]) do p
     # TODO: Use an interface that picks out 3 just by giving it symbol z
-    z = p[3]
+    z = p[3] * 1.0e-3
     # The default chi data we have only starts at 60 km, so we set values below this altitude to 0.
     #z < minimum(chi_zs[:]) ? interp_linear(minimum(chi_zs[:])) : interp_linear(z)
     z < minimum(chi_zs[:]) ? 0.0 : interp_linear(z)
@@ -54,7 +54,9 @@ for curr_species ∈ setdiff(species, [:gas])
   densities[curr_species] = output_density
 end
 
-#GLMakie.mesh(sd, color=output_density_N2, colorrange=(2, 100))
+GLMakie.mesh(s, color=densities[:N2])
+GLMakie.mesh(s, color=densities[:O2])
+GLMakie.mesh(s, color=densities[:Yp])
 
 # TODO: Convert cartesian -> cylindrical coordinates
 # z is z
@@ -66,13 +68,14 @@ end
 interp_linear = linear_interpolation(chi_zs[:], vars["Tn"][:])
 outputTemp = VForm(map(sd[:point]) do p
   # TODO: Use an interface that picks out 3 just by giving it symbol z
-  z = p[3]
+  z = p[3] * 1e-3
   # The default chi data we have only starts at 60 km, so we set values below this altitude to the value at 60 km.
   z < minimum(chi_zs[:]) ? interp_linear(minimum(chi_zs[:])) : interp_linear(z)
 end)
 
 #outputDensity.gas = outputDensity.N2 + outputDensity.O2;
 densities[:gas] = VForm(densities[:N2].data + densities[:O2].data)
+GLMakie.mesh(s, color=densities[:gas])
 
 # These are the rate coefficients k1, k2, ...
 outputRateCoef = vars["rateCoef"]
