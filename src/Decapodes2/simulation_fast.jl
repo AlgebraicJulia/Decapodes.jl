@@ -79,18 +79,21 @@ struct AllocVecCall <: AbstractCall
 end
 
 Base.Expr(c::AllocVecCall) = begin
-    if(c.form == 0)
-        return :($(c.name) = Vector{Float64}(undef, nv(mesh)))
-    elseif(c.form == 1)
-        return :($(c.name) = Vector{Float64}(undef, ne(mesh)))
-    elseif(c.form == 2)
-        return :($(c.name) = Vector{Float64}(undef, ntriangles(mesh)))
+    resolved_form = @match c.form begin
+        :Form0 => :V
+        :Form1 => :E
+        :Form2 => :Tri
+        :DualForm0 => :DualV
+        :DualForm1 => :DualE
+        :DualForm2 => :DualTri
+        _ => return :AllocVecCall_Error
     end
-    return :AllocVecCall_Error
+
+    :($(c.name) = Vector{Float64}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end
 
 # TODO: Need to figure out how to deal with duals
-function get_form_number(d::SummationDecapode, var_id::Int)
+#= function get_form_number(d::SummationDecapode, var_id::Int)
     type = d[var_id, :type]
     if(type == :Form0)
         return 0
@@ -106,15 +109,20 @@ end
 function get_form_number(d::SummationDecapode, var_name::Symbol)
     var_id = first(incident(d, var_name, :name))
     return get_form_number(d, var_id)
-end
+end =#
 
 function is_form(d::SummationDecapode, var_id::Int)
-    return (get_form_number(d, var_id) != -1)
+    type = d[var_id, :type]
+    if(type == :Form0 || type == :Form1 || type == :Form2 || 
+        type == :DualForm0 || type == :DualForm1 || type == :DualForm2)
+        return true
+    end
+    return false
 end
 
 function is_form(d::SummationDecapode, var_name::Symbol)
     var_id = first(incident(d, var_name, :name))
-    return (get_form_number(d, var_id) != -1)
+    return is_form(d, var_id)
 end
 
 function is_literal(d::SummationDecapode, var_id::Int)
@@ -296,7 +304,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                         equality = promote_arithmetic_map[equality]
                         operator = add_stub(:M, operator)
 
-                        push!(alloc_vectors, AllocVecCall(tname, get_form_number(d, t)))
+                        push!(alloc_vectors, AllocVecCall(tname, d[t, :type]))
                     end
                 end
 
@@ -325,7 +333,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                     if(operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-)
                         operator = promote_arithmetic_map[operator]
                         equality = promote_arithmetic_map[equality]
-                        push!(alloc_vectors, AllocVecCall(rname, get_form_number(d, r)))
+                        push!(alloc_vectors, AllocVecCall(rname, d[r, :type]))
                     
                     # TODO: Do we want to support the ability of a user to use the backslash operator?
                     elseif(operator == :(*) || operator == :(/) || operator == :.* || operator == :./)
@@ -334,7 +342,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                         if(!is_infer(d, arg1) && !is_infer(d, arg2))
                             operator = promote_arithmetic_map[operator]
                             equality = promote_arithmetic_map[equality]
-                            push!(alloc_vectors, AllocVecCall(rname, get_form_number(d, r)))
+                            push!(alloc_vectors, AllocVecCall(rname, d[r, :type]))
                         end
                     end
 
@@ -362,7 +370,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                 if(is_form(d, r))
                     operator = promote_arithmetic_map[operator]
                     equality = promote_arithmetic_map[equality]
-                    push!(alloc_vectors, AllocVecCall(rname, get_form_number(d, r)))
+                    push!(alloc_vectors, AllocVecCall(rname, d[r, :type]))
                 end
 
                 visited_Σ[op] = true
