@@ -78,14 +78,15 @@ struct AllocVecCall <: AbstractCall
     form
 end
 
+# TODO: Check sizes on dual forms
 Base.Expr(c::AllocVecCall) = begin
     resolved_form = @match c.form begin
         :Form0 => :V
         :Form1 => :E
         :Form2 => :Tri
-        :DualForm0 => :DualV
-        :DualForm1 => :DualE
-        :DualForm2 => :DualTri
+        :DualForm0 => :Tri
+        :DualForm1 => :E
+        :DualForm2 => :V
         _ => return :AllocVecCall_Error
     end
 

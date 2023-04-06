@@ -29,8 +29,8 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
 end
 
 begin
-    primal_earth = loadmesh(Icosphere(5))
-    # primal_earth = EmbeddedDeltaSet2D("Icosphere8.obj")
+    # primal_earth = loadmesh(Icosphere(5))
+    primal_earth = EmbeddedDeltaSet2D("Icosphere8.obj")
     nploc = argmax(x -> x[3], primal_earth[:point])
     primal_earth[:edge_orientation] .= false
     orient!(primal_earth)
@@ -118,7 +118,11 @@ end
 end =#
 
 sim = eval(gensim(Brusselator))
+sim = eval_gensim(Brusselator, CUDA=true, no_infers=true,
+    verbose_errors=true, precision=Float64,
+    primals=[:J, :B], duals=[:E])
 fₘ = sim(earth, generate)
+fₘ = sim(earth)
 # fₘ = simulate(earth, generate)
 
 begin
@@ -146,7 +150,7 @@ begin
     u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V)],Float64[], [:U, :V])
     tₑ = 11.5
     prob = ODEProblem(fₘ,u₀,(0, tₑ), constants_and_parameters)
-    soln = solve(prob, Tsit5())
+    soln = solve(prob, Tsit5(), save_everystep = false)
 end
 
 fig, ax, ob = GLMakie.mesh(primal_earth, color = findnode(soln(0), :U))

@@ -25,6 +25,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
 begin
     RADIUS = 6371+90
     primal_earth = loadmesh(Icosphere(4, RADIUS))
+    # primal_earth = EmbeddedDeltaSet2D("Icosphere8.obj")
     nploc = argmax(x -> x[3], primal_earth[:point])
     primal_earth[:edge_orientation] .= false
     orient!(primal_earth)
@@ -40,8 +41,8 @@ begin
         ϕ::Form1{X}
         ϕ₁::Form1{X}
         ϕ₂::Form1{X}
-        starC::DualForm2{X}
-        lvc::Form1{X}
+        # starC::DualForm2{X}
+        # lvc::Form1{X}
         # Fick's first law
         ϕ₁ ==  ∘(d₀,k,⋆₁)(C)
         # Advective Flux
@@ -57,7 +58,7 @@ begin
     advdiffdp = SummationDecapode(advdiff)
 end
 
-function man_simulate(mesh, operators)
+#= function man_simulate(mesh, operators)
     begin
         #= d₀ = generate(mesh, :d₀)
         k = generate(mesh, :k)
@@ -106,11 +107,11 @@ function man_simulate(mesh, operators)
                     end
                 end
         end
-end
+end =#
 
-# sim = eval(gensim(advdiffdp, [:C, :V]))
-# fₘ = sim(earth, generate)
-fₘ = man_simulate(earth, generate)
+sim = eval(gensim(testadd, [:C, :V]))
+fₘ = sim(earth, generate)
+# fₘ = man_simulate(earth, generate)
 
 begin
     c_dist = MvNormal(nploc[[1,2]], 100[1, 1])
@@ -124,4 +125,10 @@ begin
     tₑ = 10
     prob = ODEProblem(fₘ,u₀,(0, tₑ))
     soln = solve(prob, Tsit5())
+end
+
+fig, ax, ob = GLMakie.mesh(primal_earth, color = findnode(soln(0), :C))
+for t in range(0.0, tₑ; length=300)
+    sleep(0.01)
+    ob.color = findnode(soln(t), :C)
 end

@@ -838,55 +838,13 @@ end
   HeatXfer = apex(heatXfer_cospan)
 
   bespoke_op1_inf_rules = [
-  # Rules for avg where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form1, op = :avg),
-  # Rules for avg where src is unknown.
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form0, op = :avg),
-  # Rules for R₀ where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :R₀),
-  # Rules for R₀ where src is unknown.
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form0, op = :R₀),
-  # Rules for neg where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :neg),
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :neg),
-  (src_type = :Form2, tgt_type = :infer, replacement_type = :Form2, op = :neg),
-  # Rules for neg where src is unknown.
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form0, op = :neg),
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form1, op = :neg),
-  (src_type = :infer, tgt_type = :Form2, replacement_type = :Form2, op = :neg),
-  # Rules for Δ where tgt is unknown.
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :Δ),
-  # Rules for Δ where src is unknown.
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form1, op = :Δ),
-  # Rules for δ where tgt is unknown.
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form0, op = :δ),
-  # Rules for δ where src is unknown.
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form1, op = :δ)]
-
-  bespoke_op2_inf_rules = [
-  # Rules for / where res is unknown.
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :/),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :/),
-  (proj1_type = :Form2, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :/),
-  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :/),
-  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :/),
-  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :/),
-  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form0, op = :/),
-  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form1, op = :/),
-  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form2, op = :/),
-  # Rules for * where res is unknown.
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :*),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :*),
-  (proj1_type = :Form2, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :*),
-  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :*),
-  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :*),
-  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :*),
-  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form0, op = :*),
-  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form1, op = :*),
-  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form2, op = :*)]
+  # Rules for avg.
+  (src_type = :Form0, tgt_type = :Form1, op_names = [:avg]),
+  # Rules for R₀.
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:R₀])]
 
   infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
-    vcat(bespoke_op2_inf_rules, op2_inf_rules_2D))
+    op2_inf_rules_2D)
 
   names_types_hx = zip(HeatXfer[:name], HeatXfer[:type])
 
