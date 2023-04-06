@@ -70,6 +70,7 @@ outputTemp = VForm(map(sd[:point]) do p
   # TODO: Use an interface that picks out 3 just by giving it symbol z
   z = p[3] * 1e-3
   # The default chi data we have only starts at 60 km, so we set values below this altitude to the value at 60 km.
+  # TODO: Maybe just go ahead and set this to 0.0. below 60 km.
   z < minimum(chi_zs[:]) ? interp_linear(minimum(chi_zs[:])) : interp_linear(z)
 end)
 

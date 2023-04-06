@@ -41,8 +41,8 @@ Point3D = Point3{Float64}
 # Load the Mesh #
 #################
 # We assume cylindrical symmetry.
-MAX_r = 400.0e3 # [km]
-MAX_Z = 100.0e3 # [km]
+MAX_r = 400.0e3 # [m]
+MAX_Z = 100.0e3 # [m]
 
 s = loadmesh(Rectangle_30x10())
 scaling_mat_to_unit_square = Diagonal([
@@ -208,7 +208,7 @@ end))
 #############################
 
 E = VForm(zeros(ne(s)))
-B = DualForm{1}(zeros(ne(sd)))
+B = DualForm{1}(zeros(ne(s)))
 
 # Initialize reduced electric field, θ [V m m]
 θ = nothing
@@ -264,10 +264,11 @@ end
 Veronis = SummationDecapode(parse_decapode(quote
   # TODO: Double check units on these (esp. w.r.t. σ being integrated along
   # edges.)
+  # TODO: Compose with ReactionRates, RateSolver, and RateCoefficientsDynamic.
   B::DualForm0{X}
   E::Form1{X}
   θ::Form1{X}
-  J::Form1{X}
+  J::Form1{X} # TODO: Compose with Heidler Decapode.
   (ρ_e, ρ_gas, Tn)::Form0{X}
   # Note: You just need σ for updating E, no need to recalculate on the other
   # time step.
@@ -280,7 +281,7 @@ Veronis = SummationDecapode(parse_decapode(quote
   Ė == -(J - σ .* E)./ε₀ + (c^2).*(⋆₁⁻¹(d̃₀(B)))
   Ė == ∂ₜ(E)
 
-  # See Veronis et al. Equations 3
+  # See Veronis et al. Equation 3
   Ḃ == ⋆₂(d₁(E))
   Ḃ == ∂ₜ(B)
 
@@ -357,7 +358,12 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     end
     :.* => (x,y) -> x .* y
     :./ => (x,y) -> x ./ y
+    # TODO: Will this shorthand cause problems when we are trying to subtract?
     :- => x -> -1 * x
+    :.> => (x,y) -> 1 * (x .> y)
+    :.< => (x,y) -> 1 * (x .< y)
+    :.≤ => (x,y) -> 1 * (x .≤ y)
+    :.≥ => (x,y) -> 1 * (x .≥ y)
     :invert_mask => x -> (!).(x)
 
     _ => error("Unmatched operator $my_symbol")
