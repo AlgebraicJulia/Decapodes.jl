@@ -377,11 +377,29 @@ end
 
 # TODO
 
+#########################
+# Simulation Generation #
+#########################
+
+# Primal_time: J,B,Nₑ
+# Dual_time: E,Nₑ,θ,σ
+
+primal_physics = recurse_delete_parent!(physics, [:E])
+dual_physics = recurse_delete_parent!(physics, [:B])
+
+primal_f = eval(gensim(primal_physics, generate))
+dual_f = eval(gensim(dual_physics, generate))
+
 ###########
 # Solving #
 ###########
 
-# TODO
+#tₑ = 200e-6 # [s]
+tₑ = 1.334e-3 # [s] # How long it takes light to travel 400 km in a vacuum.
+# TODO: Do I need to add {isinplace}?
+prob = DynamicalODEProblem(primal_f, dual_f, v₀, u₀, (0, tₑ), constants_and_parameters)
+# TODO: Pick a dt.
+solve(prob, VerletLeapfrog())
 
 ############
 # Plotting #
