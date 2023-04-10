@@ -22,7 +22,8 @@ export normalize_unicode, DerivOp, append_dot,
   AbstractMeshKey, loadmesh, Icosphere, Rectangle_30x10, Torus_30x10, Point_Map,
   Open, OpenSummationDecapodeOb, OpenSummationDecapode, unique_by, unique_by!, oapply,
   CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat,
-  average_rewrite
+  average_rewrite,
+  @decapode
 
 normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
 normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
