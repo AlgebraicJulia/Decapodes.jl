@@ -54,7 +54,7 @@ end
 
 
 diffExpr = parse_decapode(DiffusionExprBody)
-ddp = NamedDecapode(diffExpr)
+ddp = SummationDecapode(diffExpr)
 gensim(expand_operators(ddp), [:C])
 f = eval(gensim(expand_operators(ddp), [:C]))
 
@@ -110,7 +110,7 @@ AdvDiff = quote
 end
 
 advdiff = parse_decapode(AdvDiff)
-advdiffdp = NamedDecapode(advdiff)
+advdiffdp = SummationDecapode(advdiff)
 gensim(expand_operators(advdiffdp), [:C, :V])
 sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
 
