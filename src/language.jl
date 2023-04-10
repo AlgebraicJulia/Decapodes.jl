@@ -255,6 +255,6 @@ function SummationDecapode(e::DecaExpr)
     return d
 end
 
-macro SummationDecapode(e)
+macro decapode(e)
   :(SummationDecapode(parse_decapode($(Meta.quot(e)))))
 end
