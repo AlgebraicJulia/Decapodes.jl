@@ -80,9 +80,9 @@ import Decapodes: DecaExpr
   sup_cset_named = SummationDecapode(sup_d)
   
   
-  Decapodes.compile(diffusion_cset_named, [:C,])
-  Decapodes.compile(test_cset_named, [:C,])
-  Decapodes.compile(sup_cset_named, [:C,])
+  # Decapodes.compile(diffusion_cset_named, [:C,])
+  # Decapodes.compile(test_cset_named, [:C,])
+  # Decapodes.compile(sup_cset_named, [:C,])
   
   term(:(∧₀₁(C,V)))
 

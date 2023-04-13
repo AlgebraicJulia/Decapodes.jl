@@ -109,7 +109,7 @@ end
         end
 end =#
 
-sim = eval(gensim(testadd, [:C, :V]))
+sim = eval(gensim(advdiffdp, [:C, :V]))
 fₘ = sim(earth, generate)
 # fₘ = man_simulate(earth, generate)
 
