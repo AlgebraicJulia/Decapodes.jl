@@ -32,6 +32,7 @@ struct UnaryCall <: AbstractCall
     output
 end
 
+# TODO: Add back support for contract operators
 Base.Expr(c::UnaryCall) = begin
     operator = c.operator
     #= if isa(operator, AbstractArray)
@@ -52,6 +53,7 @@ struct BinaryCall <: AbstractCall
     output
 end
 
+# TODO: After getting rid of AppCirc2, do we need this check?
 Base.Expr(c::BinaryCall) = begin
     #= if isa(c.operator, AbstractArray)
         operator = :(compose($(c.operator)))
@@ -167,13 +169,17 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol})
 
     defs = quote end
 
-    # Could turn this into a special call
     for op in dec_matrices
-        # def = Expr(:(=), Expr(:tuple, add_stub(:M, op), op), Expr(:call, :compiler_dec_matrix_generate, :mesh, QuoteNode(op), :hodge))
+        if(op in defined_ops)
+            continue
+        end
+
         quote_op = QuoteNode(op)
         mat_op = add_stub(:M, op)
+        # Could turn this into a special call
         def = :(($mat_op, $op) = default_dec_matrix_generate(mesh, $quote_op, hodge))
         push!(defs.args, def)
+
         push!(defined_ops, op)
     end
 
@@ -224,7 +230,7 @@ function compile_var(alloc_vectors::Vector{AllocVecCall})
 end
 
 # This is the block of parameter setting inside f
-# We need to pass this an extra type parameter that sets the type of the floats
+# TODO: Pass this an extra type parameter that sets the size of the Floats
 function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
     stmts = map(vars) do s
         ssymbl = QuoteNode(s)
@@ -252,7 +258,6 @@ function set_tanvars_code(d::AbstractNamedDecapode)
         ssymb = QuoteNode(s)
         :(findnode(du, $ssymb).values .= $t)
     end
-    # return quote $(stmts...) end
     return stmts
 end
 
@@ -328,7 +333,6 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                 operator = d[op, :op2]
                 equality = :(=)
 
-                # TODO: Add call to preallocate result
                 # TODO: Check to make sure that this logic never breaks
                 if(is_form(d, r))
                     if(operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-)
@@ -384,14 +388,6 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
 
     return map(Expr, op_order)
 end
-
-#= function recognize_types(d::AbstractNamedDecapode)
-    unrecognized_types = setdiff(d[:type], [:Form0, :Form1, :Form2, :DualForm0,
-                            :DualForm1, :DualForm2, :Literal, :Parameter,
-                            :Constant, :infer])
-    isempty(unrecognized_types) ||
-      error("Types $unrecognized_types are not recognized.")
-end =#
   
 # TODO: Add more specific types later for optimization
 function resolve_types_compiler!(d::SummationDecapode)
@@ -405,13 +401,13 @@ function resolve_types_compiler!(d::SummationDecapode)
 end
 
 # TODO: Will want to eventually support contracted operations
-function gensim(d::AbstractNamedDecapode, input_vars)
+function gensim(user_d::AbstractNamedDecapode, input_vars)
     # TODO: May want to move this after infer_types if we let users
     # set their own inference rules
-    recognize_types(d)
+    recognize_types(user_d)
 
     # Makes copy
-    d′ = expand_operators(d)
+    d′ = expand_operators(user_d)
     #d′ = average_rewrite(d′)
 
     # Mutates
@@ -423,6 +419,7 @@ function gensim(d::AbstractNamedDecapode, input_vars)
 
     vars = get_vars_code(d′, input_vars)
     tars = set_tanvars_code(d′)
+    
     # We need to run this after we grab the constants and parameters out
     resolve_types_compiler!(d′)
 
@@ -439,7 +436,6 @@ function gensim(d::AbstractNamedDecapode, input_vars)
             f(du, u, p, t) = begin
                 $vars
                 $(equations...)
-                # du .= 0.0
                 $(tars...)
             end;
         end
@@ -618,7 +614,6 @@ function dec_lie_derivative_zero(sd::HasDeltaSet, hodge)
     tmpwedge10 = dec_wedge_product(Tuple{1, 0}, sd)
     (v, x)-> tmphodge1(tmpwedge10(v, x))
 end
-
 
 function dec_p_wedge_product_zero(k, sd)
 

@@ -3,7 +3,6 @@ import Decapodes: compile, gensim, infer_states, infer_state_names
 
 using Catlab
 using Catlab.CategoricalAlgebra
-using Catlab.Graphics
 
 using Test
 
@@ -11,9 +10,9 @@ using MLStyle
 using CombinatorialSpaces
 using GeometryBasics: Point3
 using LinearAlgebra
-using Distributions
+# using Distributions
 using MultiScaleArrays
-using OrdinaryDiffEq
+# using OrdinaryDiffEq
 
 function generate(sd, my_symbol)
   op = @match my_symbol begin

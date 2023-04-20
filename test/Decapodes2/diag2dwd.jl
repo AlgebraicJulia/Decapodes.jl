@@ -843,8 +843,17 @@ end
   # Rules for R₀.
   (src_type = :Form0, tgt_type = :Form0, op_names = [:R₀])]
 
+  bespoke_op2_inf_rules = [
+  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
+
+  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*])]
+
   infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
-    op2_inf_rules_2D)
+    vcat(bespoke_op2_inf_rules, op2_inf_rules_2D))
 
   names_types_hx = zip(HeatXfer[:name], HeatXfer[:type])
 
