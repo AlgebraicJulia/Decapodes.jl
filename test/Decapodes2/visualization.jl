@@ -102,7 +102,7 @@ t4 = to_graphviz(Test4, directed = false, verbose = false)
 @test Graphviz.filter_statements(t4, Graphviz.Node, :label) == ["A:Ω₀", "A:Ω₀", "•:Ω₀", "•:Ω₀", ":Ω₀"]
 
 t5 = to_graphviz(Test4, directed = false, verbose = true)
-@test Graphviz.filter_statements(t4, Graphviz.Node, :label) == ["/A:Ω₀", "A:Ω₀", "/•:Ω₀", "•/:Ω₀", "/:Ω₀"]
+@test Graphviz.filter_statements(t5, Graphviz.Node, :label) == ["/A:Ω₀", "A:Ω₀", "/•:Ω₀", "•/:Ω₀", "/:Ω₀"]
 
 Test6 = SummationDecapode(parse_decapode(quote
            A::Form0
@@ -118,4 +118,4 @@ Test6 = SummationDecapode(parse_decapode(quote
            end))
 
 t6 = to_graphviz(Test6)
-@test Graphviz.filter_statements(t3, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₁", "C:Ω₂", "D:Ω̃₀", "E:Ω̃₁", "F:Ω̃₂", "G:ΩL", "H:ΩP", "I:ΩC", "J:Ω•", "", ""]
+@test Graphviz.filter_statements(t6, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₁", "C:Ω₂", "D:Ω̃₀", "E:Ω̃₁", "F:Ω̃₂", "G:ΩL", "H:ΩP", "I:ΩC", "J:Ω•", "", ""]
