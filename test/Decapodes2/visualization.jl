@@ -98,3 +98,6 @@ end
 
 t4 = to_graphviz(Test4, directed = false, verbose = false)
 @test Graphviz.filter_statements(t4, Graphviz.Node, :label) == ["A:Ω₀", "A:Ω₀", "•:Ω₀", "•:Ω₀", ":Ω₀"]
+
+t5 = to_graphviz(Test4, directed = false, verbose = true)
+@test Graphviz.filter_statements(t4, Graphviz.Node, :label) == ["/A:Ω₀", "A:Ω₀", "/•:Ω₀", "•/:Ω₀", "/:Ω₀"]
