@@ -148,8 +148,10 @@ function oapply_rename(relation::RelationDiagram, decapodes::Vector{D}) where D<
   for b ∈ boxes(r)
     box_name = r[b, :name]
     for v ∈ parts(decapodes_vars[b], :Var)
-      var_name = decapodes_vars[b][v, :name]
-      decapodes_vars[b][v, :name] = Symbol(box_name, '/', var_name)
+      if decapodes_vars[b][v, :type] != :Literal
+        var_name = decapodes_vars[b][v, :name]
+        decapodes_vars[b][v, :name] = Symbol(box_name, '/', var_name)
+      end
     end
   end
 

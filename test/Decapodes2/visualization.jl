@@ -42,7 +42,7 @@ DecaTest2 = quote
   D::Form0{X}
   Ḋ::Form0{X}
 
-  Ḋ == k(A, B) + p(C, B)
+  Ḋ == k(A, B) + p(C, B) - 1
   ∂ₜ(D) == Ḋ 
 end
 
@@ -52,10 +52,12 @@ t2 = to_graphviz(Test2, verbose = true)
 @test Graphviz.filter_statements(t2, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₀", "C:Ω₀", "D:Ω₀", "Ḋ:Ω₀", "1:ΩL", "•1:Ω•", "•2:Ω•", "sum_1:Ω•", "", "", "Ω₀×Ω₀", "Ω₀×Ω₀", "Ω•×ΩL", "Σ1"]
 @test Graphviz.filter_statements(t2, Graphviz.Node, :shape) == ["none", "none", "rectangle", "rectangle", "rectangle", "circle"]
 
+
 t2_undirected = to_graphviz(Test2, directed = false, verbose = true)
 @test Graphviz.filter_statements(t2_undirected, Graphviz.Edge, :label) == ["∂ₜ", "π₁", "π₂", "k", "π₁", "π₂", "p", "π₁", "π₂", "-", "+"]
 @test Graphviz.filter_statements(t2_undirected, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₀", "C:Ω₀", "D:Ω₀", "Ḋ:Ω₀", "1:ΩL", "•1:Ω•", "•2:Ω•", "sum_1:Ω•", "Ω₀×Ω₀", "Ω₀×Ω₀", "Ω•×ΩL", "Σ1"]
 @test Graphviz.filter_statements(t2_undirected, Graphviz.Node, :shape) == ["rectangle", "rectangle", "rectangle", "circle"]
+
 
 # Same decapode as Test2 but with all names the same
 Test3 = @acset SummationDecapode{Any, Any, Symbol}  begin
@@ -101,3 +103,19 @@ t4 = to_graphviz(Test4, directed = false, verbose = false)
 
 t5 = to_graphviz(Test4, directed = false, verbose = true)
 @test Graphviz.filter_statements(t4, Graphviz.Node, :label) == ["/A:Ω₀", "A:Ω₀", "/•:Ω₀", "•/:Ω₀", "/:Ω₀"]
+
+Test6 = SummationDecapode(parse_decapode(quote
+           A::Form0
+           B::Form1
+           C::Form2
+           D::DualForm0
+           E::DualForm1
+           F::DualForm2
+           G::Literal
+           H::Parameter
+           I::Constant
+           J::infer
+           end))
+
+t6 = to_graphviz(Test6)
+@test Graphviz.filter_statements(t3, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₁", "C:Ω₂", "D:Ω̃₀", "E:Ω̃₁", "F:Ω̃₂", "G:ΩL", "H:ΩP", "I:ΩC", "J:Ω•", "", ""]

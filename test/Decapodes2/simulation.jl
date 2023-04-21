@@ -68,7 +68,7 @@ compile(expand_operators(ddp), [:C, :k])
 gensim(ddp)
 
 torus = loadmesh(Torus_30x10())
-c_dist = MvNormal([5, 5], [1.5, 1.5])
+c_dist = MvNormal([5, 5], LinearAlgebra.Diagonal(map(abs2, [1.5, 1.5])))
 c = [pdf(c_dist, [p[1], p[2]]) for p in torus[:point]]
 
 u₀ = construct(PhysicsState, [VectorForm(c)],Float64[], [:C])
@@ -77,17 +77,16 @@ du = construct(PhysicsState, [VectorForm(zero(c))],Float64[], [:C])
 f = eval(gensim(expand_operators(ddp)))
 fₘₛ = f(torus, generate)
 
-
 DiffusionExprBody =  quote
-    (C, Ċ)::Form0{X}
-    ϕ::Form1{X}
-    k::Parameter{ℝ}
+  (C, Ċ)::Form0{X}
+  ϕ::Form1{X}
+  k::Parameter{ℝ}
 
-    # Fick's first law
-    ϕ == k * d₀(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
+  # Fick's first law
+  ϕ == k * d₀(C)
+  # Diffusion equation
+  Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
+  ∂ₜ(C) == Ċ
 end
 
 diffExpr = parse_decapode(DiffusionExprBody)
@@ -98,6 +97,29 @@ compile(expand_operators(ddp), [:C, :k])
 @test infer_state_names(ddp) == [:C, :k]
 @test Decapodes.get_vars_code(ddp, [:k]).args[2] == :(k = p.k(t))
 gensim(ddp)
+
+f = eval(gensim(expand_operators(ddp)))
+fₘₚ = f(torus, generate)
+
+@test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
+
+DiffusionExprBody =  quote
+    (C, Ċ)::Form0{X}
+    ϕ::Form1{X}
+
+    # Fick's first law
+    ϕ == 3 * d₀(C)
+    # Diffusion equation
+    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
+    ∂ₜ(C) == Ċ
+end
+
+diffExpr = parse_decapode(DiffusionExprBody)
+ddp = SummationDecapode(diffExpr)
+gensim(ddp)
+
+@test infer_state_names(ddp) == [:C]
+@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2] == :(var"3" = 3.0)
 
 f = eval(gensim(expand_operators(ddp)))
 fₘₚ = f(torus, generate)

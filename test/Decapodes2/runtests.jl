@@ -31,3 +31,7 @@ end
 @testset "Visualization" begin
   include(joinpath(@__DIR__, "visualization.jl"))
 end
+
+@testset "Rewrite" begin
+  include(joinpath(@__DIR__, "rewrite.jl"))
+end
