@@ -205,7 +205,7 @@ function Decapode(e::DecaExpr)
     var_id = add_part!(d, :Var, type=(judgement._2, judgement._3))
     symbol_table[judgement._1._1] = var_id
   end
-  deletions = Vector{Int64}()
+  deletions = Vector{Int}()
   for eq in e.equations
     eval_eq!(eq, d, symbol_table, deletions)
   end
@@ -223,7 +223,7 @@ function SummationDecapode(e::DecaExpr)
       symbol_table[judgement._1._1] = var_id
     end
 
-    deletions = Vector{Int64}()
+    deletions = Vector{Int}()
     for eq in e.equations
       eval_eq!(eq, d, symbol_table, deletions)
     end
