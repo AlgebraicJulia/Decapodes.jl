@@ -205,31 +205,13 @@ function Decapode(e::DecaExpr)
     var_id = add_part!(d, :Var, type=(judgement._2, judgement._3))
     symbol_table[judgement._1._1] = var_id
   end
-  deletions = Vector{Int64}()
+  deletions = Vector{Int}()
   for eq in e.equations
     eval_eq!(eq, d, symbol_table, deletions)
   end
   rem_parts!(d, :Var, sort(deletions))
   recognize_types(d)
   return d
-end
-
-function NamedDecapode(e::DecaExpr)
-    d = NamedDecapode{Any, Any, Symbol}()
-    symbol_table = Dict{Symbol, Int}()
-    for judgement in e.judgements
-      var_id = add_part!(d, :Var, name=judgement._1._1, type=judgement._2)
-      symbol_table[judgement._1._1] = var_id
-    end
-    deletions = Vector{Int64}()
-    for eq in e.equations
-      eval_eq!(eq, d, symbol_table, deletions)
-    end
-    rem_parts!(d, :Var, sort(deletions))
-    fill_names!(d)
-    d[:name] = map(normalize_unicode,d[:name])
-    recognize_types(d)
-    return d
 end
 
 function SummationDecapode(e::DecaExpr)
@@ -241,7 +223,7 @@ function SummationDecapode(e::DecaExpr)
       symbol_table[judgement._1._1] = var_id
     end
 
-    deletions = Vector{Int64}()
+    deletions = Vector{Int}()
     for eq in e.equations
       eval_eq!(eq, d, symbol_table, deletions)
     end
@@ -255,6 +237,6 @@ function SummationDecapode(e::DecaExpr)
     return d
 end
 
-macro SummationDecapode(e)
+macro decapode(e)
   :(SummationDecapode(parse_decapode($(Meta.quot(e)))))
 end

@@ -79,10 +79,10 @@ function preprocess_average_rewrite(deca_source::SummationDecapode)
     RHS = []
 
     SuperMatch = []
-    SuperVarMap = Vector{Int64}()
-    SuperOp2Map = Vector{Int64}()
-    SuperSigmaMap = Vector{Int64}()
-    SuperSummandMap = Vector{Int64}()
+    SuperVarMap = Vector{Int}()
+    SuperOp2Map = Vector{Int}()
+    SuperSigmaMap = Vector{Int}()
+    SuperSummandMap = Vector{Int}()
 
     serial = 0
     # Process all of the target rewrites for op2
@@ -227,8 +227,8 @@ function process_average_rewrite(deca_source::SummationDecapode)
     RHS = []
 
     SuperMatch = []
-    SuperVarMap = Vector{Int64}()
-    SuperOp1Map = Vector{Int64}()
+    SuperVarMap = Vector{Int}()
+    SuperOp1Map = Vector{Int}()
 
     varSerial = 0
     sumSerial = 0

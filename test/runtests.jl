@@ -1,17 +1,38 @@
 using Test
 
-@testset "Decapodes" begin
-  include("Decapodes.jl")
+@testset "Construction" begin
+  include("diag2dwd.jl")
 end
 
-@testset "PetriNets" begin
-  include("PetriNets.jl")
+@testset "SummationDecapode Construction" begin
+  include("summation.jl")
 end
 
-@testset "Examples" begin
-  include("Examples.jl")
+@testset "Composition" begin
+  include("composition.jl")
 end
 
-@testset verbose = true "Decapodes2" begin
-  include(joinpath(@__DIR__, "Decapodes2", "runtests.jl"))
+@testset "Coordinates" begin
+  include("coordinates.jl")
 end
+
+@testset "Mesh Loading" begin
+  include("meshes.jl")
+end
+
+@testset "MultiScaleArrays.jl Integration" begin
+  include("multiscalearrays.jl")
+end
+
+@testset "Average Rewriting" begin
+  include("rewrite.jl")
+end
+
+@testset "Simulation" begin
+  include("simulation.jl")
+end
+
+@testset "Visualization" begin
+  include("visualization.jl")
+end
+
