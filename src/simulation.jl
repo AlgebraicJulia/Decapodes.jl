@@ -9,6 +9,8 @@ using Catlab.ACSetInterface
 using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
 
+import Catlab.Programs.GenerateJuliaPrograms: compile
+
 struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
     values::Vector{B}
 end

@@ -9,12 +9,10 @@ using Catlab.CSetDataStructures
 import Decapodes: OpenSummationDecapode, Open, oapply, oapply_rename
 # @testset "Composition" begin
 # Simplest possible decapode relation.
-TrivialExprBody = quote
+Trivial = @decapode begin 
   H::Form0{X}
 end
 
-trivalExpr = parse_decapode(TrivialExprBody)
-Trivial = SummationDecapode(trivalExpr)
 trivial_relation = @relation () begin
   trivial(H)
 end

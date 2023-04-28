@@ -32,6 +32,8 @@ to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; directed, kw...))
 
 decapode_edge_label(s::Symbol) = String(s)
 decapode_edge_label(s::Vector{Symbol}) = join(String.(s), "⋅")
+decapode_edge_label(s::String) = s
+decapode_edge_label(s::Vector{String}) = join(s, "⋅")
 
 
 function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode, directed = true; kw...)

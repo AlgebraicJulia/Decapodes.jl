@@ -134,6 +134,29 @@ f = eval(gensim(expand_operators(ddp)))
 fₘₚ = f(torus, generate)
 
 @test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
+
+DiffusionExprBody =  quote
+    (C, Ċ)::Form0{X}
+    ϕ::Form1{X}
+
+    # Fick's first law
+    ϕ == 3 * d₀(C)
+    # Diffusion equation
+    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
+    ∂ₜ(C) == Ċ
+end
+
+diffExpr = parse_decapode(DiffusionExprBody)
+ddp = SummationDecapode(diffExpr)
+gensim(ddp)
+
+@test infer_state_names(ddp) == [:C]
+@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2] == :(var"3" = 3.0)
+
+f = eval(gensim(expand_operators(ddp)))
+fₘₚ = f(torus, generate)
+
+@test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
  
 # to solve the ODE over a duration, use the ODEProblem from OrdinaryDiffEq
 # tₑ = 10
