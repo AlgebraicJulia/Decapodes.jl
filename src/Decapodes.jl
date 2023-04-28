@@ -8,6 +8,7 @@ using Catlab.Programs
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
+using Catlab.ACSetInterface
 using LinearAlgebra
 using MLStyle
 using Base.Iterators
@@ -18,11 +19,12 @@ export normalize_unicode, DerivOp, append_dot,
   SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, Decapode, NamedDecapode, SummationDecapode, fill_names!, expand_operators, add_constant!, add_parameter, infer_types!, resolve_overloads!, op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D, op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D,
   Term, Var, Judge, Eq, AppCirc1, AppCirc2, App1, App2, Plus, Tan, term, parse_decapode,
   VectorForm, PhysicsState, findname, findnode,
-  compile, compile_env, gensim, closest_point, flat_op,
+  compile, compile_env, gensim, evalsim, closest_point, flat_op,
   AbstractMeshKey, loadmesh, Icosphere, Rectangle_30x10, Torus_30x10, Point_Map,
   Open, OpenSummationDecapodeOb, OpenSummationDecapode, unique_by, unique_by!, oapply,
   CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat,
-  average_rewrite,
+  average_rewrite, recursive_delete_parents, contract_operators,
+  default_dec_matrix_generate, default_dec_generate, 
   @decapode
 
 normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
