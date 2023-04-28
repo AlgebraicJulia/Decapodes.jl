@@ -118,13 +118,13 @@ function is_form(d::SummationDecapode, var_id::Int)
         type == :DualForm0 || type == :DualForm1 || type == :DualForm2)
 end
 
-is_form(d::SummationDecapode, var_name::Symbol) = return is_form(d, first(incident(d, var_name, :name)))
+is_form(d::SummationDecapode, var_name::Symbol) = is_form(d, first(incident(d, var_name, :name)))
 
-is_literal(d::SummationDecapode, var_id::Int) = return (d[var_id, :type] == :Literal)
-is_literal(d::SummationDecapode, var_name::Symbol) = return is_literal(d, first(incident(d, var_name, :name)))
+is_literal(d::SummationDecapode, var_id::Int) = (d[var_id, :type] == :Literal)
+is_literal(d::SummationDecapode, var_name::Symbol) = is_literal(d, first(incident(d, var_name, :name)))
 
-is_infer(d::SummationDecapode, var_id::Int) = return (d[var_id, :type] == :infer)
-is_infer(d::SummationDecapode, var_name::Symbol) = return is_infer(d, first(incident(d, var_name, :name)))
+is_infer(d::SummationDecapode, var_id::Int) = (d[var_id, :type] == :infer)
+is_infer(d::SummationDecapode, var_name::Symbol) = is_infer(d, first(incident(d, var_name, :name)))
 
 add_stub(stub_name::Symbol, var_name::Symbol) = return Symbol("$(stub_name)_$(var_name)")
 
