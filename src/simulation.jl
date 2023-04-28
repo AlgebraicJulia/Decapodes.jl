@@ -4,7 +4,6 @@ using OrdinaryDiffEq
 using GeometryBasics
 using LinearAlgebra
 using Base.Iterators
-using Decapodes
 using Catlab.ACSetInterface
 using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
@@ -95,7 +94,6 @@ Base.Expr(c::AllocVecCall) = begin
     :($(c.name) = Vector{Float64}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end
 
-# TODO: Need to figure out how to deal with duals
 #= function get_form_number(d::SummationDecapode, var_id::Int)
     type = d[var_id, :type]
     if(type == :Form0)
@@ -116,39 +114,20 @@ end =#
 
 function is_form(d::SummationDecapode, var_id::Int)
     type = d[var_id, :type]
-    if(type == :Form0 || type == :Form1 || type == :Form2 || 
+    return (type == :Form0 || type == :Form1 || type == :Form2 || 
         type == :DualForm0 || type == :DualForm1 || type == :DualForm2)
-        return true
-    end
-    return false
 end
 
-function is_form(d::SummationDecapode, var_name::Symbol)
-    var_id = first(incident(d, var_name, :name))
-    return is_form(d, var_id)
-end
+is_form(d::SummationDecapode, var_name::Symbol) = return is_form(d, first(incident(d, var_name, :name)))
 
-function is_literal(d::SummationDecapode, var_id::Int)
-    return (d[var_id, :type] == :Literal)
-end
+is_literal(d::SummationDecapode, var_id::Int) = return (d[var_id, :type] == :Literal)
+is_literal(d::SummationDecapode, var_name::Symbol) = return is_literal(d, first(incident(d, var_name, :name)))
 
-function is_literal(d::SummationDecapode, var_name::Symbol)
-    var_id = first(incident(d, var_name, :name))
-    return is_literal(d, var_id)
-end
+is_infer(d::SummationDecapode, var_id::Int) = return (d[var_id, :type] == :infer)
+is_infer(d::SummationDecapode, var_name::Symbol) = return is_infer(d, first(incident(d, var_name, :name)))
 
-function is_infer(d::SummationDecapode, var_id::Int)
-    return (d[var_id, :type] == :infer)
-end
+add_stub(stub_name::Symbol, var_name::Symbol) = return Symbol("$(stub_name)_$(var_name)")
 
-function is_infer(d::SummationDecapode, var_name::Symbol)
-    var_id = first(incident(d, var_name, :name))
-    return is_infer(d, var_id)
-end
-
-function add_stub(stub_name::Symbol, var_name::Symbol)
-    return Symbol("$(stub_name)_$(var_name)")
-end
 
 function infer_states(d::SummationDecapode)
     filter(parts(d, :Var)) do v
@@ -447,14 +426,13 @@ gensim(d::AbstractNamedDecapode) = gensim(d,
 evalsim(d::AbstractNamedDecapode) = eval(gensim(d))
 evalsim(d::AbstractNamedDecapode, input_vars) = eval(gensim(d, input_vars))
 
-
 function default_dec_matrix_generate(sd, my_symbol, hodge=GeometricHodge())
     op = @match my_symbol begin
 
         # Regular Hodge Stars
         :⋆₀ => dec_mat_hodge(0, sd, hodge)
         :⋆₁ => dec_mat_hodge(1, sd, hodge)
-        :⋆₂ => dec_mat_hodge(1, sd, hodge)
+        :⋆₂ => dec_mat_hodge(2, sd, hodge)
 
         # Inverse Hodge Stars
         :⋆₀⁻¹ => dec_mat_inverse_hodge(0, sd, hodge)
@@ -520,9 +498,6 @@ function dec_mat_laplace_beltrami(k, sd::HasDeltaSet)
 end
 
 function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
-
-    # TODO: Need to change to cached version
-    i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
     
     op = @match my_symbol begin
 
@@ -531,33 +506,6 @@ function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
         :neg => x-> -x
         :.* => (x,y) -> x .* y
         :./ => (x,y) -> x ./ y
-
-        # Regular Hodge Stars
-        :⋆₀ => dec_hodge(0, sd, hodge)
-        :⋆₁ => dec_hodge(1, sd, hodge)
-        :⋆₂ => dec_hodge(2, sd, hodge)
-
-        # Inverse Hodge Stars
-        :⋆₀⁻¹ => dec_inverse_hodge(0, sd, hodge)
-        :⋆₁⁻¹ => dec_inverse_hodge(1, sd, hodge)
-
-        # Differentials
-        :d₀ => dec_differential(0, sd)
-        :d₁ => dec_differential(1, sd)
-
-        # Dual Differentials
-        :dual_d₀ || :d̃₀ => dec_dual_differential(0, sd)
-        :dual_d₁ || :d̃₁ => dec_dual_differential(1, sd)
-
-        # Codifferential
-        # TODO: Why do we have a matrix type parameter which is unused?
-        :δ₀ => dec_codifferential(0, sd, hodge)
-        :δ₁ => dec_codifferential(1, sd, hodge)
-
-        # Laplace-de Rham
-        :Δ₀ => dec_laplace_de_rham(0, sd)
-        :Δ₁ => dec_laplace_de_rham(1, sd)
-        :Δ₂ => dec_laplace_de_rham(2, sd)
 
         # Wedge products
         :∧₀₀ => (f, g) -> wedge_product(Tuple{0,0}, sd, x, y)
@@ -573,43 +521,10 @@ function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
     return (args...) ->  op(args...)
 end
 
-function dec_hodge(k, sd::HasDeltaSet, hodge)
-    hodge = ⋆(k,sd,hodge=hodge)
-    x-> hodge * x
-end
-
-function dec_inverse_hodge(k, sd::HasDeltaSet, hodge)
-    invhodge = inv_hodge_star(k,sd,hodge)
-    x-> invhodge * x
-end
-
-function dec_differential(k, sd::HasDeltaSet)
-    diff = d(k,sd)
-    x-> diff * x
-end
-
-function dec_dual_differential(k, sd::HasDeltaSet)
-    dualdiff = dual_derivative(k,sd)
-    x-> dualdiff * x
-end
-
-function dec_codifferential(k, sd::HasDeltaSet, hodge)
-    codiff = δ(k, sd, hodge, nothing)
-    x -> codiff * x
-end
-
-function dec_laplace_de_rham(k, sd::HasDeltaSet)
-    lpdr = Δ(k, sd)
-    x -> lpdr * x
-end
-
-function dec_laplace_beltrami(k, sd::HasDeltaSet)
-    lpbt = ∇²(k, sd)
-    x -> lpbt * x
-end
-
 function dec_lie_derivative_zero(sd::HasDeltaSet, hodge)
-    tmphodge1 = dec_hodge(1, sd, hodge)
+    M_tmphodge1 = ⋆(1,sd,hodge)
+    tmphodge1 = x-> M_tmphodge1 * x
+    # tmphodge1 = dec_hodge(1, sd, hodge)
     tmpwedge10 = dec_wedge_product(Tuple{1, 0}, sd)
     (v, x)-> tmphodge1(tmpwedge10(v, x))
 end

@@ -10,21 +10,52 @@ using MLStyle
 using CombinatorialSpaces
 using GeometryBasics: Point3
 using LinearAlgebra
-# using Distributions
+using Distributions
 using MultiScaleArrays
-# using OrdinaryDiffEq
+using OrdinaryDiffEq
+
+function test_hodge(k, sd::HasDeltaSet, hodge)
+  hodge = ⋆(k,sd,hodge=hodge)
+  x-> hodge * x
+end
+
+function test_inverse_hodge(k, sd::HasDeltaSet, hodge)
+  invhodge = inv_hodge_star(k,sd,hodge)
+  x-> invhodge * x
+end
+
+function test_differential(k, sd::HasDeltaSet)
+  diff = d(k,sd)
+  x-> diff * x
+end
+
+function test_dual_differential(k, sd::HasDeltaSet)
+  dualdiff = dual_derivative(k,sd)
+  x-> dualdiff * x
+end
+
+function test_codifferential(k, sd::HasDeltaSet, hodge)
+  codiff = δ(k, sd, hodge, nothing)
+  x -> codiff * x
+end
+
+function test_laplace_de_rham(k, sd::HasDeltaSet)
+  lpdr = Δ(k, sd)
+  x -> lpdr * x
+end
+
+function dec_laplace_beltrami(k, sd::HasDeltaSet)
+  lpbt = ∇²(k, sd)
+  x -> lpbt * x
+end
 
 function generate(sd, my_symbol)
   op = @match my_symbol begin
+    :⋆₁ => test_hodge(1, sd, DiagonalHodge())
+    :⋆₀⁻¹ => test_inverse_hodge(0, sd, DiagonalHodge())
+    :dual_d₁ => test_dual_differential(1, sd)
     _ => default_dec_generate(sd, my_symbol)
-    #= :⋆₀ => x->⋆(0,sd,hodge=DiagonalHodge())*x
-    :⋆₁ => x->⋆(1, sd, hodge=DiagonalHodge())*x
-    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=DiagonalHodge())
-    :⋆₁⁻¹ => x->inv_hodge_star(1,sd,hodge=DiagonalHodge())*x
-    :d₀ => x->d(0,sd)*x
-    :dual_d₀ => x->dual_derivative(0,sd)*x
-    :dual_d₁ => x->dual_derivative(1,sd)*x
-    :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y) =#
+    # :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
   end
   # return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
   return (args...) ->  op(args...)
@@ -175,6 +206,12 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
   function generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
       :k => x->2000x
+      :d₀ => test_differential(0, sd)
+      :⋆₁ => test_hodge(1, sd, hodge)
+      :⋆₀⁻¹ => test_inverse_hodge(0, sd, hodge)
+      :dual_d₁ => test_dual_differential(1, sd)  
+      :(-) => x-> -x
+      :plus => (+)
       _ => default_dec_generate(sd, my_symbol, hodge)
     end
 
@@ -190,7 +227,6 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
   earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
   subdivide_duals!(earth, Circumcenter())
   
-
   AdvDiff = quote
       C::Form0{X}
       Ċ::Form0{X}
@@ -286,6 +322,7 @@ end
 
   function generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
+      :Δ₀ => test_laplace_de_rham(0, sd)
         _ => default_dec_generate(sd, my_symbol, hodge)
     end
 
