@@ -107,7 +107,6 @@ function expand_operators!(e::AbstractNamedDecapode, d::AbstractNamedDecapode)
   return newvar
 end
 
-
 @present SchSummationDecapode <: SchNamedDecapode begin
   # Σ are the white nodes in the Decapode drawing
   # Summands are the edges that connect white nodes to variables (the projection maps)
@@ -294,6 +293,7 @@ op2_inf_rules_1D = [
   (proj1_type = :Form1, proj2_type = :Literal, res_type = :Form1, op_names = [:/, :./, :*, :.*])]
 
   
+
 """
 These are the default rules used to do type inference in the 2D exterior calculus.
 """
@@ -428,6 +428,7 @@ end
 Infer types of Vars given rules wherein one type is known and the other not.
 """
 function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :op_names), Tuple{Symbol, Symbol, Vector{Symbol}}}}, op2_rules::Vector{NamedTuple{(:proj1_type, :proj2_type, :res_type, :op_names), Tuple{Symbol, Symbol, Symbol, Vector{Symbol}}}})
+
   # This is an optimization so we do not "visit" a row which has no infer types.
   # It could be deleted if found to be not worth maintainability tradeoff.
   types_known_op1 = ones(Bool, nparts(d, :Op1))

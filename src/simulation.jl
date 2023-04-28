@@ -9,8 +9,6 @@ using Catlab.ACSetInterface
 using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
 
-import Catlab.Programs.GenerateJuliaPrograms: compile
-
 struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
     values::Vector{B}
 end
@@ -151,7 +149,6 @@ end
 function add_stub(stub_name::Symbol, var_name::Symbol)
     return Symbol("$(stub_name)_$(var_name)")
 end
-
 
 function infer_states(d::SummationDecapode)
     filter(parts(d, :Var)) do v

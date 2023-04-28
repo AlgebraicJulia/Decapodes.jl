@@ -110,6 +110,7 @@ advdiffdp = SummationDecapode(advdiff)
 # Decapodes.compile(advdiffdp, [:C, :V])
 # Decapodes.compile(expand_operators(advdiffdp), [:C, :V])
 # gensim(expand_operators(advdiffdp), [:C, :V])
+
 sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
 fₘ = sim(periodic_mesh, generate)
 velocity(p) = [-0.5, -0.5, 0.0]
