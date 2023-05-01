@@ -388,10 +388,6 @@ function gensim(user_d::AbstractNamedDecapode, input_vars)
     d′ = expand_operators(user_d)
     #d′ = average_rewrite(d′)
 
-    # Mutates
-    infer_types!(d′)
-    resolve_overloads!(d′)
-
     dec_matrices = Vector{Symbol}();
     alloc_vectors = Vector{AllocVecCall}();
 
@@ -401,6 +397,10 @@ function gensim(user_d::AbstractNamedDecapode, input_vars)
     # We need to run this after we grab the constants and parameters out
     resolve_types_compiler!(d′)
 
+    # Mutates
+    infer_types!(d′)
+    resolve_overloads!(d′)
+    
     # rhs = compile(d′, input_vars)
     equations = compile(d′, input_vars, dec_matrices, alloc_vectors)
 
