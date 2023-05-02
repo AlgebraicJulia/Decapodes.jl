@@ -16,27 +16,25 @@ function get_valid_op1s(deca_source::SummationDecapode, varID)
     return filter!(x -> deca_source[x, :op1] != :∂ₜ, indices)
 end
   
-""" function get_target_indices(deca_source::SummationDecapode)
-Searches SummationDecapode, deca_source, for all Vars which are
-valid for average rewriting. Validity is determined by having 
-two or more distinct operations leading into the variable.
-Returns an array of valid Var target ids.
+""" function is_tgt_of_many_ops(d::SummationDecapode, var)
+Return true if there are two or more distinct operations leading
+into Var var (not counting ∂ₜ).
+"""
+function is_tgt_of_many_ops(d::SummationDecapode, var)
+  op1Count = length(get_valid_op1s(d, var))
+  op2Count = length(incident(d, var, :res))
+  sumCount = length(incident(d, var, :sum))
+
+  op1Count + op2Count + sumCount >= 2
+end
+  
+""" function find_tgts_of_many_ops(d::SummationDecapode)
+Searches SummationDecapode, d, for all Vars which have two or
+more distinct operations leading into the same variable.
 """
 
-function get_target_indices(deca_source::SummationDecapode)
-    targetVars = []
-    for var in parts(deca_source, :Var)
-        op1Count = length(get_valid_op1s(deca_source, var))
-        op2Count = length(incident(deca_source, var, :res))
-        sumCount = length(incident(deca_source, var, :sum))
-
-        tot = op1Count + op2Count + sumCount
-        if(tot >= 2)
-            append!(targetVars, var)
-        end
-    end
-
-    return targetVars
+function find_tgts_of_many_ops(d::SummationDecapode)
+  filter(var -> is_tgt_of_many_ops(d, var), parts(d, :Var))
 end
   
 """ function get_preprocess_indices(deca_source::SummationDecapode)
@@ -50,7 +48,7 @@ function get_preprocess_indices(deca_source::SummationDecapode)
     targetOp2 = []
     targetSum = []
 
-    targetVars = get_target_indices(deca_source)
+    targetVars = find_tgts_of_many_ops(deca_source)
 
     for var in targetVars
         append!(targetOp2, incident(deca_source, var, :res))
@@ -216,7 +214,7 @@ to match on, because of preprocessing, this indirectly includes op2
 and summations in the final result.
 """
 function process_average_rewrite(deca_source::SummationDecapode)
-    targetVars = get_target_indices(deca_source)
+    targetVars = find_tgts_of_many_ops(deca_source)
 
     # If no rewrites available, then don't rewrite
     if(length(targetVars) == 0)

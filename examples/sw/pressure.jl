@@ -7,6 +7,7 @@ using OrdinaryDiffEq
 using MLStyle
 using Distributions
 using LinearAlgebra
+using Catlab.ACSetInterface
 using GLMakie
 using Logging
 # using CairoMakie 
@@ -21,7 +22,7 @@ PressureFlow = quote
 
   # derived quantities
   ΔV::Form1{X}
-  ∇P::Form0{X}
+  ∇P::Form1{X}
   ΔP::Form0{X}
   ϕₚ::Form1{X}
 
@@ -54,7 +55,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :α => x->0*x
     :β => x->2000*x
     :γ => x->1*x
-    :⋆₀ => x->⋆(0,sd,hodge=hodge)*x
+    #= :⋆₀ => x->⋆(0,sd,hodge=hodge)*x
     :⋆₁ => x->⋆(1, sd, hodge=hodge)*x
     :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=hodge)
     :⋆₁⁻¹ => x->inv_hodge_star(1,sd,hodge=hodge)*x
@@ -64,22 +65,22 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :dual_d₁ => x->dual_derivative(1,sd)*x
     :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
     :plus => (+)
-    :(-) => x-> -x
+    :(-) => x-> -x =#
     # :L₀ => (v,x)->dual_derivative(1, sd)*(i0(v, x))
-    :L₀ => (v,x)->begin
+    #= :L₀ => (v,x)->begin
       # dual_derivative(1, sd)*⋆(1, sd)*wedge_product(Tuple{1,0}, sd, v, x)
       ⋆(1, sd; hodge=hodge)*wedge_product(Tuple{1,0}, sd, v, x)
-    end
+    end =#
     :i₀ => i0 
-    :Δ₀ => x -> begin # dδ
-      δ(1, sd, d(0, sd)*x, hodge=hodge) end
+    #= :Δ₀ => x -> begin # dδ
+      δ(1, sd, d(0, sd)*x, hodge=hodge) end 
     # :Δ₀ => x -> begin # d ⋆ d̃ ⋆⁻¹
     #   y = dual_derivative(1,sd)*⋆(1, sd, hodge=hodge)*d(0,sd)*x
     #   inv_hodge_star(0,sd, y; hodge=hodge)
     # end
     :Δ₁ => x -> begin # dδ + δd
       δ(2, sd, d(1, sd)*x, hodge=hodge) + d(0, sd)*δ(1, sd, x, hodge=hodge)
-    end
+    end =#
 
     # :Δ₁ => x -> begin # d ⋆ d̃ ⋆⁻¹ + ⋆ d̃ ⋆ d
     #   y = dual_derivative(0,sd)*⋆(2, sd, hodge=hodge)*d(1,sd)*x
@@ -88,7 +89,8 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     #   return y + z
     # end
     :debug => (args...)->begin println(args[1], length.(args[2:end])) end
-    x=> error("Unmatched operator $my_symbol")
+    # x=> error("Unmatched operator $my_symbol")
+    _ => default_dec_generate(sd, my_symbol, hodge)
   end
   # return (args...) -> begin println("applying $my_symbol"); println("arg length $(length.(args))"); op(args...);end
   return (args...) ->  op(args...)
@@ -104,6 +106,7 @@ primal_earth = loadmesh(Icosphere(3, radius))
 nploc = argmax(x -> x[3], primal_earth[:point])
 
 orient!(primal_earth)
+primal_earth[:edge_orientation] = false
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
 subdivide_duals!(earth, Circumcenter())
 

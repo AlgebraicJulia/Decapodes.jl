@@ -1,5 +1,4 @@
-#using AlgebraicRewriting
-#using AlgebraicRewriting: Var as ARVar
+using DataStructures
 
 @present SchDecapode(FreeSchema) begin
     (Var, TVar, Op1, Op2)::Ob
@@ -75,7 +74,8 @@ function recognize_types(d::AbstractNamedDecapode)
 end
 
 function expand_operators(d::AbstractNamedDecapode)
-  e = SummationDecapode{Symbol, Symbol, Symbol}()
+  #e = SummationDecapode{Symbol, Symbol, Symbol}()
+  e = SummationDecapode{Any, Any, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op2))
   expand_operators!(e, d)
   return e
@@ -87,6 +87,8 @@ function expand_operators!(e::AbstractNamedDecapode, d::AbstractNamedDecapode)
   for op in parts(d, :Op1)
     if !isa(d[op,:op1], AbstractArray)
       add_part!(e, :Op1, op1=d[op,:op1], src=d[op, :src], tgt=d[op,:tgt])
+    elseif length(d[op, :op1]) == 1
+      add_part!(e, :Op1, op1=only(d[op,:op1]), src=d[op, :src], tgt=d[op,:tgt])
     else
       for (i, step) in enumerate(d[op, :op1])
         if i == 1
@@ -104,6 +106,7 @@ function expand_operators!(e::AbstractNamedDecapode, d::AbstractNamedDecapode)
   end
   return newvar
 end
+
 @present SchSummationDecapode <: SchNamedDecapode begin
   # Σ are the white nodes in the Decapode drawing
   # Summands are the edges that connect white nodes to variables (the projection maps)
@@ -119,10 +122,104 @@ end
 
 
 function expand_operators(d::SummationDecapode)
-  e = SummationDecapode{Symbol, Symbol, Symbol}()
+  #e = SummationDecapode{Symbol, Symbol, Symbol}()
+  e = SummationDecapode{Any, Any, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op2, :Σ, :Summand))
   expand_operators!(e, d)
   return e
+end
+
+"""
+  function contract_operators(d::SummationDecapode)
+
+Find chains of Op1s in the given Decapode, and replace them with
+a single Op1 with a vector of function names. After this process,
+all Vars that are not a part of any computation are removed.
+"""
+function contract_operators(d::SummationDecapode)
+  e = expand_operators(d)
+  contract_operators!(e)
+  #return e
+end
+
+function contract_operators!(d::SummationDecapode)
+  chains = find_chains(d)
+  filter!(x -> length(x) != 1, chains)
+  for chain in chains
+    add_part!(d, :Op1, src=d[:src][first(chain)], tgt=d[:tgt][last(chain)], op1=Vector{Symbol}(d[:op1][chain]))
+  end
+  rem_parts!(d, :Op1, sort!(vcat(chains...)))
+  remove_neighborless_vars!(d)
+end
+
+"""
+  function remove_neighborless_vars!(d::SummationDecapode)
+
+Remove all Vars from the given Decapode that are not part of any computation.
+"""
+function remove_neighborless_vars!(d::SummationDecapode)
+  neighborless_vars = setdiff(parts(d,:Var),
+                              union(d[:src],
+                                    d[:tgt],
+                                    d[:proj1],
+                                    d[:proj2],
+                                    d[:res],
+                                    d[:sum],
+                                    d[:summand],
+                                    d[:incl]))
+  #union(map(x -> t5_orig[x], [:src, :tgt])...) alternate syntax
+  #rem_parts!(d, :Var, neighborless_vars)
+  rem_parts!(d, :Var, sort!(neighborless_vars))
+  d
+end
+
+"""
+  function find_chains(d::SummationDecapode)
+
+Find chains of Op1s in the given Decapode. A chain ends when the
+target of the last Op1 is part of an Op2 or sum, or is a target
+of multiple Op1s.
+"""
+function find_chains(d::SummationDecapode)
+  chains = []
+  visited = falses(nparts(d, :Op1))
+  # TODO: Re-write this without two reduce-vcats.
+  chain_starts = unique(reduce(vcat, reduce(vcat,
+                        #[incident(d, Decapodes.infer_states(d), :src),
+                        [incident(d, Vector{Int64}(filter(i -> !isnothing(i), Decapodes.infer_states(d))), :src),
+                         incident(d, d[:res], :src),
+                         incident(d, d[:sum], :src)])))
+  
+  s = Stack{Int64}()
+  foreach(x -> push!(s, x), chain_starts)
+  while !isempty(s)
+    # Start a new chain.
+    op_to_visit = pop!(s)
+    curr_chain = []
+    while true
+      visited[op_to_visit] = true
+      append!(curr_chain, op_to_visit)
+
+      tgt = d[op_to_visit, :tgt]
+      next_op1s = incident(d, tgt, :src)
+      next_op2s = vcat(incident(d, tgt, :proj1), incident(d, tgt, :proj2))
+      if (length(next_op1s) != 1 ||
+          length(next_op2s) != 0 ||
+          is_tgt_of_many_ops(d, tgt) ||
+          !isempty(incident(d, tgt, :sum)) ||
+          !isempty(incident(d, tgt, :summand)))
+        # Terminate chain.
+        append!(chains, [curr_chain])
+        for next_op1 in next_op1s
+          visited[next_op1] || push!(s, next_op1)
+        end
+        break
+      end
+      # Try to continue chain.
+      op_to_visit = only(next_op1s)
+    end
+  end
+  return chains
 end
 
 function add_constant!(d::AbstractNamedDecapode, k::Symbol)
@@ -138,126 +235,164 @@ end
 These are the default rules used to do type inference in the 1D exterior calculus.
 """
 op1_inf_rules_1D = [
-  # Rules for ∂ₜ where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :∂ₜ),
-  # Rules for ∂ₜ where src is unknown.
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form0, op = :∂ₜ),
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form1, op = :∂ₜ),
-  # Rule for d where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form1, op = :d),
-  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :DualForm0, op = :d),
-  # Rules for d where src is unknown.
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form0, op = :d),
-  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :DualForm0, op = :d),
-  # Rules for ⋆ where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :DualForm1, op = :⋆),
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :DualForm0, op = :⋆),
-  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :Form0, op = :⋆),
-  (src_type = :DualForm0, tgt_type = :infer, replacement_type = :Form1, op = :⋆),
-  # Rules for ⋆ where src is unknown.
-  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :Form0, op = :⋆),
-  (src_type = :infer, tgt_type = :DualForm0, replacement_type = :Form1, op = :⋆),
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :DualForm1, op = :⋆),
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :DualForm0, op = :⋆)]
+  # Rules for ∂ₜ 
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ]),
+
+  # Rules for d
+  (src_type = :Form0, tgt_type = :Form1, op_names = [:d, :d₀]),
+  (src_type = :DualForm0, tgt_type = :DualForm1, op_names = [:d, :dual_d₀, :d̃₀]),
+
+  # Rules for ⋆
+  (src_type = :Form0, tgt_type = :DualForm1, op_names = [:⋆, :⋆₀]),
+  (src_type = :Form1, tgt_type = :DualForm0, op_names = [:⋆, :⋆₁]),
+  (src_type = :DualForm1, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹]),
+  (src_type = :DualForm0, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹]),
+
+  # Rules for Δ
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁]),
+
+  # Rules for δ
+  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁]),
+
+  # Rules for negation
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:neg, :(-)]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:neg, :(-)])]
 
 op2_inf_rules_1D = [
-  # Rules for ∧ where proj1 is unknown. ∧₀₀, ∧₁₀, ∧₀₁
-  (proj1_type = :infer, proj2_type = :Form0, res_type = :Form0, replacement_type = :Form0, op = :∧),
-  (proj1_type = :infer, proj2_type = :Form0, res_type = :Form1, replacement_type = :Form1, op = :∧),
-  (proj1_type = :infer, proj2_type = :Form1, res_type = :Form1, replacement_type = :Form0, op = :∧),
-  # Rules for ∧ where proj2 is unknown. ∧₀₀, ∧₁₀, ∧₀₁
-  (proj1_type = :Form0, proj2_type = :infer, res_type = :Form0, replacement_type = :Form0, op = :∧),
-  (proj1_type = :Form1, proj2_type = :infer, res_type = :Form1, replacement_type = :Form0, op = :∧),
-  (proj1_type = :Form0, proj2_type = :infer, res_type = :Form1, replacement_type = :Form1, op = :∧),
-  # Rules for ∧ where res is unknown. ∧₀₀, ∧₁₀, ∧₀₁
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :∧),
-  (proj1_type = :Form1, proj2_type = :Form0, res_type = :infer, replacement_type = :Form1, op = :∧),
-  (proj1_type = :Form0, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :∧),
+  # Rules for ∧₀₀, ∧₁₀, ∧₀₁
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:∧, :∧₀₀]),
+  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, op_names = [:∧, :∧₁₀]),
+  (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, op_names = [:∧, :∧₀₁]),
 
-  # Rules for L where proj1 is unknown. L₀, L₁
-  (proj1_type = :infer, proj2_type = :Form0, res_type = :Form0, replacement_type = :Form1, op = :L),
-  (proj1_type = :infer, proj2_type = :Form1, res_type = :Form1, replacement_type = :Form1, op = :L),    
-  # Rules for L where proj2 is unknown. L₀, L₁
-  (proj1_type = :Form1, proj2_type = :infer, res_type = :Form0, replacement_type = :Form0, op = :L),
-  (proj1_type = :Form1, proj2_type = :infer, res_type = :Form1, replacement_type = :Form1, op = :L),    
-  # Rules for L where res is unknown. L₀, L₁
-  (proj1_type = :Form1, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :L),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :L),   
+  # Rules for L₀, L₁
+  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form0, op_names = [:L, :L₀]),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, op_names = [:L, :L₁]),    
 
-  # Rules for i where proj1 is unknown. i₁
-  (proj1_type = :infer, proj2_type = :Form1, res_type = :Form0, replacement_type = :Form1, op = :i),
-  # Rules for i where proj2 is unknown. i₁
-  (proj1_type = :Form1, proj2_type = :infer, res_type = :Form0, replacement_type = :Form1, op = :i),
-  # Rules for i where res is unknown. i₁
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form0, op = :i)]
+  # Rules for i₁
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form0, op_names = [:i, :i₁]),
+
+  # Rules for divison and multiplication
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:./, :.*]),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, op_names = [:./, :.*]),
+
+  # WARNING: This parameter type inference might be wrong, depending on what the user gives as a parameter
+  #= (proj1_type = :Parameter, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
+
+  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*]),=#
+  
+  (proj1_type = :Literal, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Literal, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
+  
+  (proj1_type = :Form0, proj2_type = :Literal, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Form1, proj2_type = :Literal, res_type = :Form1, op_names = [:/, :./, :*, :.*])]
+
+  
 
 """
 These are the default rules used to do type inference in the 2D exterior calculus.
 """
 op1_inf_rules_2D = [
-  # Rules for ∂ₜ where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :∂ₜ),
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :∂ₜ),
-  (src_type = :Form2, tgt_type = :infer, replacement_type = :Form2, op = :∂ₜ),
-  # Rules for ∂ₜ where src is unknown.
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form0, op = :∂ₜ),
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form1, op = :∂ₜ),
-  (src_type = :infer, tgt_type = :Form2, replacement_type = :Form2, op = :∂ₜ),
-  # Rules for d where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form1, op = :d),
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form2, op = :d),
-  (src_type = :DualForm0, tgt_type = :infer, replacement_type = :DualForm1, op = :d),
-  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :DualForm2, op = :d),
-  # Rules for d where src is unknown.
-  (src_type = :infer, tgt_type = :Form2, replacement_type = :Form1, op = :d),
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form0, op = :d),
-  (src_type = :infer, tgt_type = :DualForm0, replacement_type = :DualForm1, op = :d),
-  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :DualForm2, op = :d),
-  # Rules for ⋆ where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :DualForm2, op = :⋆),
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :DualForm1, op = :⋆),
-  (src_type = :Form2, tgt_type = :infer, replacement_type = :DualForm0, op = :⋆),
-  (src_type = :DualForm2, tgt_type = :infer, replacement_type = :Form0, op = :⋆),
-  (src_type = :DualForm1, tgt_type = :infer, replacement_type = :Form1, op = :⋆),
-  (src_type = :DualForm0, tgt_type = :infer, replacement_type = :Form2, op = :⋆),
-  # Rules for ⋆ where src is unknown.
-  (src_type = :infer, tgt_type = :DualForm2, replacement_type = :Form0, op = :⋆),
-  (src_type = :infer, tgt_type = :DualForm1, replacement_type = :Form1, op = :⋆),
-  (src_type = :infer, tgt_type = :DualForm0, replacement_type = :Form2, op = :⋆),
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :DualForm2, op = :⋆),
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :DualForm1, op = :⋆),
-  (src_type = :infer, tgt_type = :Form2, replacement_type = :DualForm0, op = :⋆)]
+  # Rules for ∂ₜ
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ]),
+  (src_type = :Form2, tgt_type = :Form2, op_names = [:∂ₜ]),
 
-# WARNING: I'm combining 1D and 2D rules directly here since it seems op2 rules
-# are metric-free. If for some reason we can't make this assumption, this needs to change
+  # Rules for d
+  (src_type = :Form0, tgt_type = :Form1, op_names = [:d, :d₀]),
+  (src_type = :Form1, tgt_type = :Form2, op_names = [:d, :d₁]),
+  (src_type = :DualForm0, tgt_type = :DualForm1, op_names = [:d, :dual_d₀, :d̃₀]),
+  (src_type = :DualForm1, tgt_type = :DualForm2, op_names = [:d, :dual_d₁, :d̃₁]),
+
+  # Rules for ⋆
+  (src_type = :Form0, tgt_type = :DualForm2, op_names = [:⋆, :⋆₀]),
+  (src_type = :Form1, tgt_type = :DualForm1, op_names = [:⋆, :⋆₁]),
+  (src_type = :Form2, tgt_type = :DualForm0, op_names = [:⋆, :⋆₂]),
+
+  (src_type = :DualForm2, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹]),
+  (src_type = :DualForm1, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹]),
+  (src_type = :DualForm0, tgt_type = :Form2, op_names = [:⋆, :⋆₂⁻¹]),
+
+  # Rules for Δ
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁]),
+  (src_type = :Form2, tgt_type = :Form2, op_names = [:Δ, :Δ₂]),
+
+  # Rules for δ
+  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁]),
+  (src_type = :Form2, tgt_type = :Form1, op_names = [:δ, :δ₂]),
+
+  # Rules for negation
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:neg, :(-)]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:neg, :(-)]),
+  (src_type = :Form2, tgt_type = :Form2, op_names = [:neg, :(-)])]
+    
 op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
-  # Rules for ∧ where proj1 is unknown. ∧₁₁, ∧₂₀, ∧₀₂
-  (proj1_type = :infer, proj2_type = :Form1, res_type = :Form2, replacement_type = :Form1, op = :∧),
-  (proj1_type = :infer, proj2_type = :Form0, res_type = :Form2, replacement_type = :Form2, op = :∧),
-  (proj1_type = :infer, proj2_type = :Form2, res_type = :Form2, replacement_type = :Form0, op = :∧),
-  # Rules for ∧ where proj2 is unknown. ∧₁₁, ∧₂₀, ∧₀₂
-  (proj1_type = :Form1, proj2_type = :infer, res_type = :Form2, replacement_type = :Form1, op = :∧),
-  (proj1_type = :Form2, proj2_type = :infer, res_type = :Form2, replacement_type = :Form0, op = :∧),
-  (proj1_type = :Form0, proj2_type = :infer, res_type = :Form2, replacement_type = :Form2, op = :∧),
-  # Rules for ∧ where res is unknown. ∧₁₁, ∧₂₀, ∧₀₂
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form2, op = :∧),
-  (proj1_type = :Form2, proj2_type = :Form0, res_type = :infer, replacement_type = :Form2, op = :∧),
-  (proj1_type = :Form0, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :∧),
+  # Rules for ∧₁₁, ∧₂₀, ∧₀₂
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, op_names = [:∧, :∧₁₁]),
+  (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, op_names = [:∧, :∧₂₀]),
+  (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, op_names = [:∧, :∧₀₂]),
 
-  # Rules for L where proj1 is unknown. L₂
-  (proj1_type = :infer, proj2_type = :Form2, res_type = :Form2, replacement_type = :Form1, op = :L),
-  # Rules for L where proj2 is unknown. L₂
-  (proj1_type = :Form1, proj2_type = :infer, res_type = :Form2, replacement_type = :Form2, op = :L),
-  # Rules for L where res is unknown. L₂
-  (proj1_type = :Form1, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :L),
+  # Rules for L₂
+  (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form2, op_names = [:L, :L₂]),    
 
-  # Rules for i where proj1 is unknown. i₁
-  (proj1_type = :infer, proj2_type = :Form2, res_type = :Form1, replacement_type = :Form1, op = :i),
-  # Rules for i where proj2 is unknown. i₁
-  (proj1_type = :Form1, proj2_type = :infer, res_type = :Form1, replacement_type = :Form2, op = :i),
-  # Rules for i where res is unknown. i₁
-  (proj1_type = :Form1, proj2_type = :Form2, res_type = :infer, replacement_type = :Form1, op = :i)])
+  # Rules for i₁
+  (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form1, op_names = [:i, :i₁]),
+  
+  # Rules for divison and multiplication
+  (proj1_type = :Form2, proj2_type = :Form2, res_type = :Form2, op_names = [:./, :.*]),
+  (proj1_type = :Literal, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Form2, proj2_type = :Literal, res_type = :Form2, op_names = [:/, :./, :*, :.*])])
+  
+function apply_inference_rule_op1!(d::SummationDecapode, op1_id, rule)
+  type_src = d[d[op1_id, :src], :type]
+  type_tgt = d[d[op1_id, :tgt], :type]
+
+  if(type_src != :infer && type_tgt != :infer)
+    return false
+  end
+
+  score_src = (rule.src_type == type_src)
+  score_tgt = (rule.tgt_type == type_tgt)
+  check_op = (d[op1_id, :op1] in rule.op_names)
+
+  if(check_op && (score_src + score_tgt == 1))
+    d[d[op1_id, :src], :type] = rule.src_type
+    d[d[op1_id, :tgt], :type] = rule.tgt_type
+    return true
+  end
+
+  return false
+end
+
+function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
+  type_proj1 = d[d[op2_id, :proj1], :type]
+  type_proj2 = d[d[op2_id, :proj2], :type]
+  type_res = d[d[op2_id, :res], :type]
+
+  if(type_proj1 != :infer && type_proj2 != :infer && type_res != :infer)
+    return false
+  end
+
+  score_proj1 = (rule.proj1_type == type_proj1)
+  score_proj2 = (rule.proj2_type == type_proj2)
+  score_res = (rule.res_type == type_res)
+  check_op = (d[op2_id, :op2] in rule.op_names)
+
+  if(check_op && (score_proj1 + score_proj2 + score_res == 2))
+    d[d[op2_id, :proj1], :type] = rule.proj1_type
+    d[d[op2_id, :proj2], :type] = rule.proj2_type
+    d[d[op2_id, :res], :type] = rule.res_type
+    return true
+  end
+
+  return false
+end
 
 """
   function infer_summands_and_summations!(d::SummationDecapode)
@@ -282,57 +417,6 @@ function infer_summands_and_summations!(d::SummationDecapode)
   return applied
 end
 
-"""
-  function apply_op1_type_rules!(d::SummationDecapode, types_known::Vector{Bool}, src_type::Symbol, tgt_type::Symbol, replacement_type::Symbol, op::Symbol)
-
-"""
-function apply_op1_type_rules!(d::SummationDecapode, types_known::Vector{Bool}, src_type::Symbol, tgt_type::Symbol, replacement_type::Symbol, op::Symbol)
-  applied = false
-  if !xor(src_type == :infer, tgt_type == :infer)
-    error("Exactly one provided type must be :infer.")
-  end
-  for op1_idx in parts(d, :Op1)
-    types_known[op1_idx] && continue
-    src = d[:src][op1_idx]; tgt = d[:tgt][op1_idx]; op1 = d[:op1][op1_idx]
-
-    if op1 == op && d[:type][src] == src_type && d[:type][tgt] == tgt_type
-      if src_type == :infer
-        d[:type][src] = replacement_type
-      else #if tgt_type == :infer
-        d[:type][tgt] = replacement_type
-      end
-      types_known[op1_idx] = true
-      applied = true
-      break
-    end
-  end
-  return applied
-end
-
-function apply_op2_type_rules!(d::SummationDecapode, types_known::Vector{Bool}, proj1_type::Symbol, proj2_type::Symbol, res_type::Symbol, replacement_type::Symbol, op::Symbol)
-  applied = false
-  # TODO: May want to add a check that an inference rule is valid, (at least some variable is an infer type.)
-
-  for op2_idx in parts(d, :Op2)
-    types_known[op2_idx] && continue
-    proj1 = d[:proj1][op2_idx]; proj2 = d[:proj2][op2_idx]; res = d[:res][op2_idx]; op2 = d[:op2][op2_idx]
-
-    if op2 == op && d[:type][proj1] == proj1_type && d[:type][proj2] == proj2_type && d[:type][res] == res_type
-      if proj1_type == :infer
-        d[:type][proj1] = replacement_type
-      elseif proj2_type == :infer
-        d[:type][proj2] = replacement_type
-      elseif res_type == :infer 
-        d[:type][res] = replacement_type
-      end
-      types_known[op2_idx] = true
-      applied = true
-      break
-    end
-  end
-  return applied
-end
-
 # TODO: Although the big-O complexity is the same, it might be more efficent on
 # average to iterate over edges then rules, instead of rules then edges. This
 # might result in more un-maintainable code. If you implement this, you might
@@ -343,7 +427,8 @@ end
 
 Infer types of Vars given rules wherein one type is known and the other not.
 """
-function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}}, op2_rules::Vector{NamedTuple{(:proj1_type, :proj2_type, :res_type, :replacement_type, :op), NTuple{5, Symbol}}})
+function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :op_names), Tuple{Symbol, Symbol, Vector{Symbol}}}}, op2_rules::Vector{NamedTuple{(:proj1_type, :proj2_type, :res_type, :op_names), Tuple{Symbol, Symbol, Symbol, Vector{Symbol}}}})
+
   # This is an optimization so we do not "visit" a row which has no infer types.
   # It could be deleted if found to be not worth maintainability tradeoff.
   types_known_op1 = ones(Bool, nparts(d, :Op1))
@@ -361,14 +446,27 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
 
   while true
     applied = false
+    
     for rule in op1_rules
-      this_applied = apply_op1_type_rules!(d, types_known_op1, rule...)
-      applied = applied || this_applied
+      for op1_idx in parts(d, :Op1)
+        types_known_op1[op1_idx] && continue
+
+        this_applied = apply_inference_rule_op1!(d, op1_idx, rule)
+
+        types_known_op1[op1_idx] = this_applied
+        applied = applied || this_applied
+      end
     end
 
     for rule in op2_rules
-      this_applied = apply_op2_type_rules!(d, types_known_op2, rule...)
-      applied = applied || this_applied
+      for op2_idx in parts(d, :Op2)
+        types_known_op2[op2_idx] && continue
+
+        this_applied = apply_inference_rule_op2!(d, op2_idx, rule)
+
+        types_known_op2[op2_idx] = this_applied
+        applied = applied || this_applied
+      end
     end
 
     applied = applied || infer_summands_and_summations!(d)

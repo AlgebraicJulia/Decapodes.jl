@@ -3,7 +3,6 @@ import Catlab.Graphics.Graphviz
 using Catlab.Graphics
 using Catlab.Graphics.Graphviz
 using Catlab.Graphs.PropertyGraphs
-import Decapodes: infer_states, infer_state_names
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
 

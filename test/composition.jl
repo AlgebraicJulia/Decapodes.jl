@@ -180,7 +180,7 @@ adv_adv = [
  Open(Advection, [:C,:V,:ϕ])]
 deep_copies = deepcopy(adv_adv) # This is to test none of the decapodes are mutated.
 adv_adv_comp = oapply(self_adv, adv_adv)
-adv_adv_comp_expected = @acset SummationDecapode{Symbol, Symbol, Symbol} begin
+adv_adv_comp_expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 3
   type = [:Form0, :Form1, :Form1]
   name = [:C, :V, :ϕ]
