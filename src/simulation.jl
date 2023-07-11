@@ -83,26 +83,19 @@ end
 # TODO: There are likely better ways of dispatching on dimension instead of
 # storing it inside an AllocVecCall.
 Base.Expr(c::AllocVecCall) = begin
-    resolved_form = begin
-        if c.dimension == 2
-            @match c.form begin
-                :Form0 => :V
-                :Form1 => :E
-                :Form2 => :Tri
-                :DualForm0 => :Tri
-                :DualForm1 => :E
-                :DualForm2 => :V
-                _ => return :AllocVecCall_Error
-            end
-            elseif c.dimension == 1
-                @match c.form begin
-                    :Form0 => :V
-                    :Form1 => :E
-                    :DualForm0 => :E
-                    :DualForm1 => :V
-                    _ => return :AllocVecCall_Error
-                end
-            end
+    resolved_form = @match (c.name, c.form, c.dimension) begin
+        (_, :Form0, 2) => :V
+        (_, :Form1, 2) => :E
+        (_, :Form2, 2) => :Tri
+        (_, :DualForm0, 2) => :Tri
+        (_, :DualForm1, 2) => :E
+        (_, :DualForm2, 2) => :V
+
+        (_, :Form0, 1) => :V
+        (_, :Form1, 1) => :E
+        (_, :DualForm0, 1) => :E
+        (_, :DualForm1, 1) => :V
+        _ => return :AllocVecCall_Error
     end
 
     :($(c.name) = Vector{Float64}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
