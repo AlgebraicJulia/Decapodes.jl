@@ -1,6 +1,6 @@
+using Catlab
 using Catlab.Theories: FreeSchema
-using ACSets
-using ACSets.DenseACSets
+using Catlab.DenseACSets
 using DataStructures
 
 @present SchDecapode(FreeSchema) begin

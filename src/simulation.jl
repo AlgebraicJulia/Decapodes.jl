@@ -4,7 +4,7 @@ using OrdinaryDiffEq
 using GeometryBasics
 using LinearAlgebra
 using Base.Iterators
-using ACSets
+using Catlab
 using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
 
