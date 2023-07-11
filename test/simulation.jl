@@ -222,7 +222,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
   RADIUS = 6371+90
   primal_earth = loadmesh(Icosphere(1, RADIUS))
   nploc = argmax(x -> x[3], primal_earth[:point])
-  primal_earth[:edge_orientation] .= false
+  primal_earth[:edge_orientation] = false
   orient!(primal_earth)
   earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
   subdivide_duals!(earth, Circumcenter())
@@ -332,7 +332,7 @@ end
   begin
     primal_earth = loadmesh(Icosphere(1))
     nploc = argmax(x -> x[3], primal_earth[:point])
-    primal_earth[:edge_orientation] .= false
+    primal_earth[:edge_orientation] = false
     orient!(primal_earth)
     earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
     subdivide_duals!(earth, Circumcenter());

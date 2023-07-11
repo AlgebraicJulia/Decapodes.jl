@@ -1,3 +1,6 @@
+using Catlab.Theories: FreeSchema
+using ACSets
+using ACSets.DenseACSets
 using DataStructures
 
 @present SchDecapode(FreeSchema) begin
@@ -290,9 +293,17 @@ op2_inf_rules_1D = [
   (proj1_type = :Literal, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
   
   (proj1_type = :Form0, proj2_type = :Literal, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form1, proj2_type = :Literal, res_type = :Form1, op_names = [:/, :./, :*, :.*])]
-
+  (proj1_type = :Form1, proj2_type = :Literal, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
   
+  (proj1_type = :Constant, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Constant, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Form0, proj2_type = :Constant, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Form1, proj2_type = :Constant, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
+  
+  (proj1_type = :Constant, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Constant, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :DualForm0, proj2_type = :Constant, res_type = :DualForm0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :DualForm1, proj2_type = :Constant, res_type = :DualForm1, op_names = [:/, :./, :*, :.*])]
 
 """
 These are the default rules used to do type inference in the 2D exterior calculus.
@@ -411,7 +422,7 @@ function infer_summands_and_summations!(d::SummationDecapode)
     all(t == :infer for t in types) && continue # We can  not infer
     inferred_type = types[findfirst(!=(:infer), types)]
     to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
-    d[:type][to_infer_idxs] .= inferred_type
+    d[to_infer_idxs, :type] = inferred_type
     applied = true
   end
   return applied
@@ -563,7 +574,7 @@ function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(
     src_type = d[:type][src]; tgt_type = d[:type][tgt]
     for rule in op1_rules
       if op1 == rule[:op] && src_type == rule[:src_type] && tgt_type == rule[:tgt_type]
-        d[:op1][op1_idx] = rule[:resolved_name]
+        d[op1_idx, :op1] = rule[:resolved_name]
         break
       end
     end
@@ -574,7 +585,7 @@ function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(
     proj1_type = d[:type][proj1]; proj2_type = d[:type][proj2]; res_type = d[:type][res]
     for rule in op2_rules
       if op2 == rule[:op] && proj1_type == rule[:proj1_type] && proj2_type == rule[:proj2_type] && res_type == rule[:res_type]
-        d[:op2][op2_idx] = rule[:resolved_name]
+        d[op2_idx, :op2] = rule[:resolved_name]
         break
       end
     end

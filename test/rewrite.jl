@@ -1,7 +1,6 @@
 using Test
 
 using Decapodes
-using Catlab.CSetDataStructures
 import Decapodes: average_rewrite
 
 #= draw(g; kw...) = to_graphviz(g; node_labels=true, edge_labels=true, kw...)
