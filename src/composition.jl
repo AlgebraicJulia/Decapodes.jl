@@ -196,10 +196,10 @@ end
 # Infinite loop:
 oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
   oapply_rename(r, podes)
-# oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
-  # invoke(oapply,
-    # Tuple{UndirectedWiringDiagram, Vector{<:StructuredMulticospan{L}} where L},
-    # r, oapply_rename(r, podes))
+#oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
+#  invoke(oapply,
+#    Tuple{UndirectedWiringDiagram, Vector{<:StructuredMulticospan{L}} where L},
+#    r, oapply_rename(r, podes))
 
 #oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
 # Luke changed the above line to the below line, for e.g. the case: (Note H should be renamed to N.)

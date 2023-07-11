@@ -4,7 +4,7 @@ using OrdinaryDiffEq
 using GeometryBasics
 using LinearAlgebra
 using Base.Iterators
-using Catlab.ACSetInterface
+using ACSets
 using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
 
@@ -77,17 +77,24 @@ end
 struct AllocVecCall <: AbstractCall 
     name
     form
+    dimension
 end
 
-# TODO: Check sizes on dual forms
+# TODO: There are likely better ways of dispatching on dimension instead of
+# storing it inside an AllocVecCall.
 Base.Expr(c::AllocVecCall) = begin
-    resolved_form = @match c.form begin
-        :Form0 => :V
-        :Form1 => :E
-        :Form2 => :Tri
-        :DualForm0 => :Tri
-        :DualForm1 => :E
-        :DualForm2 => :V
+    resolved_form = @match (c.name, c.form, c.dimension) begin
+        (_, :Form0, 2) => :V
+        (_, :Form1, 2) => :E
+        (_, :Form2, 2) => :Tri
+        (_, :DualForm0, 2) => :Tri
+        (_, :DualForm1, 2) => :E
+        (_, :DualForm2, 2) => :V
+
+        (_, :Form0, 1) => :V
+        (_, :Form1, 1) => :E
+        (_, :DualForm0, 1) => :E
+        (_, :DualForm1, 1) => :V
         _ => return :AllocVecCall_Error
     end
 
@@ -239,7 +246,7 @@ function set_tanvars_code(d::AbstractNamedDecapode)
     return stmts
 end
 
-function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall})
+function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}; dimension=2)
     # Get the Vars of the inputs (probably state Vars).
     visited_Var = falses(nparts(d, :Var))
 
@@ -288,7 +295,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                         equality = promote_arithmetic_map[equality]
                         operator = add_stub(:M, operator)
 
-                        push!(alloc_vectors, AllocVecCall(tname, d[t, :type]))
+                        push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension))
                     end
                 end
 
@@ -316,7 +323,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                     if(operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-)
                         operator = promote_arithmetic_map[operator]
                         equality = promote_arithmetic_map[equality]
-                        push!(alloc_vectors, AllocVecCall(rname, d[r, :type]))
+                        push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
                     
                     # TODO: Do we want to support the ability of a user to use the backslash operator?
                     elseif(operator == :(*) || operator == :(/) || operator == :.* || operator == :./)
@@ -325,7 +332,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                         if(!is_infer(d, arg1) && !is_infer(d, arg2))
                             operator = promote_arithmetic_map[operator]
                             equality = promote_arithmetic_map[equality]
-                            push!(alloc_vectors, AllocVecCall(rname, d[r, :type]))
+                            push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
                         end
                     end
 
@@ -353,7 +360,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                 if(is_form(d, r))
                     operator = promote_arithmetic_map[operator]
                     equality = promote_arithmetic_map[equality]
-                    push!(alloc_vectors, AllocVecCall(rname, d[r, :type]))
+                    push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
                 end
 
                 visited_Σ[op] = true
@@ -379,7 +386,7 @@ function resolve_types_compiler!(d::SummationDecapode)
 end
 
 # TODO: Will want to eventually support contracted operations
-function gensim(user_d::AbstractNamedDecapode, input_vars)
+function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2)
     # TODO: May want to move this after infer_types if we let users
     # set their own inference rules
     recognize_types(user_d)
@@ -402,7 +409,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars)
     resolve_overloads!(d′)
     
     # rhs = compile(d′, input_vars)
-    equations = compile(d′, input_vars, dec_matrices, alloc_vectors)
+    equations = compile(d′, input_vars, dec_matrices, alloc_vectors, dimension=dimension)
 
     func_defs = compile_env(d′, dec_matrices)
     vect_defs = compile_var(alloc_vectors)
@@ -420,8 +427,8 @@ function gensim(user_d::AbstractNamedDecapode, input_vars)
     end
 end
 
-gensim(d::AbstractNamedDecapode) = gensim(d,
-    vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]))
+gensim(d::AbstractNamedDecapode; dimension::Int=2) = gensim(d,
+    vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension)
 
 evalsim(d::AbstractNamedDecapode) = eval(gensim(d))
 evalsim(d::AbstractNamedDecapode, input_vars) = eval(gensim(d, input_vars))

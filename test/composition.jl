@@ -4,7 +4,6 @@ using Catlab
 using Catlab.WiringDiagrams
 using Catlab.Programs
 using Catlab.CategoricalAlgebra
-using Catlab.CSetDataStructures
 
 import Decapodes: OpenSummationDecapode, Open, oapply, oapply_rename
 # @testset "Composition" begin

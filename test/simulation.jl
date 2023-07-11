@@ -222,7 +222,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
   RADIUS = 6371+90
   primal_earth = loadmesh(Icosphere(1, RADIUS))
   nploc = argmax(x -> x[3], primal_earth[:point])
-  primal_earth[:edge_orientation] .= false
+  primal_earth[:edge_orientation] = false
   orient!(primal_earth)
   earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
   subdivide_duals!(earth, Circumcenter())
@@ -332,7 +332,7 @@ end
   begin
     primal_earth = loadmesh(Icosphere(1))
     nploc = argmax(x -> x[3], primal_earth[:point])
-    primal_earth[:edge_orientation] .= false
+    primal_earth[:edge_orientation] = false
     orient!(primal_earth)
     earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
     subdivide_duals!(earth, Circumcenter());
@@ -454,4 +454,30 @@ end
   end
 
   @test old_soln.u ≈ new_soln.u
+end
+
+# Testing Budyko-Sellers
+@testset "Budyko-Sellers Simulation" begin
+  # This is a 1D DEC test.
+  # The dimension impacts the allocation of DualForms.
+  budyko_sellers = @decapode begin
+    (Q,Tₛ)::Form0
+    (α,A,B,C,D,cosϕᵖ,cosϕᵈ)::Constant
+
+    Tₛ̇ == ∂ₜ(Tₛ)
+    ASR == (1 .- α) .* Q
+    OLR == A .+ (B .* Tₛ)
+    HT == (D ./ cosϕᵖ) .* ⋆(d(cosϕᵈ .* ⋆(d(Tₛ))))
+
+    Tₛ̇ == (ASR - OLR + HT) ./ C
+  end
+  infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
+  resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
+
+  # This test ensures that the next one does not break, since it depends on
+  # arbitrary internal variable naming.
+  @test budyko_sellers[only(incident(budyko_sellers, Symbol("•1"), :name)), :type] == :DualForm0
+  # A dual 0-form consists of ne(s) floats.
+  @test occursin("var\"•1\" = Vector{Float64}(undef, nparts(mesh, :E))",
+    repr(gensim(budyko_sellers, dimension=1)))
 end

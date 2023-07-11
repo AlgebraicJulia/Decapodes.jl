@@ -1,6 +1,5 @@
 using Artifacts
 using Catlab
-using Catlab.CategoricalAlgebra
 using CombinatorialSpaces
 using FileIO
 using JSON
@@ -21,7 +20,7 @@ Icosphere(n) = Icosphere(n, 1.0)
 function loadmesh(s::Icosphere)
   1 <= s.n <= 5 || error("The only icosphere divisions supported are 1-5")
   m = loadmesh_helper("UnitIcosphere$(s.n).obj")
-  m[:point] .*= s.r
+  m[:point] = m[:point]*s.r
   return m
 end
 

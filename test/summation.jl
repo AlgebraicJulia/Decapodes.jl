@@ -1,7 +1,6 @@
 using Test
 using Catlab
 using Catlab.Theories
-using Catlab.Present
 using Catlab.CategoricalAlgebra
 
 using Decapodes

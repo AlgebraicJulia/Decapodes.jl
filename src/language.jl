@@ -232,7 +232,7 @@ function SummationDecapode(e::DecaExpr)
     recognize_types(d)
 
     fill_names!(d)
-    d[:name] .= normalize_unicode.(d[:name])
+    d[:name] = normalize_unicode.(d[:name])
     make_sum_mult_unique!(d)
     return d
 end

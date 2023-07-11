@@ -2,7 +2,6 @@ using Test
 using Catlab
 using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
-using Catlab.Present
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
@@ -399,7 +398,7 @@ end
     ∂ₜ(C) == C
   end
   t2 = SummationDecapode(parse_decapode(Test2))
-  t2[:type][only(incident(t2, :Ċ, :name))] = :Form0
+  t2[only(incident(t2, :Ċ, :name)), :type] = :Form0
   infer_types!(t2)
 
   names_types_2 = Set(zip(t2[:name], t2[:type]))

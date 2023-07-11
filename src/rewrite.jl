@@ -1,4 +1,4 @@
-using Catlab, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab
 using AlgebraicRewriting
 using AlgebraicRewriting: rewrite
 
