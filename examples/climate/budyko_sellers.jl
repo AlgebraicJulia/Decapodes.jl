@@ -1,7 +1,10 @@
+# AlgebraicJulia Dependencies
 using Catlab
 using Catlab.Graphics
-using Decapodes
 using CombinatorialSpaces
+using Decapodes
+
+# External Dependencies
 using MLStyle
 using MultiScaleArrays
 using LinearAlgebra
@@ -35,7 +38,7 @@ budyko_sellers = @decapode begin
     Tₛ̇ == (ASR - OLR + HT) ./ C
 end
 
-# Infer the forms of dependent variables, and resolve which versions DEC
+# Infer the forms of dependent variables, and resolve which versions of DEC
 # operators to use.
 infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
 resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
@@ -57,7 +60,9 @@ subdivide_duals!(s, Circumcenter())
 # Define constants, parameters, and initial conditions #
 ########################################################
 
+# This is a primal 0-form, with values at vertices.
 cosϕᵖ = map(x -> cos(x[1]), point(s′))
+# This is a dual 0-form, with values at edge centers.
 cosϕᵈ = map(edges(s′)) do e
     (cos(point(s′, src(s′, e))[1]) + cos(point(s′, tgt(s′, e))[1])) / 2
 end
@@ -100,9 +105,9 @@ constants_and_parameters = (
     cosϕᵖ = cosϕᵖ,
     cosϕᵈ = cosϕᵈ)
 
-###############################################
-# Define which symbols map to which functions #
-###############################################
+#############################################
+# Define how symbols map to Julia functions #
+#############################################
 
 hodge = GeometricHodge()
 function generate(sd, my_symbol; hodge=GeometricHodge())
@@ -123,7 +128,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
       ⋆₀⁻¹ = inv_hodge_star(s,0)
       ⋆₀⁻¹ * x
     end
-    #:.* => (x,y) -> x .* y
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
@@ -142,10 +146,13 @@ fₘ = sim(s, generate)
 
 tₑ = 1e6
 
+# Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
 prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
 soln = solve(prob, Tsit5())
 soln.retcode != :Unstable || error("Solver was not stable")
+
+# This next run should be fast.
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
@@ -157,11 +164,11 @@ soln = solve(prob, Tsit5())
 # Visualize #
 #############
 
-GLMakie.lines(map(x -> x[1], point(s′)), findnode(soln(0.0), :Tₛ))
-GLMakie.lines(map(x -> x[1], point(s′)), findnode(soln(tₑ), :Tₛ))
+lines(map(x -> x[1], point(s′)), findnode(soln(0.0), :Tₛ))
+lines(map(x -> x[1], point(s′)), findnode(soln(tₑ), :Tₛ))
 
 # Initial frame
-fig = GLMakie.Figure(resolution = (800, 800))
+fig = Figure(resolution = (800, 800))
 ax1 = Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
 ylims!(ax1, extrema(findnode(soln(tₑ), :Tₛ)))
@@ -170,5 +177,5 @@ Label(fig[1,1,Top()], "Tₛ")
 # Animation
 frames = 100
 record(fig, "budyko_sellers.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-  GLMakie.lines!(fig[1,1], map(x -> x[1], point(s′)), findnode(soln(t), :Tₛ))
+  lines!(fig[1,1], map(x -> x[1], point(s′)), findnode(soln(t), :Tₛ))
 end
