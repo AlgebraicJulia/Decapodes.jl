@@ -1,16 +1,20 @@
 name = "Decapodes"
 uuid = "679ab3ea-c928-4fe6-8d59-fd451142d391"
-authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
+authors = [
+  "James Fairbanks",
+  "Andrew Baas",
+  "Evan Patterson",
+  "Luke Morris",
+  "George Rauta",
+]
 version = "0.3.0"
 
 [deps]
-ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
 AlgebraicRewriting = "725a01d3-f174-5bbd-84e1-b9417bad95d9"
 Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 CombinatorialSpaces = "b1c52339-7909-45ad-8b6a-6e388f7c67f2"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-Debugger = "31a5f54b-26ea-5ae9-a837-f05ce5417438"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
@@ -23,7 +27,6 @@ MultiScaleArrays = "f9640e96-87f6-5992-9c3b-0743c6a49ffa"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 PreallocationTools = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
-Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [compat]
