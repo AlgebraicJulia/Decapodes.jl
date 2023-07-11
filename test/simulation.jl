@@ -455,3 +455,29 @@ end
 
   @test old_soln.u ≈ new_soln.u
 end
+
+# Testing Budyko-Sellers
+@testset "Budyko-Sellers Simulation" begin
+  # This is a 1D DEC test.
+  # The dimension impacts the allocation of DualForms.
+  budyko_sellers = @decapode begin
+    (Q,Tₛ)::Form0
+    (α,A,B,C,D,cosϕᵖ,cosϕᵈ)::Constant
+
+    Tₛ̇ == ∂ₜ(Tₛ)
+    ASR == (1 .- α) .* Q
+    OLR == A .+ (B .* Tₛ)
+    HT == (D ./ cosϕᵖ) .* ⋆(d(cosϕᵈ .* ⋆(d(Tₛ))))
+
+    Tₛ̇ == (ASR - OLR + HT) ./ C
+  end
+  infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
+  resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
+
+  # This test ensures that the next one does not break, since it depends on
+  # arbitrary internal variable naming.
+  @test budyko_sellers[only(incident(budyko_sellers, Symbol("•1"), :name)), :type] == :DualForm0
+  # A dual 0-form consists of ne(s) floats.
+  @test occursin("var\"•1\" = Vector{Float64}(undef, nparts(mesh, :E))",
+    repr(gensim(budyko_sellers, dimension=1)))
+end

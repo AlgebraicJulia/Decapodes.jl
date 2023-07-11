@@ -43,7 +43,15 @@ end
 infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
 resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
 
+# Visualize.
 to_graphviz(budyko_sellers)
+
+# Demonstrate storing as JSON.
+write_json_acset(budyko_sellers, "budyko_sellers.json")
+# When reading back in, we specify that all attributes are "Symbol"s.
+budyko_sellers2 = read_json_acset(SummationDecapode{Symbol,Symbol,Symbol}, "budyko_sellers.json")
+# Or, you could choose to interpret the data as "String"s.
+budyko_sellers3 = read_json_acset(SummationDecapode{String,String,String}, "budyko_sellers.json")
 
 ###################
 # Define the mesh #
