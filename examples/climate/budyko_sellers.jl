@@ -1,3 +1,7 @@
+#######################
+# Import Dependencies #
+#######################
+
 # AlgebraicJulia Dependencies
 using Catlab
 using Catlab.Graphics
@@ -26,27 +30,80 @@ Point2D = Point2{Float64}
 # A := Longwave emissions at 0°C
 # B := Increase in emissions per degree
 # D := Horizontal diffusivity
-budyko_sellers = @decapode begin
-    (Q,Tₛ)::Form0
-    (α,A,B,C,D,cosϕᵖ,cosϕᵈ)::Constant
 
-    Tₛ̇ == ∂ₜ(Tₛ)
-    ASR == (1 .- α) .* Q
-    OLR == A .+ (B .* Tₛ)
-    HT == (D ./ cosϕᵖ) .* ⋆(d(cosϕᵈ .* ⋆(d(Tₛ))))
+energy_balance = @decapode begin
+  (Tₛ, ASR, OLR, HT)::Form0
+  (C)::Constant
 
-    Tₛ̇ == (ASR - OLR + HT) ./ C
+  Tₛ̇ == ∂ₜ(Tₛ) 
+
+  Tₛ̇ == (ASR - OLR + HT) ./ C
 end
+to_graphviz(energy_balance)
 
-# Infer the forms of dependent variables, and resolve which versions of DEC
-# operators to use.
-infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
-resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
+absorbed_shortwave_radiation = @decapode begin
+  (Q, ASR)::Form0
+  α::Constant
 
-# Visualize.
+  ASR == (1 .- α) .* Q
+end
+to_graphviz(absorbed_shortwave_radiation)
+
+outgoing_longwave_radiation = @decapode begin
+  (Tₛ, OLR)::Form0
+  (A,B)::Constant
+
+  OLR == A .+ (B .* Tₛ)
+end
+to_graphviz(outgoing_longwave_radiation)
+
+heat_transfer = @decapode begin
+  (HT, Tₛ)::Form0
+  (D,cosϕᵖ,cosϕᵈ)::Constant
+
+  HT == (D ./ cosϕᵖ) .* ⋆(d(cosϕᵈ .* ⋆(d(Tₛ))))
+end
+to_graphviz(heat_transfer)
+
+insolation = @decapode begin
+  Q::Form0
+  cosϕᵖ::Constant
+
+  Q == 450 * cosϕᵖ
+end
+to_graphviz(insolation)
+
+to_graphviz(oplus([energy_balance, absorbed_shortwave_radiation, outgoing_longwave_radiation, heat_transfer, insolation]))
+
+budyko_sellers_composition_diagram = @relation () begin
+  energy(Tₛ, ASR, OLR, HT)
+  absorbed_radiation(Q, ASR)
+  outgoing_radiation(Tₛ, OLR)
+  diffusion(Tₛ, HT, cosϕᵖ)
+  insolation(Q, cosϕᵖ)
+end
+to_graphviz(budyko_sellers_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
+
+budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
+  [Open(energy_balance, [:Tₛ, :ASR, :OLR, :HT]),
+   Open(absorbed_shortwave_radiation, [:Q, :ASR]),
+   Open(outgoing_longwave_radiation, [:Tₛ, :OLR]),
+   Open(heat_transfer, [:Tₛ, :HT, :cosϕᵖ]),
+   Open(insolation, [:Q, :cosϕᵖ])])
+
+budyko_sellers = apex(budyko_sellers_cospan)
 to_graphviz(budyko_sellers)
 
-# Demonstrate storing as JSON.
+infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_2D)
+to_graphviz(budyko_sellers)
+
+resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
+to_graphviz(budyko_sellers)
+
+###############################
+# Demonstrate storing as JSON #
+###############################
+
 write_json_acset(budyko_sellers, "budyko_sellers.json")
 # When reading back in, we specify that all attributes are "Symbol"s.
 budyko_sellers2 = read_json_acset(SummationDecapode{Symbol,Symbol,Symbol}, "budyko_sellers.json")
@@ -72,13 +129,13 @@ subdivide_duals!(s, Circumcenter())
 cosϕᵖ = map(x -> cos(x[1]), point(s′))
 # This is a dual 0-form, with values at edge centers.
 cosϕᵈ = map(edges(s′)) do e
-    (cos(point(s′, src(s′, e))[1]) + cos(point(s′, tgt(s′, e))[1])) / 2
+  (cos(point(s′, src(s′, e))[1]) + cos(point(s′, tgt(s′, e))[1])) / 2
 end
 
 α₀ = 0.354
 α₂ = 0.25
 α = map(point(s′)) do ϕ
-    α₀ + α₂*((1/2)*(3*ϕ[1]^2 - 1))
+  α₀ + α₂*((1/2)*(3*ϕ[1]^2 - 1))
 end
 A = 210
 B = 2
@@ -87,59 +144,36 @@ f = 0.70
 cw = 4186
 H = 70
 C = map(point(s′)) do ϕ
-    f * ρ * cw * H
+  f * ρ * cw * H
 end
 D = 0.6
-Q = map(point(s′)) do ϕ
-    450*cos(ϕ[1])
-end
 
 #Tₛ₀ = map(point(s′)) do ϕ
 #    12 .- 40*((1/2)*(3*(sin(ϕ[1]))^2 - 1))
 #end
-# Isothermal:
+# Isothermal initial conditions:
 Tₛ₀ = map(point(s′)) do ϕ
-    15
+  15
 end
 
 # Store these values to be passed to the solver.
-u₀ = construct(PhysicsState, [VectorForm(Q), VectorForm(Tₛ₀)], Float64[], [:Q, :Tₛ])
+u₀ = construct(PhysicsState, [VectorForm(Tₛ₀)], Float64[], [:Tₛ])
 constants_and_parameters = (
-    α = α,
-    A = A,
-    B = B,
-    C = C,
-    D = D,
-    cosϕᵖ = cosϕᵖ,
-    cosϕᵈ = cosϕᵈ)
+  absorbed_radiation_α = α,
+  outgoing_radiation_A = A,
+  outgoing_radiation_B = B,
+  energy_C = C,
+  diffusion_D = D,
+  cosϕᵖ = cosϕᵖ,
+  diffusion_cosϕᵈ = cosϕᵈ)
 
 #############################################
 # Define how symbols map to Julia functions #
 #############################################
 
-hodge = GeometricHodge()
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :d₀ => x -> begin
-      d₀ = d(s,0)
-      d₀ * x
-    end
-    :dual_d₀ => x -> begin
-      dual_d₀ = dual_derivative(s,0)
-      dual_d₀ * x
-    end
-    :⋆₁ => x -> begin
-      ⋆₁ = ⋆(s,1)
-      ⋆₁ * x
-    end
-    :⋆₀⁻¹ => x -> begin
-      ⋆₀⁻¹ = inv_hodge_star(s,0)
-      ⋆₀⁻¹ * x
-    end
-    x => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
+# In this example, all operators come from the Discrete Exterior Calculus module
+# from CombinatorialSpaces.
+function generate(sd, my_symbol; hodge=GeometricHodge()) end
 
 #######################
 # Generate simulation #
@@ -152,7 +186,7 @@ fₘ = sim(s, generate)
 # Run simulation #
 ##################
 
-tₑ = 1e6
+tₑ = 1e9
 
 # Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
@@ -164,6 +198,7 @@ soln.retcode != :Unstable || error("Solver was not stable")
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
+@show soln.retcode
 @info("Done")
 
 @save "budyko_sellers.jld2" soln
@@ -180,7 +215,8 @@ fig = Figure(resolution = (800, 800))
 ax1 = Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
 ylims!(ax1, extrema(findnode(soln(tₑ), :Tₛ)))
-Label(fig[1,1,Top()], "Tₛ")
+Label(fig[1,1,Top()], "Surface temperature, Tₛ, [C°]")
+Label(fig[2,1,Top()], "Line plot of temperature from North to South pole, every $(tₑ/frames) time units")
 
 # Animation
 frames = 100
