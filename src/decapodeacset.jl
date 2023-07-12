@@ -423,22 +423,19 @@ function infer_summands_and_summations!(d::SummationDecapode)
 
     known_types = types[findall(!=(:infer), types)]
     if :Literal ∈ known_types
-      # If anything is a Literal, then anything not inferred is a constant.
+      # If anything is a Literal, then anything not inferred is a Constant.
       inferred_type = :Constant
-      to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
-      d[to_infer_idxs, :type] = inferred_type
-    elseif !isnothing(findfirst(x -> x != :Constant && x != :infer, types))
-      # If anything is a Form, then any term in this sum is the same Form.
+    elseif !isnothing(findfirst(!=(:Constant), known_types))
+      # If anything is a Form, then any term in this sum is the same kind of Form.
       # Note that we are not explicitly changing Constants to Forms here,
       # although we should consider doing so.
-      to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
-      d[to_infer_idxs, :type] = inferred_type
+      inferred_type = findfirst(!=(:Constant), known_types)
     else
-      # All terms are now either Constant or infer. Set them all to Constant.
-      inferred_type = types[findfirst(!=(:infer), types)]
-      to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
-      d[to_infer_idxs, :type] = inferred_type
+      # All terms are now a mix of Constant or infer. Set them all to Constant.
+      inferred_type = :Constant
     end
+    to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
+    d[to_infer_idxs, :type] = inferred_type
     applied = true
   end
   return applied
@@ -461,10 +458,6 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
   types_known_op1 = ones(Bool, nparts(d, :Op1))
   types_known_op1[incident(d, :infer, [:src, :type])] .= false
   types_known_op1[incident(d, :infer, [:tgt, :type])] .= false
-
-  #types_known_op1 = zeros(Bool, nparts(d, :Op1))
-  #types_known_op1[incident(d, :infer, [:src, :type])] .= false
-  #types_known_op1[incident(d, :infer, [:tgt, :type])] .= false
 
   types_known_op2 = zeros(Bool, nparts(d, :Op2))
   types_known_op2[incident(d, :infer, [:proj1, :type])] .= false
