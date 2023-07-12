@@ -420,9 +420,26 @@ function infer_summands_and_summations!(d::SummationDecapode)
     types = d[:type][idxs]
     all(t != :infer for t in types) && continue # We need not infer
     all(t == :infer for t in types) && continue # We can  not infer
-    inferred_type = types[findfirst(!=(:infer), types)]
-    to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
-    d[to_infer_idxs, :type] = inferred_type
+
+    known_types = types[findall(!=(:infer), types)]
+    if :Literal ∈ known_types
+      # If anything is a Literal, then anything not inferred is a constant.
+      inferred_type = :Constant
+      to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
+      d[to_infer_idxs, :type] = inferred_type
+    elseif findfirst(x -> x != :Constant || x != :infer)
+      # If anything is a Form, then any term in this sum is the same Form.
+      # Note that we are not explicitly changing Constants to Forms here,
+      # although we should consider doing so.
+      inferred_type = types[findfirst(x -> x != :Constant || x != :infer)]
+      to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
+      d[to_infer_idxs, :type] = inferred_type
+    else
+      # All terms are now either Constant or infer. Set them all to Constant.
+      inferred_type = types[findfirst(!=(:infer), types)]
+      to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
+      d[to_infer_idxs, :type] = inferred_type
+    end
     applied = true
   end
   return applied
