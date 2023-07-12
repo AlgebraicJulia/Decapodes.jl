@@ -429,7 +429,7 @@ function infer_summands_and_summations!(d::SummationDecapode)
       # If anything is a Form, then any term in this sum is the same kind of Form.
       # Note that we are not explicitly changing Constants to Forms here,
       # although we should consider doing so.
-      inferred_type = findfirst(!=(:Constant), known_types)
+      inferred_type = known_types[findfirst(!=(:Constant), known_types)]
     else
       # All terms are now a mix of Constant or infer. Set them all to Constant.
       inferred_type = :Constant
