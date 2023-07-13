@@ -664,6 +664,28 @@ end
   names_types_expected_15 = Set([(:A, :Form1), (:B, :Form2), (:C, :Form1)])
   @test issetequal(names_types_15, names_types_expected_15)
 
+  # Special case of a summation where all is infer, but a single Literal.
+  t16 = @decapode begin
+    A == 2 + C + D
+  end
+  infer_types!(t16)
+
+  names_types_16 = get_name_type_pair(t16)
+  names_types_expected_16 = Set([(:A, :Constant), (:C, :Constant), (:D, :Constant), (Symbol("2"), :Literal)])
+  @test issetequal(names_types_16, names_types_expected_16)
+
+  # Special case of a summation where all is infer, but a single Literal.
+  t17 = @decapode begin
+    A::Form0
+    C::Constant
+    A == C + D
+  end
+  infer_types!(t17)
+
+  names_types_17 = get_name_type_pair(t17)
+  names_types_expected_17 = Set([(:A, :Form0), (:C, :Constant), (:D, :Form0)])
+  @test issetequal(names_types_17, names_types_expected_17)
+
 end
 
 @testset "Overloading Resolution" begin
