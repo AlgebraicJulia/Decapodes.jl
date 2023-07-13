@@ -73,7 +73,7 @@ insolation = @decapode begin
 end
 to_graphviz(insolation)
 
-to_graphviz(oplus([energy_balance, absorbed_shortwave_radiation, outgoing_longwave_radiation, heat_transfer, insolation]))
+to_graphviz(oplus([energy_balance, absorbed_shortwave_radiation, outgoing_longwave_radiation, heat_transfer, insolation]), directed=false)
 
 budyko_sellers_composition_diagram = @relation () begin
   energy(Tₛ, ASR, OLR, HT)
