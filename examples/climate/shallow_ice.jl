@@ -40,6 +40,10 @@ glens_law = @decapode begin
 end
 to_graphviz(glens_law)
 
+#####################
+# Compose the model #
+#####################
+
 ice_dynamics_composition_diagram = @relation () begin
   dynamics(h,Γ,n)
   stress(Γ,n)
@@ -62,7 +66,10 @@ to_graphviz(ice_dynamics)
 resolve_overloads!(ice_dynamics)
 to_graphviz(ice_dynamics)
 
-# Demonstrate storing as JSON.
+###################
+# Store the model #
+###################
+
 write_json_acset(ice_dynamics, "ice_dynamics.json")
 # When reading back in, we specify that all attributes are "Symbol"s.
 ice_dynamics2 = read_json_acset(SummationDecapode{Symbol,Symbol,Symbol}, "ice_dynamics.json")
@@ -88,7 +95,6 @@ n = 3
 ρ = 910
 g = 9.8
 A = 1e-16
-Γ = (2/(n+2))*A*(ρ*g)^n
 
 # Ice height is a primal 0-form, with values at vertices.
 h₀ = map(point(s′)) do (x,y)
@@ -197,116 +203,3 @@ begin
     ob.color = findnode(soln(t), :h)
   end
 end
-
-
-begin end
-
-
-
-
-
-
-
-
-
-## Equation 1 from Halfar, P. ON THE DYNAMICS OF THE ICE SHEETS. (1981)
-#halfar_eq1 = @decapode begin
-#  h::Form0
-#  (Γ,n)::Constant
-#
-#  ḣ == ∂ₜ(h)
-#  #ḣ == -1 * Γ * ∘(⋆, d, ⋆)(d(h) .* abs(d(h))^(n-1) .* avg₀₁(h^(n+2)))
-#  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) .* abs(d(h))^(n-1) .* avg₀₁(h^(n+2)))
-#  #ḣ == ∘(⋆, d, ⋆)(Γ * avg₀₁(h^(n+2)) .* abs(d(h))^(n-1) .* d(h))
-#end
-#
-## Equation 1 from Glen, J. W. THE FLOW LAW OF ICE: A discussion of the
-## assumptions made in glacier theory, their experimental foundations and
-## consequences. (1958)
-#glen_eq1 = @decapode begin
-#  (ϵ,σ,A,n)::Constant
-#
-#  ϵ == (σ/A)^n
-#end
-#
-## Equation 1 from Mahaffy, M. W. A THREE-DIMENSIONAL NUMERICAL MODEL OF ICE
-## SHEETS: Tests on the Barnes ICe Cap, Northwest Territories. (1976)
-#mahaffy_eq1 = @decapode begin
-#  h::Form0
-#  (ϵ,σ,A,n)::Constant
-#  b::Parameter
-#
-#  ḣ == ∂ₜ(h)
-#  ḣ == b - ∘(⋆, d, ⋆)(q)
-#end
-#
-## Equations 9 and 10 from Mahaffy, M. W. A THREE-DIMENSIONAL NUMERICAL MODEL OF
-## ICE SHEETS: Tests on the Barnes ICe Cap, Northwest Territories. (1976)
-#mahaffy_eqs9_10 = @decapode begin
-#  h::Form0
-#  (σ,ρ,g)::Constant
-#
-#  σ == -ρ * g * (h-z) * d(h)
-#end
-#
-## Equation 13 from Mahaffy, M. W. A THREE-DIMENSIONAL NUMERICAL MODEL OF ICE
-## SHEETS: Tests on the Barnes ICe Cap, Northwest Territories. (1976)
-#mahaffy_eq13 = @decapode begin
-#  h::Form0
-#  α::Form1
-#
-#  α == abs(d(h))
-#end
-#
-## Equations 14 and 15 from Mahaffy, M. W. A THREE-DIMENSIONAL NUMERICAL MODEL OF
-## ICE SHEETS: Tests on the Barnes ICe Cap, Northwest Territories. (1976)
-#mahaffy_eqs14_15 = @decapode begin
-#  h::Form0
-#  (α,q)::Form1
-#
-#end
-## Infer the forms of dependent variables, and resolve which versions of DEC
-## operators to use.
-#halfar = expand_operators(halfar_eq1)
-#infer_types!(expand_operators(ice_dynamics))
-#resolve_overloads!(ice_dynamics)
-#infer_types!(halfar, op1_inf_rules_2D,
-#  vcat(op2_inf_rules_2D, [
-#    (proj1_type = :Constant, proj2_type = :Literal, res_type = :Constant, op_names = [:/, :./, :*, :.*]),
-#    (proj1_type = :Literal, proj2_type = :Constant, res_type = :Constant, op_names = [:/, :./, :*, :.*])]
-#  ))
-#resolve_overloads!(halfar)
-#
-## Visualize.
-#to_graphviz(halfar)
-#to_graphviz(ice_dynamics)
-#constants_and_parameters = (
-#  n = n,
-#  ρ = ρ,
-#  g = g,
-#  A = A,
-#  Γ = Γ)
-#prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-#soln = solve(prob, Tsit5())
-#extrema(findnode(soln(0.0), :h))
-#extrema(findnode(soln(tₑ ), :h))
-#
-#extrema(d0s * findnode(soln(0.0), :h))
-#extrema(d0s * findnode(soln(tₑ ), :h))
-
-#sim = eval(gensim(halfar, dimension=2))
-#fₘ = sim(s, generate)
-#@save "halfar.jld2" soln
-#begin # BEGIN Gif creation
-#frames = 100
-## Initial frame
-##fig = GLMakie.Figure(resolution = (400, 400))
-#fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :h), colormap=:jet, colorrange=extrema(findnode(soln(tₑ), :h)))
-#Colorbar(fig[1,2], ob)
-#
-## Animation
-#record(fig, "halfar.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
-#    ob.color = findnode(soln(t), :h)
-#end
-#
-#end # END Gif creation
