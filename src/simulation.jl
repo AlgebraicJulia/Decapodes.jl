@@ -211,7 +211,6 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol})
   end
 
 function compile_var(alloc_vectors::Vector{AllocVecCall})
-    #return quote $(map(Expr, alloc_vectors)...) end
     return quote $(Expr.(alloc_vectors)...) end
 end
 
