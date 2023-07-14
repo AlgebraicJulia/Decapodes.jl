@@ -1,4 +1,4 @@
-# This is a 50 line implementation of Oceananigans.jl's NonhydrostaticModel.
+# This is a small implementation of Oceananigans.jl's NonhydrostaticModel.
 
 #######################
 # Import Dependencies #
@@ -24,14 +24,13 @@ Point3D = Point3{Float64}
 
 momentum = @decapode begin
   (f,b)::Form0
-  (v,V,g,Fᵥ,uˢ)::Form1
+  (v,V,g,Fᵥ,uˢ,v_up)::Form1
   τ::Form2
   U::Parameter
 
-  v̇ == ∂ₜ(v)
   uˢ̇ == ∂ₜ(uˢ)
 
-  v̇ == -1 * L(v,v) - L(V,v) - L(v,V) -
+  v_up == -1 * L(v,v) - L(V,v) - L(v,V) -
        f∧v - ∘(⋆,d,⋆)(uˢ)∧v - d(p) + b∧g - ∘(⋆,d,⋆)(τ) + uˢ̇ + Fᵥ
 
   uˢ̇ == force(U)
@@ -58,15 +57,19 @@ to_graphviz(equation_of_state)
 boundary_conditions = @decapode begin
   (S,T)::Form0
   (Ṡ,T_up)::Form0
+  v::Form1
+  v_up::Form1
   Ṫ == ∂ₜ(T)
   Ṡ == ∂ₜ(S)
+  v̇ == ∂ₜ(v)
 
   Ṫ == ∂_spatial(T_up)
+  v̇ == ∂_noslip(v_up)
 end
 to_graphviz(boundary_conditions)
 
 buoyancy_composition_diagram = @relation () begin
-  momentum(V, v, b)
+  momentum(V, v, v_up, b)
 
   # "Both T and S obey the tracer conservation equation"
   temperature(V, v, T, T_up)
@@ -75,16 +78,16 @@ buoyancy_composition_diagram = @relation () begin
   # "Buoyancy is determined from a linear equation of state"
   eos(b, T, S)
 
-  bcs(S, T, S_up, T_up)
+  bcs(v, S, T, v_up, S_up, T_up)
 end
 to_graphviz(buoyancy_composition_diagram, box_labels=:name, junction_labels=:variable, prog="fdp", graph_attrs=Dict(["sep" => "1.5"]))
 
 buoyancy_cospan = oapply(buoyancy_composition_diagram, [
-  Open(momentum,          [:V, :v, :b]),
+  Open(momentum,          [:V, :v, :v_up, :b]),
   Open(tracer,            [:V, :v, :c, :c_up]),
   Open(tracer,            [:V, :v, :c, :c_up]),
   Open(equation_of_state, [:b, :T, :S]),
-  Open(boundary_conditions, [:S, :T, :Ṡ, :T_up])])
+  Open(boundary_conditions, [:v, :S, :T, :v_up, :Ṡ, :T_up])])
 
 buoyancy = apex(buoyancy_cospan)
 to_graphviz(buoyancy)
@@ -94,12 +97,10 @@ infer_types!(buoyancy)
 resolve_overloads!(buoyancy)
 to_graphviz(buoyancy)
 
-s′ = loadmesh(Rectangle_30x10())
-s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
-subdivide_duals!(s, Barycenter())
 
 include("../../grid_meshes.jl")
-s′ = triangulated_grid(80,80, 10, 10, Point3D)
+#s′ = loadmesh(Rectangle_30x10())
+s′ = triangulated_grid(80,80, 2, 2, Point3D)
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
 xmax = maximum(x -> x[1], point(s))
@@ -114,10 +115,24 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :L₂ᵈ => (x,y) -> lie_derivative_flat(2, sd, x, y)
     :force => x -> x
     :∂_spatial => x -> begin
-      left = findall(x -> x[1] ≈ 0.0, point(s))
-      right = findall(x -> x[1] ≈ xmax, point(s))
-      x[left] .= 276
-      x[right] .= 279
+      left = findall(x -> x[1] ≈ 0.0, point(sd))
+      right = findall(x -> x[1] ≈ xmax, point(sd))
+      x[left] .= 0.0
+      x[right] .= 0.0
+      x
+    end
+    :∂_noslip => x -> begin
+      right = findall(x -> x[1] ≈ xmax, point(sd))
+      top = findall(x -> x[2] ≈ zmax, point(sd))
+      bottom = findall(x -> x[2] ≈ 0.0, point(sd))
+      x[findall(x -> x[1] ≈ 0.0 , point(sd,sd[:∂v0]))] .= 0
+      x[findall(x -> x[1] ≈ 0.0 , point(sd,sd[:∂v1]))] .= 0
+      x[findall(x -> x[1] ≈ xmax, point(sd,sd[:∂v0]))] .= 0
+      x[findall(x -> x[1] ≈ xmax, point(sd,sd[:∂v1]))] .= 0
+      x[findall(x -> x[2] ≈ 0.0 , point(sd,sd[:∂v0]))] .= 0
+      x[findall(x -> x[2] ≈ 0.0 , point(sd,sd[:∂v1]))] .= 0
+      x[findall(x -> x[2] ≈ zmax, point(sd,sd[:∂v0]))] .= 0
+      x[findall(x -> x[2] ≈ zmax, point(sd,sd[:∂v1]))] .= 0
       x
     end
     _ => default_dec_generate(sd, my_symbol, hodge)
@@ -132,11 +147,19 @@ S = map(point(s)) do (_,_,_)
   35.0
 end
 T = map(point(s)) do (x,z,_)
-  273.15 + 4 + ((zmax-z)^2 + (xmax-x)^2)^(1/2)/(1e2)
+  #273.15 + 4 + ((zmax-z)^2 + (xmax-x)^2)^(1/2)/(1e2)
+  273.15 + 4
 end
+left = findall(x -> x[1] ≈ 0.0, point(sd))
+right = findall(x -> x[1] ≈ xmax, point(sd))
+T[left] .= 276
+T[right] .= 279
 extrema(T)
 mesh(s′, color=T, colormap=:jet)
-p = zeros(nv(s))
+p = map(point(s)) do (x,z,_)
+  (zmax-z)
+end
+extrema(p)
 f = zeros(nv(s))
 Fₛ = zeros(nv(s))
 Fₜ = zeros(nv(s))
@@ -200,35 +223,32 @@ constants_and_parameters = (
   eos_β = β,
   momentum_U = t -> 0)
 
-tₑ = 1e9
+tₑ = 1.5
 
 # Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
-#prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
-#prob = ODEProblem(fₘ, u₀, (0, 1e-3), constants_and_parameters)
-#prob = ODEProblem(fₘ, u₀, (0, 1e-1), constants_and_parameters)
-prob = ODEProblem(fₘ, u₀, (0, 1e2), constants_and_parameters)
+prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
 soln = solve(prob, Tsit5(), dtmin=1e-3, force_dtmin=true)
 soln.retcode != :Unstable || error("Solver was not stable")
 
-# This next run should be fast.
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5())
+soln = solve(prob, Tsit5(), dtmin=1e-3, force_dtmin=true)
 @show soln.retcode
 @info("Done")
 
-mesh(s′, color=findnode(soln(2.2), :T), colormap=:jet)
-extrema(findnode(soln(2.2), :T))
+mesh(s′, color=findnode(soln(1.5), :T), colormap=:jet)
+extrema(findnode(soln(0), :T))
+extrema(findnode(soln(1.5), :T))
 
 # Create a gif
 begin
   frames = 100
   #fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :T), colormap=:jet, colorrange=extrema(findnode(soln(tₑ), :h)))
-  fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :T), colormap=:jet, colorrange=extrema(findnode(soln(2.2), :T)))
+  fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :T), colormap=:jet, colorrange=extrema(findnode(soln(1.5), :T)))
   Colorbar(fig[1,2], ob)
   #record(fig, "oceananigans.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
-  record(fig, "oceananigans.gif", range(0.0, 2.2; length=frames); framerate = 30) do t
+  record(fig, "oceananigans.gif", range(0.0, 1.5; length=frames); framerate = 30) do t
     ob.color = findnode(soln(t), :T)
   end
 end
