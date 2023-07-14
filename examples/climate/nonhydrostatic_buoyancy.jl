@@ -26,20 +26,25 @@ momentum = @decapode begin
   (f,b)::Form0
   (v,V,g,Fᵥ,uˢ)::Form1
   τ::Form2
+  U::Parameter
+
   v̇ == ∂ₜ(v)
+  uˢ̇ == ∂ₜ(uˢ)
 
   v̇ == -1 * L(v,v) - L(V,v) - L(v,V) -
-       f∧v - ∘(⋆,d,⋆)(uˢ)∧v - d(p) + b∧g - ∘(⋆,d,⋆)(τ) + dtuˢ + Fᵥ
+       f∧v - ∘(⋆,d,⋆)(uˢ)∧v - d(p) + b∧g - ∘(⋆,d,⋆)(τ) + uˢ̇ + Fᵥ
+
+  uˢ̇ == force(U)
 end
 momentum = expand_operators(momentum)
 to_graphviz(momentum)
 
 tracer = @decapode begin
-  (c,F)::Form0
+  (c,C,F)::Form0
   (v,V,q)::Form1
   ċ == ∂ₜ(c)
 
-  ċ == -1*⋆(L(v,⋆(c))) - ⋆(L(V,⋆(c))) - ⋆(L(v,⋆(c))) - ∘(⋆,d,⋆)(q) + F
+  ċ == -1*⋆(L(v,⋆(c))) - ⋆(L(V,⋆(c))) - ⋆(L(v,⋆(C))) - ∘(⋆,d,⋆)(q) + F
 end
 to_graphviz(tracer)
 
@@ -81,11 +86,17 @@ s′ = loadmesh(Rectangle_30x10())
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
 
+include("../../grid_meshes.jl")
+s′ = triangulated_grid(80,80, 10, 10, Point3D)
+s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
+subdivide_duals!(s, Barycenter())
+
 include("dec_operators.jl")
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :L₁ => (x,y) -> L₁′(x,y,sd,hodge)
     :L₂ᵈ => (x,y) -> lie_derivative_flat(2, sd, x, y)
+    :force => x -> x
     _ => default_dec_generate(sd, my_symbol, hodge)
   end
   return (args...) -> op(args...)
@@ -94,13 +105,21 @@ end
 sim = eval(gensim(buoyancy))
 fₘ = sim(s, generate)
 
-S = zeros(nv(s))
-T = zeros(nv(s))
+zmax = maximum(x -> x[2], point(s))
+S = map(point(s)) do (_,_,_)
+  10.0
+end
+T = map(point(s)) do (_,z,_)
+  273.15 + 4 + (zmax-z)/(zmax)*2
+end
+extrema(T)
 p = zeros(nv(s))
 f = zeros(nv(s))
 Fₛ = zeros(nv(s))
 Fₜ = zeros(nv(s))
 f = zeros(nv(s))
+Cₛ = zeros(nv(s))
+Cₜ = zeros(nv(s))
 
 V = zeros(ne(s))
 v = zeros(ne(s))
@@ -126,9 +145,11 @@ u₀ = construct(PhysicsState, [
   VectorForm(T),
   VectorForm(Fₜ),
   VectorForm(qₜ),
+  VectorForm(Cₜ),
   VectorForm(S),
   VectorForm(Fₛ),
-  VectorForm(qₛ)], Float64[], [
+  VectorForm(qₛ),
+  VectorForm(Cₛ)], Float64[], [
   :momentum_f,
   :v,
   :V,
@@ -141,24 +162,30 @@ u₀ = construct(PhysicsState, [
   :T,
   :temperature_F,
   :temperature_q,
+  :temperature_C,
   :S,
   :salinity_F,
-  :salinity_q])
+  :salinity_q,
+  :salinity_C])
 
-gᶜ = 0
-α = 0
-β = 0
+gᶜ = 9.81
+α = 2e-3
+β = 5e-4
 constants_and_parameters = (
   eos_g = gᶜ,
   eos_α = α,
-  eos_β = β)
+  eos_β = β,
+  momentum_U = t -> 0)
 
 tₑ = 1e9
 
 # Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
-prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
-soln = solve(prob, Tsit5())
+#prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
+#prob = ODEProblem(fₘ, u₀, (0, 1e-3), constants_and_parameters)
+#prob = ODEProblem(fₘ, u₀, (0, 1e-1), constants_and_parameters)
+prob = ODEProblem(fₘ, u₀, (0, 1e2), constants_and_parameters)
+soln = solve(prob, Tsit5(), dtmin=1e-3, force_dtmin=true)
 soln.retcode != :Unstable || error("Solver was not stable")
 
 # This next run should be fast.
@@ -167,6 +194,20 @@ prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
 @show soln.retcode
 @info("Done")
+
+mesh(s′, color=findnode(soln(3.1), :T), colormap=:jet)
+
+# Create a gif
+begin
+  frames = 100
+  #fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :T), colormap=:jet, colorrange=extrema(findnode(soln(tₑ), :h)))
+  fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :T), colormap=:jet, colorrange=extrema(findnode(soln(3.1), :T)))
+  Colorbar(fig[1,2], ob)
+  #record(fig, "oceananigans.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
+  record(fig, "oceananigans.gif", range(0.0, 3.1; length=frames); framerate = 30) do t
+    ob.color = findnode(soln(t), :T)
+  end
+end
 
 begin end
 
