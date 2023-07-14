@@ -349,12 +349,22 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, op_names = [:∧, :∧₂₀]),
   (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, op_names = [:∧, :∧₀₂]),
 
+  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:L]),    
+
   # Rules for L₂
   (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form2, op_names = [:L, :L₂]),    
 
   # Rules for i₁
   (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form1, op_names = [:i, :i₁]),
   
+  # Rules for subtraction
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:-, :.-]),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, op_names = [:-, :.-]),
+  (proj1_type = :Form2, proj2_type = :Form2, res_type = :Form2, op_names = [:-, :.-]),
+  (proj1_type = :DualForm0, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [:-, :.-]),
+  (proj1_type = :DualForm1, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:-, :.-]),
+  (proj1_type = :DualForm2, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:-, :.-]),
+
   # Rules for divison and multiplication
   (proj1_type = :Form2, proj2_type = :Form2, res_type = :Form2, op_names = [:./, :.*]),
   (proj1_type = :Literal, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
@@ -569,6 +579,7 @@ op2_res_rules_2D = vcat(op2_res_rules_1D, [
   (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :∧),
   # Rules for L.
   (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form2, resolved_name = :L₂, op = :L),
+  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₂ᵈ, op = :L),
   # Rules for i.
   (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form1, resolved_name = :i₂, op = :i)])
   
