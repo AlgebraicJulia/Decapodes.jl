@@ -90,7 +90,9 @@ include("../../grid_meshes.jl")
 s′ = triangulated_grid(80,80, 10, 10, Point3D)
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
+wireframe(s)
 
+# Some extra operators that haven't been up-streamed into CombinatorialSpaces yet.
 include("dec_operators.jl")
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
@@ -105,14 +107,16 @@ end
 sim = eval(gensim(buoyancy))
 fₘ = sim(s, generate)
 
+xmax = maximum(x -> x[1], point(s))
 zmax = maximum(x -> x[2], point(s))
 S = map(point(s)) do (_,_,_)
-  10.0
+  35.0
 end
-T = map(point(s)) do (_,z,_)
-  273.15 + 4 + (zmax-z)/(zmax)*2
+T = map(point(s)) do (x,z,_)
+  273.15 + 4 + ((zmax-z)^2 + (xmax-x)^2)^(1/2)/(1e2)
 end
 extrema(T)
+mesh(s′, color=T, colormap=:jet)
 p = zeros(nv(s))
 f = zeros(nv(s))
 Fₛ = zeros(nv(s))
@@ -196,6 +200,7 @@ soln = solve(prob, Tsit5())
 @info("Done")
 
 mesh(s′, color=findnode(soln(3.1), :T), colormap=:jet)
+extrema(findnode(soln(3.1), :T))
 
 # Create a gif
 begin
