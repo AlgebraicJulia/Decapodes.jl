@@ -40,11 +40,10 @@ momentum = expand_operators(momentum)
 to_graphviz(momentum)
 
 tracer = @decapode begin
-  (c,C,F)::Form0
+  (c,C,F,c_up)::Form0
   (v,V,q)::Form1
-  ċ == ∂ₜ(c)
 
-  ċ == -1*⋆(L(v,⋆(c))) - ⋆(L(V,⋆(c))) - ⋆(L(v,⋆(C))) - ∘(⋆,d,⋆)(q) + F
+  c_up == -1*⋆(L(v,⋆(c))) - ⋆(L(V,⋆(c))) - ⋆(L(v,⋆(C))) - ∘(⋆,d,⋆)(q) + F
 end
 to_graphviz(tracer)
 
@@ -56,23 +55,36 @@ equation_of_state = @decapode begin
 end
 to_graphviz(equation_of_state)
 
+boundary_conditions = @decapode begin
+  (S,T)::Form0
+  (Ṡ,T_up)::Form0
+  Ṫ == ∂ₜ(T)
+  Ṡ == ∂ₜ(S)
+
+  Ṫ == ∂_spatial(T_up)
+end
+to_graphviz(boundary_conditions)
+
 buoyancy_composition_diagram = @relation () begin
   momentum(V, v, b)
 
   # "Both T and S obey the tracer conservation equation"
-  temperature(V, v, T)
-  salinity(V, v, S)
+  temperature(V, v, T, T_up)
+  salinity(V, v, S, S_up)
 
   # "Buoyancy is determined from a linear equation of state"
   eos(b, T, S)
+
+  bcs(S, T, S_up, T_up)
 end
 to_graphviz(buoyancy_composition_diagram, box_labels=:name, junction_labels=:variable, prog="fdp", graph_attrs=Dict(["sep" => "1.5"]))
 
 buoyancy_cospan = oapply(buoyancy_composition_diagram, [
   Open(momentum,          [:V, :v, :b]),
-  Open(tracer,            [:V, :v, :c]),
-  Open(tracer,            [:V, :v, :c]),
-  Open(equation_of_state, [:b, :T, :S])])
+  Open(tracer,            [:V, :v, :c, :c_up]),
+  Open(tracer,            [:V, :v, :c, :c_up]),
+  Open(equation_of_state, [:b, :T, :S]),
+  Open(boundary_conditions, [:S, :T, :Ṡ, :T_up])])
 
 buoyancy = apex(buoyancy_cospan)
 to_graphviz(buoyancy)
@@ -90,6 +102,8 @@ include("../../grid_meshes.jl")
 s′ = triangulated_grid(80,80, 10, 10, Point3D)
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
+xmax = maximum(x -> x[1], point(s))
+zmax = maximum(x -> x[2], point(s))
 wireframe(s)
 
 # Some extra operators that haven't been up-streamed into CombinatorialSpaces yet.
@@ -99,6 +113,13 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :L₁ => (x,y) -> L₁′(x,y,sd,hodge)
     :L₂ᵈ => (x,y) -> lie_derivative_flat(2, sd, x, y)
     :force => x -> x
+    :∂_spatial => x -> begin
+      left = findall(x -> x[1] ≈ 0.0, point(s))
+      right = findall(x -> x[1] ≈ xmax, point(s))
+      x[left] .= 276
+      x[right] .= 279
+      x
+    end
     _ => default_dec_generate(sd, my_symbol, hodge)
   end
   return (args...) -> op(args...)
@@ -107,8 +128,6 @@ end
 sim = eval(gensim(buoyancy))
 fₘ = sim(s, generate)
 
-xmax = maximum(x -> x[1], point(s))
-zmax = maximum(x -> x[2], point(s))
 S = map(point(s)) do (_,_,_)
   35.0
 end
@@ -199,17 +218,17 @@ soln = solve(prob, Tsit5())
 @show soln.retcode
 @info("Done")
 
-mesh(s′, color=findnode(soln(3.1), :T), colormap=:jet)
-extrema(findnode(soln(3.1), :T))
+mesh(s′, color=findnode(soln(2.2), :T), colormap=:jet)
+extrema(findnode(soln(2.2), :T))
 
 # Create a gif
 begin
   frames = 100
   #fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :T), colormap=:jet, colorrange=extrema(findnode(soln(tₑ), :h)))
-  fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :T), colormap=:jet, colorrange=extrema(findnode(soln(3.1), :T)))
+  fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :T), colormap=:jet, colorrange=extrema(findnode(soln(2.2), :T)))
   Colorbar(fig[1,2], ob)
   #record(fig, "oceananigans.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
-  record(fig, "oceananigans.gif", range(0.0, 3.1; length=frames); framerate = 30) do t
+  record(fig, "oceananigans.gif", range(0.0, 2.2; length=frames); framerate = 30) do t
     ob.color = findnode(soln(t), :T)
   end
 end
