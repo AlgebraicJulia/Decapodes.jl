@@ -16,39 +16,29 @@ using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 
-Brusselator = SummationDecapode(parse_decapode(
-quote
+Brusselator = @decapode begin
   # Values living on vertices.
   (U, V)::Form0{X} # State variables.
   (U2V, One)::Form0{X} # Named intermediate variables.
   (U̇, V̇)::Form0{X} # Tangent variables.
   # Scalars.
-  (fourfour, threefour, α)::Constant{X}
+  (α)::Constant{X}
   F::Parameter{X}
   # A named intermediate variable.
   U2V == (U .* U) .* V
   # Specify how to compute the tangent variables.
-  U̇ == One + U2V - (fourfour * U) + (α * Δ(U)) + F
-  V̇ == (threefour * U) - U2V + (α * Δ(U))
+  U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+  V̇ == (3.4 * U) - U2V + (α * Δ(U))
   # Associate tangent variables with a state variable.
   ∂ₜ(U) == U̇
   ∂ₜ(V) == V̇
-end))
+end
 # Visualize. You must have graphviz installed.
 to_graphviz(Brusselator)
 
 # We resolve types of intermediate variables using sets of rules.
-bespoke_op1_inf_rules = [
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :Δ)]
 
-bespoke_op2_inf_rules = [
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :.*),
-  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form0, op = :*),
-  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :*)]
-
-infer_types!(Brusselator,
-    vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
-    vcat(bespoke_op2_inf_rules, op2_inf_rules_2D))
+infer_types!(Brusselator)
 # Visualize. Note that variables now all have types.
 to_graphviz(Brusselator)
 
@@ -112,8 +102,7 @@ constants_and_parameters = (
   fourfour = 4.4,
   threefour = 3.4,
   α = 0.001,
-  F = t -> t ≥ 1.1 ? F₁ : F₂
-  )
+  F = t -> t ≥ 1.1 ? F₂ : F₁)
 
 # Generate the simulation.
 gensim(expand_operators(Brusselator))
@@ -122,7 +111,9 @@ fₘ = sim(sd, generate)
 
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
-u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)], Float64[], [:U, :V, :One])
+u₀ = construct(PhysicsState,
+  [VectorForm(U), VectorForm(V), VectorForm(One)], Float64[],
+  [:U, :V, :One])
 
 # Visualize the initial conditions.
 # If GLMakie throws errors, then update your graphics drivers,
@@ -238,6 +229,7 @@ u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)], 
 fig_ic = GLMakie.Figure()
 p1 = GLMakie.mesh(fig_ic[1,2], s, color=findnode(u₀, :U), colormap=:jet)
 p2 = GLMakie.mesh(fig_ic[1,3], s, color=findnode(u₀, :V), colormap=:jet)
+display(fig_ic)
 
 tₑ = 11.5
 

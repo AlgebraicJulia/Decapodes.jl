@@ -338,6 +338,13 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
 
                 end
 
+                if(operator == :(*))
+                    operator = promote_arithmetic_map[operator]
+                end
+                if(operator == :(-))
+                    operator = promote_arithmetic_map[operator]
+                end
+
                 visited_2[op] = true
                 visited_Var[r] = true
                 c = BinaryCall(operator, equality, a1name, a2name, rname)
@@ -362,6 +369,8 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                     equality = promote_arithmetic_map[equality]
                     push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
                 end
+
+                operator = :(.+)
 
                 visited_Σ[op] = true
                 visited_Var[r] = true

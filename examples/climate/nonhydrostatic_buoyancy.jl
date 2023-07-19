@@ -22,6 +22,7 @@ Point3D = Point3{Float64}
 # Define the model #
 ####################
 
+# Equation 1: "The momentum conservation equation" from https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-momentum-conservation-equation
 momentum = @decapode begin
   (f,b)::Form0
   (v,V,g,Fᵥ,uˢ,v_up)::Form1
@@ -36,16 +37,18 @@ momentum = @decapode begin
   uˢ̇ == force(U)
 end
 momentum = expand_operators(momentum)
-to_graphviz(momentum)
+to_graphviz(momentum, graph_attrs=Dict(:rankdir => "LR"))
 
+# Equation 2: "The tracer conservation equation" from https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-tracer-conservation-equation
 tracer = @decapode begin
   (c,C,F,c_up)::Form0
   (v,V,q)::Form1
 
   c_up == -1*⋆(L(v,⋆(c))) - ⋆(L(V,⋆(c))) - ⋆(L(v,⋆(C))) - ∘(⋆,d,⋆)(q) + F
 end
-to_graphviz(tracer)
+to_graphviz(tracer, graph_attrs=Dict(:rankdir => "LR"))
 
+# Equation 2: "Linear equation of state" of seawater buoyancy from https://clima.github.io/OceananigansDocumentation/stable/physics/buoyancy_and_equations_of_state/#Linear-equation-of-state
 equation_of_state = @decapode begin
   (b,T,S)::Form0
   (g,α,β)::Constant
@@ -100,7 +103,7 @@ to_graphviz(buoyancy)
 
 include("../../grid_meshes.jl")
 #s′ = loadmesh(Rectangle_30x10())
-s′ = triangulated_grid(80,80, 2, 2, Point3D)
+s′ = triangulated_grid(80,80, 10, 10, Point3D)
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
 xmax = maximum(x -> x[1], point(s))
@@ -255,68 +258,46 @@ end
 
 begin end
 
-## Track a single tracer.
-#single_tracer_composition_diagram = @relation () begin
-#  momentum(V, v)
-#  tracer(V, v)
-#end
-#to_graphviz(single_tracer_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
-#
-#single_tracer_cospan = oapply(single_tracer_composition_diagram,
-#  [Open(momentum, [:V, :v]),
-#  Open(tracer, [:V, :v])])
-#
-#single_tracer = apex(single_tracer_cospan)
-#to_graphviz(single_tracer)
-#
-#single_tracer = expand_operators(single_tracer)
-#infer_types!(single_tracer)
-#resolve_overloads!(single_tracer)
-#to_graphviz(single_tracer)
-#
-#
-## Track multiple tracers.
-#triple_tracer_composition_diagram = @relation () begin
-#  momentum(V, v)
-#
-#  mercury(V, v)
-#  phosphate(V, v)
-#  oil(V, v)
-#end
-#to_graphviz(triple_tracer_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
-#
-#triple_tracer_cospan = oapply(triple_tracer_composition_diagram,
-#  [Open(momentum, [:V, :v]),
-#  Open(tracer, [:V, :v]),
-#  Open(tracer, [:V, :v]),
-#  Open(tracer, [:V, :v])])
-#
-#triple_tracer = apex(triple_tracer_cospan)
-#to_graphviz(triple_tracer)
-#
-#triple_tracer = expand_operators(triple_tracer)
-#infer_types!(triple_tracer)
-#resolve_overloads!(triple_tracer)
-#to_graphviz(triple_tracer)
-#
-#
-## The buoyancy model uses b as a tracer.
-#buoyancy_composition_diagram = @relation () begin
-#  momentum(V, v, b)
-#
-#  # "b obeys the tracer equation"
-#  tracer(V, v, b)
-#end
-#to_graphviz(buoyancy_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
-#
-#buoyancy_cospan = oapply(buoyancy_composition_diagram,
-#  [Open(momentum, [:V, :v, :b]),
-#  Open(tracer, [:V, :v, :c])])
-#
-#buoyancy = apex(buoyancy_cospan)
-#to_graphviz(buoyancy)
-#
-#buoyancy = expand_operators(buoyancy)
-#infer_types!(buoyancy)
-#resolve_overloads!(buoyancy)
-#to_graphviz(buoyancy)
+# Track a single tracer.
+single_tracer_composition_diagram = @relation () begin
+  momentum(V, v)
+  tracer(V, v)
+end
+to_graphviz(single_tracer_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
+
+single_tracer_cospan = oapply(single_tracer_composition_diagram,
+  [Open(momentum, [:V, :v]),
+  Open(tracer, [:V, :v])])
+
+single_tracer = apex(single_tracer_cospan)
+to_graphviz(single_tracer)
+
+single_tracer = expand_operators(single_tracer)
+infer_types!(single_tracer)
+resolve_overloads!(single_tracer)
+to_graphviz(single_tracer)
+
+
+# Track multiple tracers.
+triple_tracer_composition_diagram = @relation () begin
+  momentum(V, v)
+
+  mercury(V, v)
+  phosphate(V, v)
+  oil(V, v)
+end
+to_graphviz(triple_tracer_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
+
+triple_tracer_cospan = oapply(triple_tracer_composition_diagram,
+  [Open(momentum, [:V, :v]),
+  Open(tracer, [:V, :v]),
+  Open(tracer, [:V, :v]),
+  Open(tracer, [:V, :v])])
+
+triple_tracer = apex(triple_tracer_cospan)
+to_graphviz(triple_tracer)
+
+triple_tracer = expand_operators(triple_tracer)
+infer_types!(triple_tracer)
+resolve_overloads!(triple_tracer)
+to_graphviz(triple_tracer)
