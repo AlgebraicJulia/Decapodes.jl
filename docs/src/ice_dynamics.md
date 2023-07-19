@@ -450,7 +450,7 @@ fₘ = sim(s, generate)
 ``` @example DEC
 # For brevity's sake, we'll skip the pre-compilation cell.
 
-tₑ = 1e13
+tₑ = 5e25
 
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
