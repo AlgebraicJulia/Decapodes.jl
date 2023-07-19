@@ -21,20 +21,20 @@ Point2D = Point2{Float64}
 
 # Equation 2 from Halfar, P. ON THE DYNAMICS OF THE ICE SHEETS. (1981)
 halfar_eq2 = @decapode begin
-  (h,Γ)::Form0
+  h::Form0
+  Γ::Form1
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == ∘(⋆, d, ⋆)(Γ .* d(h) .* abs(d(h))^(n-1) .* avg₀₁(h^(n+2)))
+  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
 end
-to_graphviz(halfar_eq2)
 
 # Equation 1 from Glen, J. W. THE FLOW LAW OF ICE: A discussion of the
 # assumptions made in glacier theory, their experimental foundations and
 # consequences. (1958)
 glens_law = @decapode begin
-  Γ::Form0
-  (A,ρ,g,n)::Constant
+  (A, Γ)::Form1
+  (ρ,g,n)::Constant
   
   Γ == (2/(n+2))*A*(ρ*g)^n
 end

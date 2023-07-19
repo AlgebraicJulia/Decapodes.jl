@@ -94,7 +94,7 @@ budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
 budyko_sellers = apex(budyko_sellers_cospan)
 to_graphviz(budyko_sellers)
 
-infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_2D)
+infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
 to_graphviz(budyko_sellers)
 
 resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
