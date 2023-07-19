@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Glacial Flow · Decapodes.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><script src="../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Decapodes.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Decapodes.jl</a></li><li class="is-active"><a class="tocitem" href>Glacial Flow</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Defining-the-models"><span>Defining the models</span></a></li><li class="toplevel"><a class="tocitem" href="#Composing-models"><span>Composing models</span></a></li><li class="toplevel"><a class="tocitem" href="#Provide-a-semantics"><span>Provide a semantics</span></a></li><li class="toplevel"><a class="tocitem" href="#Define-a-mesh"><span>Define a mesh</span></a></li><li class="toplevel"><a class="tocitem" href="#Define-input-data"><span>Define input data</span></a></li><li class="toplevel"><a class="tocitem" href="#Define-functions"><span>Define functions</span></a></li><li class="toplevel"><a class="tocitem" href="#Generate-the-simulation"><span>Generate the simulation</span></a></li><li class="toplevel"><a class="tocitem" href="#Pre-compile-and-run"><span>Pre-compile and run</span></a></li><li class="toplevel"><a class="tocitem" href="#Visualize"><span>Visualize</span></a></li><li class="toplevel"><a class="tocitem" href="#D-Re-interpretation"><span>2D Re-interpretation</span></a></li><li class="toplevel"><a class="tocitem" href="#Store-as-JSON"><span>Store as JSON</span></a></li><li class="toplevel"><a class="tocitem" href="#Define-our-mesh"><span>Define our mesh</span></a></li><li class="toplevel"><a class="tocitem" href="#Define-our-input-data"><span>Define our input data</span></a></li><li class="toplevel"><a class="tocitem" href="#Define-our-functions"><span>Define our functions</span></a></li><li class="toplevel"><a class="tocitem" href="#Generate-simulation"><span>Generate simulation</span></a></li><li class="toplevel"><a class="tocitem" href="#Pre-compile-and-run-2"><span>Pre-compile and run</span></a></li><li class="toplevel"><a class="tocitem" href="#Visualize-2"><span>Visualize</span></a></li><li class="toplevel"><a class="tocitem" href="#Manifold-in-3D"><span>2-Manifold in 3D</span></a></li></ul></li><li><a class="tocitem" href="../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Glacial Flow</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Glacial Flow</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/ice_dynamics.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Halfar&#39;s-model-of-glacial-flow"><a class="docs-heading-anchor" href="#Halfar&#39;s-model-of-glacial-flow">Halfar&#39;s model of glacial flow</a><a id="Halfar&#39;s-model-of-glacial-flow-1"></a><a class="docs-heading-anchor-permalink" href="#Halfar&#39;s-model-of-glacial-flow" title="Permalink"></a></h1><p>Let&#39;s model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar&#39;s 1981 paper: &quot;On the dynamics of the ice sheets&quot;.</p><pre><code class="nohighlight hljs"># AlgebraicJulia Dependencies
+using Catlab
+using Catlab.Graphics
+using CombinatorialSpaces
+using Decapodes
+
+# External Dependencies
+using MLStyle
+using MultiScaleArrays
+using LinearAlgebra
+using OrdinaryDiffEq
+using JLD2
+using SparseArrays
+using Statistics
+using GLMakie
+using GeometryBasics: Point2
+Point2D = Point2{Float64};</code></pre><h1 id="Defining-the-models"><a class="docs-heading-anchor" href="#Defining-the-models">Defining the models</a><a id="Defining-the-models-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-models" title="Permalink"></a></h1><p>The first step is to find a suitable equation for our model, and translate it into the Discrete Exterior Calculus. The Exterior Calculus is a generalization of vector calculus, so for low-dimensional spaces, this translation is straightforward. For example, divergence is typically written as (⋆, d, ⋆). Scalar fields are typically interpreted as &quot;0Forms&quot;, i.e. values assigned to vertices of a mesh.</p><p>We use the <code>@decapode</code> macro to interpret the equations. Here, we have equation 2 from Halfar:</p><p class="math-container">\[\frac{\partial h}{\partial t} = \frac{2}{n + 2} (\frac{\rho g}{A})^n \frac{\partial}{\partial x}(\frac{\partial h}{\partial x} |\frac{\partial h}{\partial x}| ^{n-1} h^{n+2}).\]</p><p>We&#39;ll change the term out front to Γ so we can demonstrate composition in a moment.</p><pre><code class="nohighlight hljs">halfar_eq2 = @decapode begin
+  h::Form0
+  Γ::Form1
+  n::Constant
+
+  ḣ == ∂ₜ(h)
+  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+end
+
+to_graphviz(halfar_eq2)</code></pre><p>And here, a formulation of Glen&#39;s law from J.W. Glen&#39;s 1958 &quot;The flow law of ice&quot;.</p><pre><code class="nohighlight hljs">glens_law = @decapode begin
+  #Γ::Form0
+  Γ::Form1
+  (A,ρ,g,n)::Constant
+  
+  Γ == (2/(n+2))*A*(ρ*g)^n
+end
+
+to_graphviz(glens_law)</code></pre><h1 id="Composing-models"><a class="docs-heading-anchor" href="#Composing-models">Composing models</a><a id="Composing-models-1"></a><a class="docs-heading-anchor-permalink" href="#Composing-models" title="Permalink"></a></h1><p>We can use operadic composition to specify how our models come together. In this example, we have two Decapodes, and two quantities that are shared between them.</p><pre><code class="nohighlight hljs">ice_dynamics_composition_diagram = @relation () begin
+  dynamics(n,Γ)
+  stress(Γ,n)
+end
+
+to_graphviz(ice_dynamics_composition_diagram, box_labels=:name, junction_labels=:variable, prog=&quot;circo&quot;)</code></pre><p>To a apply a composition, we specify which Decapodes to plug into those boxes, and what each calls the corresponding shared variables internally.</p><pre><code class="nohighlight hljs">ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
+  [Open(halfar_eq2, [:h,:Γ,:n]),
+  Open(glens_law, [:Γ,:n])])
+
+ice_dynamics = apex(ice_dynamics_cospan)
+to_graphviz(ice_dynamics)</code></pre><h1 id="Provide-a-semantics"><a class="docs-heading-anchor" href="#Provide-a-semantics">Provide a semantics</a><a id="Provide-a-semantics-1"></a><a class="docs-heading-anchor-permalink" href="#Provide-a-semantics" title="Permalink"></a></h1><p>To interpret our composed Decapode, we need to specify what Discrete Exterior Calculus to interpret our quantities in. Let&#39;s choose the 1D Discrete Exterior Calculus:</p><pre><code class="nohighlight hljs">ice_dynamics1D = expand_operators(ice_dynamics)
+infer_types!(ice_dynamics1D, op1_inf_rules_1D, op2_inf_rules_1D)
+resolve_overloads!(ice_dynamics1D, op1_res_rules_1D, op2_res_rules_1D)
+
+to_graphviz(ice_dynamics1D)</code></pre><h1 id="Define-a-mesh"><a class="docs-heading-anchor" href="#Define-a-mesh">Define a mesh</a><a id="Define-a-mesh-1"></a><a class="docs-heading-anchor-permalink" href="#Define-a-mesh" title="Permalink"></a></h1><p>We&#39;ll need a mesh to simulate on. Since this is a 1D mesh, we can go ahead and make one right now:</p><pre><code class="nohighlight hljs"># This is a 1D mesh, consisting of edges and vertices.
+s′ = EmbeddedDeltaSet1D{Bool, Point2D}()
+# 20 hundred vertices along a line, connected by edges.
+add_vertices!(s′, 20, point=Point2D.(range(0, 10_000, length=20), 0))
+add_edges!(s′, 1:nv(s′)-1, 2:nv(s′))
+orient!(s′)
+s = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s′)
+subdivide_duals!(s, Circumcenter())</code></pre><h1 id="Define-input-data"><a class="docs-heading-anchor" href="#Define-input-data">Define input data</a><a id="Define-input-data-1"></a><a class="docs-heading-anchor-permalink" href="#Define-input-data" title="Permalink"></a></h1><p>We need initial conditions to use for our simulation.</p><pre><code class="nohighlight hljs">n = 3
+ρ = 910
+g = 9.8
+A = 1e-16
+
+# Ice height is a primal 0-form, with values at vertices.
+# We choose a distribution that obeys the shallow height and shallow slope conditions.
+h₀ = map(point(s′)) do (x,_)
+  ((7072-((x-5000)^2))/9e3+2777)/2777e-1
+end
+
+# Visualize initial conditions for ice sheet height.
+lines(map(x -&gt; x[1], point(s′)), h₀, linewidth=5)</code></pre><p>We need to tell our Decapode which data maps to which symbols. We can wrap up our data like so:</p><pre><code class="nohighlight hljs">u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:h])
+constants_and_parameters = (
+  n = n,
+  stress_ρ = ρ,
+  stress_g = g,
+  stress_A = A)</code></pre><h1 id="Define-functions"><a class="docs-heading-anchor" href="#Define-functions">Define functions</a><a id="Define-functions-1"></a><a class="docs-heading-anchor-permalink" href="#Define-functions" title="Permalink"></a></h1><p>In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. In the DEC, there are a handful of operators that one uses to construct all the usual vector calculus operations, namely: ♯, ♭, ∧, d, ⋆. The CombinatorialSpaces.jl library specifies many of these for us.</p><pre><code class="nohighlight hljs">function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :♯ =&gt; x -&gt; begin
+      # This is an implementation of the &quot;sharp&quot; operator from the exterior
+      # calculus, which takes co-vector fields to vector fields.
+      # This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
+      # this operation is not bespoke to this simulation.)
+      e_vecs = map(edges(sd)) do e
+        point(sd, sd[e, :∂v0]) - point(sd, sd[e, :∂v1])
+      end
+      neighbors = map(vertices(sd)) do v
+        union(incident(sd, v, :∂v0), incident(sd, v, :∂v1))
+      end
+      n_vecs = map(neighbors) do es
+        [e_vecs[e] for e in es]
+      end
+      map(neighbors, n_vecs) do es, nvs
+        sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
+      end
+    end
+    :mag =&gt; x -&gt; begin
+      norm.(x)
+    end
+    :avg₀₁ =&gt; x -&gt; begin
+      I = Vector{Int64}()
+      J = Vector{Int64}()
+      V = Vector{Float64}()
+      for e in 1:ne(s)
+          append!(J, [s[e,:∂v0],s[e,:∂v1]])
+          append!(I, [e,e])
+          append!(V, [0.5, 0.5])
+      end
+      avg_mat = sparse(I,J,V)
+      avg_mat * x
+    end
+    :^ =&gt; (x,y) -&gt; x .^ y
+    :* =&gt; (x,y) -&gt; x .* y
+    :show =&gt; x -&gt; begin
+      @show x
+      x
+    end
+    x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
+  end
+  return (args...) -&gt; op(args...)
+end</code></pre><h1 id="Generate-the-simulation"><a class="docs-heading-anchor" href="#Generate-the-simulation">Generate the simulation</a><a id="Generate-the-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-the-simulation" title="Permalink"></a></h1><p>Now, we have everything we need to generate our simulation:</p><pre><code class="nohighlight hljs">sim = eval(gensim(ice_dynamics1D, dimension=1))
+fₘ = sim(s, generate)</code></pre><h1 id="Pre-compile-and-run"><a class="docs-heading-anchor" href="#Pre-compile-and-run">Pre-compile and run</a><a id="Pre-compile-and-run-1"></a><a class="docs-heading-anchor-permalink" href="#Pre-compile-and-run" title="Permalink"></a></h1><p>The first time that you run a function, Julia will pre-compile it, so that later runs will be fast. We&#39;ll solve our simulation for a short time span, to trigger this pre-compilation, and then run it.</p><pre><code class="nohighlight hljs">@info(&quot;Precompiling Solver&quot;)
+prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
+soln = solve(prob, Tsit5())
+soln.retcode != :Unstable || error(&quot;Solver was not stable&quot;)
+
+tₑ = 8e3
+
+# This next run should be fast.
+@info(&quot;Solving&quot;)
+prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+soln = solve(prob, Tsit5())
+@show soln.retcode
+@info(&quot;Done&quot;)</code></pre><p>We can save our solution file in case we want to examine its contents when this Julia session ends.</p><pre><code class="nohighlight hljs">@save &quot;ice_dynamics1D.jld2&quot; soln</code></pre><h1 id="Visualize"><a class="docs-heading-anchor" href="#Visualize">Visualize</a><a id="Visualize-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize" title="Permalink"></a></h1><p>Let&#39;s examine the final conditions:</p><pre><code class="nohighlight hljs">fig,ax,ob = lines(map(x -&gt; x[1], point(s′)), findnode(soln(tₑ), :h), linewidth=5)
+ylims!(ax, extrema(h₀))
+display(fig)</code></pre><p>We see that our distribution converges to a more uniform ice height across our domain, which matches our physical intuition.</p><p>Let&#39;s create a GIF to examine an animation of these dynamics:</p><pre><code class="nohighlight hljs"># Create a gif
+begin
+  frames = 100
+  fig, ax, ob = lines(map(x -&gt; x[1], point(s′)), findnode(soln(0), :h))
+  ylims!(ax, extrema(h₀))
+  record(fig, &quot;ice_dynamics1D.gif&quot;, range(0.0, tₑ; length=frames); framerate = 15) do t
+    lines!(map(x -&gt; x[1], point(s′)), findnode(soln(t), :h))
+  end
+end</code></pre><p><img src="&quot;./ice_dynamics1D.gif&quot;" alt="IceDynamics1D"/></p><h1 id="D-Re-interpretation"><a class="docs-heading-anchor" href="#D-Re-interpretation">2D Re-interpretation</a><a id="D-Re-interpretation-1"></a><a class="docs-heading-anchor-permalink" href="#D-Re-interpretation" title="Permalink"></a></h1><p>The first, one-dimensional, semantics that we provided to our Decapode restricted the kinds of glacial sheets that we could model. (i.e. We could only look at glacial sheets which were constant along y). We can give our Decapode an alternate semantics, as some physics on a 2-dimensional manifold.</p><p>Note that for these physics, we make no adjustments to the underlying &quot;dimension-agnostic&quot; Decapode, we only provide a different set of rules for inferring what the type of each quantity is.</p><pre><code class="nohighlight hljs">ice_dynamics2D = expand_operators(ice_dynamics)
+infer_types!(ice_dynamics2D)
+resolve_overloads!(ice_dynamics2D)
+
+to_graphviz(ice_dynamics2D)</code></pre><h1 id="Store-as-JSON"><a class="docs-heading-anchor" href="#Store-as-JSON">Store as JSON</a><a id="Store-as-JSON-1"></a><a class="docs-heading-anchor-permalink" href="#Store-as-JSON" title="Permalink"></a></h1><p>We quickly demonstrate how to serialize a Decapode to JSON and read it back in:</p><pre><code class="nohighlight hljs">write_json_acset(ice_dynamics2D, &quot;ice_dynamics2D.json&quot;)</code></pre><pre><code class="nohighlight hljs"># When reading back in, we specify that all attributes are &quot;Symbol&quot;s.
+ice_dynamics2 = read_json_acset(SummationDecapode{Symbol,Symbol,Symbol}, &quot;ice_dynamics2D.json&quot;)
+# Or, you could choose to interpret the data as &quot;String&quot;s.
+ice_dynamics3 = read_json_acset(SummationDecapode{String,String,String}, &quot;ice_dynamics2D.json&quot;)
+
+to_graphviz(ice_dynamics3)</code></pre><h1 id="Define-our-mesh"><a class="docs-heading-anchor" href="#Define-our-mesh">Define our mesh</a><a id="Define-our-mesh-1"></a><a class="docs-heading-anchor-permalink" href="#Define-our-mesh" title="Permalink"></a></h1><pre><code class="nohighlight hljs">include(&quot;../../grid_meshes.jl&quot;)
+s′ = triangulated_grid(10_000,10_000,800,800,Point3D)
+s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
+subdivide_duals!(s, Barycenter())
+wireframe(s)</code></pre><h1 id="Define-our-input-data"><a class="docs-heading-anchor" href="#Define-our-input-data">Define our input data</a><a id="Define-our-input-data-1"></a><a class="docs-heading-anchor-permalink" href="#Define-our-input-data" title="Permalink"></a></h1><pre><code class="nohighlight hljs">n = 3
+ρ = 910
+g = 9.8
+A = 1e-16
+
+# Ice height is a primal 0-form, with values at vertices.
+h₀ = map(point(s′)) do (x,y)
+  (7072-((x-5000)^2 + (y-5000)^2)^(1/2))/9e3+10
+end
+
+# Visualize initial condition for ice sheet height.
+mesh(s′, color=h₀, colormap=:jet)</code></pre><pre><code class="nohighlight hljs">u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:h])
+constants_and_parameters = (
+  n = n,
+  stress_ρ = ρ,
+  stress_g = g,
+  stress_A = A)</code></pre><h1 id="Define-our-functions"><a class="docs-heading-anchor" href="#Define-our-functions">Define our functions</a><a id="Define-our-functions-1"></a><a class="docs-heading-anchor-permalink" href="#Define-our-functions" title="Permalink"></a></h1><pre><code class="nohighlight hljs">function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :♯ =&gt; x -&gt; begin
+      ♯(sd, EForm(x))
+    end
+    :mag =&gt; x -&gt; begin
+      norm.(x)
+    end
+    :avg₀₁ =&gt; x -&gt; begin
+      I = Vector{Int64}()
+      J = Vector{Int64}()
+      V = Vector{Float64}()
+      for e in 1:ne(s)
+          append!(J, [s[e,:∂v0],s[e,:∂v1]])
+          append!(I, [e,e])
+          append!(V, [0.5, 0.5])
+      end
+      avg_mat = sparse(I,J,V)
+      avg_mat * x
+    end
+    :^ =&gt; (x,y) -&gt; x .^ y
+    :* =&gt; (x,y) -&gt; x .* y
+    :show =&gt; x -&gt; begin
+      @show x
+      @show length(x)
+      x
+    end
+    x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
+  end
+  return (args...) -&gt; op(args...)
+end</code></pre><h1 id="Generate-simulation"><a class="docs-heading-anchor" href="#Generate-simulation">Generate simulation</a><a id="Generate-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-simulation" title="Permalink"></a></h1><pre><code class="nohighlight hljs">sim = eval(gensim(ice_dynamics2D, dimension=2))
+fₘ = sim(s, generate)</code></pre><h1 id="Pre-compile-and-run-2"><a class="docs-heading-anchor" href="#Pre-compile-and-run-2">Pre-compile and run</a><a class="docs-heading-anchor-permalink" href="#Pre-compile-and-run-2" title="Permalink"></a></h1><pre><code class="nohighlight hljs">@info(&quot;Precompiling Solver&quot;)
+# We run for a short timespan to pre-compile.
+prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
+soln = solve(prob, Tsit5())
+soln.retcode != :Unstable || error(&quot;Solver was not stable&quot;)</code></pre><pre><code class="nohighlight hljs">tₑ = 5e13
+
+@info(&quot;Solving&quot;)
+prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+soln = solve(prob, Tsit5())
+@show soln.retcode
+@info(&quot;Done&quot;)</code></pre><pre><code class="nohighlight hljs">@save &quot;ice_dynamics2D.jld2&quot; soln</code></pre><h1 id="Visualize-2"><a class="docs-heading-anchor" href="#Visualize-2">Visualize</a><a class="docs-heading-anchor-permalink" href="#Visualize-2" title="Permalink"></a></h1><pre><code class="nohighlight hljs"># Final conditions:
+mesh(s′, color=findnode(soln(tₑ), :h), colormap=:jet, colorrange=extrema(findnode(soln(0), :h)))</code></pre><pre><code class="nohighlight hljs">begin
+  frames = 100
+  fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :h), colormap=:jet, colorrange=extrema(findnode(soln(0), :h)))
+  Colorbar(fig[1,2], ob)
+  record(fig, &quot;ice_dynamics2D.gif&quot;, range(0.0, tₑ; length=frames); framerate = 15) do t
+    ob.color = findnode(soln(t), :h)
+  end
+end</code></pre><p><img src="&quot;./ice_dynamics2D.gif&quot;" alt="IceDynamics2D"/></p><h1 id="Manifold-in-3D"><a class="docs-heading-anchor" href="#Manifold-in-3D">2-Manifold in 3D</a><a id="Manifold-in-3D-1"></a><a class="docs-heading-anchor-permalink" href="#Manifold-in-3D" title="Permalink"></a></h1><p>We note that just because our physics is happening on a 2-manifold, (a surface), this doesn&#39;t restrict us to the 2D plane. In fact, we can &quot;embed&quot; our 2-manifold in 3D space to simulate a glacial sheets spread across the globe.</p><pre><code class="nohighlight hljs">s′ = loadmesh(Icosphere(3, 10_000))
+s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
+subdivide_duals!(s, Barycenter())
+wireframe(s)
+</code></pre><pre><code class="nohighlight hljs">n = 3
+ρ = 910
+g = 9.8
+A = 1e-16
+
+# Ice height is a primal 0-form, with values at vertices.
+h₀ = map(point(s′)) do (x,y,z)
+  (z*z)/(10_000*10_000)
+end
+
+# Visualize initial condition for ice sheet height.
+# There is lots of ice at the poles, and no ice at the equator.
+mesh(s′, color=h₀, colormap=:jet)</code></pre><pre><code class="nohighlight hljs">u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:h])
+constants_and_parameters = (
+  n = n,
+  stress_ρ = ρ,
+  stress_g = g,
+  stress_A = A)</code></pre><pre><code class="nohighlight hljs">sim = eval(gensim(ice_dynamics2D, dimension=2))
+fₘ = sim(s, generate)</code></pre><pre><code class="nohighlight hljs"># For brevity&#39;s sake, we&#39;ll skip the pre-compilation cell.
+
+tₑ = 1e11
+
+@info(&quot;Solving&quot;)
+prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+soln = solve(prob, Tsit5())
+@show soln.retcode
+@info(&quot;Done&quot;)
+
+# Compare the extrema of the initial and final conditions of ice height.
+extrema(findnode(soln(0), :h)), extrema(findnode(soln(tₑ), :h))</code></pre><pre><code class="nohighlight hljs">mesh(s′, color=findnode(soln(tₑ), :h), colormap=:jet, colorrange=extrema(findnode(soln(0), :h)))</code></pre><pre><code class="nohighlight hljs">begin
+  frames = 200
+  fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :h), colormap=:jet, colorrange=extrema(findnode(soln(0), :h)))
+  Colorbar(fig[1,2], ob)
+  # These particular initial conditions diffuse quite quickly, so let&#39;s just look at
+  # the first moments of those dynamics.
+  record(fig, &quot;ice_dynamics2D_sphere.gif&quot;, range(0.0, tₑ/64; length=frames); framerate = 20) do t
+    ob.color = findnode(soln(t), :h)
+  end
+end</code></pre><p><img src="&quot;./ice_dynamics2D_sphere.gif&quot;" alt="IceDynamics2DSphere"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Decapodes.jl</a><a class="docs-footer-nextpage" href="../api/">Library Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Wednesday 19 July 2023 20:06">Wednesday 19 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
