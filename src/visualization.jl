@@ -26,6 +26,10 @@ end
 varname(d, v) = "$(d[v, :name]):$(spacename(d, v))"
 
 # TODO: Change orientation to print 
+"""    Graphics.to_graphviz(F::AbstractDecapode; directed = true, kw...)
+
+Visualize the given Decapode through Graphviz. Ensure that you have called `using Catlab.Graphics` before-hand, and have a way of visualizing SVG files in your current environment.
+"""
 Graphics.to_graphviz(F::AbstractDecapode; directed = true, kw...) =
 to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; directed, kw...))
 

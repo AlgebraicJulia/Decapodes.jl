@@ -32,9 +32,9 @@ end
 @acset_type NamedDecapode(SchNamedDecapode,
   index=[:src, :tgt, :res, :incl, :op1, :op2, :type, :name]) <: AbstractNamedDecapode
 
-"""    fill_names!
+"""    fill_names!(d::AbstractNamedDecapode)
 
-add new variable names to all the variables that don't have names.
+Provide a variable name to all the variables that don't have names.
 """
 function fill_names!(d::AbstractNamedDecapode)
   bulletcount = 1
@@ -124,6 +124,10 @@ end
   index=[:src, :tgt, :res, :incl, :op1, :op2, :type]) <: AbstractNamedDecapode
 
 
+"""    function expand_operators(d::SummationDecapode)
+
+Find operations that are compositions, and expand them with intermediate variables.
+"""
 function expand_operators(d::SummationDecapode)
   #e = SummationDecapode{Symbol, Symbol, Symbol}()
   e = SummationDecapode{Any, Any, Symbol}()
@@ -132,8 +136,7 @@ function expand_operators(d::SummationDecapode)
   return e
 end
 
-"""
-  function contract_operators(d::SummationDecapode)
+"""    function contract_operators(d::SummationDecapode)
 
 Find chains of Op1s in the given Decapode, and replace them with
 a single Op1 with a vector of function names. After this process,
@@ -155,8 +158,7 @@ function contract_operators!(d::SummationDecapode)
   remove_neighborless_vars!(d)
 end
 
-"""
-  function remove_neighborless_vars!(d::SummationDecapode)
+"""    function remove_neighborless_vars!(d::SummationDecapode)
 
 Remove all Vars from the given Decapode that are not part of any computation.
 """
@@ -176,13 +178,13 @@ function remove_neighborless_vars!(d::SummationDecapode)
   d
 end
 
-"""
-  function find_chains(d::SummationDecapode)
-
-Find chains of Op1s in the given Decapode. A chain ends when the
-target of the last Op1 is part of an Op2 or sum, or is a target
-of multiple Op1s.
-"""
+#"""
+#  function find_chains(d::SummationDecapode)
+#
+#Find chains of Op1s in the given Decapode. A chain ends when the
+#target of the last Op1 is part of an Op2 or sum, or is a target
+#of multiple Op1s.
+#"""
 function find_chains(d::SummationDecapode)
   chains = []
   visited = falses(nparts(d, :Op1))
@@ -415,10 +417,6 @@ function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
   return false
 end
 
-"""
-  function infer_summands_and_summations!(d::SummationDecapode)
-
-"""
 function infer_summands_and_summations!(d::SummationDecapode)
   # Note that we are not doing any type checking here!
   # i.e. We are not checking for this: [Form0, Form1, Form0].
@@ -456,8 +454,7 @@ end
 # might result in more un-maintainable code. If you implement this, you might
 # also want to make the rules keys in a Dict.
 # It also might be more efficient on average to instead iterate over variables.
-"""
-  function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}})
+"""    function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :replacement_type, :op), NTuple{4, Symbol}}})
 
 Infer types of Vars given rules wherein one type is known and the other not.
 """
@@ -583,8 +580,7 @@ op2_res_rules_2D = vcat(op2_res_rules_1D, [
   # Rules for i.
   (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form1, resolved_name = :i₂, op = :i)])
   
-"""
-  function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
+"""    function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
 
 Resolve function overloads based on types of src and tgt.
 """
@@ -616,6 +612,10 @@ end
 
 # TODO: When SummationDecapodes are annotated with the degree of their space,
 # use dispatch to choose the correct set of rules.
+"""    function resolve_overloads!(d::SummationDecapode)
+
+Resolve function overloads based on types of src and tgt.
+"""
 resolve_overloads!(d::SummationDecapode) =
   resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
 
