@@ -436,6 +436,10 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2)
     end
 end
 
+"""    function gensim(d::AbstractNamedDecapode; dimension::Int=2)
+
+Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
+"""
 gensim(d::AbstractNamedDecapode; dimension::Int=2) = gensim(d,
     vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension)
 

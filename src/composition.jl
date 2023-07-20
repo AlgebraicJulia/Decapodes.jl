@@ -19,7 +19,7 @@ apex(decapode::OpenSummationDecapode) = apex(decapode.cospan)
 legs(decapode::OpenSummationDecapode) = legs(decapode.cospan)
 feet(decapode::OpenSummationDecapode) = decapode.feet
 
-"""      function unique_by!(acset, column_names::Vector{Symbol})
+"""    function unique_by!(acset, column_names::Vector{Symbol})
 
 Given column names from the same table, remove duplicate rows.
 
@@ -43,7 +43,7 @@ function unique_by!(acset, table::Symbol, columns::Vector{Symbol})
   return acset
 end
 
-"""      function unique_by(acset, column_names::Vector{Symbol})
+"""    function unique_by(acset, column_names::Vector{Symbol})
 
 Given column names from the same table, return a copy of the acset with
 duplicate rows removed. Removal of rows is performed with prejudice.
@@ -81,28 +81,6 @@ function type_check_decapodes_composition(relation::RelationDiagram, decs::Vecto
 end
 
 
-"""    function oapply(relation::RelationDiagram, decapodes_vars::Vector{OpenSummationDecapode})
-
-Compose a list of decapodes as specified by the given relation diagram.
-
-The decapodes must be given in the same order as they were specified in the
-relation.
-
-State variables (such as the (C,V) given in the head of the following
-@relation) do not affect the result of a composition.
-
-# Examples
-```julia-repl
-julia> compose_diff_adv = @relation (C,V) begin
-  diffusion(C, ϕ₁)
-  advection(C, ϕ₂, V)
-  superposition(ϕ₁, ϕ₂, ϕ, C)
-end;
-
-julia> oapply(compose_diff_adv, [(Diffusion, [:C, :ϕ]),
-  (Advection, [:C, :ϕ, :V]), (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]);
-```
-"""
 #function oapply_rename(relation::RelationDiagram, decapodes::Vector{OpenSummationDecapode})
 function oapply_rename(relation::RelationDiagram, decapodes::Vector{D}) where D<:OpenSummationDecapode
   r = relation
@@ -194,6 +172,28 @@ function oapply_rename(relation::RelationDiagram, decapodes::Vector{D}) where D<
 end
 
 # Infinite loop:
+"""    function oapply(relation::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode}
+
+Compose a list of decapodes as specified by the given relation diagram.
+
+The decapodes must be given in the same order as they were specified in the
+relation.
+
+State variables (such as the (C,V) given in the head of the following
+@relation) do not affect the result of a composition.
+
+# Examples
+```julia-repl
+julia> compose_diff_adv = @relation (C,V) begin
+  diffusion(C, ϕ₁)
+  advection(C, ϕ₂, V)
+  superposition(ϕ₁, ϕ₂, ϕ, C)
+end;
+
+julia> oapply(compose_diff_adv, [(Diffusion, [:C, :ϕ]),
+  (Advection, [:C, :ϕ, :V]), (Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])]);
+```
+"""
 oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
   oapply_rename(r, podes)
 #oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =

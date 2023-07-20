@@ -191,10 +191,10 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}, de
   return d
 end
 
-""" Takes a DecaExpr (i.e. what should be constructed using the @decapode macro)
-and gives a Decapode ACSet which represents equalities as two operations with the
-same tgt or res map.
-"""
+#""" Takes a DecaExpr (i.e. what should be constructed using the @decapode macro)
+#and gives a Decapode ACSet which represents equalities as two operations with the
+#same tgt or res map.
+#"""
 # Just to get up and running, I tagged untyped variables with :infer
 # TODO: write a type checking/inference step for this function to 
 # overwrite the :infer tags
@@ -237,6 +237,10 @@ function SummationDecapode(e::DecaExpr)
     return d
 end
 
+"""    macro decapode(e)
+
+Construct a Decapode.
+"""
 macro decapode(e)
   :(SummationDecapode(parse_decapode($(Meta.quot(e)))))
 end

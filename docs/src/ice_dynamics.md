@@ -2,7 +2,7 @@
 
 Let's model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar's 1981 paper: "On the dynamics of the ice sheets".
 
-```
+``` @example DEC
 # AlgebraicJulia Dependencies
 using Catlab
 using Catlab.Graphics
@@ -17,9 +17,10 @@ using OrdinaryDiffEq
 using JLD2
 using SparseArrays
 using Statistics
-using GLMakie
-using GeometryBasics: Point2
+using CairoMakie
+using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64};
+Point3D = Point3{Float64};
 ```
 
 # Defining the models
@@ -32,7 +33,7 @@ We use the `@decapode` macro to interpret the equations. Here, we have equation 
 ```
 We'll change the term out front to Γ so we can demonstrate composition in a moment.
 
-```
+``` @example DEC
 halfar_eq2 = @decapode begin
   h::Form0
   Γ::Form1
@@ -46,7 +47,7 @@ to_graphviz(halfar_eq2)
 ```
 
 And here, a formulation of Glen's law from J.W. Glen's 1958 "The flow law of ice".
-```
+``` @example DEC
 glens_law = @decapode begin
   #Γ::Form0
   Γ::Form1
@@ -61,9 +62,10 @@ to_graphviz(glens_law)
 # Composing models
 
 We can use operadic composition to specify how our models come together. In this example, we have two Decapodes, and two quantities that are shared between them.
-```
+
+``` @example DEC
 ice_dynamics_composition_diagram = @relation () begin
-  dynamics(n,Γ)
+  dynamics(Γ,n)
   stress(Γ,n)
 end
 
@@ -72,9 +74,9 @@ to_graphviz(ice_dynamics_composition_diagram, box_labels=:name, junction_labels=
 
 To a apply a composition, we specify which Decapodes to plug into those boxes, and what each calls the corresponding shared variables internally.
 
-```
+``` @example DEC
 ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
-  [Open(halfar_eq2, [:h,:Γ,:n]),
+  [Open(halfar_eq2, [:Γ,:n]),
   Open(glens_law, [:Γ,:n])])
 
 ice_dynamics = apex(ice_dynamics_cospan)
@@ -84,7 +86,8 @@ to_graphviz(ice_dynamics)
 # Provide a semantics
 
 To interpret our composed Decapode, we need to specify what Discrete Exterior Calculus to interpret our quantities in. Let's choose the 1D Discrete Exterior Calculus:
-```
+
+``` @example DEC
 ice_dynamics1D = expand_operators(ice_dynamics)
 infer_types!(ice_dynamics1D, op1_inf_rules_1D, op2_inf_rules_1D)
 resolve_overloads!(ice_dynamics1D, op1_res_rules_1D, op2_res_rules_1D)
@@ -95,7 +98,8 @@ to_graphviz(ice_dynamics1D)
 # Define a mesh
 
 We'll need a mesh to simulate on. Since this is a 1D mesh, we can go ahead and make one right now:
-```
+
+``` @example DEC
 # This is a 1D mesh, consisting of edges and vertices.
 s′ = EmbeddedDeltaSet1D{Bool, Point2D}()
 # 20 hundred vertices along a line, connected by edges.
@@ -109,7 +113,8 @@ subdivide_duals!(s, Circumcenter())
 # Define input data
 
 We need initial conditions to use for our simulation.
-```
+
+``` @example DEC
 n = 3
 ρ = 910
 g = 9.8
@@ -126,8 +131,9 @@ lines(map(x -> x[1], point(s′)), h₀, linewidth=5)
 ```
 
 We need to tell our Decapode which data maps to which symbols. We can wrap up our data like so:
-```
-u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:h])
+
+``` @example DEC
+u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:dynamics_h])
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
@@ -139,7 +145,8 @@ constants_and_parameters = (
 
 In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. In the DEC, there are a handful of operators that one uses to construct all the usual vector calculus operations, namely: ♯, ♭, ∧, d, ⋆. The CombinatorialSpaces.jl library specifies many of these for us.
 
-```
+
+``` @example DEC
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :♯ => x -> begin
@@ -191,7 +198,8 @@ end
 
 Now, we have everything we need to generate our simulation:
 
-```
+
+``` @example DEC
 sim = eval(gensim(ice_dynamics1D, dimension=1))
 fₘ = sim(s, generate)
 ```
@@ -200,7 +208,8 @@ fₘ = sim(s, generate)
 
 The first time that you run a function, Julia will pre-compile it, so that later runs will be fast. We'll solve our simulation for a short time span, to trigger this pre-compilation, and then run it.
 
-```
+
+``` @example DEC
 @info("Precompiling Solver")
 prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
 soln = solve(prob, Tsit5())
@@ -218,7 +227,7 @@ soln = solve(prob, Tsit5())
 
 We can save our solution file in case we want to examine its contents when this Julia session ends.
 
-```
+``` @example DEC
 @save "ice_dynamics1D.jld2" soln
 ```
 
@@ -226,8 +235,8 @@ We can save our solution file in case we want to examine its contents when this 
 
 Let's examine the final conditions:
 
-```
-fig,ax,ob = lines(map(x -> x[1], point(s′)), findnode(soln(tₑ), :h), linewidth=5)
+``` @example DEC
+fig,ax,ob = lines(map(x -> x[1], point(s′)), findnode(soln(tₑ), :dynamics_h), linewidth=5)
 ylims!(ax, extrema(h₀))
 display(fig)
 ```
@@ -236,20 +245,19 @@ We see that our distribution converges to a more uniform ice height across our d
 
 Let's create a GIF to examine an animation of these dynamics:
 
-```
+``` @example DEC
 # Create a gif
 begin
   frames = 100
-  fig, ax, ob = lines(map(x -> x[1], point(s′)), findnode(soln(0), :h))
+  fig, ax, ob = lines(map(x -> x[1], point(s′)), findnode(soln(0), :dynamics_h))
   ylims!(ax, extrema(h₀))
   record(fig, "ice_dynamics1D.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    lines!(map(x -> x[1], point(s′)), findnode(soln(t), :h))
+    lines!(map(x -> x[1], point(s′)), findnode(soln(t), :dynamics_h))
   end
 end
 ```
 
-![IceDynamics1D]("./ice_dynamics1D.gif")
-
+![IceDynamics1D](ice_dynamics1D.gif)
 
 # 2D Re-interpretation
 
@@ -257,7 +265,7 @@ The first, one-dimensional, semantics that we provided to our Decapode restricte
 
 Note that for these physics, we make no adjustments to the underlying "dimension-agnostic" Decapode, we only provide a different set of rules for inferring what the type of each quantity is.
 
-```
+``` @example DEC
 ice_dynamics2D = expand_operators(ice_dynamics)
 infer_types!(ice_dynamics2D)
 resolve_overloads!(ice_dynamics2D)
@@ -268,11 +276,12 @@ to_graphviz(ice_dynamics2D)
 # Store as JSON
 
 We quickly demonstrate how to serialize a Decapode to JSON and read it back in:
-```
+
+``` @example DEC
 write_json_acset(ice_dynamics2D, "ice_dynamics2D.json")
 ```
 
-```
+``` @example DEC
 # When reading back in, we specify that all attributes are "Symbol"s.
 ice_dynamics2 = read_json_acset(SummationDecapode{Symbol,Symbol,Symbol}, "ice_dynamics2D.json")
 # Or, you could choose to interpret the data as "String"s.
@@ -283,8 +292,8 @@ to_graphviz(ice_dynamics3)
 
 # Define our mesh
 
-```
-include("../../grid_meshes.jl")
+``` @example DEC
+include("../../examples/grid_meshes.jl")
 s′ = triangulated_grid(10_000,10_000,800,800,Point3D)
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
@@ -293,7 +302,7 @@ wireframe(s)
 
 # Define our input data
 
-```
+``` @example DEC
 n = 3
 ρ = 910
 g = 9.8
@@ -308,8 +317,8 @@ end
 mesh(s′, color=h₀, colormap=:jet)
 ```
 
-```
-u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:h])
+``` @example DEC
+u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:dynamics_h])
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
@@ -319,7 +328,7 @@ constants_and_parameters = (
 
 # Define our functions
 
-```
+``` @example DEC
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :♯ => x -> begin
@@ -355,14 +364,14 @@ end
 
 # Generate simulation
 
-```
+``` @example DEC
 sim = eval(gensim(ice_dynamics2D, dimension=2))
 fₘ = sim(s, generate)
 ```
 
 # Pre-compile and run
 
-```
+``` @example DEC
 @info("Precompiling Solver")
 # We run for a short timespan to pre-compile.
 prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
@@ -370,7 +379,7 @@ soln = solve(prob, Tsit5())
 soln.retcode != :Unstable || error("Solver was not stable")
 ```
 
-```
+``` @example DEC
 tₑ = 5e13
 
 @info("Solving")
@@ -380,35 +389,35 @@ soln = solve(prob, Tsit5())
 @info("Done")
 ```
 
-```
+``` @example DEC
 @save "ice_dynamics2D.jld2" soln
 ```
 
 # Visualize
 
-```
+``` @example DEC
 # Final conditions:
-mesh(s′, color=findnode(soln(tₑ), :h), colormap=:jet, colorrange=extrema(findnode(soln(0), :h)))
+mesh(s′, color=findnode(soln(tₑ), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))
 ```
 
-```
+``` @example DEC
 begin
   frames = 100
-  fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :h), colormap=:jet, colorrange=extrema(findnode(soln(0), :h)))
+  fig, ax, ob = CairoMakie.mesh(s′, color=findnode(soln(0), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))
   Colorbar(fig[1,2], ob)
   record(fig, "ice_dynamics2D.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    ob.color = findnode(soln(t), :h)
+    ob.color = findnode(soln(t), :dynamics_h)
   end
 end
 ```
 
-![IceDynamics2D]("./ice_dynamics2D.gif")
+![IceDynamics2D](ice_dynamics2D.gif)
 
 # 2-Manifold in 3D
 
 We note that just because our physics is happening on a 2-manifold, (a surface), this doesn't restrict us to the 2D plane. In fact, we can "embed" our 2-manifold in 3D space to simulate a glacial sheets spread across the globe.
 
-```
+``` @example DEC
 s′ = loadmesh(Icosphere(3, 10_000))
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
@@ -416,7 +425,7 @@ wireframe(s)
 
 ```
 
-```
+``` @example DEC
 n = 3
 ρ = 910
 g = 9.8
@@ -432,8 +441,8 @@ end
 mesh(s′, color=h₀, colormap=:jet)
 ```
 
-```
-u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:h])
+``` @example DEC
+u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:dynamics_h])
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
@@ -441,15 +450,15 @@ constants_and_parameters = (
   stress_A = A)
 ```
 
-```
+``` @example DEC
 sim = eval(gensim(ice_dynamics2D, dimension=2))
 fₘ = sim(s, generate)
 ```
 
-```
+``` @example DEC
 # For brevity's sake, we'll skip the pre-compilation cell.
 
-tₑ = 1e11
+tₑ = 5e25
 
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
@@ -458,24 +467,25 @@ soln = solve(prob, Tsit5())
 @info("Done")
 
 # Compare the extrema of the initial and final conditions of ice height.
-extrema(findnode(soln(0), :h)), extrema(findnode(soln(tₑ), :h))
+extrema(findnode(soln(0), :dynamics_h)), extrema(findnode(soln(tₑ), :dynamics_h))
 ```
 
-```
-mesh(s′, color=findnode(soln(tₑ), :h), colormap=:jet, colorrange=extrema(findnode(soln(0), :h)))
+``` @example DEC
+mesh(s′, color=findnode(soln(tₑ), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))
 ```
 
-```
+``` @example DEC
 begin
   frames = 200
-  fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :h), colormap=:jet, colorrange=extrema(findnode(soln(0), :h)))
+  fig, ax, ob = CairoMakie.mesh(s′, color=findnode(soln(0), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))
+
   Colorbar(fig[1,2], ob)
   # These particular initial conditions diffuse quite quickly, so let's just look at
   # the first moments of those dynamics.
   record(fig, "ice_dynamics2D_sphere.gif", range(0.0, tₑ/64; length=frames); framerate = 20) do t
-    ob.color = findnode(soln(t), :h)
+    ob.color = findnode(soln(t), :dynamics_h)
   end
 end
 ```
 
-![IceDynamics2DSphere]("./ice_dynamics2D_sphere.gif")
+![IceDynamics2DSphere](ice_dynamics2D_sphere.gif)
