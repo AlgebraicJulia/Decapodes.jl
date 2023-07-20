@@ -62,6 +62,7 @@ to_graphviz(glens_law)
 # Composing models
 
 We can use operadic composition to specify how our models come together. In this example, we have two Decapodes, and two quantities that are shared between them.
+
 ``` @example DEC
 ice_dynamics_composition_diagram = @relation () begin
   dynamics(Γ,n)
@@ -85,6 +86,7 @@ to_graphviz(ice_dynamics)
 # Provide a semantics
 
 To interpret our composed Decapode, we need to specify what Discrete Exterior Calculus to interpret our quantities in. Let's choose the 1D Discrete Exterior Calculus:
+
 ``` @example DEC
 ice_dynamics1D = expand_operators(ice_dynamics)
 infer_types!(ice_dynamics1D, op1_inf_rules_1D, op2_inf_rules_1D)
@@ -96,6 +98,7 @@ to_graphviz(ice_dynamics1D)
 # Define a mesh
 
 We'll need a mesh to simulate on. Since this is a 1D mesh, we can go ahead and make one right now:
+
 ``` @example DEC
 # This is a 1D mesh, consisting of edges and vertices.
 s′ = EmbeddedDeltaSet1D{Bool, Point2D}()
@@ -110,6 +113,7 @@ subdivide_duals!(s, Circumcenter())
 # Define input data
 
 We need initial conditions to use for our simulation.
+
 ``` @example DEC
 n = 3
 ρ = 910
@@ -127,6 +131,7 @@ lines(map(x -> x[1], point(s′)), h₀, linewidth=5)
 ```
 
 We need to tell our Decapode which data maps to which symbols. We can wrap up our data like so:
+
 ``` @example DEC
 u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:dynamics_h])
 constants_and_parameters = (
@@ -139,6 +144,7 @@ constants_and_parameters = (
 # Define functions
 
 In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. In the DEC, there are a handful of operators that one uses to construct all the usual vector calculus operations, namely: ♯, ♭, ∧, d, ⋆. The CombinatorialSpaces.jl library specifies many of these for us.
+
 
 ``` @example DEC
 function generate(sd, my_symbol; hodge=GeometricHodge())
@@ -192,6 +198,7 @@ end
 
 Now, we have everything we need to generate our simulation:
 
+
 ``` @example DEC
 sim = eval(gensim(ice_dynamics1D, dimension=1))
 fₘ = sim(s, generate)
@@ -200,6 +207,7 @@ fₘ = sim(s, generate)
 # Pre-compile and run
 
 The first time that you run a function, Julia will pre-compile it, so that later runs will be fast. We'll solve our simulation for a short time span, to trigger this pre-compilation, and then run it.
+
 
 ``` @example DEC
 @info("Precompiling Solver")
@@ -251,7 +259,6 @@ end
 
 ![IceDynamics1D](ice_dynamics1D.gif)
 
-
 # 2D Re-interpretation
 
 The first, one-dimensional, semantics that we provided to our Decapode restricted the kinds of glacial sheets that we could model. (i.e. We could only look at glacial sheets which were constant along y). We can give our Decapode an alternate semantics, as some physics on a 2-dimensional manifold.
@@ -269,6 +276,7 @@ to_graphviz(ice_dynamics2D)
 # Store as JSON
 
 We quickly demonstrate how to serialize a Decapode to JSON and read it back in:
+
 ``` @example DEC
 write_json_acset(ice_dynamics2D, "ice_dynamics2D.json")
 ```
@@ -470,6 +478,7 @@ mesh(s′, color=findnode(soln(tₑ), :dynamics_h), colormap=:jet, colorrange=ex
 begin
   frames = 200
   fig, ax, ob = CairoMakie.mesh(s′, color=findnode(soln(0), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))
+
   Colorbar(fig[1,2], ob)
   # These particular initial conditions diffuse quite quickly, so let's just look at
   # the first moments of those dynamics.
