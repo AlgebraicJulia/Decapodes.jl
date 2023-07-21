@@ -211,6 +211,7 @@ lines(map(x -> x[1], point(s′)), findnode(soln(0.0), :Tₛ))
 lines(map(x -> x[1], point(s′)), findnode(soln(tₑ), :Tₛ))
 
 # Initial frame
+frames = 100
 fig = Figure(resolution = (800, 800))
 ax1 = Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
@@ -219,7 +220,6 @@ Label(fig[1,1,Top()], "Surface temperature, Tₛ, [C°]")
 Label(fig[2,1,Top()], "Line plot of temperature from North to South pole, every $(tₑ/frames) time units")
 
 # Animation
-frames = 100
 record(fig, "budyko_sellers.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
   lines!(fig[1,1], map(x -> x[1], point(s′)), findnode(soln(t), :Tₛ))
 end

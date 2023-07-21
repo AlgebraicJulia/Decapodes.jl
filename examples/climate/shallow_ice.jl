@@ -28,6 +28,7 @@ halfar_eq2 = @decapode begin
   ḣ == ∂ₜ(h)
   ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
 end
+to_graphviz(halfar_eq2)
 
 # Equation 1 from Glen, J. W. THE FLOW LAW OF ICE: A discussion of the
 # assumptions made in glacier theory, their experimental foundations and
@@ -94,46 +95,34 @@ subdivide_duals!(s, Barycenter())
 n = 3
 ρ = 910
 g = 9.8
-A = 1e-16
+A = fill(1e-16, ne(s))
 
 # Ice height is a primal 0-form, with values at vertices.
 h₀ = map(point(s′)) do (x,y)
-  10 + (1e-7)*((x-32)^2 + (y-32)^2)
+  (7072-((x-5000)^2 + (y-5000)^2)^(1/2))/9e3+10
 end
 
 # Visualize initial condition for ice sheet height.
 mesh(s′, color=h₀, colormap=:jet)
 
 # Store these values to be passed to the solver.
-u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:h])
+u₀ = construct(PhysicsState, [VectorForm(h₀), VectorForm(A)], Float64[], [:h, :stress_A])
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
-  stress_g = g,
-  stress_A = A)
+  stress_g = g)
 
 #############################################
 # Define how symbols map to Julia functions #
 #############################################
 
-hodge = GeometricHodge()
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :d₀ => x -> begin
-      d₀ = d(s,0)
-      d₀ * x
-    end
-    :dual_d₀ => x -> begin
-      dual_d₀ = dual_derivative(s,0)
-      dual_d₀ * x
-    end
-    :⋆₁ => x -> begin
-      ⋆₁ = ⋆(s,1)
-      ⋆₁ * x
-    end
-    :⋆₀⁻¹ => x -> begin
-      ⋆₀⁻¹ = inv_hodge_star(s,0)
-      ⋆₀⁻¹ * x
+    :♯ => x -> begin
+      ♯(sd, EForm(x))
+  end
+    :mag => x -> begin
+      norm.(x)
     end
     :avg₀₁ => x -> begin
       I = Vector{Int64}()
@@ -170,7 +159,7 @@ fₘ = sim(s, generate)
 # Run simulation #
 ##################
 
-tₑ = 3e5
+tₑ = 5e13
 
 # Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
