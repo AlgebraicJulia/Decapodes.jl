@@ -3,7 +3,6 @@ import Catlab.Graphics.Graphviz
 using Catlab.Graphics
 using Catlab.Graphics.Graphviz
 using Catlab.Graphs.PropertyGraphs
-import Decapodes: infer_states, infer_state_names
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
 
@@ -27,11 +26,17 @@ end
 varname(d, v) = "$(d[v, :name]):$(spacename(d, v))"
 
 # TODO: Change orientation to print 
+"""    Graphics.to_graphviz(F::AbstractDecapode; directed = true, kw...)
+
+Visualize the given Decapode through Graphviz. Ensure that you have called `using Catlab.Graphics` before-hand, and have a way of visualizing SVG files in your current environment.
+"""
 Graphics.to_graphviz(F::AbstractDecapode; directed = true, kw...) =
 to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; directed, kw...))
 
 decapode_edge_label(s::Symbol) = String(s)
 decapode_edge_label(s::Vector{Symbol}) = join(String.(s), "⋅")
+decapode_edge_label(s::String) = s
+decapode_edge_label(s::Vector{String}) = join(s, "⋅")
 
 
 function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode, directed = true; kw...)

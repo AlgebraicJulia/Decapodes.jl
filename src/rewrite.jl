@@ -1,56 +1,51 @@
-using Catlab, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab
 using AlgebraicRewriting
 using AlgebraicRewriting: rewrite
 
-""" function get_valid_op1s(deca_source::SummationDecapode, varID)
-Searches SummationDecapode, deca_source, at the request varID
-and returns all op1s which are allowed to be averaged. Returns
-an array of indices of valid op1 sources.
-
-Namely this is meant to exclude ∂ₜ from being included in an average.
-"""
-
+#""" function get_valid_op1s(deca_source::SummationDecapode, varID)
+#Searches SummationDecapode, deca_source, at the request varID
+#and returns all op1s which are allowed to be averaged. Returns
+#an array of indices of valid op1 sources.
+#
+#Namely this is meant to exclude ∂ₜ from being included in an average.
+#"""
 function get_valid_op1s(deca_source::SummationDecapode, varID)
     # skip_ops = Set([:∂ₜ])
     indices = incident(deca_source, varID, :tgt)
     return filter!(x -> deca_source[x, :op1] != :∂ₜ, indices)
 end
   
-""" function get_target_indices(deca_source::SummationDecapode)
-Searches SummationDecapode, deca_source, for all Vars which are
-valid for average rewriting. Validity is determined by having 
-two or more distinct operations leading into the variable.
-Returns an array of valid Var target ids.
-"""
+#""" function is_tgt_of_many_ops(d::SummationDecapode, var)
+#Return true if there are two or more distinct operations leading
+#into Var var (not counting ∂ₜ).
+#"""
+function is_tgt_of_many_ops(d::SummationDecapode, var)
+  op1Count = length(get_valid_op1s(d, var))
+  op2Count = length(incident(d, var, :res))
+  sumCount = length(incident(d, var, :sum))
 
-function get_target_indices(deca_source::SummationDecapode)
-    targetVars = []
-    for var in parts(deca_source, :Var)
-        op1Count = length(get_valid_op1s(deca_source, var))
-        op2Count = length(incident(deca_source, var, :res))
-        sumCount = length(incident(deca_source, var, :sum))
-
-        tot = op1Count + op2Count + sumCount
-        if(tot >= 2)
-            append!(targetVars, var)
-        end
-    end
-
-    return targetVars
+  op1Count + op2Count + sumCount >= 2
 end
   
-""" function get_preprocess_indices(deca_source::SummationDecapode)
-Searches SummationDecapode, deca_source, for all Vars which are
-valid for average rewriting preprocessing. Namely this just includes
-all op2 and summation operations. Returns two arrays, first is 
-array of valid Op2 ids, second is array of valid Σ ids.
-"""
-
+#""" function find_tgts_of_many_ops(d::SummationDecapode)
+#Searches SummationDecapode, d, for all Vars which have two or
+#more distinct operations leading into the same variable.
+#"""
+function find_tgts_of_many_ops(d::SummationDecapode)
+  filter(var -> is_tgt_of_many_ops(d, var), parts(d, :Var))
+end
+  
+#""" function get_preprocess_indices(deca_source::SummationDecapode)
+#Searches SummationDecapode, deca_source, for all Vars which are
+#valid for average rewriting preprocessing. Namely this just includes
+#all op2 and summation operations. Returns two arrays, first is 
+#array of valid Op2 ids, second is array of valid Σ ids.
+#"""
 function get_preprocess_indices(deca_source::SummationDecapode)
     targetOp2 = []
     targetSum = []
 
-    targetVars = get_target_indices(deca_source)
+    targetVars = find_tgts_of_many_ops(deca_source)
 
     for var in targetVars
         append!(targetOp2, incident(deca_source, var, :res))
@@ -60,13 +55,13 @@ function get_preprocess_indices(deca_source::SummationDecapode)
     return targetOp2, targetSum
 end
   
-""" function preprocess_average_rewrite(deca_source::SummationDecapode)
-Preprocesses SummationDecapode, deca_source, for easier average 
-rewriting later on. Specifically, all op2 and summation results are
-stored in variables called "Temp" and results are then passed off to 
-their original result along an op1 called "temp". This "temp" operation
-is equivalent to an identity function.
-"""
+#""" function preprocess_average_rewrite(deca_source::SummationDecapode)
+#Preprocesses SummationDecapode, deca_source, for easier average 
+#rewriting later on. Specifically, all op2 and summation results are
+#stored in variables called "Temp" and results are then passed off to 
+#their original result along an op1 called "temp". This "temp" operation
+#is equivalent to an identity function.
+#"""
 function preprocess_average_rewrite(deca_source::SummationDecapode)
     targetOp2, targetSum = get_preprocess_indices(deca_source)
 
@@ -79,10 +74,10 @@ function preprocess_average_rewrite(deca_source::SummationDecapode)
     RHS = []
 
     SuperMatch = []
-    SuperVarMap = Vector{Int64}()
-    SuperOp2Map = Vector{Int64}()
-    SuperSigmaMap = Vector{Int64}()
-    SuperSummandMap = Vector{Int64}()
+    SuperVarMap = Vector{Int}()
+    SuperOp2Map = Vector{Int}()
+    SuperSigmaMap = Vector{Int}()
+    SuperSummandMap = Vector{Int}()
 
     serial = 0
     # Process all of the target rewrites for op2
@@ -209,14 +204,14 @@ function preprocess_average_rewrite(deca_source::SummationDecapode)
     rewrite_match(rule, m)
 end
   
-""" function process_average_rewrite(deca_source::SummationDecapode)
-Rewrites SummationDecapode, deca_source, by including averages
-of redundent operations. While this function only searches for op1s
-to match on, because of preprocessing, this indirectly includes op2 
-and summations in the final result.
-"""
+#""" function process_average_rewrite(deca_source::SummationDecapode)
+#Rewrites SummationDecapode, deca_source, by including averages
+#of redundent operations. While this function only searches for op1s
+#to match on, because of preprocessing, this indirectly includes op2 
+#and summations in the final result.
+#"""
 function process_average_rewrite(deca_source::SummationDecapode)
-    targetVars = get_target_indices(deca_source)
+    targetVars = find_tgts_of_many_ops(deca_source)
 
     # If no rewrites available, then don't rewrite
     if(length(targetVars) == 0)
@@ -227,8 +222,8 @@ function process_average_rewrite(deca_source::SummationDecapode)
     RHS = []
 
     SuperMatch = []
-    SuperVarMap = Vector{Int64}()
-    SuperOp1Map = Vector{Int64}()
+    SuperVarMap = Vector{Int}()
+    SuperOp1Map = Vector{Int}()
 
     varSerial = 0
     sumSerial = 0
@@ -301,20 +296,21 @@ function process_average_rewrite(deca_source::SummationDecapode)
     rewrite_match(rule, m)
 end
   
-""" function average_rewrite(deca_source::SummationDecapode)
-Simply meant to wrap average rewriting steps into one function.
+"""    function average_rewrite(deca_source::SummationDecapode)
+
+Compute each quantitity in the given Decapode by the average of all computation paths leading to that node.
 """
 function average_rewrite(deca_source::SummationDecapode)
     return process_average_rewrite(preprocess_average_rewrite(deca_source))
 end
 
-""" function find_variable_mapping(deca_source, deca_tgt)
-Returns array of match on variables between from a decapode
-source to a target, also returns if mapping is valid
-WARNING: This assumes that variable names are unique.
-If variable names are not unique or do not exist, 
-corrsponding mapping value is set to 0.
-"""
+#""" function find_variable_mapping(deca_source, deca_tgt)
+#Returns array of match on variables between from a decapode
+#source to a target, also returns if mapping is valid
+#WARNING: This assumes that variable names are unique.
+#If variable names are not unique or do not exist, 
+#corrsponding mapping value is set to 0.
+#"""
 function find_variable_mapping(deca_source, deca_tgt)
 
     mapping = []

@@ -191,10 +191,10 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}, de
   return d
 end
 
-""" Takes a DecaExpr (i.e. what should be constructed using the @decapode macro)
-and gives a Decapode ACSet which represents equalities as two operations with the
-same tgt or res map.
-"""
+#""" Takes a DecaExpr (i.e. what should be constructed using the @decapode macro)
+#and gives a Decapode ACSet which represents equalities as two operations with the
+#same tgt or res map.
+#"""
 # Just to get up and running, I tagged untyped variables with :infer
 # TODO: write a type checking/inference step for this function to 
 # overwrite the :infer tags
@@ -205,31 +205,13 @@ function Decapode(e::DecaExpr)
     var_id = add_part!(d, :Var, type=(judgement._2, judgement._3))
     symbol_table[judgement._1._1] = var_id
   end
-  deletions = Vector{Int64}()
+  deletions = Vector{Int}()
   for eq in e.equations
     eval_eq!(eq, d, symbol_table, deletions)
   end
   rem_parts!(d, :Var, sort(deletions))
   recognize_types(d)
   return d
-end
-
-function NamedDecapode(e::DecaExpr)
-    d = NamedDecapode{Any, Any, Symbol}()
-    symbol_table = Dict{Symbol, Int}()
-    for judgement in e.judgements
-      var_id = add_part!(d, :Var, name=judgement._1._1, type=judgement._2)
-      symbol_table[judgement._1._1] = var_id
-    end
-    deletions = Vector{Int64}()
-    for eq in e.equations
-      eval_eq!(eq, d, symbol_table, deletions)
-    end
-    rem_parts!(d, :Var, sort(deletions))
-    fill_names!(d)
-    d[:name] = map(normalize_unicode,d[:name])
-    recognize_types(d)
-    return d
 end
 
 function SummationDecapode(e::DecaExpr)
@@ -241,7 +223,7 @@ function SummationDecapode(e::DecaExpr)
       symbol_table[judgement._1._1] = var_id
     end
 
-    deletions = Vector{Int64}()
+    deletions = Vector{Int}()
     for eq in e.equations
       eval_eq!(eq, d, symbol_table, deletions)
     end
@@ -250,11 +232,15 @@ function SummationDecapode(e::DecaExpr)
     recognize_types(d)
 
     fill_names!(d)
-    d[:name] .= normalize_unicode.(d[:name])
+    d[:name] = normalize_unicode.(d[:name])
     make_sum_mult_unique!(d)
     return d
 end
 
-macro SummationDecapode(e)
+"""    macro decapode(e)
+
+Construct a Decapode.
+"""
+macro decapode(e)
   :(SummationDecapode(parse_decapode($(Meta.quot(e)))))
 end
