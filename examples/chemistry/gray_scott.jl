@@ -19,36 +19,23 @@ Point3D = Point3{Float64}
 # We use the model equations as stated here and use the initial conditions for
 # f, k, rᵤ, rᵥ as listed for experiment 4.
 # https://groups.csail.mit.edu/mac/projects/amorphous/GrayScott/
-GrayScott = SummationDecapode(parse_decapode(
-quote
-  (U, V)::Form0{X}
-  (UV2)::Form0{X}
-  (U̇, V̇)::Form0{X}
-  (f, k, rᵤ, rᵥ)::Constant{X}
+GrayScott = @decapode begin
+  (U, V)::Form0
+  (UV2)::Form0
+  (U̇, V̇)::Form0
+  (f, k, rᵤ, rᵥ)::Constant
   UV2 == (U .* (V .* V))
   U̇ == rᵤ * Δ(U) - UV2 + f * (1 .- U)
-  V̇ == rᵥ * Δ(U) + UV2 - (f + k) .* V
+  V̇ == rᵥ * Δ(V) + UV2 - (f + k) .* V
   ∂ₜ(U) == U̇
   ∂ₜ(V) == V̇
-end))
+end
 
 # Visualize. You must have graphviz installed.
 to_graphviz(GrayScott)
 
 # We resolve types of intermediate variables using sets of rules.
-bespoke_op1_inf_rules = [
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :Δ)]
-
-bespoke_op2_inf_rules = [
-  (proj1_type = :Literal, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :.-),
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :.*),
-  (proj1_type = :Form0, proj2_type = :Constant, res_type = :infer, replacement_type = :Form0, op = :*),
-  (proj1_type = :Constant, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :.*),
-  (proj1_type = :Constant, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :*)]
-
-infer_types!(GrayScott,
-    vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
-    vcat(bespoke_op2_inf_rules, op2_inf_rules_2D))
+infer_types!(GrayScott)
 to_graphviz(GrayScott)
 
 # Resolve overloads. i.e. ~dispatch
@@ -68,19 +55,7 @@ sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
 subdivide_duals!(sd, Circumcenter())
 
 # Define how operations map to Julia functions.
-hodge = GeometricHodge()
-Δ₀ = δ(1, sd, hodge=hodge) * d(0, sd)
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    # The Laplacian operator on 0-Forms is the codifferential of
-    # the exterior derivative. i.e. dδ
-    :Δ₀ => x -> Δ₀ * x
-    :.* => (x,y) -> x .* y
-    :.- => (x,y) -> x .- y
-    x => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
+function generate(sd, my_symbol; hodge=GeometricHodge()) end
 
 # Create initial data.
 @assert all(map(sd[:point]) do (x,y)
@@ -116,6 +91,7 @@ u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V)], Float64[], [:U, :
 fig_ic = GLMakie.Figure()
 p1 = GLMakie.mesh(fig_ic[1,2], s, color=findnode(u₀, :U), colormap=:jet)
 p2 = GLMakie.mesh(fig_ic[1,3], s, color=findnode(u₀, :V), colormap=:jet)
+display(fig_ic)
 
 tₑ = 11.5
 
@@ -163,7 +139,6 @@ end # END Gif creation
 # Run on the sphere.
 # You can use lower resolution meshes, such as Icosphere(3).
 s = loadmesh(Icosphere(5))
-s[:edge_orientation] = false
 orient!(s)
 # Visualize the mesh.
 GLMakie.wireframe(s)
@@ -171,19 +146,7 @@ sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Circumcenter())
 
 # Define how operations map to Julia functions.
-hodge = GeometricHodge()
-Δ₀ = δ(1, sd, hodge=hodge) * d(0, sd)
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    # The Laplacian operator on 0-Forms is the codifferential of
-    # the exterior derivative. i.e. dδ
-    :Δ₀ => x -> Δ₀ * x
-    :.* => (x,y) -> x .* y
-    :.- => (x,y) -> x .- y
-    x => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
+function generate(sd, my_symbol; hodge=GeometricHodge()) end
 
 # Create initial data.
 U = map(sd[:point]) do (_,y,_)
@@ -213,6 +176,7 @@ u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V)], Float64[], [:U, :
 fig_ic = GLMakie.Figure()
 p1 = GLMakie.mesh(fig_ic[1,2], s, color=findnode(u₀, :U), colormap=:jet)
 p2 = GLMakie.mesh(fig_ic[1,3], s, color=findnode(u₀, :V), colormap=:jet)
+display(fig_ic)
 
 tₑ = 11.5
 
