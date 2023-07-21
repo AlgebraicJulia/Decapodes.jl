@@ -14,7 +14,9 @@ using MultiScaleArrays
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
-using GLMakie
+# Uncomment to load GLMakie if your system supports it.
+# Otherwise, do using CairoMakie
+#using GLMakie
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 
