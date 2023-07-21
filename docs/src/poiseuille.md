@@ -5,106 +5,15 @@ When modeling a fluid flowing in pipe, one can ignore the multidimensional struc
 ```@example Poiseuille
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
-import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
+import Catlab
 using CombinatorialSpaces.DiscreteExteriorCalculus: ∧
-using Catlab.Theories
-using Catlab.Present
-using Catlab.Graphics
-using Catlab.Syntax
-using Catlab.CategoricalAlgebra
 using LinearAlgebra
 
-using Decapodes.Simulations
-using Decapodes.Examples
-using Decapodes.Diagrams
-using Decapodes.Schedules
+using Decapodes
 
 # Julia community libraries
-
 using CairoMakie
-using Decapodes.Debug
 using OrdinaryDiffEq
-
-
-""" Decapodes1D
-A schema which includes any homomorphisms that may be added by the @decapode
-macro.
-
-TODO: This should be chipped away at as more of this tooling takes advantage
-of the Catlab GAT system
-"""
-
-@present Decapodes1D(FreeExtCalc1D) begin
-  X::Space
-  proj₁_⁰⁰₀::Hom(Form0(X)⊗Form0(X),Form0(X))
-  proj₂_⁰⁰₀::Hom(Form0(X)⊗Form0(X),Form0(X))
-  proj₁_⁰⁰₀⁺::Hom(Form0(X)⊕Form0(X),Form0(X))
-  proj₂_⁰⁰₀⁺::Hom(Form0(X)⊕Form0(X),Form0(X))
-  proj₁_⁰¹₀::Hom(Form0(X)⊗Form1(X),Form0(X))
-  proj₂_⁰¹₁::Hom(Form0(X)⊗Form1(X),Form1(X))
-  proj₁_⁰¹₀⁺::Hom(Form0(X)⊕Form1(X),Form0(X))
-  proj₂_⁰¹₁⁺::Hom(Form0(X)⊕Form1(X),Form1(X))
-  proj₁_⁰⁰̃₀::Hom(Form0(X)⊗DualForm0(X),Form0(X))
-  proj₂_⁰⁰̃₀̃::Hom(Form0(X)⊗DualForm0(X),DualForm0(X))
-  proj₁_⁰⁰̃₀⁺::Hom(Form0(X)⊕DualForm0(X),Form0(X))
-  proj₂_⁰⁰̃₀̃⁺::Hom(Form0(X)⊕DualForm0(X),DualForm0(X))
-  proj₁_⁰¹̃₀::Hom(Form0(X)⊗DualForm1(X),Form0(X))
-  proj₂_⁰¹̃₁̃::Hom(Form0(X)⊗DualForm1(X),DualForm1(X))
-  proj₁_⁰¹̃₀⁺::Hom(Form0(X)⊕DualForm1(X),Form0(X))
-  proj₂_⁰¹̃₁̃⁺::Hom(Form0(X)⊕DualForm1(X),DualForm1(X))
-  proj₁_¹⁰₁::Hom(Form1(X)⊗Form0(X),Form1(X))
-  proj₂_¹⁰₀::Hom(Form1(X)⊗Form0(X),Form0(X))
-  proj₁_¹⁰₁⁺::Hom(Form1(X)⊕Form0(X),Form1(X))
-  proj₂_¹⁰₀⁺::Hom(Form1(X)⊕Form0(X),Form0(X))
-  proj₁_¹¹₁::Hom(Form1(X)⊗Form1(X),Form1(X))
-  proj₂_¹¹₁::Hom(Form1(X)⊗Form1(X),Form1(X))
-  proj₁_¹¹₁⁺::Hom(Form1(X)⊕Form1(X),Form1(X))
-  proj₂_¹¹₁⁺::Hom(Form1(X)⊕Form1(X),Form1(X))
-  proj₁_¹⁰̃₁::Hom(Form1(X)⊗DualForm0(X),Form1(X))
-  proj₂_¹⁰̃₀̃::Hom(Form1(X)⊗DualForm0(X),DualForm0(X))
-  proj₁_¹⁰̃₁⁺::Hom(Form1(X)⊕DualForm0(X),Form1(X))
-  proj₂_¹⁰̃₀̃⁺::Hom(Form1(X)⊕DualForm0(X),DualForm0(X))
-  proj₁_¹¹̃₁::Hom(Form1(X)⊗DualForm1(X),Form1(X))
-  proj₂_¹¹̃₁̃::Hom(Form1(X)⊗DualForm1(X),DualForm1(X))
-  proj₁_¹¹̃₁⁺::Hom(Form1(X)⊕DualForm1(X),Form1(X))
-  proj₂_¹¹̃₁̃⁺::Hom(Form1(X)⊕DualForm1(X),DualForm1(X))
-  proj₁_⁰̃⁰₀̃::Hom(DualForm0(X)⊗Form0(X),DualForm0(X))
-  proj₂_⁰̃⁰₀::Hom(DualForm0(X)⊗Form0(X),Form0(X))
-  proj₁_⁰̃⁰₀̃⁺::Hom(DualForm0(X)⊕Form0(X),DualForm0(X))
-  proj₂_⁰̃⁰₀⁺::Hom(DualForm0(X)⊕Form0(X),Form0(X))
-  proj₁_⁰̃¹₀̃::Hom(DualForm0(X)⊗Form1(X),DualForm0(X))
-  proj₂_⁰̃¹₁::Hom(DualForm0(X)⊗Form1(X),Form1(X))
-  proj₁_⁰̃¹₀̃⁺::Hom(DualForm0(X)⊕Form1(X),DualForm0(X))
-  proj₂_⁰̃¹₁⁺::Hom(DualForm0(X)⊕Form1(X),Form1(X))
-  proj₁_⁰̃⁰̃₀̃::Hom(DualForm0(X)⊗DualForm0(X),DualForm0(X))
-  proj₂_⁰̃⁰̃₀̃::Hom(DualForm0(X)⊗DualForm0(X),DualForm0(X))
-  proj₁_⁰̃⁰̃₀̃⁺::Hom(DualForm0(X)⊕DualForm0(X),DualForm0(X))
-  proj₂_⁰̃⁰̃₀̃⁺::Hom(DualForm0(X)⊕DualForm0(X),DualForm0(X))
-  proj₁_⁰̃¹̃₀̃::Hom(DualForm0(X)⊗DualForm1(X),DualForm0(X))
-  proj₂_⁰̃¹̃₁̃::Hom(DualForm0(X)⊗DualForm1(X),DualForm1(X))
-  proj₁_⁰̃¹̃₀̃⁺::Hom(DualForm0(X)⊕DualForm1(X),DualForm0(X))
-  proj₂_⁰̃¹̃₁̃⁺::Hom(DualForm0(X)⊕DualForm1(X),DualForm1(X))
-  proj₁_¹̃⁰₁̃::Hom(DualForm1(X)⊗Form0(X),DualForm1(X))
-  proj₂_¹̃⁰₀::Hom(DualForm1(X)⊗Form0(X),Form0(X))
-  proj₁_¹̃⁰₁̃⁺::Hom(DualForm1(X)⊕Form0(X),DualForm1(X))
-  proj₂_¹̃⁰₀⁺::Hom(DualForm1(X)⊕Form0(X),Form0(X))
-  proj₁_¹̃¹₁̃::Hom(DualForm1(X)⊗Form1(X),DualForm1(X))
-  proj₂_¹̃¹₁::Hom(DualForm1(X)⊗Form1(X),Form1(X))
-  proj₁_¹̃¹₁̃⁺::Hom(DualForm1(X)⊕Form1(X),DualForm1(X))
-  proj₂_¹̃¹₁⁺::Hom(DualForm1(X)⊕Form1(X),Form1(X))
-  proj₁_¹̃⁰̃₁̃::Hom(DualForm1(X)⊗DualForm0(X),DualForm1(X))
-  proj₂_¹̃⁰̃₀̃::Hom(DualForm1(X)⊗DualForm0(X),DualForm0(X))
-  proj₁_¹̃⁰̃₁̃⁺::Hom(DualForm1(X)⊕DualForm0(X),DualForm1(X))
-  proj₂_¹̃⁰̃₀̃⁺::Hom(DualForm1(X)⊕DualForm0(X),DualForm0(X))
-  proj₁_¹̃¹̃₁̃::Hom(DualForm1(X)⊗DualForm1(X),DualForm1(X))
-  proj₂_¹̃¹̃₁̃::Hom(DualForm1(X)⊗DualForm1(X),DualForm1(X))
-  proj₁_¹̃¹̃₁̃⁺::Hom(DualForm1(X)⊕DualForm1(X),DualForm1(X))
-  proj₂_¹̃¹̃₁̃⁺::Hom(DualForm1(X)⊕DualForm1(X),DualForm1(X))
-  sum₀::Hom(Form0(X)⊗Form0(X),Form0(X))
-  sum₁::Hom(Form1(X)⊗Form1(X),Form1(X))
-  sum₀̃::Hom(DualForm0(X)⊗DualForm0(X),DualForm0(X))
-  sum₁̃::Hom(DualForm1(X)⊗DualForm1(X),DualForm1(X))
-end
 ```
 
 # Creating the Poiseuille Equations
@@ -114,32 +23,32 @@ The first step is to present an extension of the generic Decapodes1D presentatio
 The `@decapode` macro creates the data structure representing the equations of Poiseuille flow. The first block declares variables, the second block defines intermediate terms and the last block is the core equation.
 
 ```@example Poiseuille
-@present Poiseuille <: Decapodes1D begin
-  (R, μ̃)::Hom(Form1(X), Form1(X))
   # μ̃ = negative viscosity per unit area
   # R = drag of pipe boundary
-end;
 
 Poise = @decapode Poiseuille begin
-  (∇P)::Form1{X}
-  (q, q̇, Δq)::Form1{X}
-  P::Form0{X}
+  (∇P)::Form1
+  (q, q̇, Δq)::Form1
+  P::Form0
 
   # Laplacian of q for the viscous effect
-  Δq == d₀{X}(⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(q))))
+  Δq == d₀(⋆₀⁻¹(dual_d₀(⋆₁(q))))
   # Gradient of P for the pressure driving force
-  ∇P == d₀{X}(P)
-  # definition of time derivative of q
-  ∂ₜ{Form1{X}}(q) == q̇
+  ∇P == d₀(P)
 
-  # the core equation
-  q̇ == sum₁(sum₁(μ̃(Δq), ∇P),R(q))
+  # Definition of the time derivative of q
+  ∂ₜ(q) == q̇
+
+  # The core equation
+  q̇ == μ̃(Δq) + ∇P + R(q)
 end;
 ```
 
 # Defining the Semantics
 
-In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The operator funcs code below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. 
+In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The `generate` function below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. 
+
+We will choose to encode the application of this boundary condition inside the μ̃ operator.
 
 ```@example Poiseuille
 """    boundary_edges(ds)
@@ -168,47 +77,22 @@ function mask_boundary_edges(ds)
   return D
 end
 
-
-opbind(f, T) = Dict(:operator=>f, :type=>T)
-
-function create_funcs(ds, hodge=DiagonalHodge())
-  funcs = Dict{Symbol, Dict}()
-  funcs[:⋆₁] = opbind(⋆(Val{1}, ds, hodge=hodge), MatrixFunc())
-  funcs[:⋆₁] = opbind(⋆(Val{1}, ds, hodge=hodge), MatrixFunc())
-  funcs[:⋆₀] = opbind(⋆(Val{0}, ds, hodge=hodge), MatrixFunc())
-  funcs[:⋆₀⁻¹] = opbind(inv(⋆(Val{0}, ds, hodge=hodge)), MatrixFunc())
-  funcs[:⋆₁⁻¹] = opbind(inv(⋆(Val{1}, ds, hodge=hodge)), MatrixFunc())
-  funcs[:d₀] = opbind(d(Val{0}, ds), MatrixFunc())
-  funcs[:dual_d₀] = opbind(dual_derivative(Val{0}, ds), MatrixFunc());
-  funcs[:sum₁] = opbind((x′, x, y)->(x′ .= x .+ y), InPlaceFunc())
-  funcs[:∧₀₁] = opbind((r, c, v) -> r .= -∧(Tuple{0,1}, ds, c, v), InPlaceFunc())
-  return funcs
+function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :μ̃  => x -> begin
+      0.5 *  Diagonal(mask_boundary_edges(sd)) * x
+    end
+    :R => x -> -.01 * x
+    :k => x -> 1.0 * x
+    :∂ρ => ρ -> begin
+      ρ[1] = 0
+      ρ[end] = 0
+      ρ
+    end
+    x => error("Unmatched operator $my_symbol")
+  end
+  return (args...) -> op(args...)
 end
-
-##
-function create_funcs(ds, operators, boundaries, hodge=DiagonalHodge())
-  funcs = create_funcs(ds, hodge)
-  merge!(funcs, operators, boundaries)
-  return funcs
-end
-
-function operator_funcs(ds)
-  F = Dict(
-    :μ̃ => opbind(0.5 *  Diagonal(mask_boundary_edges(ds)), MatrixFunc()),
-    :R => opbind(-0.1 * I(ne(ds)), MatrixFunc()),
-    :¬ => opbind(-I(ne(ds)), MatrixFunc()),
-    :k => opbind(1.0 * I(nv(ds)), MatrixFunc()))
-  B = Dict(
-    :∂ρ => opbind((ρᵇ, ρ) -> begin ρᵇ .= ρ; ρᵇ[1] = 0; ρᵇ[end] = 0; return ρᵇ end, InPlaceFunc())
-  )
-  create_funcs(ds, F, B)
-end
-form2dim = Dict(:Scalar => x->1,
-                :Form0 => nv,
-                :Form1 => ne,
-                :DualForm1 => nv,
-                :DualForm0 => ne)
-
 ```
 
 ## A Single Pipe Segment
@@ -229,8 +113,9 @@ ds
 Then we solve the equations.
 
 ```@example Poiseuille
-funcs = operator_funcs(ds)
-func, code = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P]);
+sim = eval(gensim(Poise))
+fₘ = sim(ds, generate)
+
 prob = ODEProblem(func, [2.], (0.0, 10000.0), [1.,11.])
 sol = solve(prob, Tsit5(); progress=true);
 sol.u
@@ -340,7 +225,8 @@ Poise = @decapode Poiseuille begin
   # Pressure/Density Coupling
   P == k(ρ)
   ∂ₜ{Form0{X}}(ρ) == ρ̇
-  ρ̇ == ⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(∧₀₁{X}(ρ,q)))) # advection
+  #ρ̇ == ⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(∧₀₁{X}(ρ,q)))) # advection
+  ρ̇ == ⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(-1 * ∧₀₁{X}(ρ,q)))) # advection
   
   # Boundary conditions
   ρᵇ::Form0{X}

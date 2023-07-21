@@ -42,9 +42,9 @@ makedocs(
   checkdocs = :none,
   pages     = Any[
     "Decapodes.jl" => "index.md",
-    #"Overview" => "overview.md",
-    #"Misc Features" => "bc_debug.md",
-    #"Pipe Flow" => "poiseuille.md",
+    "Overview" => "overview.md",
+    "Misc Features" => "bc_debug.md",
+    "Pipe Flow" => "poiseuille.md",
     "Glacial Flow" => "ice_dynamics.md",
     "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
 #    "Examples" => Any[
