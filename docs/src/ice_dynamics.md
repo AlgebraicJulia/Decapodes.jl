@@ -33,6 +33,14 @@ We use the `@decapode` macro to interpret the equations. Here, we have equation 
 ```
 We'll change the term out front to Γ so we can demonstrate composition in a moment.
 
+In the exterior calculus, we could write the above equations like so:
+```math
+\partial_t(h) = \circ(\star, d, \star)(\Gamma\quad d(h)\quad \text{avg}_{01}|d(h)^\sharp|^{n-1} \quad \text{avg}_{01}(h^{n+2})).
+```
+
+`avg` here is an operator that performs the midpoint rule, setting the value at an edge to be the average of the values at its two vertices.
+
+
 ``` @example DEC
 halfar_eq2 = @decapode begin
   h::Form0
