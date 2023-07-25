@@ -45,6 +45,7 @@ makedocs(
     #"Overview" => "overview.md",
     #"Misc Features" => "bc_debug.md",
     #"Pipe Flow" => "poiseuille.md",
+    "Equations" => "equations.md",
     "Glacial Flow" => "ice_dynamics.md",
     "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
 #    "Examples" => Any[
