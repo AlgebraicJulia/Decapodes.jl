@@ -8,15 +8,15 @@
   Lit(name::Symbol)
   Judge(var::Var, dim::Symbol, space::Symbol) # Symbol 1: Form0 Symbol 2: X
   AppCirc1(fs::Vector{Symbol}, arg::Term)
-  App1(f::Symbol, x::Term)
-  App2(f::Symbol, x::Term, y::Term)
+  App1(f::Symbol, arg::Term)
+  App2(f::Symbol, arg1::Term, arg2::Term)
   Plus(args::Vector{Term})
   Mult(args::Vector{Term})
-  Tan(x::Term)
+  Tan(var::Term)
 end
 
 @data Equation begin
-  Eq(x::Term, y::Term)
+  Eq(lhs::Term, rhs::Term)
 end
 
 # A struct to store a complete Decapode
