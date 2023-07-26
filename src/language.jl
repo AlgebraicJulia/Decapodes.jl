@@ -21,7 +21,7 @@ end
 
 # A struct to store a complete Decapode
 @as_record struct DecaExpr
-  judgements::Vector{Judge}
+  context::Vector{Judge}
   equations::Vector{Equation}
 end
 
@@ -200,7 +200,7 @@ end
 function Decapode(e::DecaExpr)
   d = Decapode{Any, Any}()
   symbol_table = Dict{Symbol, Int}()
-  for judgement in e.judgements
+  for judgement in e.context
     var_id = add_part!(d, :Var, type=(judgement.dim, judgement.space))
     symbol_table[judgement.var.name] = var_id
   end
@@ -217,7 +217,7 @@ function SummationDecapode(e::DecaExpr)
     d = SummationDecapode{Any, Any, Symbol}()
     symbol_table = Dict{Symbol, Int}()
 
-    for judgement in e.judgements
+    for judgement in e.context
       var_id = add_part!(d, :Var, name=judgement.var.name, type=judgement.dim)
       symbol_table[judgement.var.name] = var_id
     end
