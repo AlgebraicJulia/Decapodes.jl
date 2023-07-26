@@ -4,24 +4,23 @@
 #   - This is straightforward from a language perspective but unclear the best
 #   - way to represent this in a Decapode ACSet.
 @data Term begin
-  Var(Symbol)
-  Lit(Symbol)
-  Judge(Var, Symbol, Symbol) # Symbol 1: Form0 Symbol 2: X
-  AppCirc1(Vector{Symbol}, Term)
-  App1(Symbol, Term)
-  App2(Symbol, Term, Term)
-  Plus(Vector{Term})
-  Mult(Vector{Term})
-  Tan(Term)
+  Var(name::Symbol)
+  Lit(name::Symbol)
+  Judge(var::Var, dim::Symbol, space::Symbol) # Symbol 1: Form0 Symbol 2: X
+  AppCirc1(fs::Vector{Symbol}, arg::Term)
+  App1(f::Symbol, x::Term)
+  App2(f::Symbol, x::Term, y::Term)
+  Plus(args::Vector{Term})
+  Mult(args::Vector{Term})
+  Tan(x::Term)
 end
 
 @data Equation begin
-  Eq(Term, Term)
+  Eq(x::Term, y::Term)
 end
 
 # A struct to store a complete Decapode
-# TODO: Have the decopode macro compile to a DecaExpr
-struct DecaExpr
+@as_record struct DecaExpr
   judgements::Vector{Judge}
   equations::Vector{Equation}
 end
@@ -133,7 +132,7 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
         txv = add_part!(d, :Var, type=:infer)
         tx = add_part!(d, :TVar, incl=txv)
         tanop = add_part!(d, :Op1, src=!(t,d,syms), tgt=txv, op1=DerivOp)
-        return txv #syms[x._1]
+        return txv #syms[x[1]]
       end
       _ => throw("Inline type judgements not yet supported!")
     end
@@ -202,8 +201,8 @@ function Decapode(e::DecaExpr)
   d = Decapode{Any, Any}()
   symbol_table = Dict{Symbol, Int}()
   for judgement in e.judgements
-    var_id = add_part!(d, :Var, type=(judgement._2, judgement._3))
-    symbol_table[judgement._1._1] = var_id
+    var_id = add_part!(d, :Var, type=(judgement.dim, judgement.space))
+    symbol_table[judgement.var.name] = var_id
   end
   deletions = Vector{Int}()
   for eq in e.equations
@@ -219,8 +218,8 @@ function SummationDecapode(e::DecaExpr)
     symbol_table = Dict{Symbol, Int}()
 
     for judgement in e.judgements
-      var_id = add_part!(d, :Var, name=judgement._1._1, type=judgement._2)
-      symbol_table[judgement._1._1] = var_id
+      var_id = add_part!(d, :Var, name=judgement.var.name, type=judgement.dim)
+      symbol_table[judgement.var.name] = var_id
     end
 
     deletions = Vector{Int}()
