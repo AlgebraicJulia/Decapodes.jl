@@ -43,6 +43,7 @@ makedocs(
   pages     = Any[
     "Decapodes.jl" => "index.md",
     "Overview" => "overview.md",
+    "Equations" => "equations.md",
     "Misc Features" => "bc_debug.md",
     "Pipe Flow" => "poiseuille.md",
     "Glacial Flow" => "ice_dynamics.md",
