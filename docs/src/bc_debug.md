@@ -27,7 +27,8 @@ end
 
 Advection = @decapode begin
   C::Form0
-  (V, ϕ)::Form1
+  ϕ::Form1
+  V::Constant
 
   ϕ == ∧₀₁(C,V)
 end
@@ -64,8 +65,7 @@ compose_diff_adv = @relation (C, V) begin
   superposition(ϕ₁, ϕ₂, ϕ, C_up, C)
 end
 
-to_graphviz(compose_diff_adv, box_labels=:name, junction_labels=:variable,
-            graph_attrs=Dict(:start => "2"))
+to_graphviz(compose_diff_adv, box_labels=:name, junction_labels=:variable, prog="circo")
 ```
 
 ```@example Debug
@@ -99,6 +99,7 @@ boundary conditions and so we will use the `plot_mesh` from the previous
 example instead of the mesh with periodic boundary conditions. Because the mesh
 is only a primal mesh, we also generate and subdivide the dual mesh.
 
+`Rectangle_30x10` is a default mesh that is downloaded via `Artifacts.jl` when a user installs Decapodes. Via CombinatorialSpaces.jl, we can instantiate any `.obj` file of triangulated faces as a simplicial set.
 
 ```@example Debug
 using CombinatorialSpaces, CombinatorialSpaces.DiscreteExteriorCalculus
@@ -117,7 +118,7 @@ fig
 ```
 
 Finally, we define our operators, generate the simulation function, and compute
-the simulation. Note that when we define the boudary condition operator, we
+the simulation. Note that when we define the boundary condition operator, we
 hardcode the boundary indices and values into the operator itself. We also move
 the initial concentration to the left, so that we are able to see a constant
 concentration on the left boundary which will act as a source in the flow. The
@@ -125,18 +126,22 @@ modified initial condition is shown below:
 
 ```@example Debug
 using LinearAlgebra
+using MultiScaleArrays
 using MLStyle
 using CombinatorialSpaces.DiscreteExteriorCalculus: ∧
+include("../../examples/boundary_helpers.jl")
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :k => x -> 0.05*x
     :∂C => x -> begin
+      boundary = boundary_inds(Val{0}, sd)
       x[boundary] .= 0
       x
     end
     :∧₀₁ => (x,y) -> begin
-      ∧((0,1), x,y)
+      ∧(Tuple{0,1}, sd, x,y)
+    end
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
@@ -162,12 +167,15 @@ fₘ = sim(plot_mesh_dual, generate)
 velocity(p) = [-0.5, 0.0, 0.0]
 v = ♭(plot_mesh_dual, DualVectorField(velocity.(plot_mesh_dual[triangle_center(plot_mesh_dual),:dual_point]))).data
 
-prob = ODEProblem(fₘ, c, (0.0, 100.0))
-sol = solve(prob, Tsit5(), p=v);
+u₀ = construct(PhysicsState, [VectorForm(c)], Float64[], [:C])
+params = (V = v,)
+
+prob = ODEProblem(fₘ, u₀, (0.0, 100.0), params)
+sol = solve(prob, Tsit5());
 
 # Plot the result
 times = range(0.0, 100.0, length=150)
-colors = [sol(t)[1:nv(plot_mesh)] for t in times]
+colors = [findnode(sol(t), :C) for t in times]
 
 # Initial frame
 fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
@@ -177,7 +185,7 @@ framerate = 30
 
 # Animation
 record(fig, "diff_adv_right.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-ob.color = sol(t)[1:nv(plot_mesh)]
+  ob.color = findnode(sol(t), :C)
 end
 ```
 

@@ -1,18 +1,18 @@
 # Poissuille Flow for Fluid Mechanics
 
-When modeling a fluid flowing in pipe, one can ignore the multidimensional structure of the pipe and approximate the system as a 1 dimensional flow along the pipe. The noslip boundary condition and the geometry of the pipe enter a 1D equation in the form of a resistance term.
+When modeling a fluid flowing in a pipe, one can ignore the multidimensional structure of the pipe and approximate the system as a 1 dimensional flow along the pipe. The noslip boundary condition and the geometry of the pipe enter a 1D equation in the form of a resistance term.
 
 ```@example Poiseuille
+using Catlab
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
-import Catlab
 using CombinatorialSpaces.DiscreteExteriorCalculus: ∧
-using LinearAlgebra
-
 using Decapodes
 
 # Julia community libraries
 using CairoMakie
+using GeometryBasics
+using LinearAlgebra
 using OrdinaryDiffEq
 ```
 
@@ -26,22 +26,26 @@ The `@decapode` macro creates the data structure representing the equations of P
   # μ̃ = negative viscosity per unit area
   # R = drag of pipe boundary
 
-Poise = @decapode Poiseuille begin
-  (∇P)::Form1
-  (q, q̇, Δq)::Form1
+Poise = @decapode begin
   P::Form0
+  q::Form1
 
   # Laplacian of q for the viscous effect
-  Δq == d₀(⋆₀⁻¹(dual_d₀(⋆₁(q))))
+  Δq == Δ(q)
   # Gradient of P for the pressure driving force
-  ∇P == d₀(P)
+  ∇P == d(P)
 
   # Definition of the time derivative of q
   ∂ₜ(q) == q̇
 
   # The core equation
-  q̇ == μ̃(Δq) + ∇P + R(q)
-end;
+#  q̇ == μ̃(Δq) + ∇P + R * q
+  q̇ == μ̃  * ∂q(Δq) + ∇P + R * q
+end
+
+infer_types!(Poise, op1_inf_rules1D, op2_inf_rules1D)
+resolve_overloads!(Poise, op1_res_rules1D, op2_res_rules1D)
+to_graphviz(Poise)
 ```
 
 # Defining the Semantics
@@ -51,39 +55,18 @@ In order to solve our equations, we will need numerical linear operators that gi
 We will choose to encode the application of this boundary condition inside the μ̃ operator.
 
 ```@example Poiseuille
-"""    boundary_edges(ds)
-
-Compute the edges of a 1D simplicial set that are either incident to in-degree 1 or out-degree 1 nodes.
-For a graph, these are boundary vertices meaning leaf nodes. For our pipeflow problems,
-these are the edges where material can enter the pipe network.
-"""
-function boundary_edges(ds)
-  out_degree(x) = length(incident(ds, x, :∂v1))
-  in_degree(x) = length(incident(ds, x, :∂v0))
-  bpoints = findall(x -> out_degree(x) == 0 || in_degree(x) == 0, 1:nv(ds))
-  sedges = vcat(incident(ds,bpoints,:∂v0)...)
-  tedges = vcat(incident(ds,bpoints,:∂v1)...)
-  bedges = collect(union(sedges, tedges))
-  return bedges
-end
-
-"""    mask_boundary_edges(ds)
-
-Provides the `boundary_edges(ds)` as a vector of 0/1 entries to use as a mask.
-"""
-function mask_boundary_edges(ds)
-  D = ones(Int, ne(ds))
-  D[boundary_edges(ds)] .= 0
-  return D
-end
+using MLStyle
+include("../../examples/boundary_helpers.jl")
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :μ̃  => x -> begin
-      0.5 *  Diagonal(mask_boundary_edges(sd)) * x
+    :∂ρ => x -> begin
+      x[boundary_edges(sd)] .= 0
+      x
     end
-    :R => x -> -.01 * x
-    :k => x -> 1.0 * x
+    :∧₀₁ => (x,y) -> begin
+      ∧(Tuple{(0,1)}, sd, x,y)
+    end
     :∂ρ => ρ -> begin
       ρ[1] = 0
       ρ[end] = 0
@@ -105,19 +88,20 @@ s = EmbeddedDeltaSet1D{Bool,Point3D}()
 add_vertices!(s, 2, point=[Point3D(-1, 0, 0), Point3D(+1, 0, 0)])
 add_edge!(s, 1, 2, edge_orientation=true)
 
-ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
-subdivide_duals!(ds, Circumcenter())
-ds
+sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+subdivide_duals!(sd, Circumcenter())
+sd
 ```
 
 Then we solve the equations.
 
 ```@example Poiseuille
 sim = eval(gensim(Poise))
-fₘ = sim(ds, generate)
-
-prob = ODEProblem(func, [2.], (0.0, 10000.0), [1.,11.])
-sol = solve(prob, Tsit5(); progress=true);
+fₘ = sim(sd, generate)
+u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
+params = (k = -0.01, μ̃ = 0.5)
+prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
+sol = solve(prob, Tsit5())
 sol.u
 ```
 
@@ -130,23 +114,27 @@ function linear_pipe(n::Int)
   s = EmbeddedDeltaSet1D{Bool,Point3D}()
   add_vertices!(s, n, point=[Point3D(i, 0, 0) for i in 1:n])
   add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
-  orient!(s)
-  ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
-  subdivide_duals!(ds, Circumcenter())
-  funcs = operator_funcs(ds)
-  func, _ = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
-  return ds, func, funcs
+  sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
+  sd
 end
 
-ds, func, funcs = linear_pipe(10)
-ds
+sd = linear_pipe(10)
+true # hide
 ```
 
 Then we solve the equation. Notice that the equilibrium flow is constant down the length of the pipe. This must be true because of conservation of mass. The segments are all the same length and the total flow in must equal the total flow out of each segment.
 
+Note that we do not generate new simulation code for Poiseuille flow with `gensim` again. We provide our new mesh so that our discrete differential operators can be instantiated.
+
 ```@example Poiseuille
-prob = ODEProblem(func, [5,3,4,2,5,2,8,4,3], (0.0, 10000.0), [10. *i for i in 1:10])
-sol = solve(prob, Tsit5(); progress=true);
+using MultiScaleArrays
+fₘ = sim(sd, generate)
+q = [5,3,4,2,5,2,8,4,3]
+u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
+params = (k = -0.01, μ̃ = 0.5)
+prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
+sol = solve(prob, Tsit5());
 sol.u
 ```
 
@@ -168,24 +156,21 @@ function binary_pipe(depth::Int)
   end
   v = add_vertex!(s, point=Point3D(3^0.5, -1, 0))
   add_edge!(s, 1, v, edge_orientation=true)
-  orient!(s)
-  ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
-  subdivide_duals!(ds, Circumcenter())
-  funcs = operator_funcs(ds)
-  func, _ = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
-  return ds, func, funcs
+  sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
+  sd
 end
-ds, func, funcs = binary_pipe(2);
-ds
+sd = binary_pipe(2);
 ```
 
 Then we solve the equations.
 
 ```@example Poiseuille
+q = fill(5.0, ne(sd))
 prob = ODEProblem(func,
-                 [5. for _ in 1:ne(ds)],
+                 [5. for _ in 1:ne(sd)],
                  (0.0, 10000.0),
-                 Float64[2^(7-p[2]) for p in ds[:point]])
+                 Float64[2^(7-p[2]) for p in sd[:point]])
 
 sol = solve(prob, Tsit5(); progress=true);
 sol.u
@@ -201,60 +186,53 @@ Because the pressure is no longer being supplied as a parameter of the system co
 The Decapode can be visualized with graphviz, note that the boundary conditions are explicitly represented in the Decapode as operators that implement a masking operation. This is not consistent with the Diagrammatic Equations in Physics paper [PBHF22]. This approach is more directly tied to the computational method and will eventually be replaced with one based on morphisms of diagrams.
 
 ```@example Poiseuille
-@present Poiseuille <: Decapodes1D begin
-  (R, μ̃, ¬)::Hom(Form1(X), Form1(X))
-  k::Hom(Form0(X), Form0(X))
-  # μ̃ = negative viscosity per unit area
-  # R = drag of pipe boundary
-  # k = pressure as a function of density
-  # boundary conditions
-  ∂ρ::Hom(Form0(X), Form0(X))
-end;
-
-Poise = @decapode Poiseuille begin
-  (∇P)::Form1{X}
-  (q, q̇, Δq)::Form1{X}
-  (P, ρ, ρ̇)::Form0{X}
+# μ̃ = negative viscosity per unit area
+# R = drag of pipe boundary
+# k = pressure as a function of density
+Poise = @decapode begin
+  ∇P::Form1
+  (q, q̇, Δq)::Form1
+  (P, ρ, ρ̇)::Form0
 
   # Poiseuille Flow
-  Δq == d₀{X}(⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(q))))
-  ∂ₜ{Form1{X}}(q) == q̇
-  ∇P == d₀{X}(P)
-  q̇ == sum₁(sum₁(μ̃(Δq), ¬(∇P)),R(q))
+  Δq == d₀(⋆₀⁻¹(dual_d₀(⋆₁(q))))
+  ∂ₜ{Form1}(q) == q̇
+  ∇P == d₀(P)
+#  q̇ == sum₁(sum₁(μ̃(Δq), ¬(∇P)),R(q))
+  q̇ == μ̃(Δq) - ∇P + R(q)
   
   # Pressure/Density Coupling
-  P == k(ρ)
-  ∂ₜ{Form0{X}}(ρ) == ρ̇
-  #ρ̇ == ⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(∧₀₁{X}(ρ,q)))) # advection
-  ρ̇ == ⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(-1 * ∧₀₁{X}(ρ,q)))) # advection
+  P == k * ρ
+  ∂ₜ(ρ) == ρ̇
+  #ρ̇ == ⋆₀⁻¹(dual_d₀(⋆₁(∧₀₁(ρ,q)))) # advection
+  ρ_up == ⋆₀⁻¹(dual_d₀(⋆₁(-1 * ∧₀₁(ρ,q)))) # advection
   
   # Boundary conditions
-  ρᵇ::Form0{X}
-  ∂ρ(ρ̇) == ρᵇ
+  ρ̇ == ∂ρ(ρ_up)
 end;
 
-to_graphviz(Poise, node_labels=true, prog="neato", node_attrs=Dict(:shape=>"oval"))
+to_graphviz(Poise)
 ```
 
 Then we can create the mesh and solve the equation.
 
 ```@example Poiseuille
+# Create mesh and subdivide it.
 function linear_pipe(n::Int)
   s = EmbeddedDeltaSet1D{Bool,Point3D}()
   add_vertices!(s, n, point=[Point3D(i, 0, 0) for i in 1:n])
   add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
-  orient!(s)
-  ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
-  subdivide_duals!(ds, Circumcenter())
-  funcs = operator_funcs(ds)
-  func, _ = gen_sim(diag2dwd(Poise, in_vars=[:q, :ρ]), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
-  return ds, func, funcs
+  sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
 end
 
-ds, func, funcs = linear_pipe(10)
+sd = linear_pipe(10)
+
+sim = gensim(Poise)
+func = sim(sd, generate)
 
 prob = ODEProblem(func, [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5], (0.0, 10000.0), [10. *i for i in 1:10])
-sol = solve(prob, Tsit5(); progress=true);
+sol = solve(prob, Tsit5())
 sol.u
 ```
 

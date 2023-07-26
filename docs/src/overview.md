@@ -22,7 +22,7 @@ surfaces of the mesh. Below, we provide a very simple Decapode with just a
 single variable `C`.
 and define a convenience function for visualization in later examples.
 
-```
+```@example DEC
 using Decapodes
 using Catlab, Catlab.Graphics
 
@@ -36,7 +36,7 @@ to_graphviz(Variable)
 The resulting diagram contains a single node, showing the single variable in
 this system. We can then add a second variable:
 
-```
+```@example DEC
 TwoVariables = @decapode begin
   C::Form0
   dC::Form1
@@ -69,7 +69,7 @@ some actual PDE systems! One classic PDE example is the diffusion equation.
 This equation states that the change of concentration at each point is
 proportional to the Laplacian of the concentration.
 
-```
+```@example DEC
 Diffusion = @decapode begin
   (C, Ċ)::Form0
   ϕ::Form1
@@ -81,7 +81,7 @@ Diffusion = @decapode begin
   ∂ₜ(C) == Ċ
 end;
 
-draw_equation(Diffusion)
+to_graphviz(Diffusion)
 ```
 
 The resulting Decapode shows the relationships between the three variables with
@@ -101,7 +101,8 @@ visualization, as well as a mapping between the points on the periodic and
 non-periodic meshes.
 
 See CombinatorialSpaces.jl for mesh construction and importing utilities.
-```
+
+```@example DEC
 using Catlab.CategoricalAlgebra
 using CombinatorialSpaces, CombinatorialSpaces.DiscreteExteriorCalculus
 using CairoMakie
@@ -128,6 +129,8 @@ function.
 Note that we chose to define `k` as a function that multiplies by a value `k`. We could have alternately chosen to represent `k` as a Constant that we multiply by in the Decapode itself.
 
 ```@example DEC
+using MLStyle
+
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :k => x -> 0.05*x
@@ -156,14 +159,17 @@ fig
 Finally, we solve this PDE problem using the `Tsit5()` solver and generate an animation of the result!
 
 ```@example DEC
+using MultiScaleArrays
 using OrdinaryDiffEq
 
-prob = ODEProblem(fₘ, c, (0.0, 100.0))
+u₀ = construct(PhysicsState, [VectorForm(c)], Float64[], [:C])
+
+prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
 sol = solve(prob, Tsit5());
 
 # Plot the result
 times = range(0.0, 100.0, length=150)
-colors = [sol(t)[point_map] for t in times]
+colors = [findnode(sol(t), :C)[point_map] for t in times]
 
 # Initial frame
 fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
@@ -173,7 +179,7 @@ framerate = 30
 
 # Animation
 record(fig, "diffusion.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-ob.color = sol(t)[point_map]
+ob.color = findnode(sol(t), :C)[point_map]
 end
 ```
 
@@ -203,7 +209,8 @@ end
 
 Advection = @decapode begin
   C::Form0
-  (V, ϕ)::Form1
+  ϕ::Form1
+  V::Form1
   ϕ == ∧₀₁(C,V)
 end
 
@@ -215,13 +222,17 @@ Superposition = @decapode begin
   Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
   ∂ₜ(C) == Ċ
 end
+true # hide
 ```
+
 ```@example DEC
 to_graphviz(Diffusion)
 ```
+
 ```@example DEC
 to_graphviz(Advection)
 ```
+
 ```@example DEC
 to_graphviz(Superposition)
 ```
@@ -238,8 +249,7 @@ compose_diff_adv = @relation (C, V) begin
   superposition(ϕ₁, ϕ₂, ϕ, C)
 end
 
-to_graphviz(compose_diff_adv, box_labels=:name, junction_labels=:variable,
-            graph_attrs=Dict(:start => "2"))
+to_graphviz(compose_diff_adv, box_labels=:name, junction_labels=:variable, prog="circo")
 ```
 
 After this, the physics can be composed as follows:
@@ -258,6 +268,8 @@ Similar to before, this physics can be compiled and executed. Note that this pro
 now requires another value to be defined, namely the velocity vector field. We do
 this using a custom operator called `flat_op`. This operator is basically the flat
 operator from CombinatorialSpaces.jl, but specialized to account for the periodic mesh.
+
+We could instead represent the domain as a the surface of a an object with equivalent boundaries in 3D.
 
 ``` @setup DEC
 function closest_point(p1, p2, dims)
@@ -292,9 +304,15 @@ end
 ```
 
 ```@example DEC
+using LinearAlgebra
+using MLStyle
+
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :k => x -> 0.05*x
+    :∧₀₁ => (x,y) -> begin
+      ∧(Tuple{0,1}, sd, x,y)
+    end
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
@@ -306,12 +324,15 @@ fₘ = sim(periodic_mesh, generate)
 velocity(p) = [-0.5, -0.5, 0.0]
 v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
 
-prob = ODEProblem(fₘ, c, (0.0, 100.0))
-sol = solve(prob, Tsit5(), p=v);
+u₀ = construct(PhysicsState, [VectorForm(c)], Float64[], [:C])
+params = (V = v)
+
+prob = ODEProblem(fₘ, c, (0.0, 100.0), params)
+sol = solve(prob, Tsit5());
 
 # Plot the result
 times = range(0.0, 100.0, length=150)
-colors = [sol(t)[point_map] for t in times]
+colors = [findnode(sol(t), :C)[point_map] for t in times]
 
 # Initial frame
 fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
@@ -321,7 +342,7 @@ framerate = 30
 
 # Animation
 record(fig, "diff_adv.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-ob.color = sol(t)[point_map]
+ob.color = findnode(sol(t), :C)[point_map]
 end
 ```
 
