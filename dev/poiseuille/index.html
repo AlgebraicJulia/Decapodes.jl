@@ -1,222 +1,400 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Poissuille Flow for Fluid Mechanics · Decapodes.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><script src="../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Decapodes.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Decapodes.jl</a></li><li><a class="tocitem" href="../equations/">Equations</a></li><li><a class="tocitem" href="../ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Poissuille Flow for Fluid Mechanics</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Poissuille Flow for Fluid Mechanics</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/poiseuille.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Poissuille-Flow-for-Fluid-Mechanics"><a class="docs-heading-anchor" href="#Poissuille-Flow-for-Fluid-Mechanics">Poissuille Flow for Fluid Mechanics</a><a id="Poissuille-Flow-for-Fluid-Mechanics-1"></a><a class="docs-heading-anchor-permalink" href="#Poissuille-Flow-for-Fluid-Mechanics" title="Permalink"></a></h1><p>When modeling a fluid flowing in pipe, one can ignore the multidimensional structure of the pipe and approximate the system as a 1 dimensional flow along the pipe. The noslip boundary condition and the geometry of the pipe enter a 1D equation in the form of a resistance term.</p><pre><code class="language- hljs">using CombinatorialSpaces
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Pipe Flow · Decapodes.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><script src="../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Decapodes.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Decapodes.jl</a></li><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../equations/">Equations</a></li><li><a class="tocitem" href="../bc_debug/">Misc Features</a></li><li class="is-active"><a class="tocitem" href>Pipe Flow</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Creating-the-Poiseuille-Equations"><span>Creating the Poiseuille Equations</span></a></li><li class="toplevel"><a class="tocitem" href="#Defining-the-Semantics"><span>Defining the Semantics</span></a></li><li><a class="tocitem" href="#A-Single-Pipe-Segment"><span>A Single Pipe Segment</span></a></li><li><a class="tocitem" href="#A-Linear-Pipe-with-Multiple-Segments"><span>A Linear Pipe with Multiple Segments</span></a></li><li><a class="tocitem" href="#A-Distribution-Network"><span>A Distribution Network</span></a></li><li><a class="tocitem" href="#Multiphysics"><span>Multiphysics</span></a></li></ul></li><li><a class="tocitem" href="../ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Pipe Flow</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Pipe Flow</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/poiseuille.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Poissuille-Flow-for-Fluid-Mechanics"><a class="docs-heading-anchor" href="#Poissuille-Flow-for-Fluid-Mechanics">Poissuille Flow for Fluid Mechanics</a><a id="Poissuille-Flow-for-Fluid-Mechanics-1"></a><a class="docs-heading-anchor-permalink" href="#Poissuille-Flow-for-Fluid-Mechanics" title="Permalink"></a></h1><p>When modeling a fluid flowing in a pipe, one can ignore the multidimensional structure of the pipe and approximate the system as a 1 dimensional flow along the pipe. The noslip boundary condition and the geometry of the pipe enter a 1D equation in the form of a resistance term.</p><pre><code class="language-julia hljs">using Catlab
+using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
-import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
 using CombinatorialSpaces.DiscreteExteriorCalculus: ∧
-using Catlab.Theories
-using Catlab.Present
-using Catlab.Graphics
-using Catlab.Syntax
-using Catlab.CategoricalAlgebra
-using LinearAlgebra
-
-using Decapodes.Simulations
-using Decapodes.Examples
-using Decapodes.Diagrams
-using Decapodes.Schedules
+using Decapodes
 
 # Julia community libraries
-
 using CairoMakie
-using Decapodes.Debug
-using OrdinaryDiffEq
+using GeometryBasics
+using LinearAlgebra
+using OrdinaryDiffEq</code></pre><h1 id="Creating-the-Poiseuille-Equations"><a class="docs-heading-anchor" href="#Creating-the-Poiseuille-Equations">Creating the Poiseuille Equations</a><a id="Creating-the-Poiseuille-Equations-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-the-Poiseuille-Equations" title="Permalink"></a></h1><p>The <code>@decapode</code> macro creates the data structure representing the equations of Poiseuille flow. The first block declares variables, the second block defines intermediate terms and the last block is the core equation.</p><pre><code class="language-julia hljs"># μ̃ = negative viscosity per unit area
+# R = drag of pipe boundary
 
-
-&quot;&quot;&quot; Decapodes1D
-A schema which includes any homomorphisms that may be added by the @decapode
-macro.
-
-TODO: This should be chipped away at as more of this tooling takes advantage
-of the Catlab GAT system
-&quot;&quot;&quot;
-
-@present Decapodes1D(FreeExtCalc1D) begin
-  X::Space
-  proj₁_⁰⁰₀::Hom(Form0(X)⊗Form0(X),Form0(X))
-  proj₂_⁰⁰₀::Hom(Form0(X)⊗Form0(X),Form0(X))
-  proj₁_⁰⁰₀⁺::Hom(Form0(X)⊕Form0(X),Form0(X))
-  proj₂_⁰⁰₀⁺::Hom(Form0(X)⊕Form0(X),Form0(X))
-  proj₁_⁰¹₀::Hom(Form0(X)⊗Form1(X),Form0(X))
-  proj₂_⁰¹₁::Hom(Form0(X)⊗Form1(X),Form1(X))
-  proj₁_⁰¹₀⁺::Hom(Form0(X)⊕Form1(X),Form0(X))
-  proj₂_⁰¹₁⁺::Hom(Form0(X)⊕Form1(X),Form1(X))
-  proj₁_⁰⁰̃₀::Hom(Form0(X)⊗DualForm0(X),Form0(X))
-  proj₂_⁰⁰̃₀̃::Hom(Form0(X)⊗DualForm0(X),DualForm0(X))
-  proj₁_⁰⁰̃₀⁺::Hom(Form0(X)⊕DualForm0(X),Form0(X))
-  proj₂_⁰⁰̃₀̃⁺::Hom(Form0(X)⊕DualForm0(X),DualForm0(X))
-  proj₁_⁰¹̃₀::Hom(Form0(X)⊗DualForm1(X),Form0(X))
-  proj₂_⁰¹̃₁̃::Hom(Form0(X)⊗DualForm1(X),DualForm1(X))
-  proj₁_⁰¹̃₀⁺::Hom(Form0(X)⊕DualForm1(X),Form0(X))
-  proj₂_⁰¹̃₁̃⁺::Hom(Form0(X)⊕DualForm1(X),DualForm1(X))
-  proj₁_¹⁰₁::Hom(Form1(X)⊗Form0(X),Form1(X))
-  proj₂_¹⁰₀::Hom(Form1(X)⊗Form0(X),Form0(X))
-  proj₁_¹⁰₁⁺::Hom(Form1(X)⊕Form0(X),Form1(X))
-  proj₂_¹⁰₀⁺::Hom(Form1(X)⊕Form0(X),Form0(X))
-  proj₁_¹¹₁::Hom(Form1(X)⊗Form1(X),Form1(X))
-  proj₂_¹¹₁::Hom(Form1(X)⊗Form1(X),Form1(X))
-  proj₁_¹¹₁⁺::Hom(Form1(X)⊕Form1(X),Form1(X))
-  proj₂_¹¹₁⁺::Hom(Form1(X)⊕Form1(X),Form1(X))
-  proj₁_¹⁰̃₁::Hom(Form1(X)⊗DualForm0(X),Form1(X))
-  proj₂_¹⁰̃₀̃::Hom(Form1(X)⊗DualForm0(X),DualForm0(X))
-  proj₁_¹⁰̃₁⁺::Hom(Form1(X)⊕DualForm0(X),Form1(X))
-  proj₂_¹⁰̃₀̃⁺::Hom(Form1(X)⊕DualForm0(X),DualForm0(X))
-  proj₁_¹¹̃₁::Hom(Form1(X)⊗DualForm1(X),Form1(X))
-  proj₂_¹¹̃₁̃::Hom(Form1(X)⊗DualForm1(X),DualForm1(X))
-  proj₁_¹¹̃₁⁺::Hom(Form1(X)⊕DualForm1(X),Form1(X))
-  proj₂_¹¹̃₁̃⁺::Hom(Form1(X)⊕DualForm1(X),DualForm1(X))
-  proj₁_⁰̃⁰₀̃::Hom(DualForm0(X)⊗Form0(X),DualForm0(X))
-  proj₂_⁰̃⁰₀::Hom(DualForm0(X)⊗Form0(X),Form0(X))
-  proj₁_⁰̃⁰₀̃⁺::Hom(DualForm0(X)⊕Form0(X),DualForm0(X))
-  proj₂_⁰̃⁰₀⁺::Hom(DualForm0(X)⊕Form0(X),Form0(X))
-  proj₁_⁰̃¹₀̃::Hom(DualForm0(X)⊗Form1(X),DualForm0(X))
-  proj₂_⁰̃¹₁::Hom(DualForm0(X)⊗Form1(X),Form1(X))
-  proj₁_⁰̃¹₀̃⁺::Hom(DualForm0(X)⊕Form1(X),DualForm0(X))
-  proj₂_⁰̃¹₁⁺::Hom(DualForm0(X)⊕Form1(X),Form1(X))
-  proj₁_⁰̃⁰̃₀̃::Hom(DualForm0(X)⊗DualForm0(X),DualForm0(X))
-  proj₂_⁰̃⁰̃₀̃::Hom(DualForm0(X)⊗DualForm0(X),DualForm0(X))
-  proj₁_⁰̃⁰̃₀̃⁺::Hom(DualForm0(X)⊕DualForm0(X),DualForm0(X))
-  proj₂_⁰̃⁰̃₀̃⁺::Hom(DualForm0(X)⊕DualForm0(X),DualForm0(X))
-  proj₁_⁰̃¹̃₀̃::Hom(DualForm0(X)⊗DualForm1(X),DualForm0(X))
-  proj₂_⁰̃¹̃₁̃::Hom(DualForm0(X)⊗DualForm1(X),DualForm1(X))
-  proj₁_⁰̃¹̃₀̃⁺::Hom(DualForm0(X)⊕DualForm1(X),DualForm0(X))
-  proj₂_⁰̃¹̃₁̃⁺::Hom(DualForm0(X)⊕DualForm1(X),DualForm1(X))
-  proj₁_¹̃⁰₁̃::Hom(DualForm1(X)⊗Form0(X),DualForm1(X))
-  proj₂_¹̃⁰₀::Hom(DualForm1(X)⊗Form0(X),Form0(X))
-  proj₁_¹̃⁰₁̃⁺::Hom(DualForm1(X)⊕Form0(X),DualForm1(X))
-  proj₂_¹̃⁰₀⁺::Hom(DualForm1(X)⊕Form0(X),Form0(X))
-  proj₁_¹̃¹₁̃::Hom(DualForm1(X)⊗Form1(X),DualForm1(X))
-  proj₂_¹̃¹₁::Hom(DualForm1(X)⊗Form1(X),Form1(X))
-  proj₁_¹̃¹₁̃⁺::Hom(DualForm1(X)⊕Form1(X),DualForm1(X))
-  proj₂_¹̃¹₁⁺::Hom(DualForm1(X)⊕Form1(X),Form1(X))
-  proj₁_¹̃⁰̃₁̃::Hom(DualForm1(X)⊗DualForm0(X),DualForm1(X))
-  proj₂_¹̃⁰̃₀̃::Hom(DualForm1(X)⊗DualForm0(X),DualForm0(X))
-  proj₁_¹̃⁰̃₁̃⁺::Hom(DualForm1(X)⊕DualForm0(X),DualForm1(X))
-  proj₂_¹̃⁰̃₀̃⁺::Hom(DualForm1(X)⊕DualForm0(X),DualForm0(X))
-  proj₁_¹̃¹̃₁̃::Hom(DualForm1(X)⊗DualForm1(X),DualForm1(X))
-  proj₂_¹̃¹̃₁̃::Hom(DualForm1(X)⊗DualForm1(X),DualForm1(X))
-  proj₁_¹̃¹̃₁̃⁺::Hom(DualForm1(X)⊕DualForm1(X),DualForm1(X))
-  proj₂_¹̃¹̃₁̃⁺::Hom(DualForm1(X)⊕DualForm1(X),DualForm1(X))
-  sum₀::Hom(Form0(X)⊗Form0(X),Form0(X))
-  sum₁::Hom(Form1(X)⊗Form1(X),Form1(X))
-  sum₀̃::Hom(DualForm0(X)⊗DualForm0(X),DualForm0(X))
-  sum₁̃::Hom(DualForm1(X)⊗DualForm1(X),DualForm1(X))
-end</code></pre><h1 id="Creating-the-Poiseuille-Equations"><a class="docs-heading-anchor" href="#Creating-the-Poiseuille-Equations">Creating the Poiseuille Equations</a><a id="Creating-the-Poiseuille-Equations-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-the-Poiseuille-Equations" title="Permalink"></a></h1><p>The first step is to present an extension of the generic Decapodes1D presentation with specific named linear operators for the viscosity effect and the drag effect. This is purely syntactic, we will add the corresponding matrices later. </p><p>The <code>@decapode</code> macro creates the data structure representing the equations of Poiseuille flow. The first block declares variables, the second block defines intermediate terms and the last block is the core equation.</p><pre><code class="language- hljs">@present Poiseuille &lt;: Decapodes1D begin
-  (R, μ̃)::Hom(Form1(X), Form1(X))
-  # μ̃ = negative viscosity per unit area
-  # R = drag of pipe boundary
-end;
-
-Poise = @decapode Poiseuille begin
-  (∇P)::Form1{X}
-  (q, q̇, Δq)::Form1{X}
-  P::Form0{X}
+Poise = @decapode begin
+  P::Form0
+  q::Form1
 
   # Laplacian of q for the viscous effect
-  Δq == d₀{X}(⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(q))))
+  Δq == Δ(q)
   # Gradient of P for the pressure driving force
-  ∇P == d₀{X}(P)
-  # definition of time derivative of q
-  ∂ₜ{Form1{X}}(q) == q̇
+  ∇P == d(P)
 
-  # the core equation
-  q̇ == sum₁(sum₁(μ̃(Δq), ∇P),R(q))
-end;</code></pre><h1 id="Defining-the-Semantics"><a class="docs-heading-anchor" href="#Defining-the-Semantics">Defining the Semantics</a><a id="Defining-the-Semantics-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-Semantics" title="Permalink"></a></h1><p>In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The operator funcs code below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. </p><pre><code class="language-julia hljs">&quot;&quot;&quot;    boundary_edges(ds)
+  # Definition of the time derivative of q
+  ∂ₜ(q) == q̇
 
-Compute the edges of a 1D simplicial set that are either incident to in-degree 1 or out-degree 1 nodes.
-For a graph, these are boundary vertices meaning leaf nodes. For our pipeflow problems,
-these are the edges where material can enter the pipe network.
-&quot;&quot;&quot;
-function boundary_edges(ds)
-  out_degree(x) = length(incident(ds, x, :∂v1))
-  in_degree(x) = length(incident(ds, x, :∂v0))
-  bpoints = findall(x -&gt; out_degree(x) == 0 || in_degree(x) == 0, 1:nv(ds))
-  sedges = vcat(incident(ds,bpoints,:∂v0)...)
-  tedges = vcat(incident(ds,bpoints,:∂v1)...)
-  bedges = collect(union(sedges, tedges))
-  return bedges
+  # The core equation
+#  q̇ == μ̃(Δq) + ∇P + R * q
+  q̇ == μ̃  * ∂q(Δq) + ∇P + R * q
 end
 
-&quot;&quot;&quot;    mask_boundary_edges(ds)
+Poise = expand_operators(Poise)
+infer_types!(Poise, op1_inf_rules_1D, op2_inf_rules_1D)
+resolve_overloads!(Poise, op1_res_rules_1D, op2_res_rules_1D)
+to_graphviz(Poise)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="275pt" height="549pt"
+ viewBox="0.00 0.00 274.74 548.58" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 544.58)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-544.58 270.74,-544.58 270.74,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="38.28" cy="-488.97" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="38.28" y="-485.27" font-family="Times,serif" font-size="14.00">P:Ω₀</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="28.28" cy="-371.33" rx="28.07" ry="10.71"/>
+<text text-anchor="middle" x="28.28" y="-367.63" font-family="Times,serif" font-size="14.00">∇P:Ω₁</text>
+</g>
+<!-- n1&%2345;&gt;n5 -->
+<g id="edge6" class="edge">
+<title>n1&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M37.43,-478.11C35.68,-457.8 31.64,-411.19 29.57,-387.2"/>
+<polygon fill="black" stroke="black" points="31.31,-386.99 29.13,-382.16 27.82,-387.3 31.31,-386.99"/>
+<text text-anchor="middle" x="43.78" y="-446.06" font-family="Times,serif" font-size="14.00">d₀</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="111.28" cy="-488.97" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="111.28" y="-485.27" font-family="Times,serif" font-size="14.00">q:Ω₁</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="129.28" cy="-410.54" rx="28.07" ry="10.71"/>
+<text text-anchor="middle" x="129.28" y="-406.84" font-family="Times,serif" font-size="14.00">Δq:Ω₁</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge5" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M109.99,-478.01C109.02,-467.98 108.45,-452.16 112.28,-439.15 113.68,-434.39 116.14,-429.64 118.75,-425.45"/>
+<polygon fill="black" stroke="black" points="120.29,-426.29 121.6,-421.15 117.38,-424.35 120.29,-426.29"/>
+<text text-anchor="middle" x="117.28" y="-446.06" font-family="Times,serif" font-size="14.00">Δ</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="none" stroke="black" cx="88.28" cy="-51.61" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="88.28" y="-47.91" font-family="Times,serif" font-size="14.00">q̇:Ω₁</text>
+</g>
+<!-- n2&%2345;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n2&%2345;&gt;n8</title>
+<path fill="none" stroke="black" d="M103.01,-478.85C91.57,-465.25 72.28,-438.36 72.28,-411.54 72.28,-411.54 72.28,-411.54 72.28,-125.65 72.28,-105.07 78.42,-81.97 83.09,-67.36"/>
+<polygon fill="black" stroke="black" points="84.83,-67.68 84.73,-62.38 81.51,-66.58 84.83,-67.68"/>
+<text text-anchor="middle" x="78.28" y="-253.1" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+</g>
+<!-- n14 -->
+<g id="node14" class="node">
+<title>n14</title>
+<polygon fill="none" stroke="black" points="265.78,-418.04 216.78,-418.04 216.78,-403.04 265.78,-403.04 265.78,-418.04"/>
+<text text-anchor="middle" x="241.28" y="-406.84" font-family="Times,serif" font-size="14.00">ΩL×Ω₁</text>
+</g>
+<!-- n2&%2345;&gt;n14 -->
+<g id="edge13" class="edge">
+<title>n2&%2345;&gt;n14</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M114.54,-478.19C118.74,-467.07 127.11,-449.18 140.28,-439.15 160.9,-423.45 189.88,-416.67 211.51,-413.75"/>
+<polygon fill="black" stroke="black" points="211.82,-415.48 216.57,-413.12 211.39,-412 211.82,-415.48"/>
+<text text-anchor="middle" x="147.78" y="-446.06" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="130.28" cy="-332.12" rx="29.9" ry="10.71"/>
+<text text-anchor="middle" x="130.28" y="-328.42" font-family="Times,serif" font-size="14.00">•1:Ω•</text>
+</g>
+<!-- n3&%2345;&gt;n4 -->
+<g id="edge8" class="edge">
+<title>n3&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M129.41,-399.86C129.58,-386.84 129.89,-363.55 130.09,-348.21"/>
+<polygon fill="black" stroke="black" points="131.84,-347.98 130.16,-342.96 128.34,-347.94 131.84,-347.98"/>
+<text text-anchor="middle" x="138.78" y="-367.63" font-family="Times,serif" font-size="14.00">∂q</text>
+</g>
+<!-- n13 -->
+<g id="node13" class="node">
+<title>n13</title>
+<polygon fill="none" stroke="black" points="156.28,-264.3 104.28,-264.3 104.28,-249.3 156.28,-249.3 156.28,-264.3"/>
+<text text-anchor="middle" x="130.28" y="-253.1" font-family="Times,serif" font-size="14.00">Ω•×Ω•</text>
+</g>
+<!-- n4&%2345;&gt;n13 -->
+<g id="edge10" class="edge">
+<title>n4&%2345;&gt;n13</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M130.28,-321.23C130.28,-307.84 130.28,-283.97 130.28,-269.64"/>
+<polygon fill="black" stroke="black" points="132.03,-269.49 130.28,-264.49 128.53,-269.49 132.03,-269.49"/>
+<text text-anchor="middle" x="137.78" y="-289.2" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n15 -->
+<g id="node15" class="node">
+<title>n15</title>
+<ellipse fill="none" stroke="black" cx="120.28" cy="-126.65" rx="13.37" ry="13.37"/>
+<text text-anchor="middle" x="120.28" y="-122.95" font-family="Times,serif" font-size="14.00">Σ1</text>
+</g>
+<!-- n5&%2345;&gt;n15 -->
+<g id="edge17" class="edge">
+<title>n5&%2345;&gt;n15</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M27.86,-360.44C27.27,-345.87 26.28,-317.79 26.28,-293.9 26.28,-293.9 26.28,-293.9 26.28,-186.69 26.28,-151.46 74.22,-136.44 101.63,-130.73"/>
+<polygon fill="black" stroke="black" points="102.25,-132.39 106.82,-129.71 101.57,-128.95 102.25,-132.39"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="233.28" cy="-292.9" rx="27.65" ry="10.71"/>
+<text text-anchor="middle" x="233.28" y="-289.2" font-family="Times,serif" font-size="14.00">•2:Ω₁</text>
+</g>
+<!-- n6&%2345;&gt;n15 -->
+<g id="edge18" class="edge">
+<title>n6&%2345;&gt;n15</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M228.57,-282.23C218.46,-261.9 193.39,-213.58 166.28,-177.08 156.29,-163.62 143.1,-149.77 133.41,-140.17"/>
+<polygon fill="black" stroke="black" points="134.55,-138.83 129.76,-136.58 132.1,-141.33 134.55,-138.83"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="black" cx="241.28" cy="-488.97" rx="25.41" ry="10.71"/>
+<text text-anchor="middle" x="241.28" y="-485.27" font-family="Times,serif" font-size="14.00">R:ΩL</text>
+</g>
+<!-- n7&%2345;&gt;n14 -->
+<g id="edge12" class="edge">
+<title>n7&%2345;&gt;n14</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M241.28,-478.29C241.28,-464.27 241.28,-438.33 241.28,-423.25"/>
+<polygon fill="black" stroke="black" points="243.03,-423.23 241.28,-418.23 239.53,-423.23 243.03,-423.23"/>
+<text text-anchor="middle" x="248.78" y="-446.06" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n12 -->
+<g id="node12" class="node">
+<title>n12</title>
+</g>
+<!-- n8&%2345;&gt;n12 -->
+<g id="edge4" class="edge">
+<title>n8&%2345;&gt;n12</title>
+<path fill="none" stroke="black" d="M88.28,-40.97C88.28,-31.46 88.28,-17.21 88.28,-9.14"/>
+<polygon fill="black" stroke="black" points="90.03,-9.06 88.28,-4.06 86.53,-9.06 90.03,-9.06"/>
+</g>
+<!-- n9 -->
+<g id="node9" class="node">
+<title>n9</title>
+<ellipse fill="none" stroke="black" cx="129.28" cy="-187.69" rx="27.65" ry="10.71"/>
+<text text-anchor="middle" x="129.28" y="-183.99" font-family="Times,serif" font-size="14.00">•3:Ω₁</text>
+</g>
+<!-- n9&%2345;&gt;n15 -->
+<g id="edge16" class="edge">
+<title>n9&%2345;&gt;n15</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M127.8,-176.94C126.49,-168.35 124.55,-155.63 122.97,-145.26"/>
+<polygon fill="black" stroke="black" points="124.66,-144.76 122.18,-140.08 121.2,-145.29 124.66,-144.76"/>
+</g>
+<!-- n10 -->
+<g id="node10" class="node">
+<title>n10</title>
+<ellipse fill="none" stroke="black" cx="188.28" cy="-449.76" rx="24.08" ry="10.71"/>
+<text text-anchor="middle" x="188.28" y="-446.06" font-family="Times,serif" font-size="14.00">μ̃:Ω•</text>
+</g>
+<!-- n10&%2345;&gt;n13 -->
+<g id="edge9" class="edge">
+<title>n10&%2345;&gt;n13</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M187.89,-438.94C186.8,-417.25 182.84,-363.84 169.28,-321.51 163.32,-302.88 159.77,-298.81 149.28,-282.3 146.26,-277.52 142.51,-272.55 139.16,-268.33"/>
+<polygon fill="black" stroke="black" points="140.48,-267.18 135.96,-264.41 137.76,-269.39 140.48,-267.18"/>
+<text text-anchor="middle" x="189.78" y="-367.63" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n11 -->
+<g id="node11" class="node">
+<title>n11</title>
+</g>
+<!-- n11&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n11&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M109.48,-536.4C102.07,-531.57 73.51,-512.94 54.89,-500.8"/>
+<polygon fill="black" stroke="black" points="55.53,-499.13 50.39,-497.86 53.62,-502.06 55.53,-499.13"/>
+</g>
+<!-- n11&%2345;&gt;n2 -->
+<g id="edge2" class="edge">
+<title>n11&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M111.28,-536.4C111.28,-532.08 111.28,-516.72 111.28,-504.84"/>
+<polygon fill="black" stroke="black" points="113.03,-504.67 111.28,-499.67 109.53,-504.67 113.03,-504.67"/>
+</g>
+<!-- n11&%2345;&gt;n10 -->
+<g id="edge3" class="edge">
+<title>n11&%2345;&gt;n10</title>
+<path fill="none" stroke="black" d="M112.37,-536.35C119.29,-528.55 157.46,-485.52 176.9,-463.6"/>
+<polygon fill="black" stroke="black" points="178.29,-464.67 180.3,-459.76 175.67,-462.34 178.29,-464.67"/>
+</g>
+<!-- n13&%2345;&gt;n9 -->
+<g id="edge11" class="edge">
+<title>n13&%2345;&gt;n9</title>
+<path fill="none" stroke="black" d="M130.18,-249.12C130.03,-238.58 129.72,-217.84 129.51,-203.63"/>
+<polygon fill="black" stroke="black" points="131.25,-203.32 129.43,-198.35 127.75,-203.37 131.25,-203.32"/>
+<text text-anchor="middle" x="133.78" y="-220.1" font-family="Times,serif" font-size="14.00">*</text>
+</g>
+<!-- n14&%2345;&gt;n6 -->
+<g id="edge14" class="edge">
+<title>n14&%2345;&gt;n6</title>
+<path fill="none" stroke="black" d="M240.83,-402.99C239.58,-384.97 236.08,-334.3 234.32,-308.86"/>
+<polygon fill="black" stroke="black" points="236.06,-308.71 233.97,-303.84 232.57,-308.95 236.06,-308.71"/>
+<text text-anchor="middle" x="242.78" y="-367.63" font-family="Times,serif" font-size="14.00">*</text>
+</g>
+<!-- n15&%2345;&gt;n8 -->
+<g id="edge15" class="edge">
+<title>n15&%2345;&gt;n8</title>
+<path fill="none" stroke="black" d="M115.14,-113.91C109.54,-101.13 100.58,-80.67 94.56,-66.94"/>
+<polygon fill="black" stroke="black" points="96.1,-66.09 92.49,-62.21 92.9,-67.5 96.1,-66.09"/>
+<text text-anchor="middle" x="112.78" y="-84.01" font-family="Times,serif" font-size="14.00">+</text>
+</g>
+</g>
+</svg>
+'/><h1 id="Defining-the-Semantics"><a class="docs-heading-anchor" href="#Defining-the-Semantics">Defining the Semantics</a><a id="Defining-the-Semantics-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-Semantics" title="Permalink"></a></h1><p>In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The <code>generate</code> function below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. </p><pre><code class="language-julia hljs">using MLStyle
+include(&quot;../../examples/boundary_helpers.jl&quot;)
 
-Provides the `boundary_edges(ds)` as a vector of 0/1 entries to use as a mask.
-&quot;&quot;&quot;
-function mask_boundary_edges(ds)
-  D = ones(Int, ne(ds))
-  D[boundary_edges(ds)] .= 0
-  return D
-end
-
-
-opbind(f, T) = Dict(:operator=&gt;f, :type=&gt;T)
-
-function create_funcs(ds, hodge=DiagonalHodge())
-  funcs = Dict{Symbol, Dict}()
-  funcs[:⋆₁] = opbind(⋆(Val{1}, ds, hodge=hodge), MatrixFunc())
-  funcs[:⋆₁] = opbind(⋆(Val{1}, ds, hodge=hodge), MatrixFunc())
-  funcs[:⋆₀] = opbind(⋆(Val{0}, ds, hodge=hodge), MatrixFunc())
-  funcs[:⋆₀⁻¹] = opbind(inv(⋆(Val{0}, ds, hodge=hodge)), MatrixFunc())
-  funcs[:⋆₁⁻¹] = opbind(inv(⋆(Val{1}, ds, hodge=hodge)), MatrixFunc())
-  funcs[:d₀] = opbind(d(Val{0}, ds), MatrixFunc())
-  funcs[:dual_d₀] = opbind(dual_derivative(Val{0}, ds), MatrixFunc());
-  funcs[:sum₁] = opbind((x′, x, y)-&gt;(x′ .= x .+ y), InPlaceFunc())
-  funcs[:∧₀₁] = opbind((r, c, v) -&gt; r .= -∧(Tuple{0,1}, ds, c, v), InPlaceFunc())
-  return funcs
-end
-
-##
-function create_funcs(ds, operators, boundaries, hodge=DiagonalHodge())
-  funcs = create_funcs(ds, hodge)
-  merge!(funcs, operators, boundaries)
-  return funcs
-end
-
-function operator_funcs(ds)
-  F = Dict(
-    :μ̃ =&gt; opbind(0.5 *  Diagonal(mask_boundary_edges(ds)), MatrixFunc()),
-    :R =&gt; opbind(-0.1 * I(ne(ds)), MatrixFunc()),
-    :¬ =&gt; opbind(-I(ne(ds)), MatrixFunc()),
-    :k =&gt; opbind(1.0 * I(nv(ds)), MatrixFunc()))
-  B = Dict(
-    :∂ρ =&gt; opbind((ρᵇ, ρ) -&gt; begin ρᵇ .= ρ; ρᵇ[1] = 0; ρᵇ[end] = 0; return ρᵇ end, InPlaceFunc())
-  )
-  create_funcs(ds, F, B)
-end
-form2dim = Dict(:Scalar =&gt; x-&gt;1,
-                :Form0 =&gt; nv,
-                :Form1 =&gt; ne,
-                :DualForm1 =&gt; nv,
-                :DualForm0 =&gt; ne)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Symbol, Function} with 5 entries:
-  :Scalar    =&gt; #11
-  :DualForm0 =&gt; ne
-  :DualForm1 =&gt; nv
-  :Form0     =&gt; nv
-  :Form1     =&gt; ne</code></pre><h2 id="A-Single-Pipe-Segment"><a class="docs-heading-anchor" href="#A-Single-Pipe-Segment">A Single Pipe Segment</a><a id="A-Single-Pipe-Segment-1"></a><a class="docs-heading-anchor-permalink" href="#A-Single-Pipe-Segment" title="Permalink"></a></h2><p>We create a mesh with one pipe segment to see if we get the right answer. This simulation can be validated with the Poiseuille equation for a single pipe. First we create the mesh.</p><pre><code class="language- hljs">Point3D = Point3{Float64}
+function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :∂ρ =&gt; x -&gt; begin
+      x[boundary_edges(sd)] .= 0
+      x
+    end
+    :∧₀₁ =&gt; (x,y) -&gt; begin
+      ∧(Tuple{(0,1)}, sd, x,y)
+    end
+    :∂ρ =&gt; ρ -&gt; begin
+      ρ[1] = 0
+      ρ[end] = 0
+      ρ
+    end
+    x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
+  end
+  return (args...) -&gt; op(args...)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><h2 id="A-Single-Pipe-Segment"><a class="docs-heading-anchor" href="#A-Single-Pipe-Segment">A Single Pipe Segment</a><a id="A-Single-Pipe-Segment-1"></a><a class="docs-heading-anchor-permalink" href="#A-Single-Pipe-Segment" title="Permalink"></a></h2><p>We create a mesh with one pipe segment to see if we get the right answer. This simulation can be validated with the Poiseuille equation for a single pipe. First we create the mesh.</p><pre><code class="language-julia hljs">Point3D = Point3{Float64}
 s = EmbeddedDeltaSet1D{Bool,Point3D}()
 add_vertices!(s, 2, point=[Point3D(-1, 0, 0), Point3D(+1, 0, 0)])
 add_edge!(s, 1, 2, edge_orientation=true)
 
-ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
-subdivide_duals!(ds, Circumcenter())
-ds</code></pre><p>Then we solve the equations.</p><pre><code class="language- hljs">funcs = operator_funcs(ds)
-func, code = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P]);
-prob = ODEProblem(func, [2.], (0.0, 10000.0), [1.,11.])
-sol = solve(prob, Tsit5(); progress=true);
-sol.u</code></pre><h2 id="A-Linear-Pipe-with-Multiple-Segments"><a class="docs-heading-anchor" href="#A-Linear-Pipe-with-Multiple-Segments">A Linear Pipe with Multiple Segments</a><a id="A-Linear-Pipe-with-Multiple-Segments-1"></a><a class="docs-heading-anchor-permalink" href="#A-Linear-Pipe-with-Multiple-Segments" title="Permalink"></a></h2><p>We then move on to a linear sequence of pipe segments. You can visualize this as the discretization of a single long pipe into <code>n</code> segments. First we define the mesh:</p><pre><code class="language- hljs">function linear_pipe(n::Int)
+sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+subdivide_duals!(sd, Circumcenter())
+sd</code></pre><div class="c-set">
+<span class="c-set-summary">CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, Point3{Float64}} {V:2, E:1, DualV:3, DualE:2, Orientation:0, Real:0, Point:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">V</th>
+      <th style = "text-align: right;">vertex_center</th>
+      <th style = "text-align: right;">point</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">[-1.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">[1.0, 0.0, 0.0]</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">E</th>
+      <th style = "text-align: right;">∂v0</th>
+      <th style = "text-align: right;">∂v1</th>
+      <th style = "text-align: right;">edge_center</th>
+      <th style = "text-align: right;">edge_orientation</th>
+      <th style = "text-align: right;">length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">2.0</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">DualV</th>
+      <th style = "text-align: right;">dual_point</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">[-1.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">[1.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">[0.0, 0.0, 0.0]</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">DualE</th>
+      <th style = "text-align: right;">D_∂v0</th>
+      <th style = "text-align: right;">D_∂v1</th>
+      <th style = "text-align: right;">D_edge_orientation</th>
+      <th style = "text-align: right;">dual_length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Then we solve the equations.</p><pre><code class="language- hljs">using MultiScaleArrays
+sim = eval(gensim(Poise))
+fₘ = sim(sd, generate)
+u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
+params = (k = -0.01, μ̃ = 0.5)
+prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
+sol = solve(prob, Tsit5())
+sol.u</code></pre><h2 id="A-Linear-Pipe-with-Multiple-Segments"><a class="docs-heading-anchor" href="#A-Linear-Pipe-with-Multiple-Segments">A Linear Pipe with Multiple Segments</a><a id="A-Linear-Pipe-with-Multiple-Segments-1"></a><a class="docs-heading-anchor-permalink" href="#A-Linear-Pipe-with-Multiple-Segments" title="Permalink"></a></h2><p>We then move on to a linear sequence of pipe segments. You can visualize this as the discretization of a single long pipe into <code>n</code> segments. First we define the mesh:</p><pre><code class="language-julia hljs">function linear_pipe(n::Int)
   s = EmbeddedDeltaSet1D{Bool,Point3D}()
   add_vertices!(s, n, point=[Point3D(i, 0, 0) for i in 1:n])
   add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
-  orient!(s)
-  ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
-  subdivide_duals!(ds, Circumcenter())
-  funcs = operator_funcs(ds)
-  func, _ = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
-  return ds, func, funcs
+  sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
+  sd
 end
 
-ds, func, funcs = linear_pipe(10)
-ds</code></pre><p>Then we solve the equation. Notice that the equilibrium flow is constant down the length of the pipe. This must be true because of conservation of mass. The segments are all the same length and the total flow in must equal the total flow out of each segment.</p><pre><code class="language- hljs">prob = ODEProblem(func, [5,3,4,2,5,2,8,4,3], (0.0, 10000.0), [10. *i for i in 1:10])
-sol = solve(prob, Tsit5(); progress=true);
-sol.u</code></pre><h2 id="A-Distribution-Network"><a class="docs-heading-anchor" href="#A-Distribution-Network">A Distribution Network</a><a id="A-Distribution-Network-1"></a><a class="docs-heading-anchor-permalink" href="#A-Distribution-Network" title="Permalink"></a></h2><p>To model a distribution network such as residential drinking water or natural gas, we will build a binary tree of pipes that at each junction have a bifurcation into two pipes. We expect that the flow will be divided by two at each level of the tree. First we make the mesh.</p><pre><code class="language- hljs">function binary_pipe(depth::Int)
+sd = linear_pipe(10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Then we solve the equation. Notice that the equilibrium flow is constant down the length of the pipe. This must be true because of conservation of mass. The segments are all the same length and the total flow in must equal the total flow out of each segment.</p><p>Note that we do not generate new simulation code for Poiseuille flow with <code>gensim</code> again. We provide our new mesh so that our discrete differential operators can be instantiated.</p><pre><code class="language- hljs">fₘ = sim(sd, generate)
+q = [5,3,4,2,5,2,8,4,3]
+u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
+params = (k = -0.01, μ̃ = 0.5)
+prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
+sol = solve(prob, Tsit5());
+sol.u</code></pre><h2 id="A-Distribution-Network"><a class="docs-heading-anchor" href="#A-Distribution-Network">A Distribution Network</a><a id="A-Distribution-Network-1"></a><a class="docs-heading-anchor-permalink" href="#A-Distribution-Network" title="Permalink"></a></h2><p>To model a distribution network such as residential drinking water or natural gas, we will build a binary tree of pipes that at each junction have a bifurcation into two pipes. We expect that the flow will be divided by two at each level of the tree. First we make the mesh.</p><pre><code class="language-julia hljs">function binary_pipe(depth::Int)
   s = EmbeddedDeltaSet1D{Bool,Point3D}()
   add_vertex!(s, point=Point3D(0, 0, 0))
   for n in 1:depth
@@ -229,65 +407,520 @@ sol.u</code></pre><h2 id="A-Distribution-Network"><a class="docs-heading-anchor"
   end
   v = add_vertex!(s, point=Point3D(3^0.5, -1, 0))
   add_edge!(s, 1, v, edge_orientation=true)
-  orient!(s)
-  ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
-  subdivide_duals!(ds, Circumcenter())
-  funcs = operator_funcs(ds)
-  func, _ = gen_sim(diag2dwd(Poise), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
-  return ds, func, funcs
+  sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
+  sd
 end
-ds, func, funcs = binary_pipe(2);
-ds</code></pre><p>Then we solve the equations.</p><pre><code class="language- hljs">prob = ODEProblem(func,
-                 [5. for _ in 1:ne(ds)],
-                 (0.0, 10000.0),
-                 Float64[2^(7-p[2]) for p in ds[:point]])
-
-sol = solve(prob, Tsit5(); progress=true);
-sol.u</code></pre><h2 id="Multiphysics"><a class="docs-heading-anchor" href="#Multiphysics">Multiphysics</a><a id="Multiphysics-1"></a><a class="docs-heading-anchor-permalink" href="#Multiphysics" title="Permalink"></a></h2><p>Decapodes really shines when you want to extend or refine your physics. We will change our physics by adding in a term for density of the material and the corresponding changes in pressure. This is not the only formulation for including a dynamic pressure effect into this system. If you can think of a better way to include this effect, we invite you to try it as an exercise!</p><p>Because the pressure is no longer being supplied as a parameter of the system controlled by the operators, we need to introduce a density term and a boundary condition for that density. In this system you can think of forcing a prescribed amount of material per unit time through the openings of the pipe and allowing the flow (q) and the pressure (P) to fluctuate. Before we were enforcing a fixed pressure gradient and and letting the flow fluctuate to achieve equilibrium. In the prior model, we were not accounting for the amount of material that had to flow in order to achieve that (flow, pressure) combination.</p><p>The Decapode can be visualized with graphviz, note that the boundary conditions are explicitly represented in the Decapode as operators that implement a masking operation. This is not consistent with the Diagrammatic Equations in Physics paper [PBHF22]. This approach is more directly tied to the computational method and will eventually be replaced with one based on morphisms of diagrams.</p><pre><code class="language- hljs">@present Poiseuille &lt;: Decapodes1D begin
-  (R, μ̃, ¬)::Hom(Form1(X), Form1(X))
-  k::Hom(Form0(X), Form0(X))
-  # μ̃ = negative viscosity per unit area
-  # R = drag of pipe boundary
-  # k = pressure as a function of density
-  # boundary conditions
-  ∂ρ::Hom(Form0(X), Form0(X))
-end;
-
-Poise = @decapode Poiseuille begin
-  (∇P)::Form1{X}
-  (q, q̇, Δq)::Form1{X}
-  (P, ρ, ρ̇)::Form0{X}
+sd = binary_pipe(2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Then we solve the equations.</p><pre><code class="language- hljs">fₘ = sim(sd, generate)
+q = fill(5.0, ne(sd))
+u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
+params = (k = -0.01, μ̃ = 0.5)
+prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
+sol = solve(prob, Tsit5())
+sol.u</code></pre><h2 id="Multiphysics"><a class="docs-heading-anchor" href="#Multiphysics">Multiphysics</a><a id="Multiphysics-1"></a><a class="docs-heading-anchor-permalink" href="#Multiphysics" title="Permalink"></a></h2><p>Decapodes really shines when you want to extend or refine your physics. We will change our physics by adding in a term for density of the material and the corresponding changes in pressure. This is not the only formulation for including a dynamic pressure effect into this system. If you can think of a better way to include this effect, we invite you to try it as an exercise!</p><p>Because the pressure is no longer being supplied as a parameter of the system controlled by the operators, we need to introduce a density term and a boundary condition for that density. In this system you can think of forcing a prescribed amount of material per unit time through the openings of the pipe and allowing the flow (q) and the pressure (P) to fluctuate. Before we were enforcing a fixed pressure gradient and and letting the flow fluctuate to achieve equilibrium. In the prior model, we were not accounting for the amount of material that had to flow in order to achieve that (flow, pressure) combination.</p><p>The Decapode can be visualized with graphviz, note that the boundary conditions are explicitly represented in the Decapode as operators that implement a masking operation. This is not consistent with the Diagrammatic Equations in Physics paper [PBHF22]. This approach is more directly tied to the computational method and will eventually be replaced with one based on morphisms of diagrams.</p><pre><code class="language-julia hljs"># μ̃ = negative viscosity per unit area
+# R = drag of pipe boundary
+# k = pressure as a function of density
+Poise = @decapode begin
+#  ∇P::Form1
+#  (q, q̇, Δq)::Form1
+  q::Form1
+  (P, ρ)::Form0
 
   # Poiseuille Flow
-  Δq == d₀{X}(⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(q))))
-  ∂ₜ{Form1{X}}(q) == q̇
-  ∇P == d₀{X}(P)
-  q̇ == sum₁(sum₁(μ̃(Δq), ¬(∇P)),R(q))
-  
-  # Pressure/Density Coupling
-  P == k(ρ)
-  ∂ₜ{Form0{X}}(ρ) == ρ̇
-  ρ̇ == ⋆₀⁻¹{X}(dual_d₀{X}(⋆₁{X}(∧₀₁{X}(ρ,q)))) # advection
-  
-  # Boundary conditions
-  ρᵇ::Form0{X}
-  ∂ρ(ρ̇) == ρᵇ
-end;
+  Δq == ∘(d, ⋆, d, ⋆)(q)
+  ∂ₜ(q) == q̇
+#  ∇P == d₀(P)
+  ∇P == d(P)
+#  q̇ == sum₁(sum₁(μ̃(Δq), ¬(∇P)),R(q))
+  q̇ == μ̃ * ∂q(Δq) - ∇P + R * q
 
-to_graphviz(Poise, node_labels=true, prog=&quot;neato&quot;, node_attrs=Dict(:shape=&gt;&quot;oval&quot;))</code></pre><p>Then we can create the mesh and solve the equation.</p><pre><code class="language- hljs">function linear_pipe(n::Int)
+  # Pressure/Density Coupling
+  P == k * ρ
+  ∂ₜ(ρ) == ρ̇
+  #ρ̇ == ⋆₀⁻¹(dual_d₀(⋆₁(∧₀₁(ρ,q)))) # advection
+  ρ_up == ∘(⋆, d, ⋆)(-1 * ∧₀₁(ρ,q)) # advection
+
+  # Boundary conditions
+  ρ̇ == ∂ρ(ρ_up)
+end
+
+Poise = expand_operators(Poise)
+infer_types!(Poise, op1_inf_rules_1D, op2_inf_rules_1D)
+resolve_overloads!(Poise, op1_res_rules_1D, op2_res_rules_1D)
+to_graphviz(Poise)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="528pt" height="916pt"
+ viewBox="0.00 0.00 528.00 915.85" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 911.85)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-911.85 524,-911.85 524,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="247" cy="-856.25" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="247" y="-852.55" font-family="Times,serif" font-size="14.00">q:Ω₁</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="black" cx="224" cy="-51.61" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="224" y="-47.91" font-family="Times,serif" font-size="14.00">q̇:Ω₁</text>
+</g>
+<!-- n1&%2345;&gt;n7 -->
+<g id="edge10" class="edge">
+<title>n1&%2345;&gt;n7</title>
+<path fill="none" stroke="black" d="M242.12,-845.63C235.37,-831.41 224,-803.76 224,-778.82 224,-778.82 224,-778.82 224,-125.65 224,-105.55 224,-82.33 224,-67.57"/>
+<polygon fill="black" stroke="black" points="225.75,-67.53 224,-62.53 222.25,-67.53 225.75,-67.53"/>
+<text text-anchor="middle" x="230" y="-436.74" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+</g>
+<!-- n19 -->
+<g id="node19" class="node">
+<title>n19</title>
+<ellipse fill="none" stroke="black" cx="432" cy="-777.82" rx="45.01" ry="10.71"/>
+<text text-anchor="middle" x="432" y="-774.12" font-family="Times,serif" font-size="14.00">•_1_1:Ω•</text>
+</g>
+<!-- n1&%2345;&gt;n19 -->
+<g id="edge6" class="edge">
+<title>n1&%2345;&gt;n19</title>
+<path fill="none" stroke="black" d="M266.77,-851.43C286.29,-847.22 316.66,-839.42 341,-827.64 355.7,-820.53 356.83,-814.55 371,-806.43 382.12,-800.06 394.98,-794.05 406.01,-789.28"/>
+<polygon fill="black" stroke="black" points="406.71,-790.89 410.62,-787.32 405.33,-787.67 406.71,-790.89"/>
+<text text-anchor="middle" x="376" y="-813.34" font-family="Times,serif" font-size="14.00">d</text>
+</g>
+<!-- n28 -->
+<g id="node28" class="node">
+<title>n28</title>
+<polygon fill="none" stroke="black" points="301.5,-785.32 252.5,-785.32 252.5,-770.32 301.5,-770.32 301.5,-785.32"/>
+<text text-anchor="middle" x="277" y="-774.12" font-family="Times,serif" font-size="14.00">ΩL×Ω₁</text>
+</g>
+<!-- n1&%2345;&gt;n28 -->
+<g id="edge25" class="edge">
+<title>n1&%2345;&gt;n28</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M248.08,-845.55C249.45,-835.45 252.36,-819.32 258,-806.43 260.57,-800.55 264.45,-794.62 268.04,-789.76"/>
+<polygon fill="black" stroke="black" points="269.54,-790.67 271.2,-785.64 266.77,-788.54 269.54,-790.67"/>
+<text text-anchor="middle" x="265.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n30 -->
+<g id="node30" class="node">
+<title>n30</title>
+<polygon fill="none" stroke="black" points="179,-785.32 133,-785.32 133,-770.32 179,-770.32 179,-785.32"/>
+<text text-anchor="middle" x="156" y="-774.12" font-family="Times,serif" font-size="14.00">Ω₀×Ω₁</text>
+</g>
+<!-- n1&%2345;&gt;n30 -->
+<g id="edge31" class="edge">
+<title>n1&%2345;&gt;n30</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M230.96,-848.8C220.12,-843.96 205.86,-836.65 195,-827.64 181.7,-816.61 169.86,-800.41 162.8,-789.74"/>
+<polygon fill="black" stroke="black" points="164.27,-788.79 160.08,-785.54 161.33,-790.69 164.27,-788.79"/>
+<text text-anchor="middle" x="202.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="344" cy="-705.61" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="344" y="-701.91" font-family="Times,serif" font-size="14.00">P:Ω₀</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="none" stroke="black" cx="344" cy="-587.97" rx="28.07" ry="10.71"/>
+<text text-anchor="middle" x="344" y="-584.27" font-family="Times,serif" font-size="14.00">∇P:Ω₁</text>
+</g>
+<!-- n2&%2345;&gt;n8 -->
+<g id="edge11" class="edge">
+<title>n2&%2345;&gt;n8</title>
+<path fill="none" stroke="black" d="M344,-694.75C344,-674.44 344,-627.83 344,-603.84"/>
+<polygon fill="black" stroke="black" points="345.75,-603.8 344,-598.8 342.25,-603.8 345.75,-603.8"/>
+<text text-anchor="middle" x="351.5" y="-662.7" font-family="Times,serif" font-size="14.00">d₀</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="166" cy="-856.25" rx="21.43" ry="10.71"/>
+<text text-anchor="middle" x="166" y="-852.55" font-family="Times,serif" font-size="14.00">ρ:Ω₀</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="112" cy="-259.9" rx="21.43" ry="10.71"/>
+<text text-anchor="middle" x="112" y="-256.2" font-family="Times,serif" font-size="14.00">ρ̇:Ω₀</text>
+</g>
+<!-- n3&%2345;&gt;n6 -->
+<g id="edge13" class="edge">
+<title>n3&%2345;&gt;n6</title>
+<path fill="none" stroke="black" d="M144.64,-854.95C99.8,-853.06 0,-841.8 0,-778.82 0,-778.82 0,-778.82 0,-331.12 0,-290.27 54.13,-272.28 87.13,-265.11"/>
+<polygon fill="black" stroke="black" points="87.69,-266.78 92.23,-264.05 86.98,-263.35 87.69,-266.78"/>
+<text text-anchor="middle" x="6" y="-545.06" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+</g>
+<!-- n29 -->
+<g id="node29" class="node">
+<title>n29</title>
+<polygon fill="none" stroke="black" points="368.5,-785.32 319.5,-785.32 319.5,-770.32 368.5,-770.32 368.5,-785.32"/>
+<text text-anchor="middle" x="344" y="-774.12" font-family="Times,serif" font-size="14.00">ΩL×Ω₀</text>
+</g>
+<!-- n3&%2345;&gt;n29 -->
+<g id="edge28" class="edge">
+<title>n3&%2345;&gt;n29</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M185.24,-851.68C211.86,-846.51 258.33,-836.56 273,-827.64 283.81,-821.06 282.03,-814.23 292,-806.43 301.54,-798.96 313.41,-792.48 323.39,-787.69"/>
+<polygon fill="black" stroke="black" points="324.33,-789.18 328.12,-785.47 322.85,-786.01 324.33,-789.18"/>
+<text text-anchor="middle" x="299.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n3&%2345;&gt;n30 -->
+<g id="edge30" class="edge">
+<title>n3&%2345;&gt;n30</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M162.12,-845.71C160.19,-840.47 158.04,-833.8 157,-827.64 154.87,-815.09 154.9,-800.46 155.28,-790.51"/>
+<polygon fill="black" stroke="black" points="157.03,-790.59 155.52,-785.51 153.53,-790.42 157.03,-790.59"/>
+<text text-anchor="middle" x="164.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="424" cy="-548.76" rx="30.31" ry="10.71"/>
+<text text-anchor="middle" x="424" y="-545.06" font-family="Times,serif" font-size="14.00">Δq:Ω•</text>
+</g>
+<!-- n13 -->
+<g id="node13" class="node">
+<title>n13</title>
+<ellipse fill="none" stroke="black" cx="424" cy="-476.54" rx="29.9" ry="10.71"/>
+<text text-anchor="middle" x="424" y="-472.84" font-family="Times,serif" font-size="14.00">•3:Ω•</text>
+</g>
+<!-- n4&%2345;&gt;n13 -->
+<g id="edge12" class="edge">
+<title>n4&%2345;&gt;n13</title>
+<path fill="none" stroke="black" d="M424,-537.99C424,-526.15 424,-506.07 424,-492.33"/>
+<polygon fill="black" stroke="black" points="425.75,-492.22 424,-487.22 422.25,-492.22 425.75,-492.22"/>
+<text text-anchor="middle" x="432.5" y="-508.95" font-family="Times,serif" font-size="14.00">∂q</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="168" cy="-705.61" rx="27.65" ry="10.71"/>
+<text text-anchor="middle" x="168" y="-701.91" font-family="Times,serif" font-size="14.00">&%2345;1:ΩL</text>
+</g>
+<!-- n31 -->
+<g id="node31" class="node">
+<title>n31</title>
+<polygon fill="none" stroke="black" points="136.5,-634.68 87.5,-634.68 87.5,-619.68 136.5,-619.68 136.5,-634.68"/>
+<text text-anchor="middle" x="112" y="-623.48" font-family="Times,serif" font-size="14.00">ΩL×Ω₁</text>
+</g>
+<!-- n5&%2345;&gt;n31 -->
+<g id="edge33" class="edge">
+<title>n5&%2345;&gt;n31</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M161.13,-695.24C150.76,-681.08 131.13,-654.29 120.08,-639.21"/>
+<polygon fill="black" stroke="black" points="121.31,-637.93 116.95,-634.93 118.49,-640 121.31,-637.93"/>
+<text text-anchor="middle" x="154.5" y="-662.7" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n25 -->
+<g id="node25" class="node">
+<title>n25</title>
+</g>
+<!-- n6&%2345;&gt;n25 -->
+<g id="edge5" class="edge">
+<title>n6&%2345;&gt;n25</title>
+<path fill="none" stroke="black" d="M114.78,-248.99C118.33,-235.48 124,-210.45 124,-188.69 124,-188.69 124,-188.69 124,-50.61 124,-35.24 129.95,-17.91 133.47,-9"/>
+<polygon fill="black" stroke="black" points="135.18,-9.44 135.48,-4.15 131.95,-8.1 135.18,-9.44"/>
+</g>
+<!-- n7&%2345;&gt;n25 -->
+<g id="edge4" class="edge">
+<title>n7&%2345;&gt;n25</title>
+<path fill="none" stroke="black" d="M210.25,-43.17C191.13,-32.83 157.24,-14.49 142.81,-6.69"/>
+<polygon fill="black" stroke="black" points="143.41,-5.02 138.18,-4.18 141.74,-8.1 143.41,-5.02"/>
+</g>
+<!-- n27 -->
+<g id="node27" class="node">
+<title>n27</title>
+<polygon fill="none" stroke="black" points="368.5,-267.4 319.5,-267.4 319.5,-252.4 368.5,-252.4 368.5,-267.4"/>
+<text text-anchor="middle" x="344" y="-256.2" font-family="Times,serif" font-size="14.00">Ω•×Ω₁</text>
+</g>
+<!-- n8&%2345;&gt;n27 -->
+<g id="edge22" class="edge">
+<title>n8&%2345;&gt;n27</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M344,-577.01C344,-562.9 344,-536.31 344,-513.65 344,-513.65 344,-513.65 344,-331.12 344,-310.64 344,-286.8 344,-272.83"/>
+<polygon fill="black" stroke="black" points="345.75,-272.49 344,-267.49 342.25,-272.49 345.75,-272.49"/>
+<text text-anchor="middle" x="351.5" y="-436.74" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n9 -->
+<g id="node9" class="node">
+<title>n9</title>
+<ellipse fill="none" stroke="black" cx="112" cy="-332.12" rx="38.78" ry="10.71"/>
+<text text-anchor="middle" x="112" y="-328.42" font-family="Times,serif" font-size="14.00">ρ_up:Ω₀</text>
+</g>
+<!-- n9&%2345;&gt;n6 -->
+<g id="edge17" class="edge">
+<title>n9&%2345;&gt;n6</title>
+<path fill="none" stroke="black" d="M112,-321.35C112,-309.51 112,-289.43 112,-275.69"/>
+<polygon fill="black" stroke="black" points="113.75,-275.58 112,-270.58 110.25,-275.58 113.75,-275.58"/>
+<text text-anchor="middle" x="120" y="-292.31" font-family="Times,serif" font-size="14.00">∂ρ</text>
+</g>
+<!-- n10 -->
+<g id="node10" class="node">
+<title>n10</title>
+<ellipse fill="none" stroke="black" cx="338" cy="-187.69" rx="27.65" ry="10.71"/>
+<text text-anchor="middle" x="338" y="-183.99" font-family="Times,serif" font-size="14.00">•1:Ω₁</text>
+</g>
+<!-- n32 -->
+<g id="node32" class="node">
+<title>n32</title>
+<ellipse fill="none" stroke="black" cx="277" cy="-126.65" rx="13.37" ry="13.37"/>
+<text text-anchor="middle" x="277" y="-122.95" font-family="Times,serif" font-size="14.00">Σ1</text>
+</g>
+<!-- n10&%2345;&gt;n32 -->
+<g id="edge37" class="edge">
+<title>n10&%2345;&gt;n32</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M328.47,-177.46C318.11,-167.44 301.51,-151.37 289.97,-140.2"/>
+<polygon fill="black" stroke="black" points="291.07,-138.84 286.26,-136.62 288.64,-141.35 291.07,-138.84"/>
+</g>
+<!-- n11 -->
+<g id="node11" class="node">
+<title>n11</title>
+<ellipse fill="none" stroke="black" cx="413" cy="-332.12" rx="29.9" ry="10.71"/>
+<text text-anchor="middle" x="413" y="-328.42" font-family="Times,serif" font-size="14.00">•2:Ω•</text>
+</g>
+<!-- n11&%2345;&gt;n27 -->
+<g id="edge21" class="edge">
+<title>n11&%2345;&gt;n27</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M403.98,-321.94C391.16,-308.89 367.73,-285.05 354.26,-271.34"/>
+<polygon fill="black" stroke="black" points="355.49,-270.1 350.74,-267.76 353,-272.56 355.49,-270.1"/>
+<text text-anchor="middle" x="391.5" y="-292.31" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n12 -->
+<g id="node12" class="node">
+<title>n12</title>
+<ellipse fill="none" stroke="black" cx="492" cy="-817.04" rx="24.08" ry="10.71"/>
+<text text-anchor="middle" x="492" y="-813.34" font-family="Times,serif" font-size="14.00">μ̃:Ω•</text>
+</g>
+<!-- n26 -->
+<g id="node26" class="node">
+<title>n26</title>
+<polygon fill="none" stroke="black" points="450,-411.83 398,-411.83 398,-396.83 450,-396.83 450,-411.83"/>
+<text text-anchor="middle" x="424" y="-400.63" font-family="Times,serif" font-size="14.00">Ω•×Ω•</text>
+</g>
+<!-- n12&%2345;&gt;n26 -->
+<g id="edge18" class="edge">
+<title>n12&%2345;&gt;n26</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M494.89,-806.17C498.72,-792.18 505,-765.73 505,-742.72 505,-742.72 505,-742.72 505,-475.54 505,-444.66 470.97,-424.31 447.02,-413.82"/>
+<polygon fill="black" stroke="black" points="447.67,-412.19 442.38,-411.85 446.3,-415.41 447.67,-412.19"/>
+<text text-anchor="middle" x="512.5" y="-623.48" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n13&%2345;&gt;n26 -->
+<g id="edge19" class="edge">
+<title>n13&%2345;&gt;n26</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M424,-465.78C424,-453.12 424,-431.04 424,-417.36"/>
+<polygon fill="black" stroke="black" points="425.75,-417.06 424,-412.06 422.25,-417.06 425.75,-417.06"/>
+<text text-anchor="middle" x="431.5" y="-436.74" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n14 -->
+<g id="node14" class="node">
+<title>n14</title>
+<ellipse fill="none" stroke="black" cx="277" cy="-666.4" rx="27.65" ry="10.71"/>
+<text text-anchor="middle" x="277" y="-662.7" font-family="Times,serif" font-size="14.00">•4:Ω₁</text>
+</g>
+<!-- n14&%2345;&gt;n32 -->
+<g id="edge38" class="edge">
+<title>n14&%2345;&gt;n32</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M277,-655.5C277,-640.93 277,-612.85 277,-588.97 277,-588.97 277,-588.97 277,-186.69 277,-172.82 277,-157.12 277,-145.4"/>
+<polygon fill="black" stroke="black" points="278.75,-145.32 277,-140.32 275.25,-145.32 278.75,-145.32"/>
+</g>
+<!-- n15 -->
+<g id="node15" class="node">
+<title>n15</title>
+<ellipse fill="none" stroke="black" cx="333" cy="-856.25" rx="25.41" ry="10.71"/>
+<text text-anchor="middle" x="333" y="-852.55" font-family="Times,serif" font-size="14.00">R:ΩL</text>
+</g>
+<!-- n15&%2345;&gt;n28 -->
+<g id="edge24" class="edge">
+<title>n15&%2345;&gt;n28</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M330.12,-845.55C326.71,-835.15 320.3,-818.51 311,-806.43 305.72,-799.58 298.42,-793.36 291.94,-788.57"/>
+<polygon fill="black" stroke="black" points="292.7,-786.97 287.62,-785.49 290.67,-789.82 292.7,-786.97"/>
+<text text-anchor="middle" x="329.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n16 -->
+<g id="node16" class="node">
+<title>n16</title>
+<ellipse fill="none" stroke="black" cx="75" cy="-705.61" rx="47.25" ry="10.71"/>
+<text text-anchor="middle" x="75" y="-701.91" font-family="Times,serif" font-size="14.00">sum_1:Ω₁</text>
+</g>
+<!-- n16&%2345;&gt;n31 -->
+<g id="edge34" class="edge">
+<title>n16&%2345;&gt;n31</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M79.69,-694.93C86.53,-680.78 99.25,-654.52 106.52,-639.5"/>
+<polygon fill="black" stroke="black" points="108.16,-640.13 108.76,-634.87 105.01,-638.61 108.16,-640.13"/>
+<text text-anchor="middle" x="105.5" y="-662.7" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n17 -->
+<g id="node17" class="node">
+<title>n17</title>
+<ellipse fill="none" stroke="black" cx="112" cy="-548.76" rx="27.65" ry="10.71"/>
+<text text-anchor="middle" x="112" y="-545.06" font-family="Times,serif" font-size="14.00">•5:Ω₁</text>
+</g>
+<!-- n22 -->
+<g id="node22" class="node">
+<title>n22</title>
+<ellipse fill="none" stroke="black" cx="112" cy="-476.54" rx="43.27" ry="10.71"/>
+<text text-anchor="middle" x="112" y="-472.84" font-family="Times,serif" font-size="14.00">•_6_1:Ω̃₀</text>
+</g>
+<!-- n17&%2345;&gt;n22 -->
+<g id="edge14" class="edge">
+<title>n17&%2345;&gt;n22</title>
+<path fill="none" stroke="black" d="M112,-537.99C112,-526.15 112,-506.07 112,-492.33"/>
+<polygon fill="black" stroke="black" points="113.75,-492.22 112,-487.22 110.25,-492.22 113.75,-492.22"/>
+<text text-anchor="middle" x="119.5" y="-508.95" font-family="Times,serif" font-size="14.00">⋆₁</text>
+</g>
+<!-- n18 -->
+<g id="node18" class="node">
+<title>n18</title>
+<ellipse fill="none" stroke="black" cx="404" cy="-856.25" rx="24.08" ry="10.71"/>
+<text text-anchor="middle" x="404" y="-852.55" font-family="Times,serif" font-size="14.00">k:ΩL</text>
+</g>
+<!-- n18&%2345;&gt;n29 -->
+<g id="edge27" class="edge">
+<title>n18&%2345;&gt;n29</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M401.25,-845.45C397.94,-834.96 391.62,-818.26 382,-806.43 376.12,-799.2 367.92,-792.92 360.64,-788.19"/>
+<polygon fill="black" stroke="black" points="361.42,-786.62 356.25,-785.45 359.56,-789.58 361.42,-786.62"/>
+<text text-anchor="middle" x="400.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n20 -->
+<g id="node20" class="node">
+<title>n20</title>
+<ellipse fill="none" stroke="black" cx="430" cy="-705.61" rx="45.01" ry="10.71"/>
+<text text-anchor="middle" x="430" y="-701.91" font-family="Times,serif" font-size="14.00">•_1_2:Ω•</text>
+</g>
+<!-- n19&%2345;&gt;n20 -->
+<g id="edge7" class="edge">
+<title>n19&%2345;&gt;n20</title>
+<path fill="none" stroke="black" d="M431.72,-767.06C431.38,-755.22 430.81,-735.14 430.42,-721.39"/>
+<polygon fill="black" stroke="black" points="432.17,-721.24 430.28,-716.29 428.67,-721.34 432.17,-721.24"/>
+<text text-anchor="middle" x="436" y="-738.02" font-family="Times,serif" font-size="14.00">⋆</text>
+</g>
+<!-- n21 -->
+<g id="node21" class="node">
+<title>n21</title>
+<ellipse fill="none" stroke="black" cx="424" cy="-627.18" rx="45.01" ry="10.71"/>
+<text text-anchor="middle" x="424" y="-623.48" font-family="Times,serif" font-size="14.00">•_1_3:Ω•</text>
+</g>
+<!-- n20&%2345;&gt;n21 -->
+<g id="edge8" class="edge">
+<title>n20&%2345;&gt;n21</title>
+<path fill="none" stroke="black" d="M429.24,-694.93C428.22,-681.91 426.39,-658.62 425.19,-643.28"/>
+<polygon fill="black" stroke="black" points="426.91,-642.87 424.77,-638.02 423.42,-643.15 426.91,-642.87"/>
+<text text-anchor="middle" x="432" y="-662.7" font-family="Times,serif" font-size="14.00">d</text>
+</g>
+<!-- n21&%2345;&gt;n4 -->
+<g id="edge9" class="edge">
+<title>n21&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M424,-616.5C424,-603.48 424,-580.19 424,-564.85"/>
+<polygon fill="black" stroke="black" points="425.75,-564.6 424,-559.6 422.25,-564.6 425.75,-564.6"/>
+<text text-anchor="middle" x="429" y="-584.27" font-family="Times,serif" font-size="14.00">⋆</text>
+</g>
+<!-- n23 -->
+<g id="node23" class="node">
+<title>n23</title>
+<ellipse fill="none" stroke="black" cx="112" cy="-404.33" rx="43.27" ry="10.71"/>
+<text text-anchor="middle" x="112" y="-400.63" font-family="Times,serif" font-size="14.00">•_6_2:Ω̃₁</text>
+</g>
+<!-- n22&%2345;&gt;n23 -->
+<g id="edge15" class="edge">
+<title>n22&%2345;&gt;n23</title>
+<path fill="none" stroke="black" d="M112,-465.78C112,-453.94 112,-433.86 112,-420.11"/>
+<polygon fill="black" stroke="black" points="113.75,-420.01 112,-415.01 110.25,-420.01 113.75,-420.01"/>
+<text text-anchor="middle" x="138" y="-436.74" font-family="Times,serif" font-size="14.00">dual_d₀</text>
+</g>
+<!-- n23&%2345;&gt;n9 -->
+<g id="edge16" class="edge">
+<title>n23&%2345;&gt;n9</title>
+<path fill="none" stroke="black" d="M112,-393.57C112,-381.72 112,-361.64 112,-347.9"/>
+<polygon fill="black" stroke="black" points="113.75,-347.8 112,-342.8 110.25,-347.8 113.75,-347.8"/>
+<text text-anchor="middle" x="126" y="-364.52" font-family="Times,serif" font-size="14.00">⋆₀⁻¹</text>
+</g>
+<!-- n24 -->
+<g id="node24" class="node">
+<title>n24</title>
+</g>
+<!-- n24&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n24&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M247,-903.68C247,-899.36 247,-884 247,-872.12"/>
+<polygon fill="black" stroke="black" points="248.75,-871.95 247,-866.95 245.25,-871.95 248.75,-871.95"/>
+</g>
+<!-- n24&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n24&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M245,-903.68C236.62,-898.75 203.84,-879.49 183.23,-867.38"/>
+<polygon fill="black" stroke="black" points="183.98,-865.78 178.78,-864.76 182.2,-868.8 183.98,-865.78"/>
+</g>
+<!-- n24&%2345;&gt;n12 -->
+<g id="edge3" class="edge">
+<title>n24&%2345;&gt;n12</title>
+<path fill="none" stroke="black" d="M249.41,-904.84C266.14,-904.63 366.52,-901.92 437,-866.85 454.51,-858.14 470.76,-842.38 480.99,-831.12"/>
+<polygon fill="black" stroke="black" points="482.46,-832.09 484.47,-827.19 479.84,-829.77 482.46,-832.09"/>
+</g>
+<!-- n26&%2345;&gt;n11 -->
+<g id="edge20" class="edge">
+<title>n26&%2345;&gt;n11</title>
+<path fill="none" stroke="black" d="M422.95,-396.6C421.2,-385.47 417.68,-362.98 415.33,-347.98"/>
+<polygon fill="black" stroke="black" points="417.02,-347.5 414.52,-342.83 413.57,-348.04 417.02,-347.5"/>
+<text text-anchor="middle" x="422.5" y="-364.52" font-family="Times,serif" font-size="14.00">*</text>
+</g>
+<!-- n27&%2345;&gt;n10 -->
+<g id="edge23" class="edge">
+<title>n27&%2345;&gt;n10</title>
+<path fill="none" stroke="black" d="M343.42,-252.17C342.47,-241.04 340.55,-218.56 339.27,-203.56"/>
+<polygon fill="black" stroke="black" points="341,-203.24 338.83,-198.4 337.51,-203.54 341,-203.24"/>
+<text text-anchor="middle" x="343.5" y="-220.1" font-family="Times,serif" font-size="14.00">&%2345;</text>
+</g>
+<!-- n28&%2345;&gt;n14 -->
+<g id="edge26" class="edge">
+<title>n28&%2345;&gt;n14</title>
+<path fill="none" stroke="black" d="M277,-770.3C277,-753.11 277,-706.18 277,-682.09"/>
+<polygon fill="black" stroke="black" points="278.75,-682.04 277,-677.04 275.25,-682.04 278.75,-682.04"/>
+<text text-anchor="middle" x="280.5" y="-738.02" font-family="Times,serif" font-size="14.00">*</text>
+</g>
+<!-- n29&%2345;&gt;n2 -->
+<g id="edge29" class="edge">
+<title>n29&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M344,-770.09C344,-758.96 344,-736.48 344,-721.48"/>
+<polygon fill="black" stroke="black" points="345.75,-721.32 344,-716.32 342.25,-721.32 345.75,-721.32"/>
+<text text-anchor="middle" x="347.5" y="-738.02" font-family="Times,serif" font-size="14.00">*</text>
+</g>
+<!-- n30&%2345;&gt;n16 -->
+<g id="edge32" class="edge">
+<title>n30&%2345;&gt;n16</title>
+<path fill="none" stroke="black" d="M148.23,-770.09C134.87,-758.51 107.32,-734.62 90.08,-719.68"/>
+<polygon fill="black" stroke="black" points="90.86,-718.04 85.93,-716.09 88.57,-720.68 90.86,-718.04"/>
+<text text-anchor="middle" x="134" y="-738.02" font-family="Times,serif" font-size="14.00">∧₀₁</text>
+</g>
+<!-- n31&%2345;&gt;n17 -->
+<g id="edge35" class="edge">
+<title>n31&%2345;&gt;n17</title>
+<path fill="none" stroke="black" d="M112,-619.67C112,-607.6 112,-581.5 112,-564.83"/>
+<polygon fill="black" stroke="black" points="113.75,-564.57 112,-559.57 110.25,-564.57 113.75,-564.57"/>
+<text text-anchor="middle" x="115.5" y="-584.27" font-family="Times,serif" font-size="14.00">*</text>
+</g>
+<!-- n32&%2345;&gt;n7 -->
+<g id="edge36" class="edge">
+<title>n32&%2345;&gt;n7</title>
+<path fill="none" stroke="black" d="M269.41,-115.18C260.07,-102.31 244.19,-80.44 233.91,-66.26"/>
+<polygon fill="black" stroke="black" points="235.26,-65.14 230.91,-62.12 232.43,-67.2 235.26,-65.14"/>
+<text text-anchor="middle" x="259.5" y="-84.01" font-family="Times,serif" font-size="14.00">+</text>
+</g>
+</g>
+</svg>
+'/><p>Then we can create the mesh and solve the equation.</p><pre><code class="language- hljs"># Create mesh and subdivide it.
+function linear_pipe(n::Int)
   s = EmbeddedDeltaSet1D{Bool,Point3D}()
   add_vertices!(s, n, point=[Point3D(i, 0, 0) for i in 1:n])
   add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
-  orient!(s)
-  ds = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
-  subdivide_duals!(ds, Circumcenter())
-  funcs = operator_funcs(ds)
-  func, _ = gen_sim(diag2dwd(Poise, in_vars=[:q, :ρ]), funcs, ds; autodiff=false, form2dim=form2dim, params=[:P])
-  return ds, func, funcs
+  sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
 end
 
-ds, func, funcs = linear_pipe(10)
+sd = linear_pipe(10)
+
+sim = gensim(Poise)
+func = sim(sd, generate)
 
 prob = ODEProblem(func, [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5], (0.0, 10000.0), [10. *i for i in 1:10])
-sol = solve(prob, Tsit5(); progress=true);
-sol.u</code></pre><p>Notice that the solution contains both a vector of flows and a vector of pressures.</p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 25 July 2023 20:51">Tuesday 25 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+sol = solve(prob, Tsit5())
+sol.u</code></pre><p>Notice that the solution contains both a vector of flows and a vector of pressures.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../bc_debug/">« Misc Features</a><a class="docs-footer-nextpage" href="../ice_dynamics/">Glacial Flow »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Thursday 27 July 2023 15:50">Thursday 27 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
