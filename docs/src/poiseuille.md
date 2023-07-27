@@ -18,13 +18,11 @@ using OrdinaryDiffEq
 
 # Creating the Poiseuille Equations
 
-The first step is to present an extension of the generic Decapodes1D presentation with specific named linear operators for the viscosity effect and the drag effect. This is purely syntactic, we will add the corresponding matrices later. 
-
 The `@decapode` macro creates the data structure representing the equations of Poiseuille flow. The first block declares variables, the second block defines intermediate terms and the last block is the core equation.
 
 ```@example Poiseuille
-  # μ̃ = negative viscosity per unit area
-  # R = drag of pipe boundary
+# μ̃ = negative viscosity per unit area
+# R = drag of pipe boundary
 
 Poise = @decapode begin
   P::Form0
@@ -43,16 +41,15 @@ Poise = @decapode begin
   q̇ == μ̃  * ∂q(Δq) + ∇P + R * q
 end
 
-infer_types!(Poise, op1_inf_rules1D, op2_inf_rules1D)
-resolve_overloads!(Poise, op1_res_rules1D, op2_res_rules1D)
+Poise = expand_operators(Poise)
+infer_types!(Poise, op1_inf_rules_1D, op2_inf_rules_1D)
+resolve_overloads!(Poise, op1_res_rules_1D, op2_res_rules_1D)
 to_graphviz(Poise)
 ```
 
 # Defining the Semantics
 
 In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The `generate` function below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. 
-
-We will choose to encode the application of this boundary condition inside the μ̃ operator.
 
 ```@example Poiseuille
 using MLStyle
@@ -96,6 +93,7 @@ sd
 Then we solve the equations.
 
 ```@example Poiseuille
+using MultiScaleArrays
 sim = eval(gensim(Poise))
 fₘ = sim(sd, generate)
 u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
@@ -128,7 +126,6 @@ Then we solve the equation. Notice that the equilibrium flow is constant down th
 Note that we do not generate new simulation code for Poiseuille flow with `gensim` again. We provide our new mesh so that our discrete differential operators can be instantiated.
 
 ```@example Poiseuille
-using MultiScaleArrays
 fₘ = sim(sd, generate)
 q = [5,3,4,2,5,2,8,4,3]
 u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
@@ -160,19 +157,19 @@ function binary_pipe(depth::Int)
   subdivide_duals!(sd, Circumcenter())
   sd
 end
-sd = binary_pipe(2);
+sd = binary_pipe(2)
+true # hide
 ```
 
 Then we solve the equations.
 
 ```@example Poiseuille
+fₘ = sim(sd, generate)
 q = fill(5.0, ne(sd))
-prob = ODEProblem(func,
-                 [5. for _ in 1:ne(sd)],
-                 (0.0, 10000.0),
-                 Float64[2^(7-p[2]) for p in sd[:point]])
-
-sol = solve(prob, Tsit5(); progress=true);
+u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
+params = (k = -0.01, μ̃ = 0.5)
+prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
+sol = solve(prob, Tsit5())
 sol.u
 ```
 
@@ -190,27 +187,32 @@ The Decapode can be visualized with graphviz, note that the boundary conditions 
 # R = drag of pipe boundary
 # k = pressure as a function of density
 Poise = @decapode begin
-  ∇P::Form1
-  (q, q̇, Δq)::Form1
-  (P, ρ, ρ̇)::Form0
+#  ∇P::Form1
+#  (q, q̇, Δq)::Form1
+  q::Form1
+  (P, ρ)::Form0
 
   # Poiseuille Flow
-  Δq == d₀(⋆₀⁻¹(dual_d₀(⋆₁(q))))
-  ∂ₜ{Form1}(q) == q̇
-  ∇P == d₀(P)
+  Δq == ∘(d, ⋆, d, ⋆)(q)
+  ∂ₜ(q) == q̇
+#  ∇P == d₀(P)
+  ∇P == d(P)
 #  q̇ == sum₁(sum₁(μ̃(Δq), ¬(∇P)),R(q))
-  q̇ == μ̃(Δq) - ∇P + R(q)
+  q̇ == μ̃ * ∂q(Δq) - ∇P + R * q
   
   # Pressure/Density Coupling
   P == k * ρ
   ∂ₜ(ρ) == ρ̇
   #ρ̇ == ⋆₀⁻¹(dual_d₀(⋆₁(∧₀₁(ρ,q)))) # advection
-  ρ_up == ⋆₀⁻¹(dual_d₀(⋆₁(-1 * ∧₀₁(ρ,q)))) # advection
+  ρ_up == ∘(⋆, d, ⋆)(-1 * ∧₀₁(ρ,q)) # advection
   
   # Boundary conditions
   ρ̇ == ∂ρ(ρ_up)
-end;
+end
 
+Poise = expand_operators(Poise)
+infer_types!(Poise, op1_inf_rules_1D, op2_inf_rules_1D)
+resolve_overloads!(Poise, op1_res_rules_1D, op2_res_rules_1D)
 to_graphviz(Poise)
 ```
 
