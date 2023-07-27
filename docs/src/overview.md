@@ -159,6 +159,7 @@ fig
 Finally, we solve this PDE problem using the `Tsit5()` solver and generate an animation of the result!
 
 ```@example DEC
+using LinearAlgebra
 using MultiScaleArrays
 using OrdinaryDiffEq
 
@@ -327,7 +328,7 @@ v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_cent
 u₀ = construct(PhysicsState, [VectorForm(c)], Float64[], [:C])
 params = (V = v)
 
-prob = ODEProblem(fₘ, c, (0.0, 100.0), params)
+prob = ODEProblem(fₘ, u₀, (0.0, 100.0), params)
 sol = solve(prob, Tsit5());
 
 # Plot the result
