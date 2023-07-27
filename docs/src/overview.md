@@ -325,10 +325,9 @@ fₘ = sim(periodic_mesh, generate)
 velocity(p) = [-0.5, -0.5, 0.0]
 v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
 
-u₀ = construct(PhysicsState, [VectorForm(c)], Float64[], [:C])
-params = (V = v)
+u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(v)], Float64[], [:C, :V])
 
-prob = ODEProblem(fₘ, u₀, (0.0, 100.0), params)
+prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
 sol = solve(prob, Tsit5());
 
 # Plot the result
