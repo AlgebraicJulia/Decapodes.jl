@@ -4,25 +4,24 @@
 #   - This is straightforward from a language perspective but unclear the best
 #   - way to represent this in a Decapode ACSet.
 @data Term begin
-  Var(Symbol)
-  Lit(Symbol)
-  Judge(Var, Symbol, Symbol) # Symbol 1: Form0 Symbol 2: X
-  AppCirc1(Vector{Symbol}, Term)
-  App1(Symbol, Term)
-  App2(Symbol, Term, Term)
-  Plus(Vector{Term})
-  Mult(Vector{Term})
-  Tan(Term)
+  Var(name::Symbol)
+  Lit(name::Symbol)
+  Judgement(var::Var, dim::Symbol, space::Symbol) # Symbol 1: Form0 Symbol 2: X
+  AppCirc1(fs::Vector{Symbol}, arg::Term)
+  App1(f::Symbol, arg::Term)
+  App2(f::Symbol, arg1::Term, arg2::Term)
+  Plus(args::Vector{Term})
+  Mult(args::Vector{Term})
+  Tan(var::Term)
 end
 
 @data Equation begin
-  Eq(Term, Term)
+  Eq(lhs::Term, rhs::Term)
 end
 
 # A struct to store a complete Decapode
-# TODO: Have the decopode macro compile to a DecaExpr
-struct DecaExpr
-  judgements::Vector{Judge}
+@as_record struct DecaExpr
+  context::Vector{Judgement}
   equations::Vector{Equation}
 end
 
@@ -53,11 +52,11 @@ function parse_decapode(expr::Expr)
             ::LineNumberNode => missing
             # TODO: If user doesn't provide space, this gives a temp space so we can continue to construction
             # For now spaces don't matter so this is fine but if they do, this will need to change
-            Expr(:(::), a::Symbol, b::Symbol) => Judge(Var(a), b, :I)
-            Expr(:(::), a::Expr, b::Symbol) => map(sym -> Judge(Var(sym), b, :I), a.args)
+            Expr(:(::), a::Symbol, b::Symbol) => Judgement(Var(a), b, :I)
+            Expr(:(::), a::Expr, b::Symbol) => map(sym -> Judgement(Var(sym), b, :I), a.args)
 
-            Expr(:(::), a::Symbol, b) => Judge(Var(a), b.args[1], b.args[2])
-            Expr(:(::), a::Expr, b) => map(sym -> Judge(Var(sym), b.args[1], b.args[2]), a.args)
+            Expr(:(::), a::Symbol, b) => Judgement(Var(a), b.args[1], b.args[2])
+            Expr(:(::), a::Expr, b) => map(sym -> Judgement(Var(sym), b.args[1], b.args[2]), a.args)
 
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
             _ => error("The line $line is malformed")
@@ -67,8 +66,8 @@ function parse_decapode(expr::Expr)
     eqns = []
     foreach(stmts) do s
       @match s begin
-        ::Judge => push!(judges, s)
-        ::Vector{Judge} => append!(judges, s)
+        ::Judgement => push!(judges, s)
+        ::Vector{Judgement} => append!(judges, s)
         ::Eq => push!(eqns, s)
         _ => error("Statement containing $s of type $(typeof(s)) was not added.")
       end
@@ -133,7 +132,7 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
         txv = add_part!(d, :Var, type=:infer)
         tx = add_part!(d, :TVar, incl=txv)
         tanop = add_part!(d, :Op1, src=!(t,d,syms), tgt=txv, op1=DerivOp)
-        return txv #syms[x._1]
+        return txv #syms[x[1]]
       end
       _ => throw("Inline type judgements not yet supported!")
     end
@@ -201,9 +200,9 @@ end
 function Decapode(e::DecaExpr)
   d = Decapode{Any, Any}()
   symbol_table = Dict{Symbol, Int}()
-  for judgement in e.judgements
-    var_id = add_part!(d, :Var, type=(judgement._2, judgement._3))
-    symbol_table[judgement._1._1] = var_id
+  for judgement in e.context
+    var_id = add_part!(d, :Var, type=(judgement.dim, judgement.space))
+    symbol_table[judgement.var.name] = var_id
   end
   deletions = Vector{Int}()
   for eq in e.equations
@@ -218,9 +217,9 @@ function SummationDecapode(e::DecaExpr)
     d = SummationDecapode{Any, Any, Symbol}()
     symbol_table = Dict{Symbol, Int}()
 
-    for judgement in e.judgements
-      var_id = add_part!(d, :Var, name=judgement._1._1, type=judgement._2)
-      symbol_table[judgement._1._1] = var_id
+    for judgement in e.context
+      var_id = add_part!(d, :Var, name=judgement.var.name, type=judgement.dim)
+      symbol_table[judgement.var.name] = var_id
     end
 
     deletions = Vector{Int}()
