@@ -6,7 +6,7 @@
 @data Term begin
   Var(name::Symbol)
   Lit(name::Symbol)
-  Judge(var::Var, dim::Symbol, space::Symbol) # Symbol 1: Form0 Symbol 2: X
+  Judgement(var::Var, dim::Symbol, space::Symbol) # Symbol 1: Form0 Symbol 2: X
   AppCirc1(fs::Vector{Symbol}, arg::Term)
   App1(f::Symbol, arg::Term)
   App2(f::Symbol, arg1::Term, arg2::Term)
@@ -21,7 +21,7 @@ end
 
 # A struct to store a complete Decapode
 @as_record struct DecaExpr
-  context::Vector{Judge}
+  context::Vector{Judgement}
   equations::Vector{Equation}
 end
 
@@ -52,11 +52,11 @@ function parse_decapode(expr::Expr)
             ::LineNumberNode => missing
             # TODO: If user doesn't provide space, this gives a temp space so we can continue to construction
             # For now spaces don't matter so this is fine but if they do, this will need to change
-            Expr(:(::), a::Symbol, b::Symbol) => Judge(Var(a), b, :I)
-            Expr(:(::), a::Expr, b::Symbol) => map(sym -> Judge(Var(sym), b, :I), a.args)
+            Expr(:(::), a::Symbol, b::Symbol) => Judgement(Var(a), b, :I)
+            Expr(:(::), a::Expr, b::Symbol) => map(sym -> Judgement(Var(sym), b, :I), a.args)
 
-            Expr(:(::), a::Symbol, b) => Judge(Var(a), b.args[1], b.args[2])
-            Expr(:(::), a::Expr, b) => map(sym -> Judge(Var(sym), b.args[1], b.args[2]), a.args)
+            Expr(:(::), a::Symbol, b) => Judgement(Var(a), b.args[1], b.args[2])
+            Expr(:(::), a::Expr, b) => map(sym -> Judgement(Var(sym), b.args[1], b.args[2]), a.args)
 
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
             _ => error("The line $line is malformed")
@@ -66,8 +66,8 @@ function parse_decapode(expr::Expr)
     eqns = []
     foreach(stmts) do s
       @match s begin
-        ::Judge => push!(judges, s)
-        ::Vector{Judge} => append!(judges, s)
+        ::Judgement => push!(judges, s)
+        ::Vector{Judgement} => append!(judges, s)
         ::Eq => push!(eqns, s)
         _ => error("Statement containing $s of type $(typeof(s)) was not added.")
       end
