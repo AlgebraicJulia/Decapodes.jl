@@ -36,13 +36,13 @@ subdivide_duals!(s, Circumcenter())
 sim = eval(gensim(Schroedinger, dimension=1))
 fₘ = sim(s, generate)
 
-Psi = zeros(nv(s))
+Psi = zeros(ComplexF64, nv(s))
 
-u₀ = construct(PhysicsState, [VectorForm(Psi)], Float64[], [:Psi])
+u₀ = construct(PhysicsState, [VectorForm(Psi)], ComplexF64[], [:Psi])
 constants_and_parameters = (
-  i = 1, # TODO: Relax assumption of Float64
+  i = im, # TODO: Relax assumption of Float64
   V = t -> begin
-    z = zeros(nv(s))
+    z = zeros(ComplexF64, nv(s))
     z
   end,
   h = 6.5e-16, # Planck constant in [eV s]
