@@ -81,7 +81,7 @@ Rename tangent variables by their depending variable appended with a dot.
 e.g. If D == ∂ₜ(C), then rename D to Ċ.
 
 If a tangent variable updates multiple vars, choose one arbitrarily.
-e.g. If D == ∂ₜ(C) and D == ∂ₜ(B), then rename D to either Ċor  B ̇.
+e.g. If D == ∂ₜ(C) and D == ∂ₜ(B), then rename D to either Ċ or B ̇.
 """
 function dot_rename!(d::AbstractNamedDecapode)
   dep, order = find_dep_and_order(d)
