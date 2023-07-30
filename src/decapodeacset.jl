@@ -47,10 +47,31 @@ function fill_names!(d::AbstractNamedDecapode)
   for e in incident(d, :∂ₜ, :op1)
     s = d[e,:src]
     t = d[e, :tgt]
+    String(d[t,:name])[1] != '•' && continue
     d[t, :name] = append_dot(d[s,:name])
   end
-  return d
+  d
 end
+
+"""    dot_rename!(d::AbstractNamedDecapode)
+
+Rename tangent variables by their depending variable appended with a dot.
+e.g. If D == ∂ₜ(C), then rename D to Ċ.
+
+If a tangent variable updates multiple vars, choose one arbitrarily.
+e.g. If D == ∂ₜ(C) and D == ∂ₜ(B), then rename D to either Ċor  B ̇.
+"""
+function dot_rename!(d::AbstractNamedDecapode)
+  # TODO: This method only works because higher order derivatives have always
+  # appeared later in the Var table.
+  for e in incident(d, :∂ₜ, :op1)
+    s = d[e,:src]
+    t = d[e, :tgt]
+    d[t, :name] = append_dot(d[s,:name])
+  end
+  d
+end
+
 
 function make_sum_mult_unique!(d::AbstractNamedDecapode)
   snum = 1
