@@ -1,18 +1,19 @@
 using Catlab, CombinatorialSpaces, Decapodes
-using LinearAlgebra, MultiScaleArrays, MLStyle, OrdinaryDiffEq
+using GLMakie, JLD2, LinearAlgebra, MultiScaleArrays, MLStyle, OrdinaryDiffEq
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 
 Schroedinger = @decapode begin
   (i,h,m)::Constant
   V::Parameter
-  Psi::Form0
+  Ψ::Form0
   
-  ∂ₜ(Psi) == ((-1 * (h^2)/(2*m))*Δ(Psi) + V * Psi) / (i*h)
+  ∂ₜ(Ψ) == ((-1 * (h^2)/(2*m))*Δ(Ψ) + V * Ψ) / (i*h)
 end
 
 infer_types!(Schroedinger, op1_inf_rules_1D, op2_inf_rules_1D)
 resolve_overloads!(Schroedinger, op1_res_rules_1D, op2_res_rules_1D)
+to_graphviz(Schroedinger)
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
@@ -27,7 +28,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
 end
 
 s′ = EmbeddedDeltaSet1D{Bool, Point2D}()
-add_vertices!(s′, 30, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=30), 0))
+add_vertices!(s′, 100, point=Point2D.(range(-1, 1, length=100), 0))
 add_edges!(s′, 1:nv(s′)-1, 2:nv(s′))
 orient!(s′)
 s = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s′)
@@ -36,9 +37,10 @@ subdivide_duals!(s, Circumcenter())
 sim = eval(gensim(Schroedinger, dimension=1))
 fₘ = sim(s, generate)
 
-Psi = zeros(ComplexF64, nv(s))
+Ψ = zeros(ComplexF64, nv(s))
+Ψ[49] = 1e-16
 
-u₀ = construct(PhysicsState, [VectorForm(Psi)], ComplexF64[], [:Psi])
+u₀ = construct(PhysicsState, [VectorForm(Ψ)], ComplexF64[], [:Ψ])
 constants_and_parameters = (
   i = im, # TODO: Relax assumption of Float64
   V = t -> begin
@@ -49,6 +51,27 @@ constants_and_parameters = (
   m = 5.49e-4, # mass of electron in [eV]
 )
 
-prob = ODEProblem(fₘ, u₀, (0, 1e-16), constants_and_parameters)
+tₑ = 1e12
+prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
 
+@save "schroedinger.jld2" soln
+
+lines(map(x -> x[1], point(s′)), map(x -> x.re, findnode(soln(0.0), :Ψ)))
+lines(map(x -> x[1], point(s′)), map(x -> x.re, findnode(soln(tₑ), :Ψ)))
+
+begin
+# Initial frame
+frames = 100
+fig = Figure(resolution = (800, 800))
+ax1 = Axis(fig[1,1])
+xlims!(ax1, extrema(map(x -> x[1], point(s′))))
+ylims!(ax1, extrema(map(x -> x.re, findnode(soln(tₑ), :Ψ))))
+Label(fig[1,1,Top()], "Ψ from Schroedinger Wave Equation")
+Label(fig[2,1,Top()], "Line plot of real portion of Ψ, every $(tₑ/frames) time units")
+
+# Animation
+record(fig, "schroedinger.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
+  lines!(fig[1,1], map(x -> x[1], point(s′)), map(x -> x.re, findnode(soln(t), :Ψ)))
+end
+end
