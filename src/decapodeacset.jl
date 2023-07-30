@@ -47,9 +47,53 @@ function fill_names!(d::AbstractNamedDecapode)
   for e in incident(d, :∂ₜ, :op1)
     s = d[e,:src]
     t = d[e, :tgt]
+    String(d[t,:name])[1] != '•' && continue
     d[t, :name] = append_dot(d[s,:name])
   end
-  return d
+  d
+end
+
+"""    find_dep_and_order(d::AbstractNamedDecapode)
+
+Find the order of each tangent variable in the Decapode, and the index of the variable that it is dependent on. Returns a tuple of (dep, order), both of which respecting the order in which incident(d, :∂ₜ, :op1) returns Vars.
+"""
+function find_dep_and_order(d::AbstractNamedDecapode)
+  dep = d[incident(d, :∂ₜ, :op1), :src]
+  order = ones(Int, nparts(d, :TVar))
+  found = true
+  while found
+    found = false
+    for i in parts(d, :TVar)
+      deps = incident(d, :∂ₜ, :op1) ∩ incident(d, dep[i], :tgt)
+      if !isempty(deps)
+        dep[i] = d[first(deps), :src]
+        order[i] += 1
+        found = true
+      end
+    end
+  end
+  (dep, order)
+end
+
+"""    dot_rename!(d::AbstractNamedDecapode)
+
+Rename tangent variables by their depending variable appended with a dot.
+e.g. If D == ∂ₜ(C), then rename D to Ċ.
+
+If a tangent variable updates multiple vars, choose one arbitrarily.
+e.g. If D == ∂ₜ(C) and D == ∂ₜ(B), then rename D to either Ċ or B ̇.
+"""
+function dot_rename!(d::AbstractNamedDecapode)
+  dep, order = find_dep_and_order(d)
+  for (i,e) in enumerate(incident(d, :∂ₜ, :op1))
+    t = d[e, :tgt]
+    name = d[dep[i],:name]
+    for _ in 1:order[i]
+      name = append_dot(name)
+    end
+    d[t, :name] = name
+  end
+  d
 end
 
 function make_sum_mult_unique!(d::AbstractNamedDecapode)

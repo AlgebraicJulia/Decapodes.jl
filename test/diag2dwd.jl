@@ -196,10 +196,13 @@ import Decapodes: DecaExpr
     E == ∂ₜ(D)
   end
   pt3 = SummationDecapode(parse_decapode(ParseTest3))
-  @test pt3[:name] == [:Ċ, :Ċ̇, :C]
+  @test pt3[:name] == [:D, :E, :C]
   @test pt3[:incl] == [1,2]
   @test pt3[:src] == [3, 1]
   @test pt3[:tgt] == [1, 2]
+
+  dot_rename!(pt3)
+  @test pt3[:name] == [Symbol('C'*'\U0307'), Symbol('C'*'\U0307'*'\U0307'), :C]
 
   # TODO: We should eventually recognize this equivalence
   #= ParseTest4 = quote
@@ -207,6 +210,21 @@ import Decapodes: DecaExpr
     D + C == C
   end
   pt4 = SummationDecapode(parse_decapode(ParseTest4)) =#
+
+  # Do not rename TVars if they are given a name.
+  pt5 = SummationDecapode(parse_decapode(quote
+    X::Form0{Point}
+    V::Form0{Point}
+
+    k::Constant{Point}
+
+    ∂ₜ(X) == V
+    ∂ₜ(V) == -1*k*(X)
+  end))
+
+  @test pt5[:name] == [:X, :V, :k, :mult_1, Symbol('V'*'\U0307'), Symbol("-1")]
+  dot_rename!(pt5)
+  @test pt5[:name] == [:X, Symbol('X'*'\U0307'), :k, :mult_1, Symbol('X'*'\U0307'*'\U0307'), Symbol("-1")]
 
 end
 Deca = quote
@@ -389,7 +407,7 @@ end
 
   # We use set equality because we do not care about the order of the Var table.
   names_types_1 = Set(zip(t1[:name], t1[:type]))
-  names_types_expected_1 = Set([(:Ċ, :Form0)])
+  names_types_expected_1 = Set([(:C, :Form0)])
   @test issetequal(names_types_1, names_types_expected_1)
 
   # The type of the src of ∂ₜ is inferred.
@@ -398,11 +416,11 @@ end
     ∂ₜ(C) == C
   end
   t2 = SummationDecapode(parse_decapode(Test2))
-  t2[only(incident(t2, :Ċ, :name)), :type] = :Form0
+  t2[only(incident(t2, :C, :name)), :type] = :Form0
   infer_types!(t2)
 
   names_types_2 = Set(zip(t2[:name], t2[:type]))
-  names_types_expected_2 = Set([(:Ċ, :Form0)])
+  names_types_expected_2 = Set([(:C, :Form0)])
   @test issetequal(names_types_2, names_types_expected_2)
 
   # The type of the tgt of d is inferred.
