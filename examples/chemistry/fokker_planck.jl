@@ -20,16 +20,16 @@ infer_types!(Fokker_Planck)
 resolve_overloads!(Fokker_Planck)
 
 # Specify domain.
-include("../grid_meshes.jl")
-include("examples/grid_meshes.jl")
-s′ = triangulated_grid(1,1,0.05,0.05,Point3D)
+s′ = loadmesh(Icosphere(4))
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
 
 # Specify initial conditions.
-Ψ = map(p -> √(2)/2 - √((p[1]-.5)^2 + (p[2]-.5)^2) , point(s))
-ρ = fill(1 / sum(s[:area]), nv(s))
-constants_and_parameters = (β⁻¹ = 0.001,)
+Ψ = map(point(s)) do (x,y,z)
+  abs(y)
+end
+ρ = fill(1/nv(s), nv(s))
+constants_and_parameters = (β⁻¹ = -0.001,)
 u₀ = construct(PhysicsState, [VectorForm(Ψ), VectorForm(ρ)], Float64[], [:Ψ, :ρ])
 
 # Compile.
@@ -47,6 +47,9 @@ tₑ = 1.0
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
 
+findnode(soln(0), :ρ)
+findnode(soln(tₑ), :ρ)
+
 # Save solution data.
 @save "fokker_planck.jld2" soln
 
@@ -54,8 +57,8 @@ soln = solve(prob, Tsit5())
 begin
 frames = 800
 # Initial frame
-fig = CairoMakie.Figure(resolution = (800, 800))
-p1 = CairoMakie.mesh(fig[1,1], s′, color=findnode(soln(0), :ρ), colormap=:jet, colorrange=extrema(findnode(soln(0), :ρ)))
+fig = GLMakie.Figure(resolution = (800, 800))
+p1 = GLMakie.mesh(fig[1,1], s′, color=findnode(soln(0), :ρ), colormap=:jet, colorrange=extrema(findnode(soln(0), :ρ)))
 Colorbar(fig[1,2], colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
 
 # Animation
