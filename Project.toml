@@ -7,7 +7,7 @@ authors = [
   "Luke Morris",
   "George Rauta",
 ]
-version = "0.3.1"
+version = "0.4.0"
 
 [deps]
 AlgebraicRewriting = "725a01d3-f174-5bbd-84e1-b9417bad95d9"
