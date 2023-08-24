@@ -131,7 +131,7 @@ Note that we chose to define `k` as a function that multiplies by a value `k`. W
 ```@example DEC
 using MLStyle
 
-function generate(sd, my_symbol; hodge=GeometricHodge())
+function generate(sd, my_symbol; hodge=DiagonalHodge())
   op = @match my_symbol begin
     :k => x -> 0.05*x
     x => error("Unmatched operator $my_symbol")
@@ -145,7 +145,7 @@ initial conditions for this problem.
 
 ```@example DEC
 sim = eval(gensim(Diffusion))
-fₘ = sim(periodic_mesh, generate)
+fₘ = sim(periodic_mesh, generate, DiagonalHodge())
 
 using Distributions
 c_dist = MvNormal([7, 5], [1.5, 1.5])
@@ -270,7 +270,7 @@ now requires another value to be defined, namely the velocity vector field. We d
 this using a custom operator called `flat_op`. This operator is basically the flat
 operator from CombinatorialSpaces.jl, but specialized to account for the periodic mesh.
 
-We could instead represent the domain as a the surface of a an object with equivalent boundaries in 3D.
+We could instead represent the domain as the surface of an object with equivalent boundaries in 3D.
 
 ``` @setup DEC
 function closest_point(p1, p2, dims)
@@ -308,7 +308,7 @@ end
 using LinearAlgebra
 using MLStyle
 
-function generate(sd, my_symbol; hodge=GeometricHodge())
+function generate(sd, my_symbol; hodge=DiagonalHodge())
   op = @match my_symbol begin
     :k => x -> 0.05*x
     :∧₀₁ => (x,y) -> begin
@@ -320,7 +320,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
 end
 
 sim = eval(gensim(DiffusionAdvection))
-fₘ = sim(periodic_mesh, generate)
+fₘ = sim(periodic_mesh, generate, DiagonalHodge())
 
 velocity(p) = [-0.5, -0.5, 0.0]
 v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
@@ -341,7 +341,7 @@ Colorbar(fig[1,2], ob)
 framerate = 30
 
 # Animation
-record(fig, "diff_adv.gif", range(0.0, 100.0; length=150); framerate = 30) do t
+record(fig, "diff_adv_testing.gif", range(0.0, 100.0; length=150); framerate = 30) do t
 ob.color = findnode(sol(t), :C)[point_map]
 end
 ```
