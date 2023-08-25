@@ -714,7 +714,6 @@ end
   names_types_18 = get_name_type_pair(t18)
   names_types_expected_18 = Set([(:A, :Constant), (:C, :Constant), (:D, :Constant)])
   @test issetequal(names_types_18, names_types_expected_18)
-
 end
 
 @testset "Overloading Resolution" begin
@@ -1163,3 +1162,28 @@ end
     op1 = [:⋆₂, :∂ₜ, :d₁]
   end
 end
+
+@testset "ASCII Operators" begin
+  # Test ASCII to Unicode conversion.
+  t1 = @decapode begin
+    A == wedge(C, D)
+  end
+  unicode!(t1)
+
+  op2s_1 = Set(t1[:op2])
+  op2s_expected_1 = Set([:∧])
+  @test issetequal(op2s_1, op2s_expected_1)
+
+  # Test ASCII to Unicode conversion with multiple occurences of the same operator.
+  t1 = @decapode begin
+    A == wedge(C, D)
+    B == wedge(E, F)
+  end
+  unicode!(t1)
+
+  op2s_1 = Set(t1[:op2])
+  op2s_expected_1 = Set([:∧])
+  @test issetequal(op2s_1, op2s_expected_1)
+
+end
+
