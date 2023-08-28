@@ -687,22 +687,26 @@ resolve_overloads!(d::SummationDecapode) =
   resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
 
 ascii_to_unicode_op1 = [
-                        (:dt        => :∂ₜ),
-                        (:star      => :⋆),
-                        (:lapl      => :Δ),
-                        (:star_inv  => :⋆⁻¹),
-                        (:div       => Symbol("∘(⋆,d,⋆)"))]
+                        (:dt       => :∂ₜ),
+                        (:star     => :⋆),
+                        (:lapl     => :Δ),
+                        (:star_inv => :⋆⁻¹),
+                        (:div      => [:⋆,:d,:⋆])]
 
 ascii_to_unicode_op2 = [
-                        (:wedge     => :∧)]
+                        (:wedge    => :∧)]
 
 
-function unicode!(d::SummationDecapode, ascii_to_unicode_op1::Vector{Pair{Symbol, Symbol}}, ascii_to_unicode_op2::Vector{Pair{Symbol, Symbol}})
+function unicode!(d::SummationDecapode, ascii_to_unicode_op1::Vector{Pair{Symbol, Any}}, ascii_to_unicode_op2::Vector{Pair{Symbol, Symbol}})
   for (ascii,unicode) in ascii_to_unicode_op1
-    d[incident(d, ascii, :op1), :op1] = unicode
+    for i in collect(incident(d, ascii, :op1))
+      d[i, :op1] = unicode
+    end
   end
   for (ascii,unicode) in ascii_to_unicode_op2
-    d[incident(d, ascii, :op2), :op2] = unicode
+    for i in collect(incident(d, ascii, :op2))
+      d[i, :op2] = unicode
+    end
   end
   d
 end

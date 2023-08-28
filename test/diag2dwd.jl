@@ -1164,7 +1164,7 @@ end
 end
 
 @testset "ASCII Operators" begin
-  # Test ASCII to Unicode conversion.
+  # Test ASCII to Unicode conversion on an Op2.
   t1 = @decapode begin
     A == wedge(C, D)
   end
@@ -1175,15 +1175,41 @@ end
   @test issetequal(op2s_1, op2s_expected_1)
 
   # Test ASCII to Unicode conversion with multiple occurences of the same operator.
-  t1 = @decapode begin
+  t2 = @decapode begin
     A == wedge(C, D)
     B == wedge(E, F)
   end
-  unicode!(t1)
+  unicode!(t2)
 
-  op2s_1 = Set(t1[:op2])
-  op2s_expected_1 = Set([:∧])
-  @test issetequal(op2s_1, op2s_expected_1)
+  op2s_2 = Set(t2[:op2])
+  op2s_expected_2 = Set([:∧])
+  @test issetequal(op2s_2, op2s_expected_2)
 
+  # Test ASCII to Unicode conversion works when replacing with a vector of symbols.
+  t3 = @decapode begin
+    A == div(B)
+  end
+  unicode!(t3)
+
+  op1s_3 = Set(t3[:op1])
+  op1s_expected_3 = Set([[:⋆,:d,:⋆]])
+  @test issetequal(op1s_3, op1s_expected_3)
+
+  # Test ASCII to Unicode conversion works with composed operators after expansion.
+  t4 = @decapode begin
+    A == ∘(star, lapl, star_inv)(B)
+  end
+  t4 = expand_operators(t4)
+  unicode!(t4)
+
+  op1s_4 = Set(t4[:op1])
+  op1s_expected_4 = Set([:⋆,:Δ,:⋆⁻¹])
+  @test issetequal(op1s_4, op1s_expected_4)
+
+  # Test ASCII tangent operator identifies a TVar.
+  t5 = @decapode begin
+    A == dt(B)
+  end
+  @test nparts(t5, :TVar) == 1
 end
 
