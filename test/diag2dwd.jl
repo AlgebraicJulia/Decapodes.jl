@@ -1163,7 +1163,7 @@ end
   end
 end
 
-@testset "ASCII Operators" begin
+@testset "ASCII & Vector Calculus Operators" begin
   # Test ASCII to Unicode conversion on an Op2.
   t1 = @decapode begin
     A == wedge(C, D)
@@ -1185,31 +1185,49 @@ end
   op2s_expected_2 = Set([:∧])
   @test issetequal(op2s_2, op2s_expected_2)
 
-  # Test ASCII to Unicode conversion works when replacing with a vector of symbols.
+  # Test ASCII to Unicode conversion works with composed operators after expansion.
   t3 = @decapode begin
-    A == div(B)
+    A == ∘(star, lapl, star_inv)(B)
   end
+  t3 = expand_operators(t3)
   unicode!(t3)
 
   op1s_3 = Set(t3[:op1])
-  op1s_expected_3 = Set([[:⋆,:d,:⋆]])
+  op1s_expected_3 = Set([:⋆,:Δ,:⋆⁻¹])
   @test issetequal(op1s_3, op1s_expected_3)
 
-  # Test ASCII to Unicode conversion works with composed operators after expansion.
-  t4 = @decapode begin
-    A == ∘(star, lapl, star_inv)(B)
-  end
-  t4 = expand_operators(t4)
-  unicode!(t4)
-
-  op1s_4 = Set(t4[:op1])
-  op1s_expected_4 = Set([:⋆,:Δ,:⋆⁻¹])
-  @test issetequal(op1s_4, op1s_expected_4)
-
   # Test ASCII tangent operator identifies a TVar.
-  t5 = @decapode begin
+  t4 = @decapode begin
     A == dt(B)
   end
-  @test nparts(t5, :TVar) == 1
+  @test nparts(t4, :TVar) == 1
+
+  # Test vec_to_dec! on a single operator.
+  t5 = @decapode begin
+    A == div(B)
+  end
+  vec_to_dec!(t5)
+
+  op1s_5 = Set(t5[:op1])
+  op1s_expected_5 = Set([[:⋆,:d,:⋆]])
+  @test issetequal(op1s_5, op1s_expected_5)
+
+  # Test divergence of gradient is the Laplacian.
+  t6 = @decapode begin
+    A == ∘(grad, div)(B)
+  end
+  t6 = expand_operators(t6)
+  vec_to_dec!(t6)
+  t6 = contract_operators(t6)
+  @test only(t6[:op1]) == [:d,:⋆,:d,:⋆]
+
+  # Test curl of curl is a vector Laplacian.
+  t7 = @decapode begin
+    A == ∘(∇x, ∇x)(B)
+  end
+  t7 = expand_operators(t7)
+  vec_to_dec!(t7)
+  t7 = contract_operators(t7)
+  @test only(t7[:op1]) == [:d,:⋆,:d,:⋆]
 end
 

@@ -686,34 +686,50 @@ Resolve function overloads based on types of src and tgt.
 resolve_overloads!(d::SummationDecapode) =
   resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
 
-ascii_to_unicode_op1 = [
-                        (:dt       => :∂ₜ),
-                        (:star     => :⋆),
-                        (:lapl     => :Δ),
-                        (:star_inv => :⋆⁻¹),
-                        (:div      => [:⋆,:d,:⋆])]
-
-ascii_to_unicode_op2 = [
-                        (:wedge    => :∧)]
-
-
-function unicode!(d::SummationDecapode, ascii_to_unicode_op1::Vector{Pair{Symbol, Any}}, ascii_to_unicode_op2::Vector{Pair{Symbol, Symbol}})
-  for (ascii,unicode) in ascii_to_unicode_op1
-    for i in collect(incident(d, ascii, :op1))
-      d[i, :op1] = unicode
+function replace_names!(d::SummationDecapode, op1_repls::Vector{Pair{Symbol, Any}}, op2_repls::Vector{Pair{Symbol, Symbol}})
+  for (orig,repl) in op1_repls
+    for i in collect(incident(d, orig, :op1))
+      d[i, :op1] = repl
     end
   end
-  for (ascii,unicode) in ascii_to_unicode_op2
-    for i in collect(incident(d, ascii, :op2))
-      d[i, :op2] = unicode
+  for (orig,repl) in op2_repls
+    for i in collect(incident(d, orig, :op2))
+      d[i, :op2] = repl
     end
   end
   d
 end
 
+ascii_to_unicode_op1 = Pair{Symbol, Any}[
+                        (:dt       => :∂ₜ),
+                        (:star     => :⋆),
+                        (:lapl     => :Δ),
+                        (:codif    => :δ),
+                        (:star_inv => :⋆⁻¹)]
+
+ascii_to_unicode_op2 = [
+                        (:wedge    => :∧)]
+
 """    function unicode!(d::SummationDecapode)
 
 Replace ASCII operators with their Unicode equivalents.
 """
-unicode!(d::SummationDecapode) = unicode!(d, ascii_to_unicode_op1, ascii_to_unicode_op2)
+unicode!(d::SummationDecapode) = replace_names!(d, ascii_to_unicode_op1, ascii_to_unicode_op2)
+
+vec_to_dec_op1 = [
+                  (:grad        => :d),
+                  (:div         => [:⋆,:d,:⋆]),
+                  (:curl        => [:d,:⋆]),
+                  (:∇           => :d),
+                  (Symbol("∇ᵈ") => [:⋆,:d,:⋆]),
+                  # Note: This is x, \times.
+                  (Symbol("∇x") => [:d,:⋆])]
+
+vec_to_dec_op2 = Pair{Symbol, Symbol}[]
+
+"""    function vec_to_dec!(d::SummationDecapode)
+
+Replace Vector Calculus operators with Discrete Exterior Calculus equivalents.
+"""
+vec_to_dec!(d::SummationDecapode) = replace_names!(d, vec_to_dec_op1, vec_to_dec_op2)
 
