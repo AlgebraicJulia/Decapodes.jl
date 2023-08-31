@@ -21,6 +21,6 @@ Some users may have trouble entering unicode characters like ⋆ or ∂ in their
 | div     | ∘(⋆,d,⋆)   | div                        |
 | curl    | ∘(d,⋆)     | curl                       |
 | ∇       | d          | \nabla                     |
-| ∇ᵈ      | ∘(⋆,d,⋆)   | \nabla \<tab\> \^d \<tab\> |
+| ∇ᵈ      | ∘(⋆,d,⋆)   | \nabla \<tab\> \\^d \<tab\> |
 | ∇x      | ∘(d,⋆)     | \nabla \<tab\> x           |
 
