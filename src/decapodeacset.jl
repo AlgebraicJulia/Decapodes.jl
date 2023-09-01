@@ -722,7 +722,7 @@ vec_to_dec_op1 = [
                   (:curl        => [:d,:⋆]),
                   (:∇           => :d),
                   (Symbol("∇ᵈ") => [:⋆,:d,:⋆]),
-                  # Note: This is x, \times.
+                  # Note: This is x, not \times.
                   (Symbol("∇x") => [:d,:⋆])]
 
 vec_to_dec_op2 = Pair{Symbol, Symbol}[]
