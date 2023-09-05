@@ -528,9 +528,10 @@ function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
         :./ => (x,y) -> x ./ y
 
         # Wedge products
-        :∧₀₀ => (f, g) -> wedge_product(Tuple{0,0}, sd, x, y)
+        :∧₀₀ => dec_wedge_product(Tuple{0, 0}, sd)
         :∧₀₁ => dec_wedge_product(Tuple{0, 1}, sd)
         :∧₁₀ => dec_wedge_product(Tuple{1, 0}, sd)
+        :∧₁₁ => dec_wedge_product(Tuple{1, 1}, sd)
 
         # Lie Derivative 0
         :L₀ => dec_lie_derivative_zero(sd, hodge)
@@ -561,6 +562,7 @@ function dec_p_wedge_product_zero(k, sd)
     subsimples = map(x -> subsimplices(k, sd, x), simples)
 
     # For 1 -> edges, gets the primal vertices of the dual edges 
+    # For 2 -> triangles, gets primal vertices at the primal triangle corners
     primal_vertices = map(x -> primal_vertex(k, sd, x), subsimples)
 
     # Finding coeffs in wedge product is brutal on memory, around 345976 allocations for one map
@@ -568,15 +570,31 @@ function dec_p_wedge_product_zero(k, sd)
     vols = CombinatorialSpaces.volume(k,sd,simples)
     dual_vols = map(y -> dual_volume(k,sd,y), subsimples)
     coeffs = dual_vols ./ vols
-    return (primal_vertices, coeffs)
+    return (primal_vertices, coeffs, simples)
 end
 
+# Remove any allocations for f_terms
 function dec_c_wedge_product_zero(k, f, α, val_pack)
-    primal_vertices, coeffs = val_pack
-    f_terms = map(x -> f[x], primal_vertices)
+    primal_vertices, coeffs, simples = val_pack
 
-    lhs = dot.(coeffs, f_terms)
-    return (lhs .*  α) ./ factorial(k)
+    # TODO: May want to move this to be in the loop in case the coeffs width does change
+    # Can use the below code in the preallocation to determine if we do have to recompute
+    # the width at every step or if we can just compute it once.
+    # all(map(x -> length(coeffs[x]), simples) .== length(coeffs[1]))
+    width_iter = 1:length(coeffs[1])
+    wedge_terms = zeros(simples)
+
+    @inbounds for i in simples
+        for j in width_iter
+            wedge_terms[i] += coeffs[i][j] * f[primal_vertices[i][j]]
+        end
+    end
+    
+    return wedge_terms .* α #./factorial(k)
+end
+
+function dec_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
+    (f, g) -> f .* g
 end
 
 function dec_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where k
@@ -589,6 +607,76 @@ function dec_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where k
     (f, β) -> dec_c_wedge_product_zero(k, f, β, val_pack)
 end
 
+#This is adapted almost directly from the CombinatorialSpaces package
+function dec_p_wedge_product_ones(k, sd)
+    simples = simplices(2, sd)
+
+    coeffs = map(simples) do x
+        # TODO: This relies on the fact index of primal vertices
+        # and their index on the dual mesh is the same. If changed, use the below
+        # dual_vs = vertex_center(sd, triangle_vertices(sd, x))
+        dual_vs = Vector(triangle_vertices(sd, x))
+        dual_es = sort(incident(sd, triangle_center(sd, x), :D_∂v0),
+                 by=e -> sd[e,:D_∂v1] .== dual_vs, rev=true)[1:3]
+        map(dual_es) do e
+            sum(dual_volume(2, sd, incident(sd, e, :D_∂e1)))
+        end / volume(2, sd, x)
+    end
+  
+    e0 = map(x -> ∂(2,0,sd,x), simples)
+    e1 = map(x -> ∂(2,1,sd,x), simples)
+    e2 = map(x -> ∂(2,2,sd,x), simples)
+
+    return (e0, e1, e2, coeffs, simples)
+end
+
+function dec_c_wedge_product_ones(k, α, β, val_pack)
+    e0, e1, e2, coeffs, simples = val_pack
+    form_terms = map(simples) do x
+        [α[e2[x]] * β[e1[x]] - α[e1[x]] * β[e2[x]],
+         α[e2[x]] * β[e0[x]] - α[e0[x]] * β[e2[x]],
+         α[e1[x]] * β[e0[x]] - α[e0[x]] * β[e1[x]]]
+    end
+
+    return dot.(coeffs, form_terms) # / 2
+end
+
+function dec_c_wedge_product_ones_mem_test(k, α, β, val_pack)
+    e0, e1, e2, coeffs, simples = val_pack
+
+    wedge_terms = zeros(simples)
+
+    for i in simples
+        wedge_terms[i] += coeffs[i][1] * (α[e2[i]] * β[e1[i]] - α[e1[i]] * β[e2[i]])
+        wedge_terms[i] += coeffs[i][2] * (α[e2[i]] * β[e0[i]] - α[e0[i]] * β[e2[i]])
+        wedge_terms[i] += coeffs[i][3] * (α[e1[i]] * β[e0[i]] - α[e0[i]] * β[e1[i]])
+    end
+
+    return wedge_terms # / 2
+end
+
+function dec_c_wedge_product_ones_mem_test_2(k, α, β, val_pack)
+    e0, e1, e2, coeffs, simples = val_pack
+
+    wedge_terms = zeros(simples)
+
+    @inbounds for i in simples
+        ae0, ae1, ae2 = α[e0[i]], α[e1[i]], α[e2[i]]
+        be0, be1, be2 = β[e0[i]], β[e1[i]], β[e2[i]]
+
+        wedge_terms[i] += (coeffs[i][1] * (ae2 * be1 - ae1 * be2) 
+                         + coeffs[i][2] * (ae2 * be0 - ae0 * be2) 
+                         + coeffs[i][3] * (ae1 * be0 - ae0 * be1))
+    end
+
+    return wedge_terms # / 2
+end
+
+function dec_wedge_product(::Type{Tuple{1,1}}, s::HasDeltaSet2D)
+    val_pack = dec_p_wedge_product_ones(2, sd)
+    (α, β) -> dec_c_wedge_product_ones(2, α, β,val_pack)
+end
+    
 """
     function find_unreachable_tvars(d)
 
