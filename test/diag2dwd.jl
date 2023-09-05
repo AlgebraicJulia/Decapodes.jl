@@ -1229,5 +1229,30 @@ end
   vec_to_dec!(t7)
   t7 = contract_operators(t7)
   @test only(t7[:op1]) == [:d,:⋆,:d,:⋆]
+
+  # Test advection is divergence of wedge product.
+  t8 = @decapode begin
+    A == adv(B, C)
+  end
+  vec_to_dec!(t8)
+
+  @test only(t8[:op1]) == [:⋆,:d,:⋆]
+  @test only(t8[:op2]) == :∧
+
+  # Test multiple advections.
+  t9 = @decapode begin
+    A == adv(B, C)
+    D == adv(E, F)
+  end
+  vec_to_dec!(t9)
+
+  t9_expected = @decapode begin
+    A == ∘(⋆,d,⋆)(B ∧ C)
+    D == ∘(⋆,d,⋆)(E ∧ F)
+  end
+  t9_expected[incident(t9_expected, Symbol("•1"), :name), :name] = Symbol("•_adv_1")
+  t9_expected[incident(t9_expected, Symbol("•2"), :name), :name] = Symbol("•_adv_2")
+  @test is_isomorphic(t9, t9_expected)
+
 end
 

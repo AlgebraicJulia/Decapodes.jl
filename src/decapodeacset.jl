@@ -731,5 +731,24 @@ vec_to_dec_op2 = Pair{Symbol, Symbol}[]
 
 Replace Vector Calculus operators with Discrete Exterior Calculus equivalents.
 """
-vec_to_dec!(d::SummationDecapode) = replace_names!(d, vec_to_dec_op1, vec_to_dec_op2)
+function vec_to_dec!(d::SummationDecapode)
+  # Perform simple substitutions.
+  replace_names!(d, vec_to_dec_op1, vec_to_dec_op2)
+
+  # Replace `adv` with divergence of ∧.
+  advs = incident(d, :adv, :op2)
+  adv_tgts = d[advs, :res]
+
+  # Intermediate wedges.
+  wedge_tgts = add_parts!(d, :Var, length(adv_tgts), name=map(i -> Symbol("•_adv_$i"), eachindex(advs)), type=:infer)
+  # Divergences.
+  add_parts!(d, :Op1, length(adv_tgts), src=wedge_tgts, tgt=adv_tgts, op1=fill([:⋆,:d,:⋆],length(advs)))
+  # Point advs to the intermediates.
+  d[collect(advs), :res] = wedge_tgts
+
+  # Replace adv with ∧.
+  d[collect(advs), :op2] = fill(:∧,length(advs))
+
+  d
+end
 

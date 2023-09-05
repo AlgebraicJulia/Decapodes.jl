@@ -15,12 +15,13 @@ Some users may have trouble entering unicode characters like ⋆ or ∂ in their
 
 ## Vector Calculus Equivalents
 
-| Vec     | DEC        | How to enter               |
-| ------- | ---------- | -------------------------- |
-| grad    | d          | grad                       |
-| div     | ∘(⋆,d,⋆)   | div                        |
-| curl    | ∘(d,⋆)     | curl                       |
-| ∇       | d          | \nabla                     |
-| ∇ᵈ      | ∘(⋆,d,⋆)   | \nabla \<tab\> \\^d \<tab\> |
-| ∇x      | ∘(d,⋆)     | \nabla \<tab\> x           |
+| Vec      | DEC              | How to enter                |
+| -------- | ---------------- | --------------------------  |
+| grad     | d                | grad                        |
+| div      | ∘(⋆,d,⋆)         | div                         |
+| curl     | ∘(d,⋆)           | curl                        |
+| ∇        | d                | \nabla                      |
+| ∇ᵈ       | ∘(⋆,d,⋆)         | \nabla \<tab\> \\^d \<tab\> |
+| ∇x       | ∘(d,⋆)           | \nabla \<tab\> x            |
+| adv(X,Y) | ∘(⋆,d,⋆)(X∧Y)    | adv                         |
 
