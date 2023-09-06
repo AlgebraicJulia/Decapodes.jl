@@ -574,7 +574,7 @@ function dec_p_wedge_product_zero(k, sd)
 end
 
 # Remove any allocations for f_terms
-function dec_c_wedge_product_zero(k, f, α, val_pack)
+function dec_c_wedge_product_zero(f, α, val_pack)
     primal_vertices, coeffs, simples = val_pack
 
     # TODO: May want to move this to be in the loop in case the coeffs width does change
@@ -597,25 +597,54 @@ function dec_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
     (f, g) -> f .* g
 end
 
+# TODO: This relies on the assumption of a well ordering of the 
+# the dual space simplices. If changed, use dec_p_wedge_product_zero
+function dec_p_wedge_product_zero_one(sd)
+    simples = simplices(1, sd)
+    primal_vertices = map(x -> [sd[x, :∂v0], sd[x, :∂v1]], simples)
+    return (primal_vertices, simples)
+end
+
+# TODO: This relies on the assumption of a well ordering of the 
+# the dual space simplices. If changed, use dec_c_wedge_product_zero
+function dec_c_wedge_product_zero_one(f, α, val_pack)
+    primal_vertices, simples = val_pack
+
+    wedge_terms = zeros(simples)
+    @inbounds for i in simples
+        wedge_terms[i] += f[primal_vertices[i][1]] + f[primal_vertices[i][2]]
+    end
+
+    return 0.5 .* wedge_terms .* α
+end
+
+function dec_wedge_product(::Type{Tuple{1,0}}, sd::HasDeltaSet)
+    val_pack = dec_p_wedge_product_zero_one(sd)
+    (α, g) -> dec_c_wedge_product_zero_one(g, α, val_pack)
+end
+
+function dec_wedge_product(::Type{Tuple{0,1}}, sd::HasDeltaSet)
+    val_pack = dec_p_wedge_product_zero_one(sd)
+    (f, β) -> dec_c_wedge_product_zero_one(f, β, val_pack)
+end
+
 function dec_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where k
     val_pack = dec_p_wedge_product_zero(k, sd)
-    (α, g) -> dec_c_wedge_product_zero(k, g, α, val_pack)
+    (α, g) -> dec_c_wedge_product_zero(g, α, val_pack)
 end
 
 function dec_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where k
     val_pack = dec_p_wedge_product_zero(k, sd)
-    (f, β) -> dec_c_wedge_product_zero(k, f, β, val_pack)
+    (f, β) -> dec_c_wedge_product_zero(f, β, val_pack)
 end
 
 #This is adapted almost directly from the CombinatorialSpaces package
-function dec_p_wedge_product_ones(k, sd)
+#Use this if some assumptions in the embedded delta sets changes
+function dec_p_wedge_product_ones_safe(sd)
     simples = simplices(2, sd)
 
     coeffs = map(simples) do x
-        # TODO: This relies on the fact index of primal vertices
-        # and their index on the dual mesh is the same. If changed, use the below
-        # dual_vs = vertex_center(sd, triangle_vertices(sd, x))
-        dual_vs = Vector(triangle_vertices(sd, x))
+        dual_vs = vertex_center(sd, triangle_vertices(sd, x))
         dual_es = sort(incident(sd, triangle_center(sd, x), :D_∂v0),
                  by=e -> sd[e,:D_∂v1] .== dual_vs, rev=true)[1:3]
         map(dual_es) do e
@@ -630,32 +659,26 @@ function dec_p_wedge_product_ones(k, sd)
     return (e0, e1, e2, coeffs, simples)
 end
 
-function dec_c_wedge_product_ones(k, α, β, val_pack)
-    e0, e1, e2, coeffs, simples = val_pack
-    form_terms = map(simples) do x
-        [α[e2[x]] * β[e1[x]] - α[e1[x]] * β[e2[x]],
-         α[e2[x]] * β[e0[x]] - α[e0[x]] * β[e2[x]],
-         α[e1[x]] * β[e0[x]] - α[e0[x]] * β[e1[x]]]
-    end
+# TODO: This relies on a well established ordering for 
+# the dual space simplices. If changed, use dec_p_wedge_product_ones_safe
+function dec_p_wedge_product_ones(sd)
+    simples = simplices(2, sd)
 
-    return dot.(coeffs, form_terms) # / 2
+    coeffs = map(simples) do x
+        dual_es = incident(sd, triangle_center(sd, x), :D_∂v0)[4:6]
+        map(dual_es) do e
+            sum(dual_volume(2, sd, incident(sd, e, :D_∂e1)))
+        end / volume(2, sd, x)
+    end
+  
+    e0 = map(x -> ∂(2,0,sd,x), simples)
+    e1 = map(x -> ∂(2,1,sd,x), simples)
+    e2 = map(x -> ∂(2,2,sd,x), simples)
+
+    return (e0, e1, e2, coeffs, simples)
 end
 
-function dec_c_wedge_product_ones_mem_test(k, α, β, val_pack)
-    e0, e1, e2, coeffs, simples = val_pack
-
-    wedge_terms = zeros(simples)
-
-    for i in simples
-        wedge_terms[i] += coeffs[i][1] * (α[e2[i]] * β[e1[i]] - α[e1[i]] * β[e2[i]])
-        wedge_terms[i] += coeffs[i][2] * (α[e2[i]] * β[e0[i]] - α[e0[i]] * β[e2[i]])
-        wedge_terms[i] += coeffs[i][3] * (α[e1[i]] * β[e0[i]] - α[e0[i]] * β[e1[i]])
-    end
-
-    return wedge_terms # / 2
-end
-
-function dec_c_wedge_product_ones_mem_test_2(k, α, β, val_pack)
+function dec_c_wedge_product_ones(α, β, val_pack)
     e0, e1, e2, coeffs, simples = val_pack
 
     wedge_terms = zeros(simples)
@@ -669,12 +692,12 @@ function dec_c_wedge_product_ones_mem_test_2(k, α, β, val_pack)
                          + coeffs[i][3] * (ae1 * be0 - ae0 * be1))
     end
 
-    return wedge_terms # / 2
+    return wedge_terms
 end
 
 function dec_wedge_product(::Type{Tuple{1,1}}, s::HasDeltaSet2D)
-    val_pack = dec_p_wedge_product_ones(2, sd)
-    (α, β) -> dec_c_wedge_product_ones(2, α, β,val_pack)
+    val_pack = dec_p_wedge_product_ones(sd)
+    (α, β) -> dec_c_wedge_product_ones(α, β,val_pack)
 end
     
 """
