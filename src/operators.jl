@@ -98,14 +98,6 @@ function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
     return (args...) ->  op(args...)
 end
 
-function dec_lie_derivative_zero(sd::HasDeltaSet, hodge)
-    M_tmphodge1 = ⋆(1,sd,hodge)
-    tmphodge1 = x-> M_tmphodge1 * x
-    # tmphodge1 = dec_hodge(1, sd, hodge)
-    tmpwedge10 = dec_wedge_product(Tuple{1, 0}, sd)
-    (v, x)-> tmphodge1(tmpwedge10(v, x))
-end
-
 # TODO: This relies on the assumption of a well ordering of the 
 # the dual space simplices. If changed, use dec_p_wedge_product_zero
 function dec_p_wedge_product_zero_one(sd)
@@ -116,6 +108,7 @@ end
 
 # TODO: This relies on the assumption of a well ordering of the 
 # the dual space simplices. If changed, use dec_c_wedge_product_zero
+# TODO: This assumes that the dual vertice on an edge is always the midpoint
 function dec_c_wedge_product_zero_one(f, α, val_pack)
     primal_vertices, simples = val_pack
 
@@ -167,7 +160,7 @@ function dec_c_wedge_product_zero(f, α, val_pack)
         end
     end
     
-    return wedge_terms .* α #./factorial(k)
+    return wedge_terms .* α
 end
 
 # This is adapted almost directly from the CombinatorialSpaces package
@@ -255,3 +248,160 @@ function dec_wedge_product(::Type{Tuple{1,1}}, s::HasDeltaSet2D)
     val_pack = dec_p_wedge_product_ones(sd)
     (α, β) -> dec_c_wedge_product_ones(α, β,val_pack)
 end
+
+function default_dec_generate_1D(sd, my_symbol, hodge=GeometricHodge())
+    
+    op = @match my_symbol begin
+
+        :L₀ => dec_lie_derivative_zero_1D(sd, hodge)
+        :L₁ => dec_lie_derivative_one_1D(sd, hodge)
+
+        :i₁ => dec_interior_product_1D(sd, hodge)
+
+        _ => default_dec_generate(sd, my_symbol, hodge)
+    end
+
+    return (args...) ->  op(args...)
+end
+
+function dec_interior_product_1D(sd::HasDeltaSet, hodge)
+    # Alpha is dual1, X is primal1
+
+    # Takes alpha to primal0
+    M_invhodge1 = inv_hodge_star(1,sd,hodge)
+    invhodge1 = x -> M_invhodge1 * x
+
+    # Alpha is primal0 and X is primal1, res is primal1
+    wedge01 = dec_wedge_product(Tuple{0, 1}, sd)
+
+    # Takes res to dual0
+    M_hodge1 = ⋆(1,sd,hodge)
+    hodge1 = x -> M_hodge1 * x
+
+    (α, X) -> hodge1(wedge01(invhodge1(α), X))
+end
+
+function dec_lie_derivative_zero_1D(sd::HasDeltaSet, hodge)
+    # Alpha is dual0, X is primal1
+
+    # Takes alpha to dual1
+    M_dual_d0 = dual_derivative(0,sd)
+    dual_d0 = x-> M_dual_d0 * x
+
+    #Alpha is dual1 and X is primal1, res is dual0 
+    interior_d1_p1 = dec_interior_product_1D(sd, hodge)
+
+    (X, α) -> interior_d1_p1(dual_d0(α), X)
+end
+
+function dec_lie_derivative_one_1D(sd::HasDeltaSet, hodge)
+    # Alpha is dual1, X is primal1
+
+    #Alpha is dual1 and X is primal1, res is dual0 
+    interior_d1_p1 = dec_interior_product_1D(sd, hodge)
+
+    # Takes res to dual1
+    M_dual_d0 = dual_derivative(0,sd)
+    dual_d0 = x-> M_dual_d0 * x
+    
+    (X, α) -> dual_d0(interior_d1_p1(α, X))
+end
+
+function default_dec_generate_2D(sd, my_symbol, hodge=GeometricHodge())
+    
+    op = @match my_symbol begin
+
+        :L₀ => dec_lie_derivative_zero_2D(sd, hodge)
+        :L₁ => dec_lie_derivative_one_2D(sd, hodge)
+        :L₂ => dec_lie_derivative_two_2D(sd, hodge)
+
+        :i₁ => dec_interior_product_one_2D(sd, hodge)
+        :i₂ => dec_interior_product_two_2D(sd, hodge)
+
+        _ => default_dec_generate(sd, my_symbol, hodge)
+    end
+
+    return (args...) ->  op(args...)
+end
+
+function dec_interior_product_one_2D(sd::HasDeltaSet, hodge)
+    # Alpha is dual1, X is primal1
+
+    # Takes alpha to primal1
+    M_invhodge1 = inv_hodge_star(1,sd,hodge)
+    invhodge1 = x -> M_invhodge1 * x
+
+    #Alpha term is primal1 and X are primal1, res is primal2
+    wedge11 = dec_wedge_product(Tuple{1, 1}, sd)
+
+    #Sends res to dual0
+    M_hodge2 = ⋆(2,sd,hodge)
+    hodge2 = x -> M_hodge2 * x
+
+    (α, X) -> -(hodge2(wedge11(invhodge1(α), X)))
+end
+
+function dec_interior_product_two_2D(sd::HasDeltaSet, hodge)
+    # Alpha is dual2, X is primal1
+
+    # Takes alpha to primal0
+    M_invhodge2 = inv_hodge_star(2,sd,hodge)
+    invhodge2 = x -> M_invhodge2 * x
+
+    #Alpha term is primal0 and X are primal1, res is primal1
+    wedge01 = dec_wedge_product(Tuple{0, 1}, sd)
+
+    #Sends res to dual1
+    M_hodge1 = ⋆(1,sd,hodge)
+    hodge1 = x -> M_hodge1 * x
+
+    (α, X) -> hodge1(wedge01(invhodge2(α), X))
+end
+
+function dec_lie_derivative_zero_2D(sd::HasDeltaSet, hodge)
+    # Alpha is dual0, X is primal1
+
+    # Takes alpha to dual1
+    M_dual_d0 = dual_derivative(0,sd)
+    dual_d0 = x-> M_dual_d0 * x
+
+    # Alpha is dual1, X is primal1, res is dual0
+    interior_d1_p1 = dec_interior_product_one_2D(sd, hodge)
+
+    (X, α) -> interior_d1_p1(dual_d0(α), X)
+end
+
+function dec_lie_derivative_one_2D(sd::HasDeltaSet, hodge)
+    # Alpha is dual1, X is primal1
+
+    # Takes alpha to dual2
+    M_dual_d1 = dual_derivative(1,sd)
+    dual_d1 = x-> M_dual_d1 * x
+
+    # d(Alpha) is dual2, X is primal1, res_1 is dual1
+    interior_d2_p1 = dec_interior_product_two_2D(sd, hodge)
+
+    # Alpha is dual1, X is primal1, res_2 is dual0
+    interior_d1_p1 = dec_interior_product_one_2D(sd, hodge)
+
+    # Takes res_2 to dual1
+    M_dual_d0 = dual_derivative(0,sd)
+    dual_d0 = x-> M_dual_d0 * x
+
+    (X, α) -> interior_d2_p1(dual_d1(α), X) + dual_d0(interior_d1_p1(α, X))
+end
+
+function dec_lie_derivative_two_2D(sd::HasDeltaSet, hodge)
+    # Alpha is dual2, X is primal1
+
+    # Alpha is dual2, X is primal1, res is dual1
+    interior_d2_p1 = dec_interior_product_two_2D(sd, hodge)
+
+    #Sends res to dual1 then to dual2
+    M_dual_d1 = dual_derivative(1,sd)
+    dual_d1 = x -> M_dual_d1 * x
+    
+    (X, α) -> dual_d1(interior_d2_p1(α, X))
+end
+
+
