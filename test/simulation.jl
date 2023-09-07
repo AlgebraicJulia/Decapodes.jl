@@ -55,9 +55,7 @@ function generate(sd, my_symbol)
     :⋆₀⁻¹ => test_inverse_hodge(0, sd, DiagonalHodge())
     :dual_d₁ => test_dual_differential(1, sd)
     _ => default_dec_generate(sd, my_symbol)
-    # :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
   end
-  # return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
   return (args...) ->  op(args...)
 end
 
@@ -97,12 +95,9 @@ ddp = SummationDecapode(diffExpr)
 
 dec_matrices = Vector{Symbol}()
 alloc_vectors = Vector{Decapodes.AllocVecCall}()
-compile(expand_operators(ddp), [:C, :k], dec_matrices, alloc_vectors)
 
 @test Decapodes.get_vars_code(ddp, [:k]).args[2] == :(k = p.k)
 @test infer_state_names(ddp) == [:C, :k]
-
-gensim(ddp)
 
 torus = loadmesh(Torus_30x10())
 c_dist = MvNormal([5, 5], LinearAlgebra.Diagonal(map(abs2, [1.5, 1.5])))
@@ -131,12 +126,8 @@ ddp = SummationDecapode(diffExpr)
 dec_matrices2 = Vector{Symbol}()
 alloc_vectors2 = Vector{Decapodes.AllocVecCall}()
 
-compile(expand_operators(ddp), [:C, :k], dec_matrices2, alloc_vectors2)
-
-
 @test infer_state_names(ddp) == [:C, :k]
 @test Decapodes.get_vars_code(ddp, [:k]).args[2] == :(k = p.k(t))
-gensim(ddp)
 
 f = eval(gensim(expand_operators(ddp)))
 fₘₚ = f(torus, generate)
@@ -156,7 +147,6 @@ end
 
 diffExpr = parse_decapode(DiffusionExprBody)
 ddp = SummationDecapode(diffExpr)
-gensim(ddp)
 
 @test infer_state_names(ddp) == [:C]
 @test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2] == :(var"3" = 3.0)
@@ -179,7 +169,6 @@ end
 
 diffExpr = parse_decapode(DiffusionExprBody)
 ddp = SummationDecapode(diffExpr)
-gensim(ddp)
 
 @test infer_state_names(ddp) == [:C]
 @test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2] == :(var"3" = 3.0)
@@ -241,7 +230,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
       # Advective Flux
       ϕ₂ == -(L₀(V, C))
       # Superposition Principle
-      ϕ == plus(ϕ₁ , ϕ₂)
+      ϕ == ϕ₁ + ϕ₂
       # Conservation of Mass
       Ċ == ∘(dual_d₁,⋆₀⁻¹)(ϕ)
       ∂ₜ(C) == Ċ
@@ -323,7 +312,7 @@ end
   function generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
       :Δ₀ => test_laplace_de_rham(0, sd)
-        _ => default_dec_generate(sd, my_symbol, hodge)
+      _ => default_dec_generate(sd, my_symbol, hodge)
     end
 
     return (args...) ->  op(args...)
