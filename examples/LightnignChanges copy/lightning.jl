@@ -4,7 +4,9 @@
 # References #
 ##############
 
-# F. Heidler, J. M. Cvetic and B. V. Stanic, "Calculation of lightning current parameters," in IEEE Transactions on Power Delivery, vol. 14, no. 2, pp. 399-404, April 1999, doi: 10.1109/61.754080.
+# F. Heidler, J. M. Cvetic and B. V. Stanic, "Calculation of lightning current
+#   parameters," in IEEE Transactions on Power Delivery, vol. 14, no. 2, pp.
+#   399-404, April 1999, doi: 10.1109/61.754080.
 
 # Kotovsky, D. A. (2016), Response of the nighttime upper mesosphere to electric
 #   field changes produced by lightning discharges, Ph.D. dissertation,
@@ -545,6 +547,31 @@ extrema(findnode(du₀, :Chemistry_ρ_O))
 #prob = ODEProblem(f, u₀, (0, 1e-9), constants_and_parameters)
 prob = ODEProblem(fₘ, u₀, (0, 1e-9), constants_and_parameters)
 soln = solve(prob, Tsit5())
+prob = ODEProblem(fₘ, u₀, (0, 10e-6), constants_and_parameters)
+soln = solve(prob, Tsit5())
+
+# This is divergence of the E field. i.e. ⋆d⋆(E)
+plot_div(t) = mesh(s, color=inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E))
+
+plot_div(10e-6)
+
+extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(1e-6), :Veronis_E))
+extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(10e-6), :Veronis_E))
+
+function find_max_x_nonzero(form)
+  max_x = 0
+  for (i,p) in enumerate(dual_point(sd))
+    if form[i] != 0
+      max_x = p[1]
+    end
+  end
+end
+find_max_x_nonzero(findnode())
+
+findnode(soln(0), :Veronis_B) |> print
+findnode(soln(1e-6), :Veronis_B) |> print
+findnode(soln(10e-6), :Veronis_B) |> print
+
 soln = solve(prob, ORK256(), dt=1e-9)
 
 @save "soln_testing_aug292023.jld2" soln
