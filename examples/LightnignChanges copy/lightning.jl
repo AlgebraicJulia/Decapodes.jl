@@ -4,6 +4,8 @@
 # References #
 ##############
 
+# F. Heidler, J. M. Cvetic and B. V. Stanic, "Calculation of lightning current parameters," in IEEE Transactions on Power Delivery, vol. 14, no. 2, pp. 399-404, April 1999, doi: 10.1109/61.754080.
+
 # Kotovsky, D. A. (2016), Response of the nighttime upper mesosphere to electric
 #   field changes produced by lightning discharges, Ph.D. dissertation,
 #   University of Florida, Gainesville, Florida. 
@@ -22,6 +24,10 @@
 # Dependencies #
 ################
 using Pkg
+Pkg.add("Interpolations")
+Pkg.add("Roots")
+Pkg.add("MAT")
+Pkg.add("CairoMakie")
 Pkg.resolve()
 begin # Dependencies
 # AlgebraicJulia
@@ -36,7 +42,8 @@ using Decapodes
 # External Dependencies
 using Base.MathConstants: e, π
 using Distributions
-using GLMakie
+#using GLMakie
+using CairoMakie
 using Interpolations
 using LinearAlgebra
 using Logging
@@ -60,78 +67,12 @@ begin # Load the Mesh
 MAX_r = 400.0e3 # [m]
 MAX_Z = 100.0e3 # [m]
 
-include("../../grid_meshes.jl")
+include("../grid_meshes.jl")
 s = triangulated_grid(400.0e3, 100.0e3, 100e2, 100e2, Point3D)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Circumcenter())
-#wireframe(s)
-#wireframe(sd)
 nv(s), ne(s), ntriangles(s)
 
-#s = loadmesh(Rectangle_30x10())
-#s[:point] = map(x -> Diagonal([MAX_r / 30, MAX_Z / 10, 1]) * x, s[:point])
-# TODO: Check whether these should be 32 or 64 bit floats.
-####s = EmbeddedDeltaSet2D("LightningMesh.obj")
-#s = EmbeddedDeltaSet2D{Bool, Point3D}()
-#add_vertex!(s, point=Point3D([0.0, 0.0, 0.0]))
-#add_vertex!(s, point=Point3D([0.0, 1.0, 0.0]))
-#add_vertex!(s, point=Point3D([0.0, 2.0, 0.0]))
-#add_vertex!(s, point=Point3D([1.0, 0.0, 0.0]))
-#add_vertex!(s, point=Point3D([1.0, 1.0, 0.0]))
-#add_vertex!(s, point=Point3D([1.0, 2.0, 0.0]))
-#add_vertex!(s, point=Point3D([2.0, 0.0, 0.0]))
-#add_vertex!(s, point=Point3D([2.0, 1.0, 0.0]))
-#add_vertex!(s, point=Point3D([2.0, 2.0, 0.0]))
-#glue_sorted_triangle!(s, 1,2,4)
-#glue_sorted_triangle!(s, 2,4,5)
-#glue_sorted_triangle!(s, 2,5,3)
-#glue_sorted_triangle!(s, 3,5,6)
-#glue_sorted_triangle!(s, 4,7,5)
-#glue_sorted_triangle!(s, 5,7,8)
-#glue_sorted_triangle!(s, 5,6,8)
-#glue_sorted_triangle!(s, 6,8,9)
-#GLMakie.wireframe(s)
-####sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
-####subdivide_duals!(sd, Circumcenter())
-#α_of_ν = EForm(collect(1.0:16.0))
-#i₁′(α_of_ν, α_of_ν, sd, GeometricHodge())
-#α_of_ν .* α_of_ν
-#colors = inv_hodge_star(0, sd, GeometricHodge()) * (∧₁₁′(α_of_ν, ⋆(1,sd,α_of_ν,GeometricHodge()), sd),sd,GeometricHodge())[1]
-#mesh(s, color=colors)
-#wedge_mat(Val{(1,1)}, sd)
-#
-#inv_hodge_star(0, sd) * dual_derivative(1, sd) * hodge_star(1, sd) * α_of_ν
-#mesh(s, color=inv_hodge_star(0, sd) * dual_derivative(1, sd) * hodge_star(1, sd) * ones(ne(s)))
-
-####minimum_x = minimum(p -> p[1], s[:point])
-####minimum_y = minimum(p -> p[2], s[:point])
-####minimum_z = minimum(p -> p[3], s[:point])
-####s[:point] = map(x -> Point3D([x[1] - minimum_x, x[2], x[3] - minimum_z]), s[:point])
-####scaling_mat_to_unit_square = Diagonal([
-####  1/maximum(p -> p[1], s[:point]),
-####  1.0,
-####  1/maximum(p -> p[3], s[:point])])
-####scaling_mat_to_final_dimensions = Diagonal([
-####  MAX_r,
-####  1.0,
-####  MAX_Z])
-####scaling_mats = scaling_mat_to_final_dimensions * scaling_mat_to_unit_square
-####s[:point] = map(x -> scaling_mats * x, s[:point])
-####s[:point] = map(p -> Point3D([p[1], p[3], p[2]]), s[:point])
-####s[:edge_orientation] = false
-####orient!(s)
-##### Visualize the mesh.
-#####GLMakie.wireframe(s)
-##### Note that these points are stored as Float64.
-####sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
-####subdivide_duals!(sd, Circumcenter())
-##### Notice that we are storing Z in the second position here.
-##### Note the converstion to Float64.
-#####sd[:point] = map(x -> Point3{Float64}([x[1], x[3], x[2]]), sd[:point])
-#####sd[:dual_point] = map(x -> Point3{Float64}([x[1], x[3], x[2]]), sd[:dual_point])
-#####sd[:point] = map(x -> Point3{Float64}([x[1], x[2], x[3]]), sd[:point])
-#####sd[:dual_point] = map(x -> Point3{Float64}([x[1], x[2], x[3]]), sd[:dual_point])
-####sd
 end # Load the Mesh
 
 #############
@@ -139,7 +80,7 @@ end # Load the Mesh
 #############
 begin # Operators
 
-include("operators.jl")
+include("./operators.jl")
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
@@ -239,6 +180,8 @@ T2 = 1000.0       # [us]
 n = 10.0          # Heidler normalizing constant
 
 # TODO: Should this distribution should reach its max at 50 microseconds?
+# This is equation 5-14 from Kotovsky, or 8 from Heidler.
+# Heidler uses an intermediate variable kₛ = t/τ₁.
 HeidlerForη = t -> (t / τ₁)^n / (1 + ((t /τ₁)^n)) * exp(-1.0 * t / τ₁)
 ddtHeidlerForη = t -> (exp(-t / τ₁) * (t/τ₁)^n * ((t*(-(t/τ₁)^n - 1)) + n*τ₂)) /
   (t * τ₂ * ((t/τ₁)^n + 1)^2)
@@ -411,12 +354,10 @@ Veronis = @decapode begin
   # See Kotovsky pp. 92 5-2a
   Eq5_2a == qₑ * ρ_e ./ ρ_gas *
     (10 .^ ( 50.97 + (3.026 * log10( 1e-21*θ )) + (8.4733e-2 * (log10( 1e-21*θ ) .^ 2))))
-  #E15_2a_exponent_term_two == (3.026 * log10( 1e-21*θ ))
-  #E15_2a_exponent_term_three == (8.4733e-2 * (log10( 1e-21*θ ) .^ 2))
-  #Eq5_2a == qₑ * ρ_e ./ ρ_gas * (10 .^ ( 50.97 + E15_2a_exponent_term_two + E15_2a_exponent_term_three))
-  #Eq5_2a == qₑ * ρ_e ./ ρ_gas * exp10( 50.97 + 0)
   # See Kotovsky pp. 92 5-2b
+  #Eq5_2b == qₑ * 3.656e25 * ρ_e ./ ρ_gas .* sqrt(200.0 ./ Tn)
   Eq5_2b == qₑ * 3.656e25 * ρ_e ./ ρ_gas .* sqrt(200.0 ./ Tn)
+
 
   σ == avg₀₁((Eq5_2a_mask .*  Eq5_2a) + (Eq5_2b_mask .*  Eq5_2b))
 end
@@ -431,8 +372,10 @@ begin # Format Atmosphere
 
 include("formatAtmosphere.jl")
 species, densities, Tn, rateCoef_names, rateCoefs = formatAtmosphere("./examples/LightnignChanges copy/chi180_O_dyn.mat", sd)
-#mesh(s, color=rateCoefs[:k25])
+mesh(s, color=rateCoefs[:k25])
 mesh(s, color=densities[:O])
+using CairoMakie
+CairoMakie.mesh(s, color=densities[:N2])
 
 end # Format Atmosphere
 
@@ -495,6 +438,7 @@ lighting_cospan = oapply(compose_lightning,
   Open(Chemistry, [:Tn, :θ, :ρ_e, :ρ_gas])])
 
 lightning = apex(lighting_cospan)
+# Warning: This diagram is large.
 #to_graphviz(lightning)
 
 lightning = ∘(resolve_overloads!, infer_types!, expand_operators)(lightning)
@@ -506,24 +450,14 @@ end # Model Composition
 #########################
 begin # Simulation Generation
 
-# Primal_time: J,B,Nₑ
-# Dual_time: E,Nₑ,θ,σ
+sim = eval(gensim(lightning))
+fₘ = sim(sd, generate)
 
-#To use VerletLeapfrog:
-#primal_physics = recursive_delete_parent!(copy(lightning), [:E])
-#dual_physics = recursive_delete_parent!(copy(lightning), [:B])
-#
-#primal_f = eval(gensim(primal_physics, generate))
-#dual_f = eval(gensim(dual_physics, generate))
-
-#sim = eval(gensim(expand_operators(lightning)))
-#f = sim(sd, generate)
-
-open("examples\\climate\\generated_lightning_sim.jl", "w") do file
+open("./generated_lightning_sim.jl", "w") do file
   write(file, string(gensim(lightning)))
 end
-#sim = include(eval, "..\\climate\\generated_lightning_sim.jl")
-sim = include("..\\climate\\generated_lightning_sim.jl")
+sim = include(eval, "../../generated_lightning_sim.jl")
+#sim = include("../../generated_lightning_sim.jl")
 fₘ = sim(sd, generate)
 
 end
@@ -532,10 +466,7 @@ end
 # Solving #
 ###########
 
-#v₀ = construct .. E
-#u₀ = construct(PhysicsState, [B, vars["rateCoef"]["r1"], vars["rateCoef"]["r2"], ...])
-#
-##tₑ = 200e-6 # [s]
+#tₑ = 200e-6 # [s]
 #tₑ = 1.334e-3 # [s] # How long it takes light to travel 400 km in a vacuum.
 ## TODO: Do I need to add {isinplace}?
 #prob = DynamicalODEProblem(primal_f, dual_f, v₀, u₀, (0, tₑ), constants_and_parameters)
@@ -544,22 +475,68 @@ end
 
 u₀ = construct(PhysicsState,
   map(x -> VectorForm(x.data),
-    [Z, ρ, B, Ef, Tn, values(densities)..., values(rateCoefs)...]),
+    [Z,
+     ρ,
+     B,
+     Ef,
+     Tn,
+     values(densities)...,
+     values(rateCoefs)...]),
 
   Float64[],
 
-  [:Heidler_Z, :Heidler_ρ, :Veronis_B, :Veronis_E, :Tn,
-    map(x -> Symbol(x == :e ? :ρ_e : "Chemistry_ρ_" * string(x)), species)...,
-    map(x -> Symbol("Chemistry_" * string(x)), rateCoef_names)...])
+  [:Heidler_Z,
+   :Heidler_ρ,
+   :Veronis_B,
+   :Veronis_E,
+   :Tn,
+   #map(x -> Symbol(x == :e ? :ρ_e : "Chemistry_ρ_" * string(x)), species)...,
+   map(x -> Symbol(x == :e ? :ρ_e : "Chemistry_ρ_" * string(x)), collect(keys(densities)))...,
+   #map(x -> Symbol("Chemistry_" * string(x)), rateCoef_names)...])
+   map(x -> Symbol("Chemistry_" * string(x)), collect(keys(rateCoefs)))...])
 
-du₀ = deepcopy(u₀)
+du₀ = deepcopy(construct(PhysicsState,
+  map(x -> VectorForm(x.data),
+    [Z,
+     ρ,
+     B,
+     Ef,
+     Tn,
+     values(densities)...,
+     values(rateCoefs)...]),
+
+  Float64[],
+
+  [:Heidler_Z,
+   :Heidler_ρ,
+   :Veronis_B,
+   :Veronis_E,
+   :Tn,
+   #map(x -> Symbol(x == :e ? :ρ_e : "Chemistry_ρ_" * string(x)), species)...,
+   map(x -> Symbol(x == :e ? :ρ_e : "Chemistry_ρ_" * string(x)), collect(keys(densities)))...,
+   #map(x -> Symbol("Chemistry_" * string(x)), rateCoef_names)...])
+   map(x -> Symbol("Chemistry_" * string(x)), collect(keys(rateCoefs)))...]))
+
+
 fₘ(du₀, u₀, constants_and_parameters, 0)
 fₘ(du₀, u₀, constants_and_parameters, 1e-10)
 fₘ(du₀, u₀, constants_and_parameters, 1e-9)
+fₘ(du₀, u₀, constants_and_parameters, 1e-16)
+
+a = 200e-6
+n = 1e6
+dt = a/n
+for tᵢ in 0:dt:a
+  println(tᵢ)
+  fₘ(du₀, u₀, constants_and_parameters, tᵢ)
+  u₀ .= u₀ .+ (du₀)*(dt)
+end
 
 findnode(u₀, :Chemistry_ρ_O)
 findnode(du₀, :Chemistry_ρ_O)
 findnode(du₀, :Veronis_E)
+findnode(u₀, :Veronis_B)
+findnode(du₀, :Veronis_B)
 mesh(s, color=findnode(u₀, :Chemistry_ρ_O))
 mesh(s, color=findnode(du₀, :Chemistry_ρ_O))
 extrema(findnode(u₀, :Chemistry_ρ_O))
