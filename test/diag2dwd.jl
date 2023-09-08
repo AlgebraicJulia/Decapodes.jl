@@ -603,8 +603,9 @@ end
 
   # Basic op2 inference using L
   Test11 = quote
-    (A, E)::Form1{X}
-    B::Form0{X}
+    A::Form1{X}
+    E::DualForm1{X}
+    B::DualForm0{X}
     (C, D)::infer{X}
 
     C == L(A, B)
@@ -614,12 +615,13 @@ end
   infer_types!(t11)
 
   names_types_11 = get_name_type_pair(t11)
-  names_types_expected_11 = Set([(:A, :Form1), (:B, :Form0), (:C, :Form0), (:E, :Form1), (:D, :Form1)])
+  names_types_expected_11 = Set([(:A, :Form1), (:B, :DualForm0), (:C, :DualForm0), (:E, :DualForm1), (:D, :DualForm1)])
   @test issetequal(names_types_11, names_types_expected_11)
 
   # Basic op2 inference using i
   Test12 = quote
-    (A, B)::Form1{X}
+    A::Form1{X}
+    B::DualForm1{X}
     C::infer{X}
 
     C == i(A, B)
@@ -628,7 +630,7 @@ end
   infer_types!(t12)
 
   names_types_12 = get_name_type_pair(t12)
-  names_types_expected_12 = Set([(:A, :Form1), (:B, :Form1), (:C, :Form0)])
+  names_types_expected_12 = Set([(:A, :Form1), (:B, :DualForm1), (:C, :DualForm0)])
   @test issetequal(names_types_12, names_types_expected_12)
 
   #2D op2 inference using ∧
@@ -655,7 +657,7 @@ end
   # 2D op2 inference using L
   Test14 = quote
     A::Form1{X}
-    B::Form2{X}
+    B::DualForm2{X}
     C::infer{X}
 
     C == L(A, B)
@@ -664,13 +666,13 @@ end
   infer_types!(t14)
 
   names_types_14 = get_name_type_pair(t14)
-  names_types_expected_14 = Set([(:C, :Form2), (:A, :Form1), (:B, :Form2)])
+  names_types_expected_14 = Set([(:C, :DualForm2), (:A, :Form1), (:B, :DualForm2)])
   @test issetequal(names_types_14, names_types_expected_14)
 
   # 2D op2 inference using i
   Test15 = quote
     A::Form1{X}
-    B::Form2{X}
+    B::DualForm2{X}
     C::infer{X}
 
     C == i(A, B)
@@ -679,7 +681,7 @@ end
   infer_types!(t15)
 
   names_types_15 = get_name_type_pair(t15)
-  names_types_expected_15 = Set([(:A, :Form1), (:B, :Form2), (:C, :Form1)])
+  names_types_expected_15 = Set([(:A, :Form1), (:B, :DualForm2), (:C, :DualForm1)])
   @test issetequal(names_types_15, names_types_expected_15)
 
   # Special case of a summation with a mix of infer and Literal.
@@ -791,16 +793,18 @@ end
   @test op1s_3 == op1s_expected_3
 
   Test4 = quote
-    (A, C, F, H)::Form0{X}
-    (B, D, E, G)::Form1{X}
+    (A, C)::Form0{X}
+    (B, D, E)::Form1{X}
 
+    (I,H,F)::DualForm0{X}
+    (J,G)::DualForm1{X}
 
     C == ∧(A, A)
     D == ∧(A, B)
     E == ∧(B, A)
-    F == L(B, A)
-    G == L(B, B)
-    H == i(B, B)
+    F == L(B, I)
+    G == L(B, J)
+    H == i(B, J)
   end
   t4 = SummationDecapode(parse_decapode(Test4))
   resolve_overloads!(t4)
@@ -810,14 +814,17 @@ end
 
   Test5 = quote
     A::Form0{X}
-    (B, H)::Form1{X}
-    (C, D, E, F, G)::Form2{X}
+    B::Form1{X}
+    (C, D, E, F)::Form2{X}
+
+    (I, G)::DualForm2{X}
+    H::DualForm1{X}
 
     D == ∧(B, B)
     E == ∧(A, C)
     F == ∧(C, A)
-    G == L(B, C)
-    H == i(B, C)
+    G == L(B, I)
+    H == i(B, I)
   end
   t5 = SummationDecapode(parse_decapode(Test5))
   resolve_overloads!(t5)
@@ -868,9 +875,9 @@ end
     (T, ρ, p, ṗ)::Form0{X}
     (two,three,kᵥ)::Parameter{X}
     V == M/avg(ρ)
-    Ṁ == neg(L(V, V))*avg(ρ) + 
+    Ṁ == neg(L(V, ⋆(V)))*avg(ρ) + 
           kᵥ*(Δ(V) + d(δ(V))/three) +
-          d(i(V, V)/two)*avg(ρ) +
+          d(i(V, ⋆(V))/two)*avg(ρ) +
           neg(d(p)) +
           G*avg(ρ)
     ∂ₜ(M) == Ṁ
@@ -893,22 +900,22 @@ end
   # Rules for R₀.
   (src_type = :Form0, tgt_type = :Form0, op_names = [:R₀])]
 
-  bespoke_op2_inf_rules = [
+  #= bespoke_op2_inf_rules = [
   (proj1_type = :Parameter, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Parameter, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Parameter, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
 
   (proj1_type = :Form0, proj2_type = :Parameter, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Form1, proj2_type = :Parameter, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*])]
+  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*])] =#
 
   infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
-    vcat(bespoke_op2_inf_rules, op2_inf_rules_2D))
+    op2_inf_rules_2D)
 
   names_types_hx = zip(HeatXfer[:name], HeatXfer[:type])
 
   names_types_expected_hx = [
-    (:T, :Form0), (:continuity_Ṫ₁, :Form0), (:continuity_diffusion_ϕ, :DualForm1), (:continuity_diffusion_k, :Parameter), (Symbol("continuity_diffusion_•1"), :DualForm2), (Symbol("continuity_diffusion_•2"), :Form1), (Symbol("continuity_diffusion_•3"), :Form1), (:M, :Form1), (:continuity_advection_V, :Form1), (:ρ, :Form0), (:P, :Form0), (:continuity_Ṫₐ, :Form0), (Symbol("continuity_advection_•1"), :Form0), (Symbol("continuity_advection_•2"), :Form1), (Symbol("continuity_advection_•3"), :DualForm2), (Symbol("continuity_advection_•4"), :Form0), (Symbol("continuity_advection_•5"), :DualForm2), (:continuity_Ṫ, :Form0), (:navierstokes_Ṁ, :Form1), (:navierstokes_G, :Form1), (:navierstokes_V, :Form1), (:navierstokes_ṗ, :Form0), (:navierstokes_two, :Parameter), (:navierstokes_three, :Parameter), (:navierstokes_kᵥ, :Parameter), (Symbol("navierstokes_•1"), :DualForm2), (Symbol("navierstokes_•2"), :Form1), (Symbol("navierstokes_•3"), :Form1), (Symbol("navierstokes_•4"), :Form1), (Symbol("navierstokes_•5"), :Form1), (Symbol("navierstokes_•6"), :Form1), (Symbol("navierstokes_•7"), :Form1), (Symbol("navierstokes_•8"), :Form1), (Symbol("navierstokes_•9"), :Form1), (Symbol("navierstokes_•10"), :Form1), (Symbol("navierstokes_•11"), :Form0), (:navierstokes_sum_1, :Form1), (Symbol("navierstokes_•12"), :Form1), (Symbol("navierstokes_•13"), :Form1), (Symbol("navierstokes_•14"), :Form0), (Symbol("navierstokes_•15"), :Form0), (Symbol("navierstokes_•16"), :Form1), (Symbol("navierstokes_•17"), :Form1), (Symbol("navierstokes_•18"), :Form1), (Symbol("navierstokes_•19"), :Form1), (Symbol("navierstokes_•20"), :Form1), (:navierstokes_sum_2, :Form0), (Symbol("navierstokes_•21"), :DualForm2)]
+    (:T, :Form0), (:continuity_Ṫ₁, :Form0), (:continuity_diffusion_ϕ, :DualForm1), (:continuity_diffusion_k, :Parameter), (Symbol("continuity_diffusion_•1"), :DualForm2), (Symbol("continuity_diffusion_•2"), :Form1), (Symbol("continuity_diffusion_•3"), :Form1), (:M, :Form1), (:continuity_advection_V, :Form1), (:ρ, :Form0), (:P, :Form0), (:continuity_Ṫₐ, :Form0), (Symbol("continuity_advection_•1"), :Form0), (Symbol("continuity_advection_•2"), :Form1), (Symbol("continuity_advection_•3"), :DualForm2), (Symbol("continuity_advection_•4"), :Form0), (Symbol("continuity_advection_•5"), :DualForm2), (:continuity_Ṫ, :Form0), (:navierstokes_Ṁ, :Form1), (:navierstokes_G, :Form1), (:navierstokes_V, :Form1), (:navierstokes_ṗ, :Form0), (:navierstokes_two, :Parameter), (:navierstokes_three, :Parameter), (:navierstokes_kᵥ, :Parameter), (Symbol("navierstokes_•1"), :DualForm2), (Symbol("navierstokes_•2"), :Form1), (Symbol("navierstokes_•3"), :Form1), (Symbol("navierstokes_•4"), :DualForm1), (Symbol("navierstokes_•5"), :DualForm1), (Symbol("navierstokes_•6"), :DualForm1), (Symbol("navierstokes_•7"), :Form1), (Symbol("navierstokes_•8"), :Form1), (Symbol("navierstokes_•9"), :Form1), (Symbol("navierstokes_•10"), :Form1), (Symbol("navierstokes_•11"), :Form1), (:navierstokes_sum_1, :Form1), (Symbol("navierstokes_•12"), :Form0), (Symbol("navierstokes_•13"), :Form1), (Symbol("navierstokes_•14"), :Form1), (Symbol("navierstokes_•15"), :Form0), (Symbol("navierstokes_•16"), :DualForm0), (Symbol("navierstokes_•17"), :DualForm1), (Symbol("navierstokes_•18"), :Form1), (Symbol("navierstokes_•19"), :Form1), (Symbol("navierstokes_•20"), :Form1), (:navierstokes_sum_2, :Form0), (Symbol("navierstokes_•21"), :Form1), (Symbol("navierstokes_•22"), :Form1), (Symbol("navierstokes_•23"), :DualForm2)]
 
   @test issetequal(names_types_hx, names_types_expected_hx)
 
@@ -922,10 +929,10 @@ end
     vcat(bespoke_op2_res_rules, op2_res_rules_2D))
 
   op1s_hx = HeatXfer[:op1]
-  op1s_expected_hx = [:d₀, :⋆₁, :dual_d₁, :⋆₀⁻¹, :avg, :R₀, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ, :avg, :neg, :avg, :Δ₁, :δ₁, :d₀, :d₀, :avg, :d₀, :neg, :avg, :∂ₜ, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ]
+  op1s_expected_hx = [:d₀, :⋆₁, :dual_d₁, :⋆₀⁻¹, :avg, :R₀, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ, :avg, :⋆₁, :neg, :avg, :Δ₁, :δ₁, :d₀, :⋆₁, :d₀, :avg, :d₀, :neg, :avg, :∂ₜ, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ]
   @test op1s_hx == op1s_expected_hx
   op2s_hx = HeatXfer[:op2]
-  op2s_expected_hx = [:*, :/, :/, :L₀, :/, :L₁′, :*, :/, :*, :i₁, :/, :*, :*, :L₀]
+  op2s_expected_hx = [:*, :/, :/, :L₀, :/, :L₁, :*, :/, :*, :i₁, :/, :*, :*, :L₀]
   @test op2s_hx == op2s_expected_hx
 end
 

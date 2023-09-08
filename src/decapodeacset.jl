@@ -316,15 +316,15 @@ op2_inf_rules_1D = [
   (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, op_names = [:∧, :∧₀₁]),
 
   # Rules for L₀, L₁
-  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form0, op_names = [:L, :L₀]),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, op_names = [:L, :L₁]),    
+  (proj1_type = :Form1, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [:L, :L₀]),
+  (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:L, :L₁]),    
 
   # Rules for i₁
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form0, op_names = [:i, :i₁]),
+  (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm0, op_names = [:i, :i₁]),
 
   # Rules for divison and multiplication
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:./, :.*]),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, op_names = [:./, :.*]),
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
 
   # WARNING: This parameter type inference might be wrong, depending on what the user gives as a parameter
   #= (proj1_type = :Parameter, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
@@ -335,12 +335,18 @@ op2_inf_rules_1D = [
   (proj1_type = :Form1, proj2_type = :Parameter, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*]),=#
   
-  (proj1_type = :Literal, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Literal, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  
   (proj1_type = :Form0, proj2_type = :Literal, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Form1, proj2_type = :Literal, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
   
+  (proj1_type = :DualForm0, proj2_type = :Literal, res_type = :DualForm0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :DualForm1, proj2_type = :Literal, res_type = :DualForm1, op_names = [:/, :./, :*, :.*]),
+
+  (proj1_type = :Literal, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Literal, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
+
+  (proj1_type = :Literal, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Literal, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:/, :./, :*, :.*]),
+
   (proj1_type = :Constant, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Constant, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Form0, proj2_type = :Constant, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
@@ -387,7 +393,10 @@ op1_inf_rules_2D = [
   # Rules for negation
   (src_type = :Form0, tgt_type = :Form0, op_names = [:neg, :(-)]),
   (src_type = :Form1, tgt_type = :Form1, op_names = [:neg, :(-)]),
-  (src_type = :Form2, tgt_type = :Form2, op_names = [:neg, :(-)])]
+  (src_type = :Form2, tgt_type = :Form2, op_names = [:neg, :(-)]),
+  (src_type = :DualForm0, tgt_type = :DualForm0, op_names = [:neg, :(-)]),
+  (src_type = :DualForm1, tgt_type = :DualForm1, op_names = [:neg, :(-)]),
+  (src_type = :DualForm2, tgt_type = :DualForm2, op_names = [:neg, :(-)])]
     
 op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   # Rules for ∧₁₁, ∧₂₀, ∧₀₂
@@ -395,13 +404,11 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, op_names = [:∧, :∧₂₀]),
   (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, op_names = [:∧, :∧₀₂]),
 
-  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:L]),    
-
   # Rules for L₂
-  (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form2, op_names = [:L, :L₂]),    
+  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:L, :L₂]),    
 
   # Rules for i₁
-  (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form1, op_names = [:i, :i₁]),
+  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm1, op_names = [:i, :i₂]),
   
   # Rules for subtraction
   (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:-, :.-]),
@@ -412,9 +419,12 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   (proj1_type = :DualForm2, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:-, :.-]),
 
   # Rules for divison and multiplication
-  (proj1_type = :Form2, proj2_type = :Form2, res_type = :Form2, op_names = [:./, :.*]),
+  (proj1_type = :Form2, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Literal, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form2, proj2_type = :Literal, res_type = :Form2, op_names = [:/, :./, :*, :.*])])
+  (proj1_type = :Form2, proj2_type = :Literal, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :DualForm2, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Literal, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :DualForm2, proj2_type = :Literal, res_type = :DualForm2, op_names = [:/, :./, :*, :.*])])
   
 function apply_inference_rule_op1!(d::SummationDecapode, op1_id, rule)
   type_src = d[d[op1_id, :src], :type]
@@ -577,10 +587,10 @@ op2_res_rules_1D = [
   (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = :∧),
   (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, resolved_name = :∧₀₁, op = :∧),
   # Rules for L.
-  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form0, resolved_name = :L₀, op = :L),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, resolved_name = :L₁, op = :L),
+  (proj1_type = :Form1, proj2_type = :DualForm0, res_type = :DualForm0, resolved_name = :L₀, op = :L),
+  (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm1, resolved_name = :L₁, op = :L),
   # Rules for i.
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form0, resolved_name = :i₁, op = :i)]
+  (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm0, resolved_name = :i₁, op = :i)]
 
 
 """
@@ -619,10 +629,10 @@ op2_res_rules_2D = vcat(op2_res_rules_1D, [
   (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :∧),
   (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :∧),
   # Rules for L.
-  (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form2, resolved_name = :L₂, op = :L),
-  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₂ᵈ, op = :L),
+  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₂, op = :L),
+  # (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₂ᵈ, op = :L),
   # Rules for i.
-  (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form1, resolved_name = :i₂, op = :i)])
+  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm1, resolved_name = :i₂, op = :i)])
   
 """    function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
 

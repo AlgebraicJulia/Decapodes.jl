@@ -54,7 +54,7 @@ function generate(sd, my_symbol)
     :⋆₁ => test_hodge(1, sd, DiagonalHodge())
     :⋆₀⁻¹ => test_inverse_hodge(0, sd, DiagonalHodge())
     :dual_d₁ => test_dual_differential(1, sd)
-    _ => default_dec_generate(sd, my_symbol)
+    _ => default_dec_generate_2D(sd, my_symbol)
   end
   return (args...) ->  op(args...)
 end
@@ -201,7 +201,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
       :dual_d₁ => test_dual_differential(1, sd)  
       :(-) => x-> -x
       :plus => (+)
-      _ => default_dec_generate(sd, my_symbol, hodge)
+      _ => default_dec_generate_2D(sd, my_symbol, hodge)
     end
 
     return (args...) ->  op(args...)
@@ -244,6 +244,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
         d₀ = generate(mesh, :d₀)
         k = generate(mesh, :k)
         (⋆₁) = generate(mesh, :⋆₁)
+        (⋆₀) = generate(mesh, :⋆₀)
         (-) = generate(mesh, :-)
         dual_d₁ = generate(mesh, :dual_d₁)
         (⋆₀⁻¹) = generate(mesh, :⋆₀⁻¹)
@@ -312,7 +313,7 @@ end
   function generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
       :Δ₀ => test_laplace_de_rham(0, sd)
-      _ => default_dec_generate(sd, my_symbol, hodge)
+      _ => default_dec_generate_2D(sd, my_symbol, hodge)
     end
 
     return (args...) ->  op(args...)

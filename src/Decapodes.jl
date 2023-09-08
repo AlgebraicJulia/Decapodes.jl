@@ -23,7 +23,7 @@ export normalize_unicode, DerivOp, append_dot,
   Open, OpenSummationDecapodeOb, OpenSummationDecapode, unique_by, unique_by!, oapply,
   CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat,
   average_rewrite, recursive_delete_parents, contract_operators,
-  default_dec_matrix_generate, default_dec_generate, 
+  default_dec_matrix_generate, default_dec_generate, default_dec_generate_1D, default_dec_generate_2D,
   @decapode
 
 normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)

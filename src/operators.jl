@@ -89,9 +89,6 @@ function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
         :∧₁₀ => dec_wedge_product(Tuple{1, 0}, sd)
         :∧₁₁ => dec_wedge_product(Tuple{1, 1}, sd)
 
-        # Lie Derivative 0
-        :L₀ => dec_lie_derivative_zero(sd, hodge)
-
         _ => default_dec_matrix_generate(sd, my_symbol, hodge)
     end
 
@@ -403,5 +400,3 @@ function dec_lie_derivative_two_2D(sd::HasDeltaSet, hodge)
     
     (X, α) -> dual_d1(interior_d2_p1(α, X))
 end
-
-
