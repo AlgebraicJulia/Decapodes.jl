@@ -44,6 +44,8 @@ function dec_mat_hodge(k, sd::HasDeltaSet, hodge)
     return (hodge, x-> hodge * x)
 end
 
+# TODO: Need to figure how to handle inverse hodge on
+# DualForm1 in 2D due to it needing to take a matrix inverse
 function dec_mat_inverse_hodge(k, sd::HasDeltaSet, hodge)
     invhodge = inv_hodge_star(k,sd,hodge)
     return (invhodge, x-> invhodge * x)
@@ -171,7 +173,7 @@ function dec_p_wedge_product_ones_safe(sd)
                  by=e -> sd[e,:D_∂v1] .== dual_vs, rev=true)[1:3]
         map(dual_es) do e
             sum(dual_volume(2, sd, incident(sd, e, :D_∂e1)))
-        end / volume(2, sd, x)
+        end / CombinatorialSpaces.volume(2, sd, x)
     end
   
     e0 = map(x -> ∂(2,0,sd,x), simples)
@@ -190,7 +192,7 @@ function dec_p_wedge_product_ones(sd)
         dual_es = incident(sd, triangle_center(sd, x), :D_∂v0)[4:6]
         map(dual_es) do e
             sum(dual_volume(2, sd, incident(sd, e, :D_∂e1)))
-        end / volume(2, sd, x)
+        end / CombinatorialSpaces.volume(2, sd, x)
     end
   
     e0 = map(x -> ∂(2,0,sd,x), simples)
@@ -241,7 +243,7 @@ function dec_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where k
     (f, β) -> dec_c_wedge_product_zero(f, β, val_pack)
 end
 
-function dec_wedge_product(::Type{Tuple{1,1}}, s::HasDeltaSet2D)
+function dec_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
     val_pack = dec_p_wedge_product_ones(sd)
     (α, β) -> dec_c_wedge_product_ones(α, β,val_pack)
 end
@@ -265,8 +267,8 @@ function dec_interior_product_1D(sd::HasDeltaSet, hodge)
     # Alpha is dual1, X is primal1
 
     # Takes alpha to primal0
-    M_invhodge1 = inv_hodge_star(1,sd,hodge)
-    invhodge1 = x -> M_invhodge1 * x
+    M_invhodge0 = inv_hodge_star(0,sd,hodge)
+    invhodge0 = x -> M_invhodge0 * x
 
     # Alpha is primal0 and X is primal1, res is primal1
     wedge01 = dec_wedge_product(Tuple{0, 1}, sd)
@@ -275,7 +277,7 @@ function dec_interior_product_1D(sd::HasDeltaSet, hodge)
     M_hodge1 = ⋆(1,sd,hodge)
     hodge1 = x -> M_hodge1 * x
 
-    (α, X) -> hodge1(wedge01(invhodge1(α), X))
+    (α, X) -> hodge1(wedge01(invhodge0(α), X))
 end
 
 function dec_lie_derivative_zero_1D(sd::HasDeltaSet, hodge)
@@ -325,25 +327,30 @@ function dec_interior_product_one_2D(sd::HasDeltaSet, hodge)
     # Alpha is dual1, X is primal1
 
     # Takes alpha to primal1
-    M_invhodge1 = inv_hodge_star(1,sd,hodge)
-    invhodge1 = x -> M_invhodge1 * x
+    if(hodge == GeometricHodge())
+        M_hodge1 = -1 .* hodge_star(1,sd,hodge)
+        invhodge1 = x -> (M_hodge1 \ x)
+    else
+        M_invhodge1 = inv_hodge_star(1,sd,hodge)
+        invhodge1 = x -> M_invhodge1 * x
+    end
 
     #Alpha term is primal1 and X are primal1, res is primal2
     wedge11 = dec_wedge_product(Tuple{1, 1}, sd)
 
     #Sends res to dual0
-    M_hodge2 = ⋆(2,sd,hodge)
+    M_hodge2 = -1 .* ⋆(2,sd,hodge)
     hodge2 = x -> M_hodge2 * x
 
-    (α, X) -> -(hodge2(wedge11(invhodge1(α), X)))
+    (α, X) -> hodge2(wedge11(invhodge1(α), X)) 
 end
 
 function dec_interior_product_two_2D(sd::HasDeltaSet, hodge)
     # Alpha is dual2, X is primal1
 
     # Takes alpha to primal0
-    M_invhodge2 = inv_hodge_star(2,sd,hodge)
-    invhodge2 = x -> M_invhodge2 * x
+    M_invhodge0 = inv_hodge_star(0,sd,hodge)
+    invhodge0 = x -> M_invhodge0 * x
 
     #Alpha term is primal0 and X are primal1, res is primal1
     wedge01 = dec_wedge_product(Tuple{0, 1}, sd)
@@ -352,7 +359,7 @@ function dec_interior_product_two_2D(sd::HasDeltaSet, hodge)
     M_hodge1 = ⋆(1,sd,hodge)
     hodge1 = x -> M_hodge1 * x
 
-    (α, X) -> hodge1(wedge01(invhodge2(α), X))
+    (α, X) -> hodge1(wedge01(invhodge0(α), X))
 end
 
 function dec_lie_derivative_zero_2D(sd::HasDeltaSet, hodge)
