@@ -30,6 +30,7 @@ Pkg.add("Interpolations")
 Pkg.add("Roots")
 Pkg.add("MAT")
 Pkg.add("CairoMakie")
+Pkg.add("TerminalLoggers")
 Pkg.resolve()
 begin # Dependencies
 # AlgebraicJulia
@@ -55,6 +56,9 @@ using MultiScaleArrays
 using OrdinaryDiffEq
 using Roots
 using SparseArrays
+using Logging: global_logger
+using TerminalLoggers: TerminalLogger
+global_logger(TerminalLogger())
 
 using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
@@ -70,10 +74,14 @@ MAX_r = 400.0e3 # [m]
 MAX_Z = 100.0e3 # [m]
 
 include("../grid_meshes.jl")
-s = triangulated_grid(400.0e3, 100.0e3, 100e2, 100e2, Point3D)
+#s = triangulated_grid(400.0e3, 100.0e3, 100e2, 100e2, Point3D)
+#s = triangulated_grid(400.0e3, 100.0e3, 100e1, 100e1, Point3D)
+s = triangulated_grid(400.0e3, 100.0e3, 500e1, 500e1, Point3D)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Circumcenter())
 nv(s), ne(s), ntriangles(s)
+#wireframe(s)
+#wireframe(sd)
 
 end # Load the Mesh
 
@@ -273,7 +281,7 @@ Heidler = @decapode begin
   J == (Z .≤ a) .* J₀ .* exp(-1.0 .* ρ .^ 2 / ρ₀ .^ 2) +
        (Z .> a) .* J₀ .* exp((-1.0 * ρ .^ 2 / ρ₀^2) - ((Z .- a) .^ 2 / z₀^2))
 end
-to_graphviz(Heidler)
+#to_graphviz(Heidler)
 
 end # Heidler Model
 
@@ -320,51 +328,34 @@ Veronis = @decapode begin
   (ρ_e, ρ_gas, Tn)::Form0{X}
   # Note: You just need σ for updating E, no need to recalculate on the other
   # time step.
-  # TODO: Maybe define this as a Form0 to avoid the odd concept of integrated
-  # conductivity.
   σ::Form1{X}
   (qₑ,c,ε₀)::Constant{X}
 
   # See Veronis et al. Equations 1 & 2
-  #Ė == -(J - σ .* E)./ε₀ + (c^2).*(⋆₁⁻¹(d̃₀(B)))
-  #Ė == -(J - σ .* E)./ε₀ + (c^2).*(⋆₀⁻¹(d̃₁(B)))
-  #Ė == -1 * (J - σ .* E)./ε₀ + (c^2).*(⋆₀⁻¹(d̃₁(B)))
-#  Ė == -1 * (J - σ .* E)./ε₀ + (c^2).*(⋆₁⁻¹(d̃₁(B)))
   Ė == -1 * (J - σ .* E)./ε₀ + ((c^2) .* ⋆(d(B)))
   Ė == ∂ₜ(E)
 
   # See Veronis et al. Equation 3
-#  Ḃ == ⋆₂(d₁(E))
   Ḃ == ⋆(d(E))
   Ḃ == ∂ₜ(B)
 
   # See Kotovsky pp. 91: theta = E/n
-  # Note: Updating θ with E means we are using the nonlinear model. i.e. We
-  # consider electron temperature variation and species density variation.
-  # Note: θ is used as a sort of "threshold" determining whether certain
-  # reactions will occur.
-  #θ == (1e21/1e6) .* ⋆(∧ᵖᵈ(E, ⋆(E))) ./ ρ_gas
-  #θ == (1e21/1e6) .* ⋆₀⁻¹(∧ᵖᵈ(E, ⋆₁(E))) ./ ρ_gas
-#  θ == (1e21/1e6) .* ⋆₀⁻¹(∧ᵖᵈ(E, ⋆(E))) ./ ρ_gas
   θ == (1e21/1e6) .* mag(♯(E)) ./ ρ_gas
 
   # Note: There may be a way to perform masking more efficiently,  while still
   # using the "programming language of PDEs."
   Eq5_2a_mask == .>(θ, (0.0603 * sqrt(200 ./ Tn)))
-  #Eq5_2b_mask == invert_mask(Eq5_2a_mask)
   Eq5_2b_mask == .≤(θ, (0.0603 * sqrt(200 ./ Tn)))
   # See Kotovsky pp. 92 5-2a
   Eq5_2a == qₑ * ρ_e ./ ρ_gas *
     (10 .^ ( 50.97 + (3.026 * log10( 1e-21*θ )) + (8.4733e-2 * (log10( 1e-21*θ ) .^ 2))))
   # See Kotovsky pp. 92 5-2b
-  #Eq5_2b == qₑ * 3.656e25 * ρ_e ./ ρ_gas .* sqrt(200.0 ./ Tn)
   Eq5_2b == qₑ * 3.656e25 * ρ_e ./ ρ_gas .* sqrt(200.0 ./ Tn)
-
 
   σ == avg₀₁((Eq5_2a_mask .*  Eq5_2a) + (Eq5_2b_mask .*  Eq5_2b))
 end
-to_graphviz(Veronis)
-to_graphviz(resolve_overloads!(infer_types!(Veronis)))
+#to_graphviz(Veronis)
+#to_graphviz(resolve_overloads!(infer_types!(Veronis)))
 end # Veronis
 
 ################################################
@@ -452,14 +443,14 @@ end # Model Composition
 #########################
 begin # Simulation Generation
 
-sim = eval(gensim(lightning))
-fₘ = sim(sd, generate)
+#sim = eval(gensim(lightning))
+#fₘ = sim(sd, generate)
 
-open("./generated_lightning_sim.jl", "w") do file
-  write(file, string(gensim(lightning)))
-end
-sim = include(eval, "../../generated_lightning_sim.jl")
-#sim = include("../../generated_lightning_sim.jl")
+#open("./generated_lightning_sim.jl", "w") do file
+#  write(file, string(gensim(lightning)))
+#end
+##sim = include(eval, "../../generated_lightning_sim.jl")
+sim = include("../../generated_lightning_sim.jl")
 fₘ = sim(sd, generate)
 
 end
@@ -470,7 +461,6 @@ end
 
 #tₑ = 200e-6 # [s]
 #tₑ = 1.334e-3 # [s] # How long it takes light to travel 400 km in a vacuum.
-## TODO: Do I need to add {isinplace}?
 #prob = DynamicalODEProblem(primal_f, dual_f, v₀, u₀, (0, tₑ), constants_and_parameters)
 ## TODO: Pick a dt.
 #solve(prob, VerletLeapfrog())
@@ -541,32 +531,74 @@ findnode(u₀, :Veronis_B)
 findnode(du₀, :Veronis_B)
 mesh(s, color=findnode(u₀, :Chemistry_ρ_O))
 mesh(s, color=findnode(du₀, :Chemistry_ρ_O))
-extrema(findnode(u₀, :Chemistry_ρ_O))
+extrema(densities[:e])
+extrema(findnode(u₀, :ρ_e))
+extrema(findnode(u₀, :ρ_e) .- densities[:e])
 extrema(findnode(du₀, :Chemistry_ρ_O))
 
-#prob = ODEProblem(f, u₀, (0, 1e-9), constants_and_parameters)
 prob = ODEProblem(fₘ, u₀, (0, 1e-9), constants_and_parameters)
-soln = solve(prob, Tsit5())
-prob = ODEProblem(fₘ, u₀, (0, 10e-6), constants_and_parameters)
-soln = solve(prob, Tsit5())
+soln = solve(prob, Tsit5(), progress=true, progress_steps=1)
+prob = ODEProblem{true}(fₘ, u₀, (0, 200e-6 * .49), constants_and_parameters)
+prob = ODEProblem(fₘ, u₀, (0, 200e-6 * .60), constants_and_parameters)
+soln = solve(prob, Tsit5(), progress=true, progress_steps=1)
+
+prob = ODEProblem(fₘ, u₀, (0, 10e-9), constants_and_parameters)
+soln = solve(prob, ORK256(), dt=1e-10, progress=true, progress_steps=1)
+
+using JLD2
+@save "lightning_9p8em5.jld2" soln
 
 # This is divergence of the E field. i.e. ⋆d⋆(E)
-plot_div(t) = mesh(s, color=inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E))
+plot_div(t) = mesh(s, color=inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E), colorrange=extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(200e-6 * .49), :Veronis_E)))
+plot_div(t) = mesh(s, color=inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E), colorrange=(-0.00000000001, 0.000000000001))
+#plot_div(t) = mesh(s, color=inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E), colorrange=extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E)))
+#extrema_div(t) = extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E)))
 
+plot_div(0)
+plot_div(5e-6)
 plot_div(10e-6)
+plot_div(80e-6)
+plot_div(200e-6 * .49)
+extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(80e-6), :Veronis_E))
+extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(200e-6 * .49), :Veronis_E))
+
+extrema(findnode(soln(0), :Veronis_E))
+extrema(findnode(soln(10e-6), :Veronis_E))
+extrema(findnode(soln(200e-6 * .49), :Veronis_E))
+
+mesh(s, color=findnode(soln(0), :ρ_e))
+mesh(s, color=findnode(soln(200e-6 * .49), :ρ_e))
+mesh(s, color=findnode(soln(200e-6 * .49), :ρ_e) .- findnode(soln(0), :ρ_e))
+extrema(findnode(soln(0), :ρ_e))
+extrema(findnode(soln(200e-6 * .49), :ρ_e))
+extrema(findnode(soln(200e-6 * .49), :ρ_e) .- findnode(soln(0), :ρ_e))
+
+mesh(s, color=findnode(soln(0), :Chemistry_ρ_O))
+mesh(s, color=findnode(soln(200e-6 * .49), :Chemistry_ρ_O))
+mesh(s, color=findnode(soln(200e-6 * .49), :Chemistry_ρ_O) .- findnode(soln(0), :Chemistry_ρ_O))
+extrema(findnode(soln(0), :Chemistry_ρ_O))
+extrema(findnode(soln(200e-6 * .49), :Chemistry_ρ_O))
+extrema(findnode(soln(200e-6 * .49), :Chemistry_ρ_O) .- findnode(soln(0), :Chemistry_ρ_O))
+
+extrema(norm.(♯(sd, EForm(findnode(soln(200e-6 * .49), :Veronis_E)))))
+CairoMakie.arrows(point(s), ♯(sd, EForm(findnode(soln(200e-6 * .49), :Veronis_E))), lengthscale=1e3)
+f,a,o = mesh(s, color=norm.(♯(sd, EForm(findnode(soln(200e-6 * .49), :Veronis_E)))), colorrange=(0,1e-40))
+#title(a, "Magnitude of E at 9.8e-5 [s], capped at (0,1e-40)")
 
 extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(1e-6), :Veronis_E))
 extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(10e-6), :Veronis_E))
 
 function find_max_x_nonzero(form)
   max_x = 0
-  for (i,p) in enumerate(dual_point(sd))
+  #for (i,p) in enumerate(dual_point(sd))
+  for (i,p) in enumerate(point(sd))
     if form[i] != 0
       max_x = p[1]
     end
   end
+  max_x
 end
-find_max_x_nonzero(findnode())
+find_max_x_nonzero(findnode(soln(200e-6 * .49), :ρ_e))
 
 findnode(soln(0), :Veronis_B) |> print
 findnode(soln(1e-6), :Veronis_B) |> print
@@ -651,198 +683,6 @@ u₀ = construct(PhysicsState,
     ])
 prob = ODEProblem(f, u₀, (0, 1e-9), constants_and_parameters)
 solve(prob, Tsit5())
-
-function simulate(mesh, operators, hodge = GeometricHodge())
-  #= c:\Users\lukel\Prgming\Decapodes.jl\src\simulation.jl:427 =#
-  #= c:\Users\lukel\Prgming\Decapodes.jl\src\simulation.jl:428 =#
-  begin
-      #= c:\Users\lukel\Prgming\Decapodes.jl\src\simulation.jl:155 =#
-      (M_dual_d₀, dual_d₀) = default_dec_matrix_generate(mesh, :dual_d₀, hodge)
-      (var"M_⋆₁⁻¹", ⋆₁⁻¹) = default_dec_matrix_generate(mesh, :⋆₁⁻¹, hodge)
-      (M_d₁, d₁) = default_dec_matrix_generate(mesh, :d₁, hodge)
-      (var"M_⋆₂", ⋆₂) = default_dec_matrix_generate(mesh, :⋆₂, hodge)
-      (var"M_⋆₁", ⋆₁) = default_dec_matrix_generate(mesh, :⋆₁, hodge)
-      (var"M_⋆₀⁻¹", ⋆₀⁻¹) = default_dec_matrix_generate(mesh, :⋆₀⁻¹, hodge)
-      exp = operators(mesh, :exp)
-      sqrt = operators(mesh, :sqrt)
-      log10 = operators(mesh, :log10)
-      avg₀₁ = operators(mesh, :avg₀₁)
-      #(.^) = operators(mesh, :.^)
-      #(^) = operators(mesh, :^)
-      #(.>) = operators(mesh, :.>)
-      #(.≤) = operators(mesh, :.≤)
-      (∧ᵖᵈ) = operators(mesh, :∧ᵖᵈ)
-  end
-  #= c:\Users\lukel\Prgming\Decapodes.jl\src\simulation.jl:429 =#
-  begin
-      #= c:\Users\lukel\Prgming\Decapodes.jl\src\simulation.jl:214 =#
-      var"Veronis_•8" = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Veronis_•7" = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Veronis_•9" = Vector{Float64}(undef, nparts(mesh, :Tri))
-      Veronis_Ḃ = Vector{Float64}(undef, nparts(mesh, :Tri))
-      var"Veronis_•16" = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Heidler_•2" = Vector{Float64}(undef, nparts(mesh, :E))
-      Heidler_tret = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Heidler_•4" = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Heidler_•17" = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Heidler_•16" = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Veronis_•5" = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Veronis_•19" = Vector{Float64}(undef, nparts(mesh, :V))
-      var"Veronis_•22" = Vector{Float64}(undef, nparts(mesh, :V))
-      var"Veronis_•25" = Vector{Float64}(undef, nparts(mesh, :V))
-      var"Veronis_•24" = Vector{Float64}(undef, nparts(mesh, :V))
-      var"Veronis_•11" = Vector{Float64}(undef, nparts(mesh, :V))
-      Veronis_θ = Vector{Float64}(undef, nparts(mesh, :V))
-      var"Veronis_•29" = Vector{Float64}(undef, nparts(mesh, :V))
-      var"Veronis_•33" = Vector{Float64}(undef, nparts(mesh, :V))
-      J = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Veronis_•4" = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Veronis_•3" = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Veronis_•2" = Vector{Float64}(undef, nparts(mesh, :E))
-      var"Veronis_•1" = Vector{Float64}(undef, nparts(mesh, :E))
-      Veronis_Ė = Vector{Float64}(undef, nparts(mesh, :E))
-  end
-  #= c:\Users\lukel\Prgming\Decapodes.jl\src\simulation.jl:430 =#
-  f(du, u, p, t) = begin
-          #= c:\Users\lukel\Prgming\Decapodes.jl\src\simulation.jl:430 =#
-          #= c:\Users\lukel\Prgming\Decapodes.jl\src\simulation.jl:431 =#
-          begin
-              #= c:\Users\lukel\Prgming\Decapodes.jl\src\simulation.jl:236 =#
-              Heidler_Z = (findnode(u, :Heidler_Z)).values
-              Heidler_ρ = (findnode(u, :Heidler_ρ)).values
-              Heidler_τ₁ = p.Heidler_τ₁
-              Heidler_τ₂ = p.Heidler_τ₂
-              Heidler_I₀ = p.Heidler_I₀
-              Heidler_v = p.Heidler_v
-              Heidler_n = p.Heidler_n
-              Heidler_a = p.Heidler_a
-              Heidler_η = p.Heidler_η
-              Heidler_z₀ = p.Heidler_z₀
-              Heidler_π = p.Heidler_π
-              Heidler_ρ₀ = p.Heidler_ρ₀
-              Heidler_t = p.Heidler_t(t)
-              Veronis_B = (findnode(u, :Veronis_B)).values
-              Veronis_E = (findnode(u, :Veronis_E)).values
-              Veronis_ρ_e = (findnode(u, :Veronis_ρ_e)).values
-              Veronis_ρ_gas = (findnode(u, :Veronis_ρ_gas)).values
-              Veronis_Tn = (findnode(u, :Veronis_Tn)).values
-              Veronis_qₑ = p.Veronis_qₑ
-              Veronis_c = p.Veronis_c
-              Veronis_ε₀ = p.Veronis_ε₀
-              var"1.0" = 1.0
-              var"2" = 2.0
-              var"1" = 1.0
-              var"-1" = -1.0
-              var"0" = 0.0
-              var"-1.0" = -1.0
-              var"-1" = -1.0
-              var"2" = 2.0
-              var"3.656e25" = 3.656e25
-              var"1.0e21" = 1.0e21
-              var"1.0e6" = 1.0e6
-              var"200.0" = 200.0
-              var"0.0603" = 0.0603
-              var"200" = 200.0
-              var"10" = 10.0
-              var"50.97" = 50.97
-              var"3.026" = 3.026
-              var"1.0e-21" = 1.0e-21
-              var"0.084733" = 0.084733
-              @show Heidler_t
-          end
-          #= c:\Users\lukel\Prgming\Decapodes.jl\src\simulation.jl:432 =#
-          mul!(var"Veronis_•8", M_dual_d₀, Veronis_B)
-          mul!(var"Veronis_•7", var"M_⋆₁⁻¹", var"Veronis_•8")
-          mul!(var"Veronis_•9", M_d₁, Veronis_E)
-          mul!(Veronis_Ḃ, var"M_⋆₂", var"Veronis_•9")
-          mul!(var"Veronis_•16", var"M_⋆₁", Veronis_E)
-          var"Heidler_•2" .= Heidler_Z ./ Heidler_v
-          Heidler_tret .= Heidler_t .- var"Heidler_•2"
-          var"Heidler_•4" .= Heidler_tret ./ Heidler_τ₁
-          Heidler_temp = var"Heidler_•4" .^ Heidler_n
-          var"Heidler_•13" = Heidler_ρ₀ ^ var"2"
-          var"Heidler_•12" = Heidler_π .* var"Heidler_•13"
-          var"Heidler_•11" = var"1.0" / var"Heidler_•12"
-          var"Heidler_•10" = var"Heidler_•11" .* Heidler_I₀
-          var"Heidler_•9" = var"Heidler_•10" / Heidler_η
-          var"Heidler_•8" = var"Heidler_•9" .* Heidler_temp
-          var"Heidler_•14" = var"1" .+ Heidler_temp
-          var"Heidler_•7" = var"Heidler_•8" ./ var"Heidler_•14"
-          var"Heidler_•17" .= var"-1" .* Heidler_tret
-          var"Heidler_•16" .= var"Heidler_•17" ./ Heidler_τ₂
-          var"Heidler_•18" = Heidler_tret .> var"0"
-          var"Heidler_•21" = Heidler_Z .≤ Heidler_a
-          var"Heidler_•25" = Heidler_ρ .^ var"2"
-          var"Heidler_•24" = var"-1.0" .* var"Heidler_•25"
-          var"Heidler_•26" = Heidler_ρ₀ .^ var"2"
-          var"Heidler_•23" = var"Heidler_•24" / var"Heidler_•26"
-          var"Heidler_•29" = Heidler_Z .> Heidler_a
-          var"Heidler_•34" = Heidler_ρ .^ var"2"
-          var"Heidler_•33" = var"-1.0" .* var"Heidler_•34"
-          var"Heidler_•35" = Heidler_ρ₀ ^ var"2"
-          var"Heidler_•32" = var"Heidler_•33" / var"Heidler_•35"
-          var"Heidler_•3" = Heidler_Z .- Heidler_a
-          var"Heidler_•1" = var"Heidler_•3" .^ var"2"
-          var"Heidler_•5" = Heidler_z₀ ^ var"2"
-          var"Heidler_•36" = var"Heidler_•1" / var"Heidler_•5"
-          var"Heidler_•31" = var"Heidler_•32" .- var"Heidler_•36"
-          var"Veronis_•6" = Veronis_c ^ var"2"
-          var"Veronis_•5" .= var"Veronis_•6" .* var"Veronis_•7"
-          var"Veronis_•13" = var"1.0e21" / var"1.0e6"
-          var"Veronis_•15" = Veronis_E ∧ᵖᵈ var"Veronis_•16"
-          var"Veronis_•19" .= var"200" ./ Veronis_Tn
-          var"Veronis_•22" .= var"200" ./ Veronis_Tn
-          var"Veronis_•25" .= Veronis_qₑ .* Veronis_ρ_e
-          var"Veronis_•24" .= var"Veronis_•25" ./ Veronis_ρ_gas
-          Veronis_mult_1 = Veronis_qₑ .* var"3.656e25"
-          Veronis_mult_2 = Veronis_mult_1 .* Veronis_ρ_e
-          var"Veronis_•35" = Veronis_mult_2 ./ Veronis_ρ_gas
-          var"Veronis_•11" .= var"200.0" ./ Veronis_Tn
-          var"Heidler_•15" = exp(var"Heidler_•16")
-          var"Heidler_•22" = exp(var"Heidler_•23")
-          var"Heidler_•30" = exp(var"Heidler_•31")
-          var"Veronis_•14" = (⋆₀⁻¹)(var"Veronis_•15")
-          var"Veronis_•18" = sqrt(var"Veronis_•19")
-          var"Veronis_•21" = sqrt(var"Veronis_•22")
-          var"Veronis_•10" = sqrt(var"Veronis_•11")
-          var"Heidler_•6" = var"Heidler_•7" .* var"Heidler_•15"
-          Heidler_J₀ = var"Heidler_•6" .* var"Heidler_•18"
-          var"Heidler_•20" = var"Heidler_•21" .* Heidler_J₀
-          var"Heidler_•19" = var"Heidler_•20" .* var"Heidler_•22"
-          var"Heidler_•28" = var"Heidler_•29" .* Heidler_J₀
-          var"Heidler_•27" = var"Heidler_•28" .* var"Heidler_•30"
-          var"Veronis_•12" = var"Veronis_•13" .* var"Veronis_•14"
-          Veronis_θ .= var"Veronis_•12" ./ Veronis_ρ_gas
-          var"Veronis_•17" = var"0.0603" .* var"Veronis_•18"
-          Veronis_Eq5_2a_mask = Veronis_θ .> var"Veronis_•17"
-          var"Veronis_•20" = var"0.0603" .* var"Veronis_•21"
-          Veronis_Eq5_2b_mask = Veronis_θ .≤ var"Veronis_•20"
-          var"Veronis_•29" .= var"1.0e-21" .* Veronis_θ
-          var"Veronis_•33" .= var"1.0e-21" .* Veronis_θ
-          Veronis_Eq5_2b = var"Veronis_•35" .* var"Veronis_•10"
-          var"Veronis_•34" = Veronis_Eq5_2b_mask .* Veronis_Eq5_2b
-          J .= (.+)(var"Heidler_•19", var"Heidler_•27")
-          var"Veronis_•28" = log10(var"Veronis_•29")
-          var"Veronis_•32" = log10(var"Veronis_•33")
-          var"Veronis_•27" = var"3.026" .* var"Veronis_•28"
-          var"Veronis_•31" = var"Veronis_•32" .^ var"2"
-          var"Veronis_•30" = var"0.084733" .* var"Veronis_•31"
-          Veronis_sum_2 = (.+)(var"50.97", var"Veronis_•27", var"Veronis_•30")
-          var"Veronis_•26" = var"10" .^ Veronis_sum_2
-          Veronis_Eq5_2a = var"Veronis_•24" .* var"Veronis_•26"
-          var"Veronis_•23" = Veronis_Eq5_2a_mask .* Veronis_Eq5_2a
-          Veronis_sum_1 = (.+)(var"Veronis_•23", var"Veronis_•34")
-          Veronis_σ = avg₀₁(Veronis_sum_1)
-          var"Veronis_•4" .= Veronis_σ .* Veronis_E
-          var"Veronis_•3" .= J .- var"Veronis_•4"
-          var"Veronis_•2" .= var"-1" .* var"Veronis_•3"
-          var"Veronis_•1" .= var"Veronis_•2" ./ Veronis_ε₀
-          Veronis_Ė .= (.+)(var"Veronis_•1", var"Veronis_•5")
-          #= c:\Users\lukel\Prgming\Decapodes.jl\src\simulation.jl:433 =#
-          (findnode(du, :Veronis_E)).values .= Veronis_Ė
-          (findnode(du, :Veronis_B)).values .= Veronis_Ḃ
-      end
-end
 
 constants_and_parameters = (
   #mₑ = mₑ,
