@@ -111,7 +111,7 @@ end
 function dec_c_wedge_product_zero_one(f, α, val_pack)
     primal_vertices, simples = val_pack
 
-    wedge_terms = zeros(simples)
+    wedge_terms = zeros(last(simples))
     @inbounds for i in simples
         wedge_terms[i] += f[primal_vertices[i][1]] + f[primal_vertices[i][2]]
     end
@@ -151,7 +151,7 @@ function dec_c_wedge_product_zero(f, α, val_pack)
     # the width at every step or if we can just compute it once.
     # all(map(x -> length(coeffs[x]), simples) .== length(coeffs[1]))
     width_iter = 1:length(coeffs[1])
-    wedge_terms = zeros(simples)
+    wedge_terms = zeros(last(simples))
 
     @inbounds for i in simples
         for j in width_iter
@@ -205,7 +205,7 @@ end
 function dec_c_wedge_product_ones(α, β, val_pack)
     e0, e1, e2, coeffs, simples = val_pack
 
-    wedge_terms = zeros(simples)
+    wedge_terms = zeros(last(simples))
 
     @inbounds for i in simples
         ae0, ae1, ae2 = α[e0[i]], α[e1[i]], α[e2[i]]
