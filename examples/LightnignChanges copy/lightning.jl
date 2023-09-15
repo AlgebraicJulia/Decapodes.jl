@@ -1,5 +1,3 @@
-# TODO: Make parameters to be adjusted obvious/ top-level.
-
 ##############
 # References #
 ##############
@@ -45,9 +43,9 @@ using Decapodes
 # External Dependencies
 using Base.MathConstants: e, π
 using Distributions
-#using GLMakie
 using CairoMakie
 using Interpolations
+using JLD2
 using LinearAlgebra
 using Logging
 using MAT
@@ -74,14 +72,12 @@ MAX_r = 400.0e3 # [m]
 MAX_Z = 100.0e3 # [m]
 
 include("../grid_meshes.jl")
-#s = triangulated_grid(400.0e3, 100.0e3, 100e2, 100e2, Point3D)
-#s = triangulated_grid(400.0e3, 100.0e3, 100e1, 100e1, Point3D)
 s = triangulated_grid(400.0e3, 100.0e3, 500e1, 500e1, Point3D)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Circumcenter())
 nv(s), ne(s), ntriangles(s)
-#wireframe(s)
-#wireframe(sd)
+wireframe(s, linewidth=1/2)
+wireframe(sd, linewidth=1/2)
 
 end # Load the Mesh
 
@@ -93,6 +89,16 @@ begin # Operators
 include("./operators.jl")
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
+  star0_mat = ⋆(0,sd,hodge=hodge)
+  star1_mat = ⋆(1, sd, hodge=hodge)
+  star2_mat = ⋆(2, sd, hodge=hodge)
+  invstar0_mat = inv_hodge_star(0, sd, hodge=hodge)
+  invstar1_mat = inv_hodge_star(1, sd, hodge=hodge)
+  d1_mat = d(1,sd)
+  duald0_mat = dual_derivative(0,sd)
+  avg_mat = avg₀₁(sd)
+  below_60_mask = map(x -> x[2] < 60*1000, sd[:point])
+  sharp_mat = ♯_mat(sd, DiscreteExteriorCalculus.AltPPSharp())
   op = @match my_symbol begin
     :⋆ => x -> begin
       error("Uninferred hodge star")
@@ -102,35 +108,27 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     end
     :⋆₀ => x -> begin
       # We create a local mat variable as a hint for Julia to cache it.
-      mat = ⋆(0,sd,hodge=hodge)
-      mat*x
+      star0_mat*x
     end
     :⋆₁ => x -> begin
-      mat = ⋆(1, sd, hodge=hodge)
-      mat*x
+      star1_mat*x
     end
     :⋆₂ => x -> begin
-      mat = ⋆(2, sd, hodge=hodge)
-      mat*x
+      star2_mat*x
     end
     :⋆₀⁻¹ => x -> begin 
-      mat = inv_hodge_star(0, sd, hodge=hodge)
-      mat*x
+      invstar0_mat*x
     end
     :⋆₁⁻¹ => x -> begin
-      mat = inv_hodge_star(1, sd, hodge=hodge)
-      mat*x
+      invstar1_mat*x
     end
     :d₁ => x -> begin
-      mat = d(1,sd)
-      mat*x
+      d1_mat*x
     end
     :d̃₀ => x -> begin
-      mat = dual_derivative(0,sd)
-      mat*x
+      duald0_mat*x
     end
     :avg₀₁ => x -> begin
-      avg_mat = avg₀₁(sd)
       avg_mat*x
     end
     :exp => x -> begin
@@ -149,11 +147,12 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
       exp10.(x)
     end
     :maskalt => x -> begin
-      below_60_mask = map(x -> x[2] < 60*1000, sd[:point])
       x[below_60_mask] .= 0.0
       x
     end
-    :♯ => x -> ♯(sd, x, DiscreteExteriorCalculus.PPSharp())
+    :♯ => x -> begin
+      sharp_mat * x
+    end
     :mag => x -> norm.(x)
     :.* => (x,y) -> x .* y
     :./ => (x,y) -> x ./ y
@@ -161,7 +160,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :.- => (x,y) -> x .- y
     :.^ => (x,y) -> x .^ y
     :^ => (x,y) -> x ^ y
-    # TODO: Will this shorthand cause problems when we are trying to subtract?
     :- => x -> -1 * x
     #:- => (x,y) -> x .- y
     :.> => (x,y) -> 1 * (x .> y)
@@ -185,8 +183,8 @@ begin # Heidler Parameters
 
 T1 = 50.0         # [us] See Kotovsky Table 5-1 column 1
 T2 = 1000.0       # [us]
-τ₁ = T1 .*1e-6    # [s]
-τ₂ = T2 .*1e-6    # [s]
+τ₁ = T1 * 1e-6    # [s]
+τ₂ = T2 * 1e-6    # [s]
 n = 10.0          # Heidler normalizing constant
 
 # TODO: Should this distribution should reach its max at 50 microseconds?
@@ -267,11 +265,9 @@ begin # Heidler Model
 
 Heidler = @decapode begin
   (J, J₀, Z, ρ, tret)::Form1{X}
-  #(Z, tret)::Form0{X}
   (τ₁, τ₂, I₀, v, n, a, η, z₀, π, ρ₀)::Constant{X}
   (t)::Parameter{X}
 
-  #I == I₀ * (one / η) * (t / τ₁)^n / (1 + (t / τ₁)^n) * e ^ (negone * t / τ₂)
   tret == t .- Z ./ v
   temp == (tret./τ₁).^n
   # See Veronis et al. § 2.1
@@ -281,7 +277,7 @@ Heidler = @decapode begin
   J == (Z .≤ a) .* J₀ .* exp(-1.0 .* ρ .^ 2 / ρ₀ .^ 2) +
        (Z .> a) .* J₀ .* exp((-1.0 * ρ .^ 2 / ρ₀^2) - ((Z .- a) .^ 2 / z₀^2))
 end
-#to_graphviz(Heidler)
+to_graphviz(Heidler)
 
 end # Heidler Model
 
@@ -289,26 +285,6 @@ end # Heidler Model
 # Veronis #
 ###########
 begin # Veronis
-# TODO: Handle half-timestepping in compile by passing an optional list that has
-# the symbols of the TVars that you want to compute.
-# See SymplecticIntegrators: 
-# https://docs.sciml.ai/DiffEqDocs/latest/solvers/dynamical_solve/
-
-# Primal_time: J,B,Nₑ
-# Dual_time: E,Nₑ,θ,σ
-
-# This will be useful also for the DEC -> plotting toolkit.
-
-# Tonti tried to formalize primal-vs-dual time via a 3D layout of diagrams.
-# (~ fields are on primal-space-primal-time, or dual-space-dual-time)
-# (~ particles are on primal-space-dual-time, or dual-space-primal-time)
-
-# "Dual things happening on dual steps makes sense."
-# Default would be to compute primals on primal time, duals on dual time.
-
-# Always keep in mind: B_into - B_outof = E_rightwards
-# i.e. Keep your subtractions consistent.
-
 # Assumptions that allow for cylindrical "pseudo-3D":
 # - Lightning can be restricted to plane.
 # - The magnetic field is orthogonal to this plane.
@@ -326,8 +302,6 @@ Veronis = @decapode begin
   θ::Form0{X}
   J::Form1{X}
   (ρ_e, ρ_gas, Tn)::Form0{X}
-  # Note: You just need σ for updating E, no need to recalculate on the other
-  # time step.
   σ::Form1{X}
   (qₑ,c,ε₀)::Constant{X}
 
@@ -342,8 +316,6 @@ Veronis = @decapode begin
   # See Kotovsky pp. 91: theta = E/n
   θ == (1e21/1e6) .* mag(♯(E)) ./ ρ_gas
 
-  # Note: There may be a way to perform masking more efficiently,  while still
-  # using the "programming language of PDEs."
   Eq5_2a_mask == .>(θ, (0.0603 * sqrt(200 ./ Tn)))
   Eq5_2b_mask == .≤(θ, (0.0603 * sqrt(200 ./ Tn)))
   # See Kotovsky pp. 92 5-2a
@@ -365,10 +337,7 @@ begin # Format Atmosphere
 
 include("formatAtmosphere.jl")
 species, densities, Tn, rateCoef_names, rateCoefs = formatAtmosphere("./examples/LightnignChanges copy/chi180_O_dyn.mat", sd)
-mesh(s, color=rateCoefs[:k25])
 mesh(s, color=densities[:O])
-using CairoMakie
-CairoMakie.mesh(s, color=densities[:N2])
 
 end # Format Atmosphere
 
@@ -378,7 +347,6 @@ end # Format Atmosphere
 begin # Initialize Electromagnetism
 
 Ef = VForm(zeros(ne(s)))
-#B = DualForm{1}(zeros(ne(s)))
 B = DualForm{0}(zeros(ntriangles(s)))
 
 # Initialize reduced electric field, θ [V m m]
@@ -416,7 +384,6 @@ begin # Model Composition
 
 # TODO: Rename this file to chemistry.jl
 include("rateCoefficients_dynam.jl")
-#to_graphviz(Chemistry)
 
 compose_lightning = @relation () begin
   Heidler(J)
@@ -443,13 +410,9 @@ end # Model Composition
 #########################
 begin # Simulation Generation
 
-#sim = eval(gensim(lightning))
-#fₘ = sim(sd, generate)
-
 #open("./generated_lightning_sim.jl", "w") do file
 #  write(file, string(gensim(lightning)))
 #end
-##sim = include(eval, "../../generated_lightning_sim.jl")
 sim = include("../../generated_lightning_sim.jl")
 fₘ = sim(sd, generate)
 
@@ -459,12 +422,6 @@ end
 # Solving #
 ###########
 
-#tₑ = 200e-6 # [s]
-#tₑ = 1.334e-3 # [s] # How long it takes light to travel 400 km in a vacuum.
-#prob = DynamicalODEProblem(primal_f, dual_f, v₀, u₀, (0, tₑ), constants_and_parameters)
-## TODO: Pick a dt.
-#solve(prob, VerletLeapfrog())
-
 u₀ = construct(PhysicsState,
   map(x -> VectorForm(x.data),
     [Z,
@@ -482,115 +439,102 @@ u₀ = construct(PhysicsState,
    :Veronis_B,
    :Veronis_E,
    :Tn,
-   #map(x -> Symbol(x == :e ? :ρ_e : "Chemistry_ρ_" * string(x)), species)...,
    map(x -> Symbol(x == :e ? :ρ_e : "Chemistry_ρ_" * string(x)), collect(keys(densities)))...,
-   #map(x -> Symbol("Chemistry_" * string(x)), rateCoef_names)...])
    map(x -> Symbol("Chemistry_" * string(x)), collect(keys(rateCoefs)))...])
 
-du₀ = deepcopy(construct(PhysicsState,
-  map(x -> VectorForm(x.data),
-    [Z,
-     ρ,
-     B,
-     Ef,
-     Tn,
-     values(densities)...,
-     values(rateCoefs)...]),
+# This is a typical value for a model run:
+#tₑ = 200e-6 # [s]
 
-  Float64[],
+# This is how long it takes light to travel 400 km in a vacuum.
+#tₑ = 1.334e-3 # [s] 
 
-  [:Heidler_Z,
-   :Heidler_ρ,
-   :Veronis_B,
-   :Veronis_E,
-   :Tn,
-   #map(x -> Symbol(x == :e ? :ρ_e : "Chemistry_ρ_" * string(x)), species)...,
-   map(x -> Symbol(x == :e ? :ρ_e : "Chemistry_ρ_" * string(x)), collect(keys(densities)))...,
-   #map(x -> Symbol("Chemistry_" * string(x)), rateCoef_names)...])
-   map(x -> Symbol("Chemistry_" * string(x)), collect(keys(rateCoefs)))...]))
+tₑ = 200e-6 * .67
+prob = ODEProblem{true}(fₘ, u₀, (0, tₑ), constants_and_parameters)
+@time soln = solve(prob, Tsit5(), progress=true, progress_steps=1, save_everystep=false)
 
+# Warning: This overwrites a file with this name if there is one.
+@save "lightning.jld2" soln
 
-fₘ(du₀, u₀, constants_and_parameters, 0)
-fₘ(du₀, u₀, constants_and_parameters, 1e-10)
-fₘ(du₀, u₀, constants_and_parameters, 1e-9)
-fₘ(du₀, u₀, constants_and_parameters, 1e-16)
+# There is no need to load the solution back in if you haven't killed the REPL.
+@load "lightning.jld2" soln 
 
-a = 200e-6
-n = 1e6
-dt = a/n
-for tᵢ in 0:dt:a
-  println(tᵢ)
-  fₘ(du₀, u₀, constants_and_parameters, tᵢ)
-  u₀ .= u₀ .+ (du₀)*(dt)
+############
+# Plotting #
+############
+
+# Compute the divergence. i.e. ⋆d⋆ in the Discrete Exterior Calculus
+div(form1) = inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*form1
+
+# Plot the divergence of the E field. i.e. ⋆d⋆(E)
+function plot_div_E(t, colorrange=extrema(findnode(soln(t), :Veronis_E)))
+  mesh(s, color=div(findnode(soln(t), :Veronis_E)); colorrange=colorrange)
 end
 
-findnode(u₀, :Chemistry_ρ_O)
-findnode(du₀, :Chemistry_ρ_O)
-findnode(du₀, :Veronis_E)
-findnode(u₀, :Veronis_B)
-findnode(du₀, :Veronis_B)
-mesh(s, color=findnode(u₀, :Chemistry_ρ_O))
-mesh(s, color=findnode(du₀, :Chemistry_ρ_O))
-extrema(densities[:e])
-extrema(findnode(u₀, :ρ_e))
-extrema(findnode(u₀, :ρ_e) .- densities[:e])
-extrema(findnode(du₀, :Chemistry_ρ_O))
+plot_div_E(tₑ)
+plot_div_E(tₑ, (-1e-32, 1e-32))
 
-prob = ODEProblem(fₘ, u₀, (0, 1e-9), constants_and_parameters)
-soln = solve(prob, Tsit5(), progress=true, progress_steps=1)
-prob = ODEProblem{true}(fₘ, u₀, (0, 200e-6 * .49), constants_and_parameters)
-prob = ODEProblem(fₘ, u₀, (0, 200e-6 * .60), constants_and_parameters)
-soln = solve(prob, Tsit5(), progress=true, progress_steps=1)
+# Plot the difference in electron density at each point.
+function plot_diff_e(t)
+  mesh(s, color=findnode(soln(t), :ρ_e) - findnode(soln(0), :ρ_e))
+end
 
-prob = ODEProblem(fₘ, u₀, (0, 10e-9), constants_and_parameters)
-soln = solve(prob, ORK256(), dt=1e-10, progress=true, progress_steps=1)
+plot_diff_e(tₑ)
 
-using JLD2
-@save "lightning_9p8em5.jld2" soln
+# Plot the density of e over the initial density of e.
+function plot_px_e(t)
+  mesh(s, color=findnode(soln(tₑ), :ρ_e) / findnode(soln(0), :ρ_e))
+end
 
-# This is divergence of the E field. i.e. ⋆d⋆(E)
-plot_div(t) = mesh(s, color=inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E), colorrange=extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(200e-6 * .49), :Veronis_E)))
-plot_div(t) = mesh(s, color=inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E), colorrange=(-0.00000000001, 0.000000000001))
-#plot_div(t) = mesh(s, color=inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E), colorrange=extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E)))
-#extrema_div(t) = extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(t), :Veronis_E)))
+plot_px_e(tₑ)
 
-plot_div(0)
-plot_div(5e-6)
-plot_div(10e-6)
-plot_div(80e-6)
-plot_div(200e-6 * .49)
-extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(80e-6), :Veronis_E))
-extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(200e-6 * .49), :Veronis_E))
+# Plot the difference in O density at each point.
+function plot_diff_O(t)
+  mesh(s, color=findnode(soln(tₑ), :Chemistry_ρ_O) - findnode(soln(0), :Chemistry_ρ_O))
+end
 
-extrema(findnode(soln(0), :Veronis_E))
-extrema(findnode(soln(10e-6), :Veronis_E))
-extrema(findnode(soln(200e-6 * .49), :Veronis_E))
+plot_diff_O(tₑ)
 
-mesh(s, color=findnode(soln(0), :ρ_e))
-mesh(s, color=findnode(soln(200e-6 * .49), :ρ_e))
-mesh(s, color=findnode(soln(200e-6 * .49), :ρ_e) .- findnode(soln(0), :ρ_e))
-extrema(findnode(soln(0), :ρ_e))
-extrema(findnode(soln(200e-6 * .49), :ρ_e))
-extrema(findnode(soln(200e-6 * .49), :ρ_e) .- findnode(soln(0), :ρ_e))
+# Plot the density of O over the initial density of O.
+function plot_px_O(t)
+  mesh(s, color=findnode(soln(tₑ), :Chemistry_ρ_O) / findnode(soln(0), :Chemistry_ρ_O))
+end
 
-mesh(s, color=findnode(soln(0), :Chemistry_ρ_O))
-mesh(s, color=findnode(soln(200e-6 * .49), :Chemistry_ρ_O))
-mesh(s, color=findnode(soln(200e-6 * .49), :Chemistry_ρ_O) .- findnode(soln(0), :Chemistry_ρ_O))
-extrema(findnode(soln(0), :Chemistry_ρ_O))
-extrema(findnode(soln(200e-6 * .49), :Chemistry_ρ_O))
-extrema(findnode(soln(200e-6 * .49), :Chemistry_ρ_O) .- findnode(soln(0), :Chemistry_ρ_O))
+plot_px_O(tₑ)
 
-extrema(norm.(♯(sd, EForm(findnode(soln(200e-6 * .49), :Veronis_E)))))
-CairoMakie.arrows(point(s), ♯(sd, EForm(findnode(soln(200e-6 * .49), :Veronis_E))), lengthscale=1e3)
-f,a,o = mesh(s, color=norm.(♯(sd, EForm(findnode(soln(200e-6 * .49), :Veronis_E)))), colorrange=(0,1e-40))
-#title(a, "Magnitude of E at 9.8e-5 [s], capped at (0,1e-40)")
+# Plot the E field itself.
+function plot_E(t)
+  sharp_mat = ♯_mat(sd, AltPPSharp())
+  CairoMakie.arrows(point(s), sharp_mat*findnode(soln(t), :Veronis_E), lengthscale=1e3)
+end
 
-extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(1e-6), :Veronis_E))
-extrema(inv_hodge_star(0,sd)*dual_derivative(1,sd)*hodge_star(1,sd)*findnode(soln(10e-6), :Veronis_E))
+plot_E(tₑ)
 
-function find_max_x_nonzero(form)
+# Plot the magnitude of the E field.
+function plot_mag_E(t)
+  sharp_mat = ♯_mat(sd, AltPPSharp())
+  mesh(s, color=norm.(sharp_mat*findnode(soln(t), :Veronis_E)))
+end
+
+plot_mag_E(tₑ)
+
+# Plot the log of the absolute value of the B field.
+function plot_log_abs_B(t)
+  scatter(dual_point(sd, triangle_center(sd, triangles(sd))),
+    color=(log ∘ abs).(findnode(soln(t), :Veronis_B)))
+end
+
+plot_log_abs_B(tₑ)
+
+# Plot the B field itself.
+function plot_B(t)
+  scatter(dual_point(sd, triangle_center(sd, triangles(sd))),
+    color=findnode(soln(t), :Veronis_B))
+end
+plot_B(tₑ)
+
+# Find the largest nonzero value of the given 0Form.
+function find_max_x_nonzero_form0(form)
   max_x = 0
-  #for (i,p) in enumerate(dual_point(sd))
   for (i,p) in enumerate(point(sd))
     if form[i] != 0
       max_x = p[1]
@@ -598,124 +542,31 @@ function find_max_x_nonzero(form)
   end
   max_x
 end
-find_max_x_nonzero(findnode(soln(200e-6 * .49), :ρ_e))
+find_max_x_nonzero_form0(findnode(soln(tₑ), :ρ_e))
 
-findnode(soln(0), :Veronis_B) |> print
-findnode(soln(1e-6), :Veronis_B) |> print
-findnode(soln(10e-6), :Veronis_B) |> print
+# Find the largest nonzero value of the given 1Form.
+function find_max_x_nonzero_form1(form)
+  max_x = 0
+  for i in edges(sd)
+    p = point(sd, s[i, :∂v0])
+    if form[i] != 0
+      max_x = p[1]
+    end
+  end
+  max_x
+end
+find_max_x_nonzero_form1(findnode(soln(tₑ), :Veronis_E))
 
-soln = solve(prob, ORK256(), dt=1e-9)
-
-@save "soln_testing_aug292023.jld2" soln
-loaded_soln = @load "soln_testing_aug292023.jld2"
-
-findnode(loaded_soln(1e-8), :Chemistry_ρ_O)
-x, y, t    ,  Chemistry_ρ_O, ...
--, -, 0    ,  1e-15        , ...
--, -, 1e-10,  1e-15        , ...
--, -, 2e-10,  1e-15        , ...
--, -, 3e-10,  1e-15        , ...
-
-prob = ODEProblem(fₘ, u₀, (0, 1e-6), constants_and_parameters)
-soln = solve(prob, ORK256(), dt=1e-6)
-
-prob = ODEProblem(fₘ, u₀, (0, 200e-6), constants_and_parameters)
-soln = solve(prob, ORK256(), dt=200e-6)
-
-prob = ODEProblem(fₘ, u₀, (0, 1.334e-3), constants_and_parameters)
-soln = solve(prob, ORK256(), dt=1.334e-3)
-
-begin end
-
-############
-# Plotting #
-############
-
-# Create a gif
-begin
+# Create a gif of magnitude of E.
+# This requires that you did not set save_everystep to false when you solved.
+function make_gif_E()
   frames = 100
-  fig, ax, ob = GLMakie.mesh(s, color=norm.(♯(sd, EForm(findnode(soln(0), :Veronis_E)))), colormap=:jet, colorrange=extrema(norm.(♯(sd, EForm(findnode(soln(1.334e-3), :Veronis_E))))))
+  ♯_m = ♯_mat(sd, DiscreteExteriorCalculus.AltPPSharp())
+  fig, ax, ob = mesh(s, color=norm.(♯_m * findnode(soln(0), :Veronis_E))), colormap=:jet, colorrange=extrema(norm.(♯_m * findnode(soln(tₑ), :Veronis_E)))
   Colorbar(fig[1,2], ob)
-  record(fig, "lightning_ORK256.gif", range(0.0, 1.334e-3; length=frames); framerate = 30) do t
-    ob.color = norm.(♯(sd, EForm(findnode(soln(t), :Veronis_E))))
+  record(fig, "lightning.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
+    ob.color = norm.(♯_m * findnode(soln(t), :Veronis_E))
   end
 end
 
-
-du₀ = deepcopy(u₀)
-fₘ(du₀, u₀, constants_and_parameters, 0)
-fₘ(du₀, u₀, constants_and_parameters, 1e-10)
-fₘ(du₀, u₀, constants_and_parameters, 1e-9)
-
-findnode(u₀, :Chemistry_ρ_O)
-findnode(du₀, :Chemistry_ρ_O)
-findnode(du₀, :Veronis_E)
-mesh(s, color=findnode(du₀, :Veronis_E))
-mesh(s, color=findnode(u₀, :Chemistry_ρ_O))
-mesh(s, color=findnode(du₀, :Chemistry_ρ_O))
-extrema(findnode(u₀, :Chemistry_ρ_O))
-extrema(findnode(du₀, :Chemistry_ρ_O))
-
-compose_lightning_no_chem = @relation () begin
-  Heidler(J)
-  Veronis(J)
-end
-#to_graphviz(compose_lightning, junction_labels=:variable, box_labels=:name, prog="circo")
-
-lighting_no_chem_cospan = oapply(compose_lightning_no_chem,
-  [Open(Heidler, [:J]),
-  Open(Veronis, [:J])])
-
-lightning_no_chem = apex(lighting_no_chem_cospan)
-#to_graphviz(lightning_no_chem)
-
-lightning_no_chem = ∘(resolve_overloads!, infer_types!, expand_operators)(lightning_no_chem)
-
-sim = eval(gensim(expand_operators(lightning_no_chem)))
-f = sim(sd, generate)
-
-u₀ = construct(PhysicsState,
-  map(x -> VectorForm(x.data),
-    [Z, ρ, B, Ef, Tn, values(densities)...]),
-  Float64[],
-  [:Heidler_Z, :Heidler_ρ, :Veronis_B, :Veronis_E, :Veronis_Tn,
-    map(x -> Symbol("Veronis_ρ_" * string(x)), species)...,
-    ])
-prob = ODEProblem(f, u₀, (0, 1e-9), constants_and_parameters)
-solve(prob, Tsit5())
-
-constants_and_parameters = (
-  #mₑ = mₑ,
-  #μ₀ = μ₀,
-  #Z₀ = Z₀,
-  #e = e,
-  Veronis_ρ_gas = densities[:gas],
-  Veronis_Tn = Tn,
-  Chemistry_kB = kB,
-  Veronis_qₑ = qₑ,
-  Veronis_c = c,
-  Veronis_ε₀ = ε₀,
-  Heidler_τ₁ = τ₁,
-  Heidler_τ₂ = τ₂,
-  Heidler_I₀ = I₀,
-  Heidler_v = v,
-  Heidler_n = n,
-  Heidler_a = a,
-  Heidler_η = η,
-  Heidler_t = t -> t,
-  Heidler_z₀ = z₀,
-  Heidler_π = π,
-  Heidler_ρ₀ = ρ₀)
-
-foo = simulate(sd, generate)
-du₀ = deepcopy(u₀)
-foo(du₀, u₀, constants_and_parameters, 1e-1)
-
-sum(findnode(du₀, :Veronis_B))
-sum(findnode(du₀, :Veronis_E))
-prob = ODEProblem(foo, u₀, (0, 1e-9), constants_and_parameters)
-soln = solve(prob, Tsit5())
-
-foo(du₀, u₀, constants_and_parameters, 9.8e-10)
-
-sum(findnode(du₀, :Veronis_E))
+make_gif_E()
