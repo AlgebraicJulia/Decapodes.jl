@@ -36,11 +36,11 @@ end
 
 Provide a variable name to all the variables that don't have names.
 """
-function fill_names!(d::AbstractNamedDecapode)
+function fill_names!(d::AbstractNamedDecapode; lead_symbol::Symbol = Symbol("•"))
   bulletcount = 1
   for i in parts(d, :Var)
     if !isassigned(d[:,:name],i) || isnothing(d[i, :name])
-      d[i,:name] = Symbol("•$bulletcount")
+      d[i,:name] = Symbol("$lead_symbol$bulletcount")
       bulletcount += 1
     end
   end
