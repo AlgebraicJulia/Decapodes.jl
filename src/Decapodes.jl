@@ -11,6 +11,7 @@ using Catlab.ACSetInterface
 using LinearAlgebra
 using MLStyle
 using Base.Iterators
+using SparseArrays
 
 import Unicode
 

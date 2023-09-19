@@ -52,7 +52,8 @@ function dec_mat_inverse_hodge(k, sd::HasDeltaSet, hodge)
 end
 
 function dec_mat_differential(k, sd::HasDeltaSet)
-    diff = d(k,sd)
+    # diff = d(k,sd)
+    diff = dec_p_differential(Val{k}, sd)
     return (diff, x-> diff * x)
 end
 
@@ -435,7 +436,6 @@ function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
     sparse(I, J, V)
 end
 
-# TODO: Still under development, sign information is wrong
 function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
     vec_size = 3 * ntriangles(sd)
 
@@ -443,7 +443,8 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
     J = zeros(Int64, vec_size)
     V = zeros(Int64, vec_size)
 
-    sign_term = 0
+    general_edge_sign = sign(1, sd, 1)
+    no_recompute_signs = allequal(sd[:edge_orientation])
 
     for i in triangles(sd)
         j = 3 * i - 2
@@ -452,15 +453,25 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
         I[j + 1] = i
         I[j + 2] = i
 
-        sign_term = sign(2, sd, i)
+        tri_sign = sign(2, sd, i)
 
         J[j] = sd[i, :∂e0]
         J[j + 1] = sd[i, :∂e1]
         J[j + 2] = sd[i, :∂e2]
 
-        V[j] = -sign_term
-        V[j + 1] = -sign_term
-        V[j + 2] = sign_term
+        edge_sign_0 = general_edge_sign
+        edge_sign_1 = general_edge_sign
+        edge_sign_2 = general_edge_sign
+        
+        if(!(no_recompute_signs))
+            edge_sign_0 = sign(1, sd, J[j])
+            edge_sign_1 = sign(1, sd, J[j + 1])
+            edge_sign_2 = sign(1, sd, J[j + 2])
+        end
+
+        V[j] = edge_sign_0 * tri_sign
+        V[j + 1] = -1 * edge_sign_1 * tri_sign
+        V[j + 2] = edge_sign_2 * tri_sign
     end
 
     sparse(I, J, V)

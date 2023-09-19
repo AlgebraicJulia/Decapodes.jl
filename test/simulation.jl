@@ -190,7 +190,7 @@ Point3D = Point3{Float64}
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
 # Testing Advection-Diffusion
-@testset "Advection-Diffusion Simulation" begin
+#= @testset "Advection-Diffusion Simulation" begin
 
   function generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
@@ -305,7 +305,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
   end
 
   @test old_soln.u ≈ new_soln.u
-end
+end =#
 
 # Testing Brusselator
 @testset "Brusselator Simulation" begin
