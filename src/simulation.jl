@@ -416,6 +416,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2)
     # Mutates
     infer_types!(d′)
     resolve_overloads!(d′)
+    open_operators!(d′, dimension = dimension)
     
     # rhs = compile(d′, input_vars)
     equations = compile(d′, input_vars, dec_matrices, alloc_vectors, dimension=dimension)

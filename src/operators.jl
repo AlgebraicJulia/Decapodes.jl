@@ -253,160 +253,20 @@ function default_dec_generate_1D(sd, my_symbol, hodge=GeometricHodge())
     
     op = @match my_symbol begin
 
-        :L₀ => dec_lie_derivative_1D(Val{0}, sd, hodge)
-        :L₁ => dec_lie_derivative_1D(Val{1}, sd, hodge)
-
-        :i₁ => dec_interior_product_1D(Val{1}, sd, hodge)
-
         _ => default_dec_generate(sd, my_symbol, hodge)
     end
 
     return (args...) ->  op(args...)
-end
-
-function dec_interior_product_1D(::Type{Val{1}}, sd::HasDeltaSet, hodge)
-    # Alpha is dual1, X is primal1
-
-    # Takes alpha to primal0
-    M_invhodge0 = inv_hodge_star(0,sd,hodge)
-    invhodge0 = x -> M_invhodge0 * x
-
-    # Alpha is primal0 and X is primal1, res is primal1
-    wedge01 = dec_wedge_product(Tuple{0, 1}, sd)
-
-    # Takes res to dual0
-    M_hodge1 = ⋆(1,sd,hodge)
-    hodge1 = x -> M_hodge1 * x
-
-    (α, X) -> hodge1(wedge01(invhodge0(α), X))
-end
-
-function dec_lie_derivative_1D(::Type{Val{0}}, sd::HasDeltaSet, hodge)
-    # Alpha is dual0, X is primal1
-
-    # Takes alpha to dual1
-    M_dual_d0 = dual_derivative(0,sd)
-    dual_d0 = x-> M_dual_d0 * x
-
-    #Alpha is dual1 and X is primal1, res is dual0 
-    interior_d1_p1 = dec_interior_product_1D(Val{1}, sd, hodge)
-
-    (X, α) -> interior_d1_p1(dual_d0(α), X)
-end
-
-function dec_lie_derivative_1D(::Type{Val{1}}, sd::HasDeltaSet, hodge)
-    # Alpha is dual1, X is primal1
-
-    #Alpha is dual1 and X is primal1, res is dual0 
-    interior_d1_p1 = dec_interior_product_1D(Val{1}, sd, hodge)
-
-    # Takes res to dual1
-    M_dual_d0 = dual_derivative(0,sd)
-    dual_d0 = x-> M_dual_d0 * x
-    
-    (X, α) -> dual_d0(interior_d1_p1(α, X))
 end
 
 function default_dec_generate_2D(sd, my_symbol, hodge=GeometricHodge())
     
     op = @match my_symbol begin
 
-        :L₀ => dec_lie_derivative_2D(Val{0}, sd, hodge)
-        :L₁ => dec_lie_derivative_2D(Val{1}, sd, hodge)
-        :L₂ => dec_lie_derivative_2D(Val{2}, sd, hodge)
-
-        :i₁ => dec_interior_product_2D(Val{1}, sd, hodge)
-        :i₂ => dec_interior_product_2D(Val{2}, sd, hodge)
-
         _ => default_dec_generate(sd, my_symbol, hodge)
     end
 
     return (args...) ->  op(args...)
-end
-
-function dec_interior_product_2D(::Type{Val{1}}, sd::HasDeltaSet, hodge)
-    # Alpha is dual1, X is primal1
-
-    # Takes alpha to primal1
-    if(hodge == GeometricHodge())
-        M_hodge1 = -1 .* hodge_star(1,sd,hodge)
-        invhodge1 = x -> (M_hodge1 \ x)
-    else
-        M_invhodge1 = inv_hodge_star(1,sd,hodge)
-        invhodge1 = x -> M_invhodge1 * x
-    end
-
-    #Alpha term is primal1 and X are primal1, res is primal2
-    wedge11 = dec_wedge_product(Tuple{1, 1}, sd)
-
-    #Sends res to dual0
-    M_hodge2 = -1 .* ⋆(2,sd,hodge)
-    hodge2 = x -> M_hodge2 * x
-
-    (α, X) -> hodge2(wedge11(invhodge1(α), X)) 
-end
-
-function dec_interior_product_2D(::Type{Val{2}}, sd::HasDeltaSet, hodge)
-    # Alpha is dual2, X is primal1
-
-    # Takes alpha to primal0
-    M_invhodge0 = inv_hodge_star(0,sd,hodge)
-    invhodge0 = x -> M_invhodge0 * x
-
-    #Alpha term is primal0 and X are primal1, res is primal1
-    wedge01 = dec_wedge_product(Tuple{0, 1}, sd)
-
-    #Sends res to dual1
-    M_hodge1 = ⋆(1,sd,hodge)
-    hodge1 = x -> M_hodge1 * x
-
-    (α, X) -> hodge1(wedge01(invhodge0(α), X))
-end
-
-function dec_lie_derivative_2D(::Type{Val{0}}, sd::HasDeltaSet, hodge)
-    # Alpha is dual0, X is primal1
-
-    # Takes alpha to dual1
-    M_dual_d0 = dual_derivative(0,sd)
-    dual_d0 = x-> M_dual_d0 * x
-
-    # Alpha is dual1, X is primal1, res is dual0
-    interior_d1_p1 = dec_interior_product_2D(Val{1}, sd, hodge)
-
-    (X, α) -> interior_d1_p1(dual_d0(α), X)
-end
-
-function dec_lie_derivative_2D(::Type{Val{1}}, sd::HasDeltaSet, hodge)
-    # Alpha is dual1, X is primal1
-
-    # Takes alpha to dual2
-    M_dual_d1 = dual_derivative(1,sd)
-    dual_d1 = x-> M_dual_d1 * x
-
-    # d(Alpha) is dual2, X is primal1, res_1 is dual1
-    interior_d2_p1 = dec_interior_product_2D(Val{2}, sd, hodge)
-
-    # Alpha is dual1, X is primal1, res_2 is dual0
-    interior_d1_p1 = dec_interior_product_2D(Val{1}, sd, hodge)
-
-    # Takes res_2 to dual1
-    M_dual_d0 = dual_derivative(0,sd)
-    dual_d0 = x-> M_dual_d0 * x
-
-    (X, α) -> interior_d2_p1(dual_d1(α), X) + dual_d0(interior_d1_p1(α, X))
-end
-
-function dec_lie_derivative_2D(::Type{Val{2}}, sd::HasDeltaSet, hodge)
-    # Alpha is dual2, X is primal1
-
-    # Alpha is dual2, X is primal1, res is dual1
-    interior_d2_p1 = dec_interior_product_2D(Val{2}, sd, hodge)
-
-    #Sends res to dual1 then to dual2
-    M_dual_d1 = dual_derivative(1,sd)
-    dual_d1 = x -> M_dual_d1 * x
-    
-    (X, α) -> dual_d1(interior_d2_p1(α, X))
 end
 
 function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
@@ -416,7 +276,8 @@ function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
     J = zeros(Int64, vec_size)
     V = zeros(Int64, vec_size)
 
-    sign_term = 0
+    sign_term = sign(1, sd, 1)
+    no_recompute_signs = allequal(sd[:edge_orientation])
 
     for i in edges(sd)
         j = 2 * i - 1
@@ -424,10 +285,12 @@ function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
         I[j] = i
         I[j + 1] = i
 
-        sign_term = sign(1, sd, i)
-
         J[j] = sd[i, :∂v0]
         J[j + 1] = sd[i, :∂v1]
+
+        if(!(no_recompute_signs))
+            sign_term = sign(1, sd, i)
+        end
 
         V[j] = sign_term
         V[j + 1] = -sign_term
@@ -443,7 +306,7 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
     J = zeros(Int64, vec_size)
     V = zeros(Int64, vec_size)
 
-    general_edge_sign = sign(1, sd, 1)
+    sign_term = sign(1, sd, 1)
     no_recompute_signs = allequal(sd[:edge_orientation])
 
     for i in triangles(sd)
@@ -459,9 +322,9 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
         J[j + 1] = sd[i, :∂e1]
         J[j + 2] = sd[i, :∂e2]
 
-        edge_sign_0 = general_edge_sign
-        edge_sign_1 = general_edge_sign
-        edge_sign_2 = general_edge_sign
+        edge_sign_0 = sign_term
+        edge_sign_1 = sign_term
+        edge_sign_2 = sign_term
         
         if(!(no_recompute_signs))
             edge_sign_0 = sign(1, sd, J[j])
@@ -495,8 +358,13 @@ function open_operators!(d::SummationDecapode; dimension::Int = 2)
 
         ## Make substitution for complex operator into components
         @match (op2_name, dimension) begin
+            (:i₁ , 1) => begin remove_op2 = add_Inter_Prod_1D!(Val{1}, d, op2_proj1, op2_proj2, op2_res) end
+
             (:i₁ , 2) => begin remove_op2 = add_Inter_Prod_2D!(Val{1}, d, op2_proj1, op2_proj2, op2_res) end
             (:i₂ , 2) => begin remove_op2 = add_Inter_Prod_2D!(Val{2}, d, op2_proj1, op2_proj2, op2_res) end
+
+            (:L₀, 1) => begin remove_op2 = add_Lie_1D!(Val{0}, d, op2_proj1, op2_proj2, op2_res) end
+            (:L₁, 1) => begin remove_op2 = add_Lie_1D!(Val{1}, d, op2_proj1, op2_proj2, op2_res) end
 
             (:L₀, 2) => begin remove_op2 = add_Lie_2D!(Val{0}, d, op2_proj1, op2_proj2, op2_res) end
             (:L₁, 2) => begin remove_op2 = add_Lie_2D!(Val{1}, d, op2_proj1, op2_proj2, op2_res) end
@@ -525,36 +393,54 @@ function open_operators!(d::SummationDecapode; dimension::Int = 2)
     fill_names!(d, lead_symbol = Symbol("Gensim_Var_"));
 end
 
-function add_Inter_Prod_2D!(::Type{Val{1}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
-
-    ## Adds the hodge Dual1 to Primal1
+function add_Inter_Prod(d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+    ## Adds the hodge Dual to Primal
     inv_hodge_tgt = add_part!(d, :Var, type = :infer, name = nothing)
     add_part!(d, :Op1, src = proj1_Inter, tgt = inv_hodge_tgt, op1 = :⋆)
 
-    ## Adds the wedge between Primal1 and Primal1
+    ## Adds the wedge between Primal and Primal
     wedge_res = add_part!(d, :Var, type = :infer, name = nothing)
     add_part!(d, :Op2, proj1 = inv_hodge_tgt, proj2 = proj2_Inter, res = wedge_res, op2 = :∧)
 
-    ## Adds the hodge Primal2 to Dual0
-    hodge_res = add_part!(d, :Var, type = :infer, name = nothing)
-    add_part!(d, :Op1, src = wedge_res, tgt = hodge_res, op1 = :⋆)
+    ## Adds the hodge Primal to Dual
+    add_part!(d, :Op1, src = wedge_res, tgt = res_Inter, op1 = :⋆)
+end
+
+function add_Inter_Prod_1D!(::Type{Val{1}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+    add_Inter_Prod(d, proj1_Inter, proj2_Inter, res_Inter)
+end
+
+function add_Inter_Prod_2D!(::Type{Val{1}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+    ## Takes generic interior product
+    pos_inter_prod = add_part!(d, :Var, type = :infer, name = nothing)
+    add_Inter_Prod(d, proj1_Inter, proj2_Inter, pos_inter_prod)
 
     ## Outputs negated value
-    add_part!(d, :Op1, src = hodge_res, tgt = res_Inter, op1 = :neg)
+    add_part!(d, :Op1, src = pos_inter_prod, tgt = res_Inter, op1 = :neg)
 end
 
 function add_Inter_Prod_2D!(::Type{Val{2}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+    add_Inter_Prod(d, proj1_Inter, proj2_Inter, res_Inter)
+end
 
-    ## Adds the hodge Dual2 to Primal0
-    inv_hodge_tgt = add_part!(d, :Var, type = :infer, name = nothing)
-    add_part!(d, :Op1, src = proj1_Inter, tgt = inv_hodge_tgt, op1 = :⋆)
+function add_Lie_1D!(::Type{Val{0}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
 
-    ## Adds the wedge between Primal0 and Primal1
-    wedge_res = add_part!(d, :Var, type = :infer, name = nothing)
-    add_part!(d, :Op2, proj1 = inv_hodge_tgt, proj2 = proj2_Inter, res = wedge_res, op2 = :∧)
+    ## Outputs result of dual derivative Dual0 to Dual1
+    dual_d_tgt = add_part!(d, :Var, type = :infer, name = nothing)
+    add_part!(d, :Op1, src = proj2_Lie, tgt = dual_d_tgt, op1 = :d)
 
-    ## Outputs result of hodge Primal1 to Dual1
-    add_part!(d, :Op1, src = wedge_res, tgt = res_Inter, op1 = :⋆)
+    ## Takes interior product of Primal1 and Dual1 to Dual0
+    add_Inter_Prod_1D!(Val{1}, d, dual_d_tgt, proj1_Lie, res_Lie)
+end
+
+function add_Lie_1D!(::Type{Val{1}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
+
+    ## Takes interior product of Primal1 and Dual1 to Dual0
+    inter_product_tgt = add_part!(d, :Var, type = :infer, name = nothing)
+    add_Inter_Prod_1D!(Val{1}, d, proj2_Lie, proj1_Lie, inter_product_tgt)
+
+    ## Outputs result of dual derivative Dual0 to Dual1
+    add_part!(d, :Op1, src = inter_product_tgt, tgt = res_Lie, op1 = :d)
 end
 
 function add_Lie_2D!(::Type{Val{0}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
@@ -564,7 +450,7 @@ function add_Lie_2D!(::Type{Val{0}}, d::SummationDecapode, proj1_Lie::Int, proj2
     add_part!(d, :Op1, src = proj2_Lie, tgt = dual_d_tgt, op1 = :d)
 
     ## Takes interior product of Primal1 and Dual1 to Dual0
-    add_Inter_Prod_2D!(Val{1}, d, dual_d_tgt, proj1_Lie, res_Lie)
+    add_Inter_Prod_1D!(Val{1}, d, dual_d_tgt, proj1_Lie, res_Lie)
 end
 
 function add_Lie_2D!(::Type{Val{1}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
@@ -586,14 +472,17 @@ function add_Lie_2D!(::Type{Val{1}}, d::SummationDecapode, proj1_Lie::Int, proj2
     add_part!(d, :Op1, src = inter_product_1_res, tgt = dual_d_0_tgt, op1 = :d)
 
     ## Outputs sum of both dual_d_0 and inter_product_2
-    add_part!(d, :Op2, proj1 = inter_product_2_res, proj2 = dual_d_0_tgt, res = res_Lie, op2 = :plus)
+    summation_tgt = add_part!(d, :Σ, sum = res_Lie)
+
+    add_part!(d, :Summand, summand = inter_product_2_res, summation = summation_tgt)
+    add_part!(d, :Summand, summand = dual_d_0_tgt, summation = summation_tgt)
 end
 
 function add_Lie_2D!(::Type{Val{2}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
 
     ## Takes interior product of Primal1 and Dual2 to Dual1
     inter_product_2_tgt = add_part!(d, :Var, type = :infer, name = nothing)
-    add_Inter_Prod_2D!(Val{2}, d, proj1_Lie, proj2_Lie, inter_product_2_tgt)
+    add_Inter_Prod_2D!(Val{2}, d, proj2_Lie, proj1_Lie, inter_product_2_tgt)
 
     ## Outputs result of dual derivative Dual1 to Dual2
     add_part!(d, :Op1, src = inter_product_2_tgt, tgt = res_Lie, op1 = :d)

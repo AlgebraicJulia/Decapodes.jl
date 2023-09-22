@@ -24,6 +24,10 @@ end
   include("multiscalearrays.jl")
 end
 
+@testset "Operators" begin
+  include("operators.jl")
+end
+
 @testset "Average Rewriting" begin
   include("rewrite.jl")
 end
