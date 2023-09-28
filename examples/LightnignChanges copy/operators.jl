@@ -37,8 +37,11 @@ diag_vols(s) = spdiagm([dual_volume(Val{2}, s, dt) for dt in 1:nparts(s, :DualTr
 
 wedge_mat(::Type{Val{(1,1)}}, s) = 2.0 * (support_to_tri(s)*diag_vols(s)*edge_to_support(s))
 
-function pd_wedge(::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat(Val{(1,1)}, s)), kw...)
-  wedge_t[(1,1)] * broadcast(*, α, β)
+#function pd_wedge(::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat(Val{(1,1)}, s)), kw...)
+#  wedge_t[(1,1)] * broadcast(*, α, β)
+#end
+function pd_wedge(::Type{Val{(1,1)}}, s, α, β; wedge_t = wedge_mat(Val{(1,1)}, s), kw...)
+  wedge_t * broadcast(*, α, β)
 end
 
 function avg₀₁(sd)

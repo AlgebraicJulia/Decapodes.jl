@@ -323,8 +323,8 @@ op2_inf_rules_1D = [
   (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form0, op_names = [:i, :i₁]),
 
   # Rules for divison and multiplication
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:./, :.*]),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, op_names = [:./, :.*]),
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:./, :.*, :/, :*]),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, op_names = [:./, :.*, :/, :*]),
 
   # WARNING: This parameter type inference might be wrong, depending on what the user gives as a parameter
   #= (proj1_type = :Parameter, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
@@ -412,7 +412,7 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   (proj1_type = :DualForm2, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:-, :.-]),
 
   # Rules for divison and multiplication
-  (proj1_type = :Form2, proj2_type = :Form2, res_type = :Form2, op_names = [:./, :.*]),
+  (proj1_type = :Form2, proj2_type = :Form2, res_type = :Form2, op_names =   [:./, :.*, :/, :*]),
   (proj1_type = :Literal, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Form2, proj2_type = :Literal, res_type = :Form2, op_names = [:/, :./, :*, :.*])])
   
@@ -442,6 +442,14 @@ function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
   type_proj2 = d[d[op2_id, :proj2], :type]
   type_res = d[d[op2_id, :res], :type]
 
+  if op2_id == 124
+    @show rule
+    @show d[d[op2_id, :proj1], :type]
+    @show d[d[op2_id, :proj2], :type]
+    @show d[d[op2_id, :res], :type]
+    println("")
+  end
+
   if(type_proj1 != :infer && type_proj2 != :infer && type_res != :infer)
     return false
   end
@@ -452,6 +460,9 @@ function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
   check_op = (d[op2_id, :op2] in rule.op_names)
 
   if(check_op && (score_proj1 + score_proj2 + score_res == 2))
+        if op2_id == 124
+          @show "Applying now:"
+        end
     d[d[op2_id, :proj1], :type] = rule.proj1_type
     d[d[op2_id, :proj2], :type] = rule.proj2_type
     d[d[op2_id, :res], :type] = rule.res_type
@@ -518,8 +529,8 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
   while true
     applied = false
     
-    for rule in op1_rules
-      for op1_idx in parts(d, :Op1)
+    for op1_idx in parts(d, :Op1)
+      for rule in op1_rules
         types_known_op1[op1_idx] && continue
 
         this_applied = apply_inference_rule_op1!(d, op1_idx, rule)
@@ -529,8 +540,8 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
       end
     end
 
-    for rule in op2_rules
-      for op2_idx in parts(d, :Op2)
+    for op2_idx in parts(d, :Op2)
+      for rule in op2_rules
         types_known_op2[op2_idx] && continue
 
         this_applied = apply_inference_rule_op2!(d, op2_idx, rule)

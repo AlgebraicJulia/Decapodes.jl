@@ -7,21 +7,28 @@ Chemistry = SummationDecapode(parse_decapode(quote
 
     ρ_gas == ρ_N2 + ρ_O2
 
+    Te_Less_65::Form0
     Te_Less_65 == .≤(θ, 65)
+    Te_Greater_65::Form0
     Te_Greater_65 == .>(θ, 65)
 
     # See Kotovsky pp. 92 Eq. 5-1
     # Note that the constant (3/2) is already divided through.
+    Te_unthresholded::Form0
     Te_unthresholded == (Te_Less_65 * 1.54e-2 * θ) +
         (Te_Greater_65 * 2 * (θ ./ 65).^(2.6) ./ (1 .+ (θ ./65) .^2))
 
+    Te_Greater_kB_times_Tn::Form0
     Te_Greater_kB_times_Tn == .>(Te_unthresholded, (kB * Tn))
+    Te_Less_kB_times_Tn::Form0
     Te_Less_kB_times_Tn == .≤(Te_unthresholded, (kB * Tn))
     # Effective electron temperature [eV]
+    Te::Form0
     Te == (Te_Greater_kB_times_Tn .* Te_unthresholded) +
         (Te_Less_kB_times_Tn .* (kB * Tn))
 
     # Electron temperature [K]
+    TeK::Form0
     TeK == Te ./ kB
 
     # Electron impact excitation, dissociation, and ionization
