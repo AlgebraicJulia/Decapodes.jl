@@ -25,13 +25,13 @@ function default_dec_matrix_generate(sd, my_symbol, hodge=GeometricHodge())
 
         # Codifferential
         # TODO: Why do we have a matrix type parameter which is unused?
-        :δ₀ => dec_mat_codifferential(0, sd, hodge)
         :δ₁ => dec_mat_codifferential(1, sd, hodge)
+        :δ₂ => dec_mat_codifferential(2, sd, hodge)
 
         # Laplace-de Rham
-        :Δ₀ => dec_mat_laplace_de_rham(0, sd)
-        :Δ₁ => dec_mat_laplace_de_rham(1, sd)
-        :Δ₂ => dec_mat_laplace_de_rham(2, sd)
+        :Δ₀ => dec_mat_laplace_de_rham(0, sd, hodge)
+        :Δ₁ => dec_mat_laplace_de_rham(1, sd, hodge)
+        :Δ₂ => dec_mat_laplace_de_rham(2, sd, hodge)
 
         _ => error("Unmatched operator $my_symbol")
     end
@@ -46,33 +46,32 @@ end
 
 # TODO: Need to figure how to handle inverse hodge on
 # DualForm1 in 2D due to it needing to take a matrix inverse
-function dec_mat_inverse_hodge(k, sd::HasDeltaSet, hodge)
+function dec_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge)
     invhodge = inv_hodge_star(k,sd,hodge)
     return (invhodge, x-> invhodge * x)
 end
 
-function dec_mat_differential(k, sd::HasDeltaSet)
-    # diff = d(k,sd)
-    diff = dec_p_differential(Val{k}, sd)
+function dec_mat_differential(k::Int, sd::HasDeltaSet)
+    diff = dec_p_differential(k, sd)
     return (diff, x-> diff * x)
 end
 
-function dec_mat_dual_differential(k, sd::HasDeltaSet)
+function dec_mat_dual_differential(k::Int, sd::HasDeltaSet)
     dualdiff = dual_derivative(k,sd)
     return (dualdiff, x-> dualdiff * x)
 end
 
-function dec_mat_codifferential(k, sd::HasDeltaSet, hodge)
-    codiff = δ(k, sd, hodge, nothing)
+function dec_mat_codifferential(k::Int, sd::HasDeltaSet, hodge)
+    codiff = δ(k, sd; hodge = hodge)
     return (codiff, x-> codiff * x)
 end
 
-function dec_mat_laplace_de_rham(k, sd::HasDeltaSet)
-    lpdr = Δ(k, sd)
+function dec_mat_laplace_de_rham(k::Int, sd::HasDeltaSet, hodge)
+    lpdr = dec_p_laplace_de_rham(k, sd, hodge)
     return (lpdr, x-> lpdr * x)
 end
 
-function dec_mat_laplace_beltrami(k, sd::HasDeltaSet)
+function dec_mat_laplace_beltrami(k::Int, sd::HasDeltaSet)
     lpbt = ∇²(k, sd)
     return (lpbt, x-> lpbt * x)
 end
@@ -102,8 +101,10 @@ end
 # the dual space simplices. If changed, use dec_p_wedge_product_zero
 function dec_p_wedge_product_zero_one(sd)
     simples = simplices(1, sd)
-    primal_vertices = map(x -> [sd[x, :∂v0], sd[x, :∂v1]], simples)
-    return (primal_vertices, simples)
+
+    primal_vertices_0 = map(x -> sd[x, :∂v0], simples)
+    primal_vertices_1 = map(x -> sd[x, :∂v1], simples)
+    return (hcat(primal_vertices_0, primal_vertices_1), simples)
 end
 
 # TODO: This relies on the assumption of a well ordering of the 
@@ -155,9 +156,9 @@ function dec_c_wedge_product_zero(f, α, val_pack)
     wedge_terms = zeros(last(simples))
 
     @inbounds for i in simples
-        for j in width_iter
-            wedge_terms[i] += coeffs[i][j] * f[primal_vertices[i][j]]
-        end
+                for j in width_iter
+                    wedge_terms[i] += coeffs[i][j] * f[primal_vertices[i][j]]
+                end
     end
     
     return wedge_terms .* α
@@ -220,6 +221,8 @@ function dec_c_wedge_product_ones(α, β, val_pack)
     return wedge_terms
 end
 
+dec_wedge_product(n::Int, m::Int, sd::HasDeltaSet) = dec_wedge_product(Tuple{n,m}, sd::HasDeltaSet)
+
 function dec_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
     (f, g) -> f .* g
 end
@@ -268,6 +271,8 @@ function default_dec_generate_2D(sd, my_symbol, hodge=GeometricHodge())
 
     return (args...) ->  op(args...)
 end
+
+dec_p_differential(n::Int, sd::HasDeltaSet) = dec_p_differential(Val{n}, sd)
 
 function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
     vec_size = 2 * ne(sd)
@@ -339,6 +344,20 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
 
     sparse(I, J, V)
 end
+
+dec_p_laplace_de_rham(n::Int, sd::HasDeltaSet, hodge = GeometricHodge()) = dec_p_laplace_de_rham(Val{n}, sd, hodge)
+
+dec_p_laplace_de_rham(::Type{Val{0}}, sd::HasDeltaSet, hodge = GeometricHodge()) = 
+    return δ(1, sd; hodge = hodge) * dec_p_differential(0, sd)
+
+dec_p_laplace_de_rham(::Type{Val{n}}, sd::HasDeltaSet, hodge = GeometricHodge()) where n = 
+    return δ(n + 1, sd; hodge = hodge) * dec_p_differential(n, sd) + dec_p_differential(n - 1, sd) * δ(n, sd; hodge = hodge)
+
+dec_p_laplace_de_rham(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D, hodge = GeometricHodge()) = 
+    return dec_p_differential(0, sd) * δ(1, sd; hodge = hodge)
+    
+dec_p_laplace_de_rham(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, hodge = GeometricHodge()) = 
+    return dec_p_differential(1, sd) * δ(2, sd; hodge = hodge)
 
 function open_operators(d::SummationDecapode; dimension::Int = 2)
     e = deepcopy(d)

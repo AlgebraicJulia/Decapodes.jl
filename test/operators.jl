@@ -7,7 +7,7 @@ using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 
-import Decapodes: dec_p_differential, open_operators!
+import Decapodes: dec_p_differential, dec_p_laplace_de_rham, open_operators!
 
 include("../examples/grid_meshes.jl")
 include("../examples/sw/spherical_meshes.jl")
@@ -33,6 +33,19 @@ end
 @testset "In-House Exterior Derivative for Form1" begin
     for sd in dual_meshes
         @test dec_p_differential(Val{1}, sd) == d(1, sd)
+    end
+end
+
+@testset "In-House Laplace DeRham for Form1" begin
+    for sd in dual_meshes
+        @test dec_p_laplace_de_rham(0, sd) == Δ(0, sd)
+    end
+end
+
+#TODO: The laplace DeRham on Torus produces a non-singular matrix
+@testset "In-House Laplace DeRham for Form1" begin
+    for sd in dual_meshes[1:6]
+        @test dec_p_laplace_de_rham(1, sd) == Δ(1, sd)
     end
 end
 
