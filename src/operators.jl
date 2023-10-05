@@ -100,11 +100,7 @@ end
 # TODO: This relies on the assumption of a well ordering of the 
 # the dual space simplices. If changed, use dec_p_wedge_product_zero
 function dec_p_wedge_product_zero_one(sd)
-    simples = simplices(1, sd)
-
-    primal_vertices_0 = map(x -> sd[x, :∂v0], simples)
-    primal_vertices_1 = map(x -> sd[x, :∂v1], simples)
-    return (hcat(primal_vertices_0, primal_vertices_1), simples)
+    return (hcat(sd[:∂v0], sd[:∂v1]), simplices(1, sd))
 end
 
 # TODO: This relies on the assumption of a well ordering of the 
@@ -113,12 +109,13 @@ end
 function dec_c_wedge_product_zero_one(f, α, val_pack)
     primal_vertices, simples = val_pack
 
-    wedge_terms = zeros(last(simples))
+    # wedge_terms = Vector{Float64}(undef, last(simples))
+    wedge_terms = 0.5 * α
     @inbounds for i in simples
-        wedge_terms[i] += f[primal_vertices[i][1]] + f[primal_vertices[i][2]]
+        wedge_terms[i] *= (f[primal_vertices[i, 1]] + f[primal_vertices[i, 2]])
     end
 
-    return 0.5 .* wedge_terms .* α
+    return wedge_terms
 end
 
 function dec_p_wedge_product_zero(k, sd)
@@ -159,9 +156,10 @@ function dec_c_wedge_product_zero(f, α, val_pack)
                 for j in width_iter
                     wedge_terms[i] += coeffs[i][j] * f[primal_vertices[i][j]]
                 end
+                wedge_terms[i] *= α[i]
     end
     
-    return wedge_terms .* α
+    return wedge_terms
 end
 
 # This is adapted almost directly from the CombinatorialSpaces package
@@ -197,21 +195,32 @@ function dec_p_wedge_product_ones(sd)
         end / CombinatorialSpaces.volume(2, sd, x)
     end
   
-    e0 = map(x -> ∂(2,0,sd,x), simples)
-    e1 = map(x -> ∂(2,1,sd,x), simples)
-    e2 = map(x -> ∂(2,2,sd,x), simples)
+    e0 = ∂(2,0,sd)
+    e1 = ∂(2,1,sd)
+    e2 = ∂(2,2,sd)
 
-    return (e0, e1, e2, coeffs, simples)
+    e = Array{Int64}(undef, 3, last(simples))
+    e[1, :] = ∂(2,0,sd)
+    e[2, :] = ∂(2,1,sd)
+    e[3, :] = ∂(2,2,sd)
+    return (e, coeffs, simples)
+    # return (e0, e1, e2, coeffs, simples)
+
+    # return(hcat(∂(2,0,sd), ∂(2,1,sd), ∂(2,2,sd)), coeffs, simples)
 end
 
 function dec_c_wedge_product_ones(α, β, val_pack)
-    e0, e1, e2, coeffs, simples = val_pack
+    # e0, e1, e2, coeffs, simples = val_pack
+    e, coeffs, simples = val_pack
 
     wedge_terms = zeros(last(simples))
 
-    @inbounds for i in simples
-        ae0, ae1, ae2 = α[e0[i]], α[e1[i]], α[e2[i]]
-        be0, be1, be2 = β[e0[i]], β[e1[i]], β[e2[i]]
+    for i in simples
+        # ae0, ae1, ae2 = α[e0[i]], α[e1[i]], α[e2[i]]
+        # be0, be1, be2 = β[e0[i]], β[e1[i]], β[e2[i]]
+
+        ae0, ae1, ae2 = α[e[1, i]], α[e[2, i]], α[e[3, i]]
+        be0, be1, be2 = β[e[1, i]], β[e[2, i]], β[e[3, i]]
 
         wedge_terms[i] += (coeffs[i][1] * (ae2 * be1 - ae1 * be2) 
                          + coeffs[i][2] * (ae2 * be0 - ae0 * be2) 
@@ -282,7 +291,7 @@ function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
     V = zeros(Int64, vec_size)
 
     sign_term = sign(1, sd, 1)
-    no_recompute_signs = allequal(sd[:edge_orientation])
+    recompute_signs = !(allequal(sd[:edge_orientation]))
 
     for i in edges(sd)
         j = 2 * i - 1
@@ -293,7 +302,7 @@ function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
         J[j] = sd[i, :∂v0]
         J[j + 1] = sd[i, :∂v1]
 
-        if(!(no_recompute_signs))
+        if(recompute_signs)
             sign_term = sign(1, sd, i)
         end
 
@@ -312,7 +321,7 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
     V = zeros(Int64, vec_size)
 
     sign_term = sign(1, sd, 1)
-    no_recompute_signs = allequal(sd[:edge_orientation])
+    recompute_signs = !(allequal(sd[:edge_orientation]))
 
     for i in triangles(sd)
         j = 3 * i - 2
@@ -331,7 +340,7 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
         edge_sign_1 = sign_term
         edge_sign_2 = sign_term
         
-        if(!(no_recompute_signs))
+        if(recompute_signs)
             edge_sign_0 = sign(1, sd, J[j])
             edge_sign_1 = sign(1, sd, J[j + 1])
             edge_sign_2 = sign(1, sd, J[j + 2])
@@ -343,6 +352,23 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
     end
 
     sparse(I, J, V)
+end
+
+function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
+    hodge_diag_1 = zeros(ne(sd))
+    centers = edge_center(sd)
+    dual_lengths = sd[:dual_length]
+    for e in edges(sd)
+        duals = incident(sd, centers[e], :D_∂v1)
+        for dual in duals
+            hodge_diag_1[e] += dual_lengths[dual]
+        end
+    end
+    return Diagonal(hodge_diag_1 ./ sd[:length])
+end
+
+function dec_p_hodge_diag(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D)
+    return Diagonal(1 ./ volume(Val{2}, sd, triangles(sd)))
 end
 
 dec_p_laplace_de_rham(n::Int, sd::HasDeltaSet, hodge = GeometricHodge()) = dec_p_laplace_de_rham(Val{n}, sd, hodge)
