@@ -57,7 +57,7 @@ include("../../examples/boundary_helpers.jl")
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :∂ρ => x -> begin
+    :∂q => x -> begin
       x[boundary_edges(sd)] .= 0
       x
     end
