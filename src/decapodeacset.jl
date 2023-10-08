@@ -285,25 +285,25 @@ These are the default rules used to do type inference in the 1D exterior calculu
 """
 op1_inf_rules_1D = [
   # Rules for ∂ₜ 
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ]),
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ,:dt]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ,:dt]),
 
   # Rules for d
   (src_type = :Form0, tgt_type = :Form1, op_names = [:d, :d₀]),
   (src_type = :DualForm0, tgt_type = :DualForm1, op_names = [:d, :dual_d₀, :d̃₀]),
 
   # Rules for ⋆
-  (src_type = :Form0, tgt_type = :DualForm1, op_names = [:⋆, :⋆₀]),
-  (src_type = :Form1, tgt_type = :DualForm0, op_names = [:⋆, :⋆₁]),
-  (src_type = :DualForm1, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹]),
-  (src_type = :DualForm0, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹]),
+  (src_type = :Form0, tgt_type = :DualForm1, op_names = [:⋆, :⋆₀, :star]),
+  (src_type = :Form1, tgt_type = :DualForm0, op_names = [:⋆, :⋆₁, :star]),
+  (src_type = :DualForm1, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
+  (src_type = :DualForm0, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹, :star_inv]),
 
   # Rules for Δ
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁]),
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀, :lapl]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁, :lapl]),
 
   # Rules for δ
-  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁]),
+  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
 
   # Rules for negation
   (src_type = :Form0, tgt_type = :Form0, op_names = [:neg, :(-)]),
@@ -311,9 +311,9 @@ op1_inf_rules_1D = [
 
 op2_inf_rules_1D = [
   # Rules for ∧₀₀, ∧₁₀, ∧₀₁
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:∧, :∧₀₀]),
-  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, op_names = [:∧, :∧₁₀]),
-  (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, op_names = [:∧, :∧₀₁]),
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:∧, :∧₀₀, :wedge]),
+  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, op_names = [:∧, :∧₁₀, :wedge]),
+  (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, op_names = [:∧, :∧₀₁, :wedge]),
 
   # Rules for L₀, L₁
   (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form0, op_names = [:L, :L₀]),
@@ -356,9 +356,9 @@ These are the default rules used to do type inference in the 2D exterior calculu
 """
 op1_inf_rules_2D = [
   # Rules for ∂ₜ
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ]),
-  (src_type = :Form2, tgt_type = :Form2, op_names = [:∂ₜ]),
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ, :dt]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ, :dt]),
+  (src_type = :Form2, tgt_type = :Form2, op_names = [:∂ₜ, :dt]),
 
   # Rules for d
   (src_type = :Form0, tgt_type = :Form1, op_names = [:d, :d₀]),
@@ -367,22 +367,22 @@ op1_inf_rules_2D = [
   (src_type = :DualForm1, tgt_type = :DualForm2, op_names = [:d, :dual_d₁, :d̃₁]),
 
   # Rules for ⋆
-  (src_type = :Form0, tgt_type = :DualForm2, op_names = [:⋆, :⋆₀]),
-  (src_type = :Form1, tgt_type = :DualForm1, op_names = [:⋆, :⋆₁]),
-  (src_type = :Form2, tgt_type = :DualForm0, op_names = [:⋆, :⋆₂]),
+  (src_type = :Form0, tgt_type = :DualForm2, op_names = [:⋆, :⋆₀, :star]),
+  (src_type = :Form1, tgt_type = :DualForm1, op_names = [:⋆, :⋆₁, :star]),
+  (src_type = :Form2, tgt_type = :DualForm0, op_names = [:⋆, :⋆₂, :star]),
 
-  (src_type = :DualForm2, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹]),
-  (src_type = :DualForm1, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹]),
-  (src_type = :DualForm0, tgt_type = :Form2, op_names = [:⋆, :⋆₂⁻¹]),
+  (src_type = :DualForm2, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
+  (src_type = :DualForm1, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹, :star_inv]),
+  (src_type = :DualForm0, tgt_type = :Form2, op_names = [:⋆, :⋆₂⁻¹, :star_inv]),
 
   # Rules for Δ
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁]),
-  (src_type = :Form2, tgt_type = :Form2, op_names = [:Δ, :Δ₂]),
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀, :lapl]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁, :lapl]),
+  (src_type = :Form2, tgt_type = :Form2, op_names = [:Δ, :Δ₂, :lapl]),
 
   # Rules for δ
-  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁]),
-  (src_type = :Form2, tgt_type = :Form1, op_names = [:δ, :δ₂]),
+  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
+  (src_type = :Form2, tgt_type = :Form1, op_names = [:δ, :δ₂, :codif]),
 
   # Rules for negation
   (src_type = :Form0, tgt_type = :Form0, op_names = [:neg, :(-)]),
@@ -391,9 +391,9 @@ op1_inf_rules_2D = [
     
 op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   # Rules for ∧₁₁, ∧₂₀, ∧₀₂
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, op_names = [:∧, :∧₁₁]),
-  (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, op_names = [:∧, :∧₂₀]),
-  (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, op_names = [:∧, :∧₀₂]),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, op_names = [:∧, :∧₁₁, :wedge]),
+  (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, op_names = [:∧, :∧₂₀, :wedge]),
+  (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, op_names = [:∧, :∧₀₂, :wedge]),
 
   (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:L]),    
 
@@ -566,8 +566,13 @@ op1_res_rules_1D = [
   (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :⋆),
   (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
   (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆),
+  (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = :star),
+  (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :star),
+  (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :star),
+  (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
   # Rules for δ.
-  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ)]
+  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ),
+  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif)]
 
 # We merge 1D and 2D rules since it seems op2 rules are metric-free. If
 # this assumption is false, this needs to change.
@@ -576,6 +581,9 @@ op2_res_rules_1D = [
   (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, resolved_name = :∧₀₀, op = :∧),
   (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = :∧),
   (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, resolved_name = :∧₀₁, op = :∧),
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, resolved_name = :∧₀₀, op = :wedge),
+  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = :wedge),
+  (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, resolved_name = :∧₀₁, op = :wedge),
   # Rules for L.
   (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form0, resolved_name = :L₀, op = :L),
   (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, resolved_name = :L₁, op = :L),
@@ -599,17 +607,29 @@ op1_res_rules_2D = [
   (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
   (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆),
   (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :⋆),
+  (src_type = :Form0, tgt_type = :DualForm2, resolved_name = :⋆₀, op = :star),
+  (src_type = :Form1, tgt_type = :DualForm1, resolved_name = :⋆₁, op = :star),
+  (src_type = :Form2, tgt_type = :DualForm0, resolved_name = :⋆₂, op = :star),
+  (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :star),
+  (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
+  (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :star),
   # Rules for δ.
   (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = :δ),
   (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ),
+  (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = :codif),
+  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif),
   # Rules for ∇².
+  # TODO: Call this :nabla2 in ASCII?
   (src_type = :Form0, tgt_type = :Form0, resolved_name = :∇²₀, op = :∇²),
   (src_type = :Form1, tgt_type = :Form1, resolved_name = :∇²₁, op = :∇²),
   (src_type = :Form2, tgt_type = :Form2, resolved_name = :∇²₂, op = :∇²),
   # Rules for Δ.
   (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :Δ),
   (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :Δ),
-  (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :Δ)]
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :Δ),
+  (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :lapl),
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :lapl),
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :lapl)]
 
 # We merge 1D and 2D rules directly here since it seems op2 rules
 # are metric-free. If this assumption is false, this needs to change.
@@ -618,6 +638,9 @@ op2_res_rules_2D = vcat(op2_res_rules_1D, [
   (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = :∧),
   (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :∧),
   (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :∧),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = :wedge),
+  (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :wedge),
+  (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :wedge),
   # Rules for L.
   (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form2, resolved_name = :L₂, op = :L),
   (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₂ᵈ, op = :L),
@@ -662,4 +685,70 @@ Resolve function overloads based on types of src and tgt.
 """
 resolve_overloads!(d::SummationDecapode) =
   resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
+
+function replace_names!(d::SummationDecapode, op1_repls::Vector{Pair{Symbol, Any}}, op2_repls::Vector{Pair{Symbol, Symbol}})
+  for (orig,repl) in op1_repls
+    for i in collect(incident(d, orig, :op1))
+      d[i, :op1] = repl
+    end
+  end
+  for (orig,repl) in op2_repls
+    for i in collect(incident(d, orig, :op2))
+      d[i, :op2] = repl
+    end
+  end
+  d
+end
+
+ascii_to_unicode_op1 = Pair{Symbol, Any}[
+                        (:dt       => :∂ₜ),
+                        (:star     => :⋆),
+                        (:lapl     => :Δ),
+                        (:codif    => :δ),
+                        (:star_inv => :⋆⁻¹)]
+
+ascii_to_unicode_op2 = [
+                        (:wedge    => :∧)]
+
+"""    function unicode!(d::SummationDecapode)
+
+Replace ASCII operators with their Unicode equivalents.
+"""
+unicode!(d::SummationDecapode) = replace_names!(d, ascii_to_unicode_op1, ascii_to_unicode_op2)
+
+vec_to_dec_op1 = [
+                  (:grad        => :d),
+                  (:div         => [:⋆,:d,:⋆]),
+                  (:curl        => [:d,:⋆]),
+                  (:∇           => :d),
+                  (Symbol("∇ᵈ") => [:⋆,:d,:⋆]),
+                  # Note: This is x, not \times.
+                  (Symbol("∇x") => [:d,:⋆])]
+
+vec_to_dec_op2 = Pair{Symbol, Symbol}[]
+
+"""    function vec_to_dec!(d::SummationDecapode)
+
+Replace Vector Calculus operators with Discrete Exterior Calculus equivalents.
+"""
+function vec_to_dec!(d::SummationDecapode)
+  # Perform simple substitutions.
+  replace_names!(d, vec_to_dec_op1, vec_to_dec_op2)
+
+  # Replace `adv` with divergence of ∧.
+  advs = incident(d, :adv, :op2)
+  adv_tgts = d[advs, :res]
+
+  # Intermediate wedges.
+  wedge_tgts = add_parts!(d, :Var, length(adv_tgts), name=map(i -> Symbol("•_adv_$i"), eachindex(advs)), type=:infer)
+  # Divergences.
+  add_parts!(d, :Op1, length(adv_tgts), src=wedge_tgts, tgt=adv_tgts, op1=fill([:⋆,:d,:⋆],length(advs)))
+  # Point advs to the intermediates.
+  d[collect(advs), :res] = wedge_tgts
+
+  # Replace adv with ∧.
+  d[collect(advs), :op2] = fill(:∧,length(advs))
+
+  d
+end
 
