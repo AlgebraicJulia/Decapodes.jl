@@ -62,7 +62,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
       x
     end
     :∧₀₁ => (x,y) -> begin
-      ∧(Tuple{(0,1)}, sd, x,y)
+      ∧(0,1, sd, x,y)
     end
     :∂ρ => ρ -> begin
       ρ[1] = 0
@@ -196,10 +196,9 @@ Poise = @decapode begin
   (k, R, μ̃ )::Constant
 
   # Poiseuille Flow
-  Δq == ∘(⋆, d, ⋆, d)(q)
   ∂ₜ(q) == q̇
   ∇P == d(P)
-  q̇ == μ̃ * ∂q(Δq) - ∇P + R * q
+  q̇ == μ̃ * ∂q(Δ(q)) - ∇P + R * q
   
   # Pressure/Density Coupling
   P == k * ρ
@@ -225,7 +224,7 @@ sim = eval(gensim(Poise, dimension=1))
 func = sim(sd, generate)
 
 q = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5]
-ρ = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5]
+ρ = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5,5]
 u = construct(PhysicsState, [VectorForm(q), VectorForm(ρ)], Float64[], [:q, :ρ])
 params = (k = -0.01, μ̃ = 0.5, R=0.005)
 
