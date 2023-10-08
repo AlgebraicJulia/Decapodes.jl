@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Pipe Flow · Decapodes.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><script src="../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Decapodes.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Decapodes.jl</a></li><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../equations/">Equations</a></li><li><a class="tocitem" href="../bc_debug/">Misc Features</a></li><li class="is-active"><a class="tocitem" href>Pipe Flow</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Creating-the-Poiseuille-Equations"><span>Creating the Poiseuille Equations</span></a></li><li class="toplevel"><a class="tocitem" href="#Defining-the-Semantics"><span>Defining the Semantics</span></a></li><li><a class="tocitem" href="#A-Single-Pipe-Segment"><span>A Single Pipe Segment</span></a></li><li><a class="tocitem" href="#A-Linear-Pipe-with-Multiple-Segments"><span>A Linear Pipe with Multiple Segments</span></a></li><li><a class="tocitem" href="#A-Distribution-Network"><span>A Distribution Network</span></a></li><li><a class="tocitem" href="#Multiphysics"><span>Multiphysics</span></a></li></ul></li><li><a class="tocitem" href="../ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Pipe Flow</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Pipe Flow</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/poiseuille.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Poissuille-Flow-for-Fluid-Mechanics"><a class="docs-heading-anchor" href="#Poissuille-Flow-for-Fluid-Mechanics">Poissuille Flow for Fluid Mechanics</a><a id="Poissuille-Flow-for-Fluid-Mechanics-1"></a><a class="docs-heading-anchor-permalink" href="#Poissuille-Flow-for-Fluid-Mechanics" title="Permalink"></a></h1><p>When modeling a fluid flowing in a pipe, one can ignore the multidimensional structure of the pipe and approximate the system as a 1 dimensional flow along the pipe. The noslip boundary condition and the geometry of the pipe enter a 1D equation in the form of a resistance term.</p><pre><code class="language-julia hljs">using Catlab
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Pipe Flow · Decapodes.jl</title><meta name="title" content="Pipe Flow · Decapodes.jl"/><meta property="og:title" content="Pipe Flow · Decapodes.jl"/><meta property="twitter:title" content="Pipe Flow · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><script src="../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Decapodes.jl</a></li><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../equations/">Equations</a></li><li><a class="tocitem" href="../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../bc_debug/">Misc Features</a></li><li class="is-active"><a class="tocitem" href>Pipe Flow</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Creating-the-Poiseuille-Equations"><span>Creating the Poiseuille Equations</span></a></li><li class="toplevel"><a class="tocitem" href="#Defining-the-Semantics"><span>Defining the Semantics</span></a></li><li><a class="tocitem" href="#A-Single-Pipe-Segment"><span>A Single Pipe Segment</span></a></li><li><a class="tocitem" href="#A-Linear-Pipe-with-Multiple-Segments"><span>A Linear Pipe with Multiple Segments</span></a></li><li><a class="tocitem" href="#A-Distribution-Network"><span>A Distribution Network</span></a></li><li><a class="tocitem" href="#Multiphysics"><span>Multiphysics</span></a></li></ul></li><li><a class="tocitem" href="../ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Pipe Flow</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Pipe Flow</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/poiseuille.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Poissuille-Flow-for-Fluid-Mechanics"><a class="docs-heading-anchor" href="#Poissuille-Flow-for-Fluid-Mechanics">Poissuille Flow for Fluid Mechanics</a><a id="Poissuille-Flow-for-Fluid-Mechanics-1"></a><a class="docs-heading-anchor-permalink" href="#Poissuille-Flow-for-Fluid-Mechanics" title="Permalink"></a></h1><p>When modeling a fluid flowing in a pipe, one can ignore the multidimensional structure of the pipe and approximate the system as a 1 dimensional flow along the pipe. The noslip boundary condition and the geometry of the pipe enter a 1D equation in the form of a resistance term.</p><pre><code class="language-julia hljs">using Catlab
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
 using CombinatorialSpaces.DiscreteExteriorCalculus: ∧
@@ -15,6 +15,7 @@ using OrdinaryDiffEq</code></pre><h1 id="Creating-the-Poiseuille-Equations"><a c
 Poise = @decapode begin
   P::Form0
   q::Form1
+  (R, μ̃ )::Constant
 
   # Laplacian of q for the viscous effect
   Δq == Δ(q)
@@ -25,242 +26,23 @@ Poise = @decapode begin
   ∂ₜ(q) == q̇
 
   # The core equation
-#  q̇ == μ̃(Δq) + ∇P + R * q
   q̇ == μ̃  * ∂q(Δq) + ∇P + R * q
 end
 
 Poise = expand_operators(Poise)
 infer_types!(Poise, op1_inf_rules_1D, op2_inf_rules_1D)
 resolve_overloads!(Poise, op1_res_rules_1D, op2_res_rules_1D)
-to_graphviz(Poise)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
- "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
- -->
-<!-- Title: G Pages: 1 -->
-<svg width="275pt" height="549pt"
- viewBox="0.00 0.00 274.74 548.58" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 544.58)">
-<title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-544.58 270.74,-544.58 270.74,4 -4,4"/>
-<!-- n1 -->
-<g id="node1" class="node">
-<title>n1</title>
-<ellipse fill="none" stroke="black" cx="38.28" cy="-488.97" rx="21.84" ry="10.71"/>
-<text text-anchor="middle" x="38.28" y="-485.27" font-family="Times,serif" font-size="14.00">P:Ω₀</text>
-</g>
-<!-- n5 -->
-<g id="node5" class="node">
-<title>n5</title>
-<ellipse fill="none" stroke="black" cx="28.28" cy="-371.33" rx="28.07" ry="10.71"/>
-<text text-anchor="middle" x="28.28" y="-367.63" font-family="Times,serif" font-size="14.00">∇P:Ω₁</text>
-</g>
-<!-- n1&%2345;&gt;n5 -->
-<g id="edge6" class="edge">
-<title>n1&%2345;&gt;n5</title>
-<path fill="none" stroke="black" d="M37.43,-478.11C35.68,-457.8 31.64,-411.19 29.57,-387.2"/>
-<polygon fill="black" stroke="black" points="31.31,-386.99 29.13,-382.16 27.82,-387.3 31.31,-386.99"/>
-<text text-anchor="middle" x="43.78" y="-446.06" font-family="Times,serif" font-size="14.00">d₀</text>
-</g>
-<!-- n2 -->
-<g id="node2" class="node">
-<title>n2</title>
-<ellipse fill="none" stroke="black" cx="111.28" cy="-488.97" rx="21.84" ry="10.71"/>
-<text text-anchor="middle" x="111.28" y="-485.27" font-family="Times,serif" font-size="14.00">q:Ω₁</text>
-</g>
-<!-- n3 -->
-<g id="node3" class="node">
-<title>n3</title>
-<ellipse fill="none" stroke="black" cx="129.28" cy="-410.54" rx="28.07" ry="10.71"/>
-<text text-anchor="middle" x="129.28" y="-406.84" font-family="Times,serif" font-size="14.00">Δq:Ω₁</text>
-</g>
-<!-- n2&%2345;&gt;n3 -->
-<g id="edge5" class="edge">
-<title>n2&%2345;&gt;n3</title>
-<path fill="none" stroke="black" d="M109.99,-478.01C109.02,-467.98 108.45,-452.16 112.28,-439.15 113.68,-434.39 116.14,-429.64 118.75,-425.45"/>
-<polygon fill="black" stroke="black" points="120.29,-426.29 121.6,-421.15 117.38,-424.35 120.29,-426.29"/>
-<text text-anchor="middle" x="117.28" y="-446.06" font-family="Times,serif" font-size="14.00">Δ</text>
-</g>
-<!-- n8 -->
-<g id="node8" class="node">
-<title>n8</title>
-<ellipse fill="none" stroke="black" cx="88.28" cy="-51.61" rx="21.84" ry="10.71"/>
-<text text-anchor="middle" x="88.28" y="-47.91" font-family="Times,serif" font-size="14.00">q̇:Ω₁</text>
-</g>
-<!-- n2&%2345;&gt;n8 -->
-<g id="edge7" class="edge">
-<title>n2&%2345;&gt;n8</title>
-<path fill="none" stroke="black" d="M103.01,-478.85C91.57,-465.25 72.28,-438.36 72.28,-411.54 72.28,-411.54 72.28,-411.54 72.28,-125.65 72.28,-105.07 78.42,-81.97 83.09,-67.36"/>
-<polygon fill="black" stroke="black" points="84.83,-67.68 84.73,-62.38 81.51,-66.58 84.83,-67.68"/>
-<text text-anchor="middle" x="78.28" y="-253.1" font-family="Times,serif" font-size="14.00">∂ₜ</text>
-</g>
-<!-- n14 -->
-<g id="node14" class="node">
-<title>n14</title>
-<polygon fill="none" stroke="black" points="265.78,-418.04 216.78,-418.04 216.78,-403.04 265.78,-403.04 265.78,-418.04"/>
-<text text-anchor="middle" x="241.28" y="-406.84" font-family="Times,serif" font-size="14.00">ΩL×Ω₁</text>
-</g>
-<!-- n2&%2345;&gt;n14 -->
-<g id="edge13" class="edge">
-<title>n2&%2345;&gt;n14</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M114.54,-478.19C118.74,-467.07 127.11,-449.18 140.28,-439.15 160.9,-423.45 189.88,-416.67 211.51,-413.75"/>
-<polygon fill="black" stroke="black" points="211.82,-415.48 216.57,-413.12 211.39,-412 211.82,-415.48"/>
-<text text-anchor="middle" x="147.78" y="-446.06" font-family="Times,serif" font-size="14.00">π₂</text>
-</g>
-<!-- n4 -->
-<g id="node4" class="node">
-<title>n4</title>
-<ellipse fill="none" stroke="black" cx="130.28" cy="-332.12" rx="29.9" ry="10.71"/>
-<text text-anchor="middle" x="130.28" y="-328.42" font-family="Times,serif" font-size="14.00">•1:Ω•</text>
-</g>
-<!-- n3&%2345;&gt;n4 -->
-<g id="edge8" class="edge">
-<title>n3&%2345;&gt;n4</title>
-<path fill="none" stroke="black" d="M129.41,-399.86C129.58,-386.84 129.89,-363.55 130.09,-348.21"/>
-<polygon fill="black" stroke="black" points="131.84,-347.98 130.16,-342.96 128.34,-347.94 131.84,-347.98"/>
-<text text-anchor="middle" x="138.78" y="-367.63" font-family="Times,serif" font-size="14.00">∂q</text>
-</g>
-<!-- n13 -->
-<g id="node13" class="node">
-<title>n13</title>
-<polygon fill="none" stroke="black" points="156.28,-264.3 104.28,-264.3 104.28,-249.3 156.28,-249.3 156.28,-264.3"/>
-<text text-anchor="middle" x="130.28" y="-253.1" font-family="Times,serif" font-size="14.00">Ω•×Ω•</text>
-</g>
-<!-- n4&%2345;&gt;n13 -->
-<g id="edge10" class="edge">
-<title>n4&%2345;&gt;n13</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M130.28,-321.23C130.28,-307.84 130.28,-283.97 130.28,-269.64"/>
-<polygon fill="black" stroke="black" points="132.03,-269.49 130.28,-264.49 128.53,-269.49 132.03,-269.49"/>
-<text text-anchor="middle" x="137.78" y="-289.2" font-family="Times,serif" font-size="14.00">π₂</text>
-</g>
-<!-- n15 -->
-<g id="node15" class="node">
-<title>n15</title>
-<ellipse fill="none" stroke="black" cx="120.28" cy="-126.65" rx="13.37" ry="13.37"/>
-<text text-anchor="middle" x="120.28" y="-122.95" font-family="Times,serif" font-size="14.00">Σ1</text>
-</g>
-<!-- n5&%2345;&gt;n15 -->
-<g id="edge17" class="edge">
-<title>n5&%2345;&gt;n15</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M27.86,-360.44C27.27,-345.87 26.28,-317.79 26.28,-293.9 26.28,-293.9 26.28,-293.9 26.28,-186.69 26.28,-151.46 74.22,-136.44 101.63,-130.73"/>
-<polygon fill="black" stroke="black" points="102.25,-132.39 106.82,-129.71 101.57,-128.95 102.25,-132.39"/>
-</g>
-<!-- n6 -->
-<g id="node6" class="node">
-<title>n6</title>
-<ellipse fill="none" stroke="black" cx="233.28" cy="-292.9" rx="27.65" ry="10.71"/>
-<text text-anchor="middle" x="233.28" y="-289.2" font-family="Times,serif" font-size="14.00">•2:Ω₁</text>
-</g>
-<!-- n6&%2345;&gt;n15 -->
-<g id="edge18" class="edge">
-<title>n6&%2345;&gt;n15</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M228.57,-282.23C218.46,-261.9 193.39,-213.58 166.28,-177.08 156.29,-163.62 143.1,-149.77 133.41,-140.17"/>
-<polygon fill="black" stroke="black" points="134.55,-138.83 129.76,-136.58 132.1,-141.33 134.55,-138.83"/>
-</g>
-<!-- n7 -->
-<g id="node7" class="node">
-<title>n7</title>
-<ellipse fill="none" stroke="black" cx="241.28" cy="-488.97" rx="25.41" ry="10.71"/>
-<text text-anchor="middle" x="241.28" y="-485.27" font-family="Times,serif" font-size="14.00">R:ΩL</text>
-</g>
-<!-- n7&%2345;&gt;n14 -->
-<g id="edge12" class="edge">
-<title>n7&%2345;&gt;n14</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M241.28,-478.29C241.28,-464.27 241.28,-438.33 241.28,-423.25"/>
-<polygon fill="black" stroke="black" points="243.03,-423.23 241.28,-418.23 239.53,-423.23 243.03,-423.23"/>
-<text text-anchor="middle" x="248.78" y="-446.06" font-family="Times,serif" font-size="14.00">π₁</text>
-</g>
-<!-- n12 -->
-<g id="node12" class="node">
-<title>n12</title>
-</g>
-<!-- n8&%2345;&gt;n12 -->
-<g id="edge4" class="edge">
-<title>n8&%2345;&gt;n12</title>
-<path fill="none" stroke="black" d="M88.28,-40.97C88.28,-31.46 88.28,-17.21 88.28,-9.14"/>
-<polygon fill="black" stroke="black" points="90.03,-9.06 88.28,-4.06 86.53,-9.06 90.03,-9.06"/>
-</g>
-<!-- n9 -->
-<g id="node9" class="node">
-<title>n9</title>
-<ellipse fill="none" stroke="black" cx="129.28" cy="-187.69" rx="27.65" ry="10.71"/>
-<text text-anchor="middle" x="129.28" y="-183.99" font-family="Times,serif" font-size="14.00">•3:Ω₁</text>
-</g>
-<!-- n9&%2345;&gt;n15 -->
-<g id="edge16" class="edge">
-<title>n9&%2345;&gt;n15</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M127.8,-176.94C126.49,-168.35 124.55,-155.63 122.97,-145.26"/>
-<polygon fill="black" stroke="black" points="124.66,-144.76 122.18,-140.08 121.2,-145.29 124.66,-144.76"/>
-</g>
-<!-- n10 -->
-<g id="node10" class="node">
-<title>n10</title>
-<ellipse fill="none" stroke="black" cx="188.28" cy="-449.76" rx="24.08" ry="10.71"/>
-<text text-anchor="middle" x="188.28" y="-446.06" font-family="Times,serif" font-size="14.00">μ̃:Ω•</text>
-</g>
-<!-- n10&%2345;&gt;n13 -->
-<g id="edge9" class="edge">
-<title>n10&%2345;&gt;n13</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M187.89,-438.94C186.8,-417.25 182.84,-363.84 169.28,-321.51 163.32,-302.88 159.77,-298.81 149.28,-282.3 146.26,-277.52 142.51,-272.55 139.16,-268.33"/>
-<polygon fill="black" stroke="black" points="140.48,-267.18 135.96,-264.41 137.76,-269.39 140.48,-267.18"/>
-<text text-anchor="middle" x="189.78" y="-367.63" font-family="Times,serif" font-size="14.00">π₁</text>
-</g>
-<!-- n11 -->
-<g id="node11" class="node">
-<title>n11</title>
-</g>
-<!-- n11&%2345;&gt;n1 -->
-<g id="edge1" class="edge">
-<title>n11&%2345;&gt;n1</title>
-<path fill="none" stroke="black" d="M109.48,-536.4C102.07,-531.57 73.51,-512.94 54.89,-500.8"/>
-<polygon fill="black" stroke="black" points="55.53,-499.13 50.39,-497.86 53.62,-502.06 55.53,-499.13"/>
-</g>
-<!-- n11&%2345;&gt;n2 -->
-<g id="edge2" class="edge">
-<title>n11&%2345;&gt;n2</title>
-<path fill="none" stroke="black" d="M111.28,-536.4C111.28,-532.08 111.28,-516.72 111.28,-504.84"/>
-<polygon fill="black" stroke="black" points="113.03,-504.67 111.28,-499.67 109.53,-504.67 113.03,-504.67"/>
-</g>
-<!-- n11&%2345;&gt;n10 -->
-<g id="edge3" class="edge">
-<title>n11&%2345;&gt;n10</title>
-<path fill="none" stroke="black" d="M112.37,-536.35C119.29,-528.55 157.46,-485.52 176.9,-463.6"/>
-<polygon fill="black" stroke="black" points="178.29,-464.67 180.3,-459.76 175.67,-462.34 178.29,-464.67"/>
-</g>
-<!-- n13&%2345;&gt;n9 -->
-<g id="edge11" class="edge">
-<title>n13&%2345;&gt;n9</title>
-<path fill="none" stroke="black" d="M130.18,-249.12C130.03,-238.58 129.72,-217.84 129.51,-203.63"/>
-<polygon fill="black" stroke="black" points="131.25,-203.32 129.43,-198.35 127.75,-203.37 131.25,-203.32"/>
-<text text-anchor="middle" x="133.78" y="-220.1" font-family="Times,serif" font-size="14.00">*</text>
-</g>
-<!-- n14&%2345;&gt;n6 -->
-<g id="edge14" class="edge">
-<title>n14&%2345;&gt;n6</title>
-<path fill="none" stroke="black" d="M240.83,-402.99C239.58,-384.97 236.08,-334.3 234.32,-308.86"/>
-<polygon fill="black" stroke="black" points="236.06,-308.71 233.97,-303.84 232.57,-308.95 236.06,-308.71"/>
-<text text-anchor="middle" x="242.78" y="-367.63" font-family="Times,serif" font-size="14.00">*</text>
-</g>
-<!-- n15&%2345;&gt;n8 -->
-<g id="edge15" class="edge">
-<title>n15&%2345;&gt;n8</title>
-<path fill="none" stroke="black" d="M115.14,-113.91C109.54,-101.13 100.58,-80.67 94.56,-66.94"/>
-<polygon fill="black" stroke="black" points="96.1,-66.09 92.49,-62.21 92.9,-67.5 96.1,-66.09"/>
-<text text-anchor="middle" x="112.78" y="-84.01" font-family="Times,serif" font-size="14.00">+</text>
-</g>
-</g>
-</svg>
-'/><h1 id="Defining-the-Semantics"><a class="docs-heading-anchor" href="#Defining-the-Semantics">Defining the Semantics</a><a id="Defining-the-Semantics-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-Semantics" title="Permalink"></a></h1><p>In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The <code>generate</code> function below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. </p><pre><code class="language-julia hljs">using MLStyle
+to_graphviz(Poise)</code></pre><img src="21465081.svg" alt="Example block output"/><h1 id="Defining-the-Semantics"><a class="docs-heading-anchor" href="#Defining-the-Semantics">Defining the Semantics</a><a id="Defining-the-Semantics-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-Semantics" title="Permalink"></a></h1><p>In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The <code>generate</code> function below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. </p><pre><code class="language-julia hljs">using MLStyle
 include(&quot;../../examples/boundary_helpers.jl&quot;)
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :∂ρ =&gt; x -&gt; begin
+    :∂q =&gt; x -&gt; begin
       x[boundary_edges(sd)] .= 0
       x
     end
     :∧₀₁ =&gt; (x,y) -&gt; begin
-      ∧(Tuple{(0,1)}, sd, x,y)
+      ∧(0,1, sd, x,y)
     end
     :∂ρ =&gt; ρ -&gt; begin
       ρ[1] = 0
@@ -372,14 +154,36 @@ sd</code></pre><div class="c-set">
   </tbody>
 </table>
 </div>
-<p>Then we solve the equations.</p><pre><code class="language- hljs">using MultiScaleArrays
-sim = eval(gensim(Poise))
+<p>Then we solve the equations.</p><pre><code class="language-julia hljs">using MultiScaleArrays
+sim = eval(gensim(Poise, dimension=1))
 fₘ = sim(sd, generate)
-u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
-params = (k = -0.01, μ̃ = 0.5)
+q = [2.0]
+P = [10.0, 5.0]
+u = construct(PhysicsState, [VectorForm(q), VectorForm(P)], Float64[], [:q, :P])
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
-sol.u</code></pre><h2 id="A-Linear-Pipe-with-Multiple-Segments"><a class="docs-heading-anchor" href="#A-Linear-Pipe-with-Multiple-Segments">A Linear Pipe with Multiple Segments</a><a id="A-Linear-Pipe-with-Multiple-Segments-1"></a><a class="docs-heading-anchor-permalink" href="#A-Linear-Pipe-with-Multiple-Segments" title="Permalink"></a></h2><p>We then move on to a linear sequence of pipe segments. You can visualize this as the discretization of a single long pipe into <code>n</code> segments. First we define the mesh:</p><pre><code class="language-julia hljs">function linear_pipe(n::Int)
+sol.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">50-element Vector{PhysicsState{VectorForm{Float64}, Float64}}:
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([2.0]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([1.5359733494802201]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-3.1161760961912908]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-50.846659222193736]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-206.15225697183885]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-520.9665006970122]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-1061.8122613352482]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-2050.7012216867183]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-3918.2885837449535]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-7662.698190388802]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ ⋮
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-2.5163517616858677e20]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-9.675030018368942e20]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-3.7230689890767287e21]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-1.4337196904916516e22]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-5.524540694657042e22]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-2.1298932245406724e23]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-8.21515644703952e23]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-3.169871349682914e24]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-5.115638375030502e24]), VectorForm{Float64}([10.0, 5.0])], Float64[], [1, 3], [:q, :P])</code></pre><h2 id="A-Linear-Pipe-with-Multiple-Segments"><a class="docs-heading-anchor" href="#A-Linear-Pipe-with-Multiple-Segments">A Linear Pipe with Multiple Segments</a><a id="A-Linear-Pipe-with-Multiple-Segments-1"></a><a class="docs-heading-anchor-permalink" href="#A-Linear-Pipe-with-Multiple-Segments" title="Permalink"></a></h2><p>We then move on to a linear sequence of pipe segments. You can visualize this as the discretization of a single long pipe into <code>n</code> segments. First we define the mesh:</p><pre><code class="language-julia hljs">function linear_pipe(n::Int)
   s = EmbeddedDeltaSet1D{Bool,Point3D}()
   add_vertices!(s, n, point=[Point3D(i, 0, 0) for i in 1:n])
   add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
@@ -388,13 +192,34 @@ sol.u</code></pre><h2 id="A-Linear-Pipe-with-Multiple-Segments"><a class="docs-h
   sd
 end
 
-sd = linear_pipe(10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Then we solve the equation. Notice that the equilibrium flow is constant down the length of the pipe. This must be true because of conservation of mass. The segments are all the same length and the total flow in must equal the total flow out of each segment.</p><p>Note that we do not generate new simulation code for Poiseuille flow with <code>gensim</code> again. We provide our new mesh so that our discrete differential operators can be instantiated.</p><pre><code class="language- hljs">fₘ = sim(sd, generate)
+sd = linear_pipe(10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Then we solve the equation. Notice that the equilibrium flow is constant down the length of the pipe. This must be true because of conservation of mass. The segments are all the same length and the total flow in must equal the total flow out of each segment.</p><p>Note that we do not generate new simulation code for Poiseuille flow with <code>gensim</code> again. We provide our new mesh so that our discrete differential operators can be instantiated.</p><pre><code class="language-julia hljs">fₘ = sim(sd, generate)
+P = [9,8,7,6,5,4,3,2,1,0]
 q = [5,3,4,2,5,2,8,4,3]
-u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
-params = (k = -0.01, μ̃ = 0.5)
+u = construct(PhysicsState, [VectorForm(q), VectorForm(P)], Float64[], [:q, :P])
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5());
-sol.u</code></pre><h2 id="A-Distribution-Network"><a class="docs-heading-anchor" href="#A-Distribution-Network">A Distribution Network</a><a id="A-Distribution-Network-1"></a><a class="docs-heading-anchor-permalink" href="#A-Distribution-Network" title="Permalink"></a></h2><p>To model a distribution network such as residential drinking water or natural gas, we will build a binary tree of pipes that at each junction have a bifurcation into two pipes. We expect that the flow will be divided by two at each level of the tree. First we make the mesh.</p><pre><code class="language-julia hljs">function binary_pipe(depth::Int)
+sol.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5473-element Vector{PhysicsState{VectorForm{Float64}, Float64}}:
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.0, 3.0, 4.0, 2.0, 5.0, 2.0, 8.0, 4.0, 3.0]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([4.906327969049855, 3.0396940772974874, 3.776868094297585, 2.1245805249365666, 4.646184347618068, 2.300321278746661, 7.4621889883835335, 4.032662930791816, 2.9053672302708793]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([4.732043806249576, 3.0690690899703887, 3.4290877585374435, 2.265555849335189, 4.112630914928272, 2.6926179821697187, 6.619562463216133, 4.016539308134926, 2.7292955375957266]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([4.5157543769549555, 3.0449140973731788, 3.0854511173906833, 2.322909420225278, 3.6124961816348513, 2.9564400022836717, 5.788473183359557, 3.896852362502112, 2.510787755180135]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([4.239475641764936, 2.9474304834001708, 2.7365602332832593, 2.276890621002892, 3.1378028770615933, 3.055794517670003, 4.960930338275826, 3.644196432845926, 2.2316753919368844]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([3.907322316251479, 2.7674195707011413, 2.392990237787987, 2.1213167201388, 2.7029708451645775, 2.9628125367175833, 4.183267857017227, 3.2611269189741736, 1.8961153656489305]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([3.5064332936302245, 2.496149991776646, 2.032298770012503, 1.8601116631424708, 2.2720333980655427, 2.684045557852696, 3.4265473714167007, 2.7505508350081866, 1.4911146607443808]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([3.0325668405859347, 2.132654156425579, 1.636031315371245, 1.5036946260236843, 1.8130377641654918, 2.2421047294973317, 2.6707089298623163, 2.1322616421475695, 1.012388038950919]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([2.471600821051096, 1.6693496486057422, 1.1765327728146766, 1.0513571149790655, 1.2862830732329436, 1.654298808206329, 1.8773344558727247, 1.4133688122914667, 0.4456685217798253]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([1.8109484887135994, 1.0978250350779792, 0.6295262764141561, 0.49578342489196064, 0.6619437663946411, 0.9332951566603198, 1.0181587120477016, 0.5982478987276966, -0.22175973191497886]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ ⋮
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-9.480731562902974e23, -9.494974860701075e23, -9.501182060811799e23, -9.522238033271776e23, -9.523893149706335e23, -9.546547601381815e23, -9.549801197031847e23, -9.567903565031172e23, -9.577969835343095e23]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-9.567887788237475e23, -9.582262024956955e23, -9.588526286357229e23, -9.609775828170679e23, -9.611446157577981e23, -9.634308873781563e23, -9.637592377579005e23, -9.655861161789622e23, -9.666019970681027e23]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-9.655845235954031e23, -9.670351614780141e23, -9.676673463537855e23, -9.698118351922404e23, -9.699804036814175e23, -9.722876929450509e23, -9.726190618594084e23, -9.744627347364468e23, -9.754879546066472e23]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-9.744611283424986e23, -9.759251020406734e23, -9.765630982349667e23, -9.78727301849561e23, -9.788974193720717e23, -9.812259201273638e23, -9.815603347905753e23, -9.834209568740832e23, -9.84455601453713e23]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-9.834193352327718e23, -9.84896767288713e23, -9.85540628376226e23, -9.877247277769911e23, -9.878964088405787e23, -9.902463158160509e23, -9.905838044543487e23, -9.924615314058948e23, -9.935056873890148e23]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-9.924598938255097e23, -9.939509078146386e23, -9.946006881253065e23, -9.968048655911519e23, -9.96978125301334e23, -9.99349634549681e23, -9.99690226042366e23, -1.001585214690226e24, -1.002638969659627e24]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-1.0015835617680193e24, -1.0030882824922352e24, -1.0037440366007714e24, -1.00596847646933e24, -1.0061433296203163e24, -1.0085366394482242e24, -1.0088803625585619e24, -1.0107927714289189e24, -1.0118562136835984e24]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-1.0107911043017307e24, -1.0123096578972335e24, -1.01297144035354e24, -1.015216329448945e24, -1.0153927900402547e24, -1.0178081015112598e24, -1.0181549844781695e24, -1.0200849740841763e24, -1.021158192550989e24]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([-1.0110175780745899e24, -1.0125180774961971e24, -1.0132323910905333e24, -1.0153993866740007e24, -1.0156683617707268e24, -1.0179917394382971e24, -1.018417096619126e24, -1.0202951357890851e24, -1.0213869891317749e24]), VectorForm{Float64}([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])], Float64[], [9, 19], [:q, :P])</code></pre><h2 id="A-Distribution-Network"><a class="docs-heading-anchor" href="#A-Distribution-Network">A Distribution Network</a><a id="A-Distribution-Network-1"></a><a class="docs-heading-anchor-permalink" href="#A-Distribution-Network" title="Permalink"></a></h2><p>To model a distribution network such as residential drinking water or natural gas, we will build a binary tree of pipes that at each junction have a bifurcation into two pipes. We expect that the flow will be divided by two at each level of the tree. First we make the mesh.</p><pre><code class="language-julia hljs">function binary_pipe(depth::Int)
   s = EmbeddedDeltaSet1D{Bool,Point3D}()
   add_vertex!(s, point=Point3D(0, 0, 0))
   for n in 1:depth
@@ -411,33 +236,49 @@ sol.u</code></pre><h2 id="A-Distribution-Network"><a class="docs-heading-anchor"
   subdivide_duals!(sd, Circumcenter())
   sd
 end
-sd = binary_pipe(2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Then we solve the equations.</p><pre><code class="language- hljs">fₘ = sim(sd, generate)
+sd = binary_pipe(2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Then we solve the equations.</p><pre><code class="language-julia hljs">fₘ = sim(sd, generate)
+P = collect(1.0:nv(sd))
 q = fill(5.0, ne(sd))
-u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
-params = (k = -0.01, μ̃ = 0.5)
+u = construct(PhysicsState, [VectorForm(q), VectorForm(P)], Float64[], [:q, :P])
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
-sol.u</code></pre><h2 id="Multiphysics"><a class="docs-heading-anchor" href="#Multiphysics">Multiphysics</a><a id="Multiphysics-1"></a><a class="docs-heading-anchor-permalink" href="#Multiphysics" title="Permalink"></a></h2><p>Decapodes really shines when you want to extend or refine your physics. We will change our physics by adding in a term for density of the material and the corresponding changes in pressure. This is not the only formulation for including a dynamic pressure effect into this system. If you can think of a better way to include this effect, we invite you to try it as an exercise!</p><p>Because the pressure is no longer being supplied as a parameter of the system controlled by the operators, we need to introduce a density term and a boundary condition for that density. In this system you can think of forcing a prescribed amount of material per unit time through the openings of the pipe and allowing the flow (q) and the pressure (P) to fluctuate. Before we were enforcing a fixed pressure gradient and and letting the flow fluctuate to achieve equilibrium. In the prior model, we were not accounting for the amount of material that had to flow in order to achieve that (flow, pressure) combination.</p><p>The Decapode can be visualized with graphviz, note that the boundary conditions are explicitly represented in the Decapode as operators that implement a masking operation. This is not consistent with the Diagrammatic Equations in Physics paper [PBHF22]. This approach is more directly tied to the computational method and will eventually be replaced with one based on morphisms of diagrams.</p><pre><code class="language-julia hljs"># μ̃ = negative viscosity per unit area
+sol.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">701-element Vector{PhysicsState{VectorForm{Float64}, Float64}}:
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([4.890991274799405, 4.775266582714783, 4.772531641488928, 4.657357789078258, 4.657357789078258, 4.542183936667589, 5.809096313184952]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([4.337170752369831, 3.4523601100210084, 3.3111845704742247, 2.4560881504611745, 2.4560881504611745, 1.600991730448125, 11.00705235059168]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([3.885237159292369, 1.562917014419557, 0.7684869755115661, -1.374051264735742, -1.374051264735742, -3.516589504983048, 20.051331137737336]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([3.9845694524293447, -0.16500857003023983, -2.20780069827289, -5.857320039170558, -5.857320039170558, -9.50683938006822, 30.637873369806105]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([4.729950388250777, -1.7816338245275192, -5.763457572042613, -11.213309507254063, -11.213309507254063, -16.66316144246551, 43.28520984486044]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([6.282779926856769, -3.383224488469572, -10.165071397936547, -17.843588561448723, -17.843588561448723, -25.522105724960895, 58.94158307367303]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([8.880889071371028, -5.097400906159562, -15.759474281735018, -26.27060050033502, -26.27060050033502, -36.781726718935026, 78.84066168566505]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([12.638263964311756, -7.024983335240498, -22.657423091520343, -36.661181618872405, -36.661181618872405, -50.66494014622447, 103.3764036546483]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([17.83519326365855, -9.41393865819216, -31.339676930169617, -49.73951335050866, -49.73951335050866, -68.1393497708477, 134.2588508528818]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ ⋮
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([8.381452128374051e23, -3.953952912136731e23, -1.2181212477504462e24, -1.8348914997759822e24, -1.8348914997759822e24, -2.451661751801525e24, 4.332811020479425e24]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([9.010695293068932e23, -4.2507985896813695e23, -1.309572520921601e24, -1.9726472150591134e24, -1.9726472150591134e24, -2.6357219091966333e24, 4.658099726316063e24]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([9.687179283322908e23, -4.569930144277107e23, -1.4078895559755102e24, -2.1207450273555079e24, -2.1207450273555079e24, -2.8336004987355136e24, 5.007809686444524e24]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([1.0414450835231665e24, -4.913020744668298e23, -1.5135878185151316e24, -2.2799613975101268e24, -2.2799613975101268e24, -3.0463349765051306e24, 5.383774392439885e24]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([1.1196322758513153e24, -5.281869090253046e23, -1.6272214450656743e24, -2.451131037503982e24, -2.451131037503982e24, -3.2750406299422984e24, 5.787964886879157e24]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([1.2036894148154277e24, -5.6784089340550556e23, -1.7493861793681862e24, -2.6351513334786514e24, -2.6351513334786514e24, -3.5209164875891256e24, 6.222500207626066e24]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([1.2940572020582633e24, -6.104719281804605e23, -1.8807225161107474e24, -2.832987081230103e24, -2.832987081230103e24, -3.7852516463494693e24, 6.689658569963528e24]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([1.3912094071679135e24, -6.563035146609865e23, -2.0219190103060495e24, -3.0456754712204943e24, -3.0456754712204943e24, -4.06943193213495e24, 7.191889137924032e24]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([1.4088358604960724e24, -6.650463565375349e23, -2.0479586893206976e24, -3.084899797837496e24, -3.084899797837496e24, -4.121840906354305e24, 7.284511287330565e24]), VectorForm{Float64}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])], Float64[], [7, 15], [:q, :P])</code></pre><h2 id="Multiphysics"><a class="docs-heading-anchor" href="#Multiphysics">Multiphysics</a><a id="Multiphysics-1"></a><a class="docs-heading-anchor-permalink" href="#Multiphysics" title="Permalink"></a></h2><p>Decapodes really shines when you want to extend or refine your physics. We will change our physics by adding in a term for density of the material and the corresponding changes in pressure. This is not the only formulation for including a dynamic pressure effect into this system. If you can think of a better way to include this effect, we invite you to try it as an exercise!</p><p>Because the pressure is no longer being supplied as a parameter of the system controlled by the operators, we need to introduce a density term and a boundary condition for that density. In this system you can think of forcing a prescribed amount of material per unit time through the openings of the pipe and allowing the flow (q) and the pressure (P) to fluctuate. Before we were enforcing a fixed pressure gradient and and letting the flow fluctuate to achieve equilibrium. In the prior model, we were not accounting for the amount of material that had to flow in order to achieve that (flow, pressure) combination.</p><p>The Decapode can be visualized with graphviz, note that the boundary conditions are explicitly represented in the Decapode as operators that implement a masking operation. This is not consistent with the Diagrammatic Equations in Physics paper [PBHF22]. This approach is more directly tied to the computational method and will eventually be replaced with one based on morphisms of diagrams.</p><pre><code class="language-julia hljs"># μ̃ = negative viscosity per unit area
 # R = drag of pipe boundary
 # k = pressure as a function of density
 Poise = @decapode begin
-#  ∇P::Form1
-#  (q, q̇, Δq)::Form1
   q::Form1
   (P, ρ)::Form0
+  (k, R, μ̃ )::Constant
 
   # Poiseuille Flow
-  Δq == ∘(d, ⋆, d, ⋆)(q)
   ∂ₜ(q) == q̇
-#  ∇P == d₀(P)
   ∇P == d(P)
-#  q̇ == sum₁(sum₁(μ̃(Δq), ¬(∇P)),R(q))
-  q̇ == μ̃ * ∂q(Δq) - ∇P + R * q
+  q̇ == μ̃ * ∂q(Δ(q)) - ∇P + R * q
 
   # Pressure/Density Coupling
   P == k * ρ
   ∂ₜ(ρ) == ρ̇
-  #ρ̇ == ⋆₀⁻¹(dual_d₀(⋆₁(∧₀₁(ρ,q)))) # advection
   ρ_up == ∘(⋆, d, ⋆)(-1 * ∧₀₁(ρ,q)) # advection
 
   # Boundary conditions
@@ -447,480 +288,36 @@ end
 Poise = expand_operators(Poise)
 infer_types!(Poise, op1_inf_rules_1D, op2_inf_rules_1D)
 resolve_overloads!(Poise, op1_res_rules_1D, op2_res_rules_1D)
-to_graphviz(Poise)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
- "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
- -->
-<!-- Title: G Pages: 1 -->
-<svg width="528pt" height="916pt"
- viewBox="0.00 0.00 528.00 915.85" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 911.85)">
-<title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-911.85 524,-911.85 524,4 -4,4"/>
-<!-- n1 -->
-<g id="node1" class="node">
-<title>n1</title>
-<ellipse fill="none" stroke="black" cx="247" cy="-856.25" rx="21.84" ry="10.71"/>
-<text text-anchor="middle" x="247" y="-852.55" font-family="Times,serif" font-size="14.00">q:Ω₁</text>
-</g>
-<!-- n7 -->
-<g id="node7" class="node">
-<title>n7</title>
-<ellipse fill="none" stroke="black" cx="224" cy="-51.61" rx="21.84" ry="10.71"/>
-<text text-anchor="middle" x="224" y="-47.91" font-family="Times,serif" font-size="14.00">q̇:Ω₁</text>
-</g>
-<!-- n1&%2345;&gt;n7 -->
-<g id="edge10" class="edge">
-<title>n1&%2345;&gt;n7</title>
-<path fill="none" stroke="black" d="M242.12,-845.63C235.37,-831.41 224,-803.76 224,-778.82 224,-778.82 224,-778.82 224,-125.65 224,-105.55 224,-82.33 224,-67.57"/>
-<polygon fill="black" stroke="black" points="225.75,-67.53 224,-62.53 222.25,-67.53 225.75,-67.53"/>
-<text text-anchor="middle" x="230" y="-436.74" font-family="Times,serif" font-size="14.00">∂ₜ</text>
-</g>
-<!-- n19 -->
-<g id="node19" class="node">
-<title>n19</title>
-<ellipse fill="none" stroke="black" cx="432" cy="-777.82" rx="45.01" ry="10.71"/>
-<text text-anchor="middle" x="432" y="-774.12" font-family="Times,serif" font-size="14.00">•_1_1:Ω•</text>
-</g>
-<!-- n1&%2345;&gt;n19 -->
-<g id="edge6" class="edge">
-<title>n1&%2345;&gt;n19</title>
-<path fill="none" stroke="black" d="M266.77,-851.43C286.29,-847.22 316.66,-839.42 341,-827.64 355.7,-820.53 356.83,-814.55 371,-806.43 382.12,-800.06 394.98,-794.05 406.01,-789.28"/>
-<polygon fill="black" stroke="black" points="406.71,-790.89 410.62,-787.32 405.33,-787.67 406.71,-790.89"/>
-<text text-anchor="middle" x="376" y="-813.34" font-family="Times,serif" font-size="14.00">d</text>
-</g>
-<!-- n28 -->
-<g id="node28" class="node">
-<title>n28</title>
-<polygon fill="none" stroke="black" points="301.5,-785.32 252.5,-785.32 252.5,-770.32 301.5,-770.32 301.5,-785.32"/>
-<text text-anchor="middle" x="277" y="-774.12" font-family="Times,serif" font-size="14.00">ΩL×Ω₁</text>
-</g>
-<!-- n1&%2345;&gt;n28 -->
-<g id="edge25" class="edge">
-<title>n1&%2345;&gt;n28</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M248.08,-845.55C249.45,-835.45 252.36,-819.32 258,-806.43 260.57,-800.55 264.45,-794.62 268.04,-789.76"/>
-<polygon fill="black" stroke="black" points="269.54,-790.67 271.2,-785.64 266.77,-788.54 269.54,-790.67"/>
-<text text-anchor="middle" x="265.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₂</text>
-</g>
-<!-- n30 -->
-<g id="node30" class="node">
-<title>n30</title>
-<polygon fill="none" stroke="black" points="179,-785.32 133,-785.32 133,-770.32 179,-770.32 179,-785.32"/>
-<text text-anchor="middle" x="156" y="-774.12" font-family="Times,serif" font-size="14.00">Ω₀×Ω₁</text>
-</g>
-<!-- n1&%2345;&gt;n30 -->
-<g id="edge31" class="edge">
-<title>n1&%2345;&gt;n30</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M230.96,-848.8C220.12,-843.96 205.86,-836.65 195,-827.64 181.7,-816.61 169.86,-800.41 162.8,-789.74"/>
-<polygon fill="black" stroke="black" points="164.27,-788.79 160.08,-785.54 161.33,-790.69 164.27,-788.79"/>
-<text text-anchor="middle" x="202.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₂</text>
-</g>
-<!-- n2 -->
-<g id="node2" class="node">
-<title>n2</title>
-<ellipse fill="none" stroke="black" cx="344" cy="-705.61" rx="21.84" ry="10.71"/>
-<text text-anchor="middle" x="344" y="-701.91" font-family="Times,serif" font-size="14.00">P:Ω₀</text>
-</g>
-<!-- n8 -->
-<g id="node8" class="node">
-<title>n8</title>
-<ellipse fill="none" stroke="black" cx="344" cy="-587.97" rx="28.07" ry="10.71"/>
-<text text-anchor="middle" x="344" y="-584.27" font-family="Times,serif" font-size="14.00">∇P:Ω₁</text>
-</g>
-<!-- n2&%2345;&gt;n8 -->
-<g id="edge11" class="edge">
-<title>n2&%2345;&gt;n8</title>
-<path fill="none" stroke="black" d="M344,-694.75C344,-674.44 344,-627.83 344,-603.84"/>
-<polygon fill="black" stroke="black" points="345.75,-603.8 344,-598.8 342.25,-603.8 345.75,-603.8"/>
-<text text-anchor="middle" x="351.5" y="-662.7" font-family="Times,serif" font-size="14.00">d₀</text>
-</g>
-<!-- n3 -->
-<g id="node3" class="node">
-<title>n3</title>
-<ellipse fill="none" stroke="black" cx="166" cy="-856.25" rx="21.43" ry="10.71"/>
-<text text-anchor="middle" x="166" y="-852.55" font-family="Times,serif" font-size="14.00">ρ:Ω₀</text>
-</g>
-<!-- n6 -->
-<g id="node6" class="node">
-<title>n6</title>
-<ellipse fill="none" stroke="black" cx="112" cy="-259.9" rx="21.43" ry="10.71"/>
-<text text-anchor="middle" x="112" y="-256.2" font-family="Times,serif" font-size="14.00">ρ̇:Ω₀</text>
-</g>
-<!-- n3&%2345;&gt;n6 -->
-<g id="edge13" class="edge">
-<title>n3&%2345;&gt;n6</title>
-<path fill="none" stroke="black" d="M144.64,-854.95C99.8,-853.06 0,-841.8 0,-778.82 0,-778.82 0,-778.82 0,-331.12 0,-290.27 54.13,-272.28 87.13,-265.11"/>
-<polygon fill="black" stroke="black" points="87.69,-266.78 92.23,-264.05 86.98,-263.35 87.69,-266.78"/>
-<text text-anchor="middle" x="6" y="-545.06" font-family="Times,serif" font-size="14.00">∂ₜ</text>
-</g>
-<!-- n29 -->
-<g id="node29" class="node">
-<title>n29</title>
-<polygon fill="none" stroke="black" points="368.5,-785.32 319.5,-785.32 319.5,-770.32 368.5,-770.32 368.5,-785.32"/>
-<text text-anchor="middle" x="344" y="-774.12" font-family="Times,serif" font-size="14.00">ΩL×Ω₀</text>
-</g>
-<!-- n3&%2345;&gt;n29 -->
-<g id="edge28" class="edge">
-<title>n3&%2345;&gt;n29</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M185.24,-851.68C211.86,-846.51 258.33,-836.56 273,-827.64 283.81,-821.06 282.03,-814.23 292,-806.43 301.54,-798.96 313.41,-792.48 323.39,-787.69"/>
-<polygon fill="black" stroke="black" points="324.33,-789.18 328.12,-785.47 322.85,-786.01 324.33,-789.18"/>
-<text text-anchor="middle" x="299.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₂</text>
-</g>
-<!-- n3&%2345;&gt;n30 -->
-<g id="edge30" class="edge">
-<title>n3&%2345;&gt;n30</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M162.12,-845.71C160.19,-840.47 158.04,-833.8 157,-827.64 154.87,-815.09 154.9,-800.46 155.28,-790.51"/>
-<polygon fill="black" stroke="black" points="157.03,-790.59 155.52,-785.51 153.53,-790.42 157.03,-790.59"/>
-<text text-anchor="middle" x="164.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₁</text>
-</g>
-<!-- n4 -->
-<g id="node4" class="node">
-<title>n4</title>
-<ellipse fill="none" stroke="black" cx="424" cy="-548.76" rx="30.31" ry="10.71"/>
-<text text-anchor="middle" x="424" y="-545.06" font-family="Times,serif" font-size="14.00">Δq:Ω•</text>
-</g>
-<!-- n13 -->
-<g id="node13" class="node">
-<title>n13</title>
-<ellipse fill="none" stroke="black" cx="424" cy="-476.54" rx="29.9" ry="10.71"/>
-<text text-anchor="middle" x="424" y="-472.84" font-family="Times,serif" font-size="14.00">•3:Ω•</text>
-</g>
-<!-- n4&%2345;&gt;n13 -->
-<g id="edge12" class="edge">
-<title>n4&%2345;&gt;n13</title>
-<path fill="none" stroke="black" d="M424,-537.99C424,-526.15 424,-506.07 424,-492.33"/>
-<polygon fill="black" stroke="black" points="425.75,-492.22 424,-487.22 422.25,-492.22 425.75,-492.22"/>
-<text text-anchor="middle" x="432.5" y="-508.95" font-family="Times,serif" font-size="14.00">∂q</text>
-</g>
-<!-- n5 -->
-<g id="node5" class="node">
-<title>n5</title>
-<ellipse fill="none" stroke="black" cx="168" cy="-705.61" rx="27.65" ry="10.71"/>
-<text text-anchor="middle" x="168" y="-701.91" font-family="Times,serif" font-size="14.00">&%2345;1:ΩL</text>
-</g>
-<!-- n31 -->
-<g id="node31" class="node">
-<title>n31</title>
-<polygon fill="none" stroke="black" points="136.5,-634.68 87.5,-634.68 87.5,-619.68 136.5,-619.68 136.5,-634.68"/>
-<text text-anchor="middle" x="112" y="-623.48" font-family="Times,serif" font-size="14.00">ΩL×Ω₁</text>
-</g>
-<!-- n5&%2345;&gt;n31 -->
-<g id="edge33" class="edge">
-<title>n5&%2345;&gt;n31</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M161.13,-695.24C150.76,-681.08 131.13,-654.29 120.08,-639.21"/>
-<polygon fill="black" stroke="black" points="121.31,-637.93 116.95,-634.93 118.49,-640 121.31,-637.93"/>
-<text text-anchor="middle" x="154.5" y="-662.7" font-family="Times,serif" font-size="14.00">π₁</text>
-</g>
-<!-- n25 -->
-<g id="node25" class="node">
-<title>n25</title>
-</g>
-<!-- n6&%2345;&gt;n25 -->
-<g id="edge5" class="edge">
-<title>n6&%2345;&gt;n25</title>
-<path fill="none" stroke="black" d="M114.78,-248.99C118.33,-235.48 124,-210.45 124,-188.69 124,-188.69 124,-188.69 124,-50.61 124,-35.24 129.95,-17.91 133.47,-9"/>
-<polygon fill="black" stroke="black" points="135.18,-9.44 135.48,-4.15 131.95,-8.1 135.18,-9.44"/>
-</g>
-<!-- n7&%2345;&gt;n25 -->
-<g id="edge4" class="edge">
-<title>n7&%2345;&gt;n25</title>
-<path fill="none" stroke="black" d="M210.25,-43.17C191.13,-32.83 157.24,-14.49 142.81,-6.69"/>
-<polygon fill="black" stroke="black" points="143.41,-5.02 138.18,-4.18 141.74,-8.1 143.41,-5.02"/>
-</g>
-<!-- n27 -->
-<g id="node27" class="node">
-<title>n27</title>
-<polygon fill="none" stroke="black" points="368.5,-267.4 319.5,-267.4 319.5,-252.4 368.5,-252.4 368.5,-267.4"/>
-<text text-anchor="middle" x="344" y="-256.2" font-family="Times,serif" font-size="14.00">Ω•×Ω₁</text>
-</g>
-<!-- n8&%2345;&gt;n27 -->
-<g id="edge22" class="edge">
-<title>n8&%2345;&gt;n27</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M344,-577.01C344,-562.9 344,-536.31 344,-513.65 344,-513.65 344,-513.65 344,-331.12 344,-310.64 344,-286.8 344,-272.83"/>
-<polygon fill="black" stroke="black" points="345.75,-272.49 344,-267.49 342.25,-272.49 345.75,-272.49"/>
-<text text-anchor="middle" x="351.5" y="-436.74" font-family="Times,serif" font-size="14.00">π₂</text>
-</g>
-<!-- n9 -->
-<g id="node9" class="node">
-<title>n9</title>
-<ellipse fill="none" stroke="black" cx="112" cy="-332.12" rx="38.78" ry="10.71"/>
-<text text-anchor="middle" x="112" y="-328.42" font-family="Times,serif" font-size="14.00">ρ_up:Ω₀</text>
-</g>
-<!-- n9&%2345;&gt;n6 -->
-<g id="edge17" class="edge">
-<title>n9&%2345;&gt;n6</title>
-<path fill="none" stroke="black" d="M112,-321.35C112,-309.51 112,-289.43 112,-275.69"/>
-<polygon fill="black" stroke="black" points="113.75,-275.58 112,-270.58 110.25,-275.58 113.75,-275.58"/>
-<text text-anchor="middle" x="120" y="-292.31" font-family="Times,serif" font-size="14.00">∂ρ</text>
-</g>
-<!-- n10 -->
-<g id="node10" class="node">
-<title>n10</title>
-<ellipse fill="none" stroke="black" cx="338" cy="-187.69" rx="27.65" ry="10.71"/>
-<text text-anchor="middle" x="338" y="-183.99" font-family="Times,serif" font-size="14.00">•1:Ω₁</text>
-</g>
-<!-- n32 -->
-<g id="node32" class="node">
-<title>n32</title>
-<ellipse fill="none" stroke="black" cx="277" cy="-126.65" rx="13.37" ry="13.37"/>
-<text text-anchor="middle" x="277" y="-122.95" font-family="Times,serif" font-size="14.00">Σ1</text>
-</g>
-<!-- n10&%2345;&gt;n32 -->
-<g id="edge37" class="edge">
-<title>n10&%2345;&gt;n32</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M328.47,-177.46C318.11,-167.44 301.51,-151.37 289.97,-140.2"/>
-<polygon fill="black" stroke="black" points="291.07,-138.84 286.26,-136.62 288.64,-141.35 291.07,-138.84"/>
-</g>
-<!-- n11 -->
-<g id="node11" class="node">
-<title>n11</title>
-<ellipse fill="none" stroke="black" cx="413" cy="-332.12" rx="29.9" ry="10.71"/>
-<text text-anchor="middle" x="413" y="-328.42" font-family="Times,serif" font-size="14.00">•2:Ω•</text>
-</g>
-<!-- n11&%2345;&gt;n27 -->
-<g id="edge21" class="edge">
-<title>n11&%2345;&gt;n27</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M403.98,-321.94C391.16,-308.89 367.73,-285.05 354.26,-271.34"/>
-<polygon fill="black" stroke="black" points="355.49,-270.1 350.74,-267.76 353,-272.56 355.49,-270.1"/>
-<text text-anchor="middle" x="391.5" y="-292.31" font-family="Times,serif" font-size="14.00">π₁</text>
-</g>
-<!-- n12 -->
-<g id="node12" class="node">
-<title>n12</title>
-<ellipse fill="none" stroke="black" cx="492" cy="-817.04" rx="24.08" ry="10.71"/>
-<text text-anchor="middle" x="492" y="-813.34" font-family="Times,serif" font-size="14.00">μ̃:Ω•</text>
-</g>
-<!-- n26 -->
-<g id="node26" class="node">
-<title>n26</title>
-<polygon fill="none" stroke="black" points="450,-411.83 398,-411.83 398,-396.83 450,-396.83 450,-411.83"/>
-<text text-anchor="middle" x="424" y="-400.63" font-family="Times,serif" font-size="14.00">Ω•×Ω•</text>
-</g>
-<!-- n12&%2345;&gt;n26 -->
-<g id="edge18" class="edge">
-<title>n12&%2345;&gt;n26</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M494.89,-806.17C498.72,-792.18 505,-765.73 505,-742.72 505,-742.72 505,-742.72 505,-475.54 505,-444.66 470.97,-424.31 447.02,-413.82"/>
-<polygon fill="black" stroke="black" points="447.67,-412.19 442.38,-411.85 446.3,-415.41 447.67,-412.19"/>
-<text text-anchor="middle" x="512.5" y="-623.48" font-family="Times,serif" font-size="14.00">π₁</text>
-</g>
-<!-- n13&%2345;&gt;n26 -->
-<g id="edge19" class="edge">
-<title>n13&%2345;&gt;n26</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M424,-465.78C424,-453.12 424,-431.04 424,-417.36"/>
-<polygon fill="black" stroke="black" points="425.75,-417.06 424,-412.06 422.25,-417.06 425.75,-417.06"/>
-<text text-anchor="middle" x="431.5" y="-436.74" font-family="Times,serif" font-size="14.00">π₂</text>
-</g>
-<!-- n14 -->
-<g id="node14" class="node">
-<title>n14</title>
-<ellipse fill="none" stroke="black" cx="277" cy="-666.4" rx="27.65" ry="10.71"/>
-<text text-anchor="middle" x="277" y="-662.7" font-family="Times,serif" font-size="14.00">•4:Ω₁</text>
-</g>
-<!-- n14&%2345;&gt;n32 -->
-<g id="edge38" class="edge">
-<title>n14&%2345;&gt;n32</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M277,-655.5C277,-640.93 277,-612.85 277,-588.97 277,-588.97 277,-588.97 277,-186.69 277,-172.82 277,-157.12 277,-145.4"/>
-<polygon fill="black" stroke="black" points="278.75,-145.32 277,-140.32 275.25,-145.32 278.75,-145.32"/>
-</g>
-<!-- n15 -->
-<g id="node15" class="node">
-<title>n15</title>
-<ellipse fill="none" stroke="black" cx="333" cy="-856.25" rx="25.41" ry="10.71"/>
-<text text-anchor="middle" x="333" y="-852.55" font-family="Times,serif" font-size="14.00">R:ΩL</text>
-</g>
-<!-- n15&%2345;&gt;n28 -->
-<g id="edge24" class="edge">
-<title>n15&%2345;&gt;n28</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M330.12,-845.55C326.71,-835.15 320.3,-818.51 311,-806.43 305.72,-799.58 298.42,-793.36 291.94,-788.57"/>
-<polygon fill="black" stroke="black" points="292.7,-786.97 287.62,-785.49 290.67,-789.82 292.7,-786.97"/>
-<text text-anchor="middle" x="329.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₁</text>
-</g>
-<!-- n16 -->
-<g id="node16" class="node">
-<title>n16</title>
-<ellipse fill="none" stroke="black" cx="75" cy="-705.61" rx="47.25" ry="10.71"/>
-<text text-anchor="middle" x="75" y="-701.91" font-family="Times,serif" font-size="14.00">sum_1:Ω₁</text>
-</g>
-<!-- n16&%2345;&gt;n31 -->
-<g id="edge34" class="edge">
-<title>n16&%2345;&gt;n31</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M79.69,-694.93C86.53,-680.78 99.25,-654.52 106.52,-639.5"/>
-<polygon fill="black" stroke="black" points="108.16,-640.13 108.76,-634.87 105.01,-638.61 108.16,-640.13"/>
-<text text-anchor="middle" x="105.5" y="-662.7" font-family="Times,serif" font-size="14.00">π₂</text>
-</g>
-<!-- n17 -->
-<g id="node17" class="node">
-<title>n17</title>
-<ellipse fill="none" stroke="black" cx="112" cy="-548.76" rx="27.65" ry="10.71"/>
-<text text-anchor="middle" x="112" y="-545.06" font-family="Times,serif" font-size="14.00">•5:Ω₁</text>
-</g>
-<!-- n22 -->
-<g id="node22" class="node">
-<title>n22</title>
-<ellipse fill="none" stroke="black" cx="112" cy="-476.54" rx="43.27" ry="10.71"/>
-<text text-anchor="middle" x="112" y="-472.84" font-family="Times,serif" font-size="14.00">•_6_1:Ω̃₀</text>
-</g>
-<!-- n17&%2345;&gt;n22 -->
-<g id="edge14" class="edge">
-<title>n17&%2345;&gt;n22</title>
-<path fill="none" stroke="black" d="M112,-537.99C112,-526.15 112,-506.07 112,-492.33"/>
-<polygon fill="black" stroke="black" points="113.75,-492.22 112,-487.22 110.25,-492.22 113.75,-492.22"/>
-<text text-anchor="middle" x="119.5" y="-508.95" font-family="Times,serif" font-size="14.00">⋆₁</text>
-</g>
-<!-- n18 -->
-<g id="node18" class="node">
-<title>n18</title>
-<ellipse fill="none" stroke="black" cx="404" cy="-856.25" rx="24.08" ry="10.71"/>
-<text text-anchor="middle" x="404" y="-852.55" font-family="Times,serif" font-size="14.00">k:ΩL</text>
-</g>
-<!-- n18&%2345;&gt;n29 -->
-<g id="edge27" class="edge">
-<title>n18&%2345;&gt;n29</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M401.25,-845.45C397.94,-834.96 391.62,-818.26 382,-806.43 376.12,-799.2 367.92,-792.92 360.64,-788.19"/>
-<polygon fill="black" stroke="black" points="361.42,-786.62 356.25,-785.45 359.56,-789.58 361.42,-786.62"/>
-<text text-anchor="middle" x="400.5" y="-813.34" font-family="Times,serif" font-size="14.00">π₁</text>
-</g>
-<!-- n20 -->
-<g id="node20" class="node">
-<title>n20</title>
-<ellipse fill="none" stroke="black" cx="430" cy="-705.61" rx="45.01" ry="10.71"/>
-<text text-anchor="middle" x="430" y="-701.91" font-family="Times,serif" font-size="14.00">•_1_2:Ω•</text>
-</g>
-<!-- n19&%2345;&gt;n20 -->
-<g id="edge7" class="edge">
-<title>n19&%2345;&gt;n20</title>
-<path fill="none" stroke="black" d="M431.72,-767.06C431.38,-755.22 430.81,-735.14 430.42,-721.39"/>
-<polygon fill="black" stroke="black" points="432.17,-721.24 430.28,-716.29 428.67,-721.34 432.17,-721.24"/>
-<text text-anchor="middle" x="436" y="-738.02" font-family="Times,serif" font-size="14.00">⋆</text>
-</g>
-<!-- n21 -->
-<g id="node21" class="node">
-<title>n21</title>
-<ellipse fill="none" stroke="black" cx="424" cy="-627.18" rx="45.01" ry="10.71"/>
-<text text-anchor="middle" x="424" y="-623.48" font-family="Times,serif" font-size="14.00">•_1_3:Ω•</text>
-</g>
-<!-- n20&%2345;&gt;n21 -->
-<g id="edge8" class="edge">
-<title>n20&%2345;&gt;n21</title>
-<path fill="none" stroke="black" d="M429.24,-694.93C428.22,-681.91 426.39,-658.62 425.19,-643.28"/>
-<polygon fill="black" stroke="black" points="426.91,-642.87 424.77,-638.02 423.42,-643.15 426.91,-642.87"/>
-<text text-anchor="middle" x="432" y="-662.7" font-family="Times,serif" font-size="14.00">d</text>
-</g>
-<!-- n21&%2345;&gt;n4 -->
-<g id="edge9" class="edge">
-<title>n21&%2345;&gt;n4</title>
-<path fill="none" stroke="black" d="M424,-616.5C424,-603.48 424,-580.19 424,-564.85"/>
-<polygon fill="black" stroke="black" points="425.75,-564.6 424,-559.6 422.25,-564.6 425.75,-564.6"/>
-<text text-anchor="middle" x="429" y="-584.27" font-family="Times,serif" font-size="14.00">⋆</text>
-</g>
-<!-- n23 -->
-<g id="node23" class="node">
-<title>n23</title>
-<ellipse fill="none" stroke="black" cx="112" cy="-404.33" rx="43.27" ry="10.71"/>
-<text text-anchor="middle" x="112" y="-400.63" font-family="Times,serif" font-size="14.00">•_6_2:Ω̃₁</text>
-</g>
-<!-- n22&%2345;&gt;n23 -->
-<g id="edge15" class="edge">
-<title>n22&%2345;&gt;n23</title>
-<path fill="none" stroke="black" d="M112,-465.78C112,-453.94 112,-433.86 112,-420.11"/>
-<polygon fill="black" stroke="black" points="113.75,-420.01 112,-415.01 110.25,-420.01 113.75,-420.01"/>
-<text text-anchor="middle" x="138" y="-436.74" font-family="Times,serif" font-size="14.00">dual_d₀</text>
-</g>
-<!-- n23&%2345;&gt;n9 -->
-<g id="edge16" class="edge">
-<title>n23&%2345;&gt;n9</title>
-<path fill="none" stroke="black" d="M112,-393.57C112,-381.72 112,-361.64 112,-347.9"/>
-<polygon fill="black" stroke="black" points="113.75,-347.8 112,-342.8 110.25,-347.8 113.75,-347.8"/>
-<text text-anchor="middle" x="126" y="-364.52" font-family="Times,serif" font-size="14.00">⋆₀⁻¹</text>
-</g>
-<!-- n24 -->
-<g id="node24" class="node">
-<title>n24</title>
-</g>
-<!-- n24&%2345;&gt;n1 -->
-<g id="edge1" class="edge">
-<title>n24&%2345;&gt;n1</title>
-<path fill="none" stroke="black" d="M247,-903.68C247,-899.36 247,-884 247,-872.12"/>
-<polygon fill="black" stroke="black" points="248.75,-871.95 247,-866.95 245.25,-871.95 248.75,-871.95"/>
-</g>
-<!-- n24&%2345;&gt;n3 -->
-<g id="edge2" class="edge">
-<title>n24&%2345;&gt;n3</title>
-<path fill="none" stroke="black" d="M245,-903.68C236.62,-898.75 203.84,-879.49 183.23,-867.38"/>
-<polygon fill="black" stroke="black" points="183.98,-865.78 178.78,-864.76 182.2,-868.8 183.98,-865.78"/>
-</g>
-<!-- n24&%2345;&gt;n12 -->
-<g id="edge3" class="edge">
-<title>n24&%2345;&gt;n12</title>
-<path fill="none" stroke="black" d="M249.41,-904.84C266.14,-904.63 366.52,-901.92 437,-866.85 454.51,-858.14 470.76,-842.38 480.99,-831.12"/>
-<polygon fill="black" stroke="black" points="482.46,-832.09 484.47,-827.19 479.84,-829.77 482.46,-832.09"/>
-</g>
-<!-- n26&%2345;&gt;n11 -->
-<g id="edge20" class="edge">
-<title>n26&%2345;&gt;n11</title>
-<path fill="none" stroke="black" d="M422.95,-396.6C421.2,-385.47 417.68,-362.98 415.33,-347.98"/>
-<polygon fill="black" stroke="black" points="417.02,-347.5 414.52,-342.83 413.57,-348.04 417.02,-347.5"/>
-<text text-anchor="middle" x="422.5" y="-364.52" font-family="Times,serif" font-size="14.00">*</text>
-</g>
-<!-- n27&%2345;&gt;n10 -->
-<g id="edge23" class="edge">
-<title>n27&%2345;&gt;n10</title>
-<path fill="none" stroke="black" d="M343.42,-252.17C342.47,-241.04 340.55,-218.56 339.27,-203.56"/>
-<polygon fill="black" stroke="black" points="341,-203.24 338.83,-198.4 337.51,-203.54 341,-203.24"/>
-<text text-anchor="middle" x="343.5" y="-220.1" font-family="Times,serif" font-size="14.00">&%2345;</text>
-</g>
-<!-- n28&%2345;&gt;n14 -->
-<g id="edge26" class="edge">
-<title>n28&%2345;&gt;n14</title>
-<path fill="none" stroke="black" d="M277,-770.3C277,-753.11 277,-706.18 277,-682.09"/>
-<polygon fill="black" stroke="black" points="278.75,-682.04 277,-677.04 275.25,-682.04 278.75,-682.04"/>
-<text text-anchor="middle" x="280.5" y="-738.02" font-family="Times,serif" font-size="14.00">*</text>
-</g>
-<!-- n29&%2345;&gt;n2 -->
-<g id="edge29" class="edge">
-<title>n29&%2345;&gt;n2</title>
-<path fill="none" stroke="black" d="M344,-770.09C344,-758.96 344,-736.48 344,-721.48"/>
-<polygon fill="black" stroke="black" points="345.75,-721.32 344,-716.32 342.25,-721.32 345.75,-721.32"/>
-<text text-anchor="middle" x="347.5" y="-738.02" font-family="Times,serif" font-size="14.00">*</text>
-</g>
-<!-- n30&%2345;&gt;n16 -->
-<g id="edge32" class="edge">
-<title>n30&%2345;&gt;n16</title>
-<path fill="none" stroke="black" d="M148.23,-770.09C134.87,-758.51 107.32,-734.62 90.08,-719.68"/>
-<polygon fill="black" stroke="black" points="90.86,-718.04 85.93,-716.09 88.57,-720.68 90.86,-718.04"/>
-<text text-anchor="middle" x="134" y="-738.02" font-family="Times,serif" font-size="14.00">∧₀₁</text>
-</g>
-<!-- n31&%2345;&gt;n17 -->
-<g id="edge35" class="edge">
-<title>n31&%2345;&gt;n17</title>
-<path fill="none" stroke="black" d="M112,-619.67C112,-607.6 112,-581.5 112,-564.83"/>
-<polygon fill="black" stroke="black" points="113.75,-564.57 112,-559.57 110.25,-564.57 113.75,-564.57"/>
-<text text-anchor="middle" x="115.5" y="-584.27" font-family="Times,serif" font-size="14.00">*</text>
-</g>
-<!-- n32&%2345;&gt;n7 -->
-<g id="edge36" class="edge">
-<title>n32&%2345;&gt;n7</title>
-<path fill="none" stroke="black" d="M269.41,-115.18C260.07,-102.31 244.19,-80.44 233.91,-66.26"/>
-<polygon fill="black" stroke="black" points="235.26,-65.14 230.91,-62.12 232.43,-67.2 235.26,-65.14"/>
-<text text-anchor="middle" x="259.5" y="-84.01" font-family="Times,serif" font-size="14.00">+</text>
-</g>
-</g>
-</svg>
-'/><p>Then we can create the mesh and solve the equation.</p><pre><code class="language- hljs"># Create mesh and subdivide it.
-function linear_pipe(n::Int)
-  s = EmbeddedDeltaSet1D{Bool,Point3D}()
-  add_vertices!(s, n, point=[Point3D(i, 0, 0) for i in 1:n])
-  add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
-  sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
-  subdivide_duals!(sd, Circumcenter())
-end
+to_graphviz(Poise)</code></pre><img src="a3b82236.svg" alt="Example block output"/><p>Then we can create the mesh and solve the equation.</p><pre><code class="language-julia hljs">sd = linear_pipe(20)
 
-sd = linear_pipe(10)
-
-sim = gensim(Poise)
+sim = eval(gensim(Poise, dimension=1))
 func = sim(sd, generate)
 
-prob = ODEProblem(func, [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5], (0.0, 10000.0), [10. *i for i in 1:10])
+q = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5]
+ρ = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5,5]
+u = construct(PhysicsState, [VectorForm(q), VectorForm(ρ)], Float64[], [:q, :ρ])
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
+
+prob = ODEProblem(func, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
-sol.u</code></pre><p>Notice that the solution contains both a vector of flows and a vector of pressures.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../bc_debug/">« Misc Features</a><a class="docs-footer-nextpage" href="../ice_dynamics/">Glacial Flow »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Saturday 2 September 2023 00:04">Saturday 2 September 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+sol.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">338-element Vector{PhysicsState{VectorForm{Float64}, Float64}}:
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.0, 3.0, 4.0, 2.0, 5.0, 2.0, 3.0, 4.0, 3.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 5.0, 5.0, 5.0, 5.0]), VectorForm{Float64}([5.0, 3.0, 4.0, 2.0, 5.0, 2.0, 3.0, 4.0, 3.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.000500271331339, 3.0908019467209105, 3.9130094575848924, 2.149420654498837, 4.82261331388356, 2.119288993589557, 3.002516497574944, 3.94382416693275, 3.2416101812722697, 9.76542618769899, 8.9986420387784, 8.0018103294322, 7.001529079838781, 6.0016419996951145, 5.031690712780209, 5.002019237945118, 5.001566385220671, 5.001562011212097, 5.001561987475998]), VectorForm{Float64}([5.0, 3.605196430350391, 3.93529639973999, 2.3128704047231285, 4.360979444055991, 2.7457274366121336, 2.7046423165613485, 3.791801585121034, 2.8012718482917385, 5.765679405283353, 9.27122366673146, 9.006700142600337, 7.959198644172625, 6.845154755546473, 5.578205822300479, 5.047893822018265, 5.002486906207312, 5.00009623824213, 5.000002991358836, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.001514273606751, 3.1824505210399336, 3.8303723233472713, 2.2961783402309752, 4.647077570918824, 2.237516414460612, 3.007385454879191, 3.893452495556914, 3.481956968207953, 9.53030869965627, 8.990370523176498, 8.00370263008382, 7.00320531033426, 6.004327702290425, 5.064589915437437, 5.005207825277676, 5.003341511989404, 5.003307001536921, 5.003306862220508]), VectorForm{Float64}([5.0, 4.304365843415499, 3.931335419394751, 2.6742747744411943, 3.6863176137756772, 3.4911655202098775, 2.4827397124026835, 3.5594992206514715, 2.900565418419477, 2.311666288872577, 7.840064702788483, 9.676931430323481, 9.079922817458515, 7.931639530658596, 6.41888433589627, 5.234621298339468, 5.025123785316258, 5.002028663896221, 5.00013227305007, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.003468862536823, 3.2839396361573088, 3.7459036642483134, 2.4531122329426522, 4.457660971217923, 2.365537672772071, 3.0160207921270334, 3.846683755396832, 3.743694072124165, 9.269938707498383, 8.97270397030362, 8.006261730408418, 7.005484714396826, 6.008802496632215, 5.102164118185867, 5.010214724948358, 5.005598570991853, 5.005477534410074, 5.005479378749514]), VectorForm{Float64}([5.0, 5.1973634077724675, 4.024388254887086, 3.165713273515412, 2.9061766920398258, 4.280787982069885, 2.35467072842628, 3.2256649595946776, 3.355258327191177, -0.023459746484738125, 4.622052226847479, 9.176435424790194, 10.19050775985806, 9.410184438160927, 7.759433163406046, 5.71050280628246, 5.122336714367413, 5.016095438845973, 5.001728133849245, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.006574295762253, 3.383051795821293, 3.6718774560459244, 2.5995702704221646, 4.278891200044015, 2.4872038853996297, 3.0283950147219505, 3.812269574398128, 3.9947461036305123, 9.013416096122342, 8.944831815712847, 8.009990609986017, 7.008958040575339, 6.015293583322946, 5.140126356581765, 5.016703971019221, 5.008139231950697, 5.007880966332924, 5.007900966566123]), VectorForm{Float64}([5.0, 6.204476772418105, 4.247919079856074, 3.7981134983745415, 2.126109715516633, 4.969481755743713, 2.393269406354001, 2.7723625049524014, 3.978700178045544, -0.44307444349887315, 0.9633719739241183, 6.6935498692289865, 10.370858321855998, 10.91542592757474, 9.581987794874331, 6.616670276020201, 5.390386889858616, 5.072879798176891, 5.011256052448257, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.010365359777263, 3.4643820965699073, 3.6185961752873106, 2.7136588954539556, 4.137864532216524, 2.5842484040691325, 3.0420345384172283, 3.79413454846403, 4.197422554542698, 8.800266170730914, 8.910955509903575, 8.014171872722779, 7.013934575498709, 6.023116919063559, 5.172418635842661, 5.023251279051547, 5.010448647040016, 5.0100734462118846, 5.010152824709875]), VectorForm{Float64}([5.0, 7.137098101605044, 4.557686195457357, 4.492093156576309, 1.5032641708881278, 5.423423753291926, 2.587999278991929, 2.3007025135221943, 4.371217956748125, 0.4383636411518302, -1.092494314028673, 3.2433969933957663, 9.019127987440099, 11.685945461454033, 11.415316141409928, 7.84136887992914, 5.866945970907023, 5.2058073507691445, 5.0409895248331384, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.015081368358408, 3.537542911510451, 3.57749884082842, 2.8106263715283393, 4.016323821303787, 2.6691784585118863, 3.057509141476847, 3.786959398199867, 4.376977767682563, 8.607027020241754, 8.868601145176068, 8.017848721438849, 7.021218867521634, 6.033401787581939, 5.20278286314071, 5.030120441892131, 5.012611387185202, 5.012179943072496, 5.012399041992819]), VectorForm{Float64}([5.0, 8.056344580806238, 4.953723403438557, 5.31067599942339, 1.0030937991388038, 5.6965754370546, 2.9203345119688264, 1.8417232823917693, 4.421768190256081, 1.6417550161190257, -1.2771682105994322, -0.09569028625040474, 6.169171104549283, 11.294009413311924, 13.062153391678121, 9.401198069705616, 6.6350970393593105, 5.472623156775836, 5.116327145060299, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.021983758177712, 3.6161428605588855, 3.541885630683305, 2.9076548772652964, 3.892480502571557, 2.7577429229972017, 3.0782181662357715, 3.7902171385791954, 4.566017110595447, 8.400175179569928, 8.807158171462998, 8.018698750467806, 7.03264434252699, 6.050072782371508, 5.237945405789176, 5.038739604953364, 5.014851092296399, 5.014458093132118, 5.015000083864268]), VectorForm{Float64}([5.0, 9.116793449722744, 5.516723663620935, 6.466817936254488, 0.6171093263149307, 5.787361881025866, 3.4622992663609478, 1.4136977127638422, 4.0560690633237915, 2.487788581038122, 0.46106095214439874, -2.216001454096631, 1.7006858645830139, 8.751632641637233, 14.10412924093186, 11.486085390861335, 7.990155385437504, 6.059507390124399, 5.3256093525182315, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.029757005650556, 3.682672334008195, 3.519880487006838, 2.9829730569719035, 3.7940556730657153, 2.8304289821119037, 3.099807347871083, 3.802838333999194, 4.721153156150058, 8.228473467120587, 8.741263167908096, 8.013090506997049, 7.04402316350908, 6.070733882467593, 5.2716375641088025, 5.047640829557176, 5.016540299282156, 5.016197047336135, 5.017187931104424]), VectorForm{Float64}([5.0, 10.053072908678171, 6.102584256237284, 7.725537429956382, 0.5270856556470265, 5.656155644646355, 4.060517645038428, 1.211560391115723, 3.525660818268024, 2.2597808164580364, 2.52625038339861, -1.4764416726508827, -1.793674022171528, 4.424999280892438, 13.375591307069264, 13.199788020722728, 9.64374894937895, 6.962039237315991, 5.7317486773336705, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([5.039279285279912, 3.7462332498218345, 3.5069926764145407, 3.0482558369330692, 3.70628809493424, 2.897843580417741, 3.124769232466192, 3.824194271774335, 4.862846077143543, 8.069159027298785, 8.668103512570205, 7.999550884613419, 7.052864237261939, 6.096742487878688, 5.309733600296118, 5.058883746848286, 5.018069359044691, 5.017467634310754, 5.018875961812553]), VectorForm{Float64}([5.0, 10.953066439866785, 6.735148626201655, 9.198709873591826, 0.7884543835787177, 5.33824654249541, 4.710267930541586, 1.228525753406001, 3.091287030564497, 1.3255030405966337, 3.378886676186166, 1.3416740039842148, -2.7377560841166066, -0.8791441452000627, 10.264584578815647, 13.988788887998705, 11.51395927976639, 8.302503344823466, 6.505708391701811, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ ⋮
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([3.3935249283788157e9, -4.695685323249409e9, 1.0523152479798868e9, 2.39948245481055e8, 9.88141036014533e6, 15584.169786237419, 6.548935305490569, 6.748007168961266, 6.604264003594214, 6.922786733859107, 6.68295726708483, 6.945403323267217, 6.711137618017619, 6.656096082488662, 6.479123002739537, 6.147464654882797, 6.03936183150176, 5.652147818717492, 6.15427168994908]), VectorForm{Float64}([5.0, 5.3337951778513394e20, -2.0466799561700858e20, -3.926963509945095e19, -1.5555806057194076e18, -2.4486077681485565e15, -6.071338855956025e9, 129.44873612645569, 147.24610772180333, 56.366991175038294, 74.7712986360543, 19.020919538706966, 7.773620547829355, 24.816711065671036, -7.713715612253917, 9.350784733028219, -41.20554009802196, -6.373737086401988, -107.83102822285014, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([6.546779971238622e9, -9.058905080405073e9, 2.0301241024214964e9, 4.6290775645986956e8, 1.9063285059452213e7, 30060.000657550616, 6.5848241481696475, 6.748007168989904, 6.604264003396679, 6.922786733840562, 6.68295726700119, 6.94540332316729, 6.711137618107586, 6.656096082380496, 6.479123002778055, 6.147464654771549, 6.039361831574984, 5.6521478185515175, 6.154271690304255]), VectorForm{Float64}([5.0, 1.9851334771584868e21, -7.617339713633654e20, -1.4615385750336494e20, -5.789569661280846e18, -9.113324255184072e15, -2.2588906460076313e10, 117.6659249399114, 147.24610779707768, 56.366991241973345, 74.77129867911256, 19.020919606230095, 7.773620542831612, 24.816711081739996, -7.7137155964372415, 9.350784764656659, -41.205540083999416, -6.373737031527731, -107.83102822478862, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([1.2621862374030558e10, -1.7465113689637745e10, 3.913977235766009e9, 8.924630687656846e8, 3.675315803515917e7, 57949.43520386948, 6.653949083467807, 6.748007169034206, 6.604264003294358, 6.922786733830956, 6.682957266957866, 6.945403323115529, 6.711137618154188, 6.656096082324467, 6.479123002798007, 6.147464654713924, 6.039361831612913, 5.6521478184655445, 6.154271690488232]), VectorForm{Float64}([5.0, 7.378717905636389e21, -2.8313562914880723e21, -5.432522045350323e20, -2.1519773441442537e19, -3.387431112150022e16, -8.394899533834613e10, 94.78878905382878, 147.24610782743682, 56.36699127664498, 74.77129870141627, 19.020919641206348, 7.773620540242835, 24.816711090063542, -7.713715588244374, 9.350784781039849, -41.205540076735886, -6.373737003103458, -107.83102822579274, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([2.432610629326419e10, -3.3660501624853355e10, 7.543405641241653e9, 1.720043655916229e9, 7.08344509809477e7, 111681.40015942093, 6.787107041343208, 6.748007169086894, 6.604264003241305, 6.922786733825975, 6.682957266935402, 6.945403323088691, 6.711137618178351, 6.6560960822954165, 6.479123002808351, 6.147464654684046, 6.039361831632579, 5.652147818420968, 6.154271690583624]), VectorForm{Float64}([5.0, 2.7408109102923917e22, -1.0517019847028667e22, -2.017900167533605e21, -7.993481688186803e19, -1.2582590529140731e17, -3.1180182783689777e11, 50.045371993648956, 147.24610783445928, 56.36699129462213, 74.77129871298068, 19.020919659341438, 7.773620538900561, 24.81671109437928, -7.713715583996395, 9.350784789534488, -41.20554007296977, -6.37373698836555, -107.83102822631336, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([4.694408816806873e10, -6.495743919971926e10, 1.4557130455706676e10, 3.3193099629012566e9, 1.3669519590651318e8, 215516.5200430896, 7.044412144578175, 6.748007169144612, 6.604264003213739, 6.922786733823387, 6.68295726692373, 6.945403323074746, 6.7111376181909055, 6.656096082280322, 6.4791230028137266, 6.147464654668521, 6.039361831642798, 5.652147818397807, 6.154271690633188]), VectorForm{Float64}([5.0, 1.020695117649944e23, -3.916603954572345e22, -7.514786491403616e21, -2.976823027127623e20, -4.68584428492288e17, -1.1611235808134805e12, -38.926218977217594, 147.24610782918168, 56.36699130396271, 74.77129871898933, 19.020919668764083, 7.773620538203141, 24.816711096621653, -7.713715581789226, 9.35078479394814, -41.20554007101296, -6.373736980708017, -107.83102822658387, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([9.133546741738257e10, -1.2638264654320387e11, 2.8322678600896717e10, 6.458123939942583e9, 2.659573758615866e8, 419309.71177138813, 7.549397430422284, 6.748007169206745, 6.60426400319933, 6.922786733822035, 6.682957266917629, 6.945403323067457, 6.711137618197468, 6.656096082272431, 6.479123002816536, 6.147464654660406, 6.039361831648139, 5.6521478183857, 6.154271690659096]), VectorForm{Float64}([5.0, 3.8638090932091334e23, -1.4826180457143701e23, -2.8446986889529544e22, -1.1268670459893048e21, -1.773813500090975e18, -4.395311786734614e12, -223.16551912744794, 147.24610781697277, 56.366991308845314, 74.77129872213023, 19.020919673689583, 7.773620537838578, 24.81671109779381, -7.713715580635473, 9.350784796255288, -41.20554006999008, -6.373736976705193, -107.83102822672527, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([1.7484153837073282e11, -2.4193160698963254e11, 5.421750007491168e10, 1.2362649280263126e10, 5.091166929975667e8, 802672.0395067721, 8.499326450160044, 6.748007169271273, 6.6042640031920525, 6.922786733821352, 6.682957266914548, 6.9454033230637755, 6.711137618200783, 6.656096082268446, 6.479123002817955, 6.147464654656307, 6.039361831650837, 5.652147818379585, 6.154271690672181]), VectorForm{Float64}([5.0, 1.415864897310796e24, -5.432946604808993e23, -1.0424192652775422e23, -4.129322994324024e21, -6.500015313669686e18, -1.6106157611316771e13, -604.2883059416238, 147.24610780092019, 56.36699131131139, 74.77129872371661, 19.02091967617732, 7.773620537654447, 24.816711098385834, -7.713715580052742, 9.350784797420568, -41.20554006947345, -6.373736974683473, -107.83102822679669, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([3.366932625914136e11, -4.658889584887347e11, 1.0440692291762926e11, 2.3806818526168472e10, 9.804088482514563e8, 1.5457064292373173e6, 10.340467587278802, 6.748007169342382, 6.604264003188226, 6.922786733820993, 6.682957266912928, 6.94540332306184, 6.7111376182025255, 6.656096082266351, 6.479123002818701, 6.1474646546541525, 6.039361831652255, 5.65214781837637, 6.154271690679061]), VectorForm{Float64}([5.0, 5.250517244294544e24, -2.014724703514331e24, -3.865651555577606e23, -1.531295976227771e22, -2.4104315939559772e19, -5.97269534942839e13, -1471.4390135266492, 147.2461077812352, 56.36699131260801, 74.7712987245507, 19.020919677485335, 7.773620537557634, 24.816711098697112, -7.713715579746353, 9.350784798033253, -41.20554006920182, -6.3737369736204865, -107.83102822683423, 5.0])], Float64[], [19, 39], [:q, :ρ])
+ PhysicsState{VectorForm{Float64}, Float64}(VectorForm{Float64}[VectorForm{Float64}([6.476738719309769e11, -8.961988237703132e11, 2.0084047884911276e11, 4.579555387531799e10, 1.8859458470592897e9, 2.9733671485350365e6, 13.878008371011031, 6.748007169424107, 6.604264003186241, 6.922786733820806, 6.682957266912088, 6.9454033230608365, 6.71113761820343, 6.656096082265264, 6.4791230028190885, 6.147464654653034, 6.0393618316529905, 5.652147818374702, 6.15427169068263]), VectorForm{Float64}([5.0, 1.9428794069405107e25, -7.455202899864052e24, -1.430429510760914e24, -5.66634357521993e22, -8.919461943627086e19, -2.2101068357229575e14, -3613.223902289036, 147.2461077571975, 56.36699131328054, 74.77129872498334, 19.020919678163782, 7.773620537507418, 24.816711098858566, -7.713715579587433, 9.350784798351043, -41.20554006906092, -6.373736973069131, -107.83102822685372, 5.0])], Float64[], [19, 39], [:q, :ρ])</code></pre><p>Notice that the solution contains both a vector of flows and a vector of pressures.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../bc_debug/">« Misc Features</a><a class="docs-footer-nextpage" href="../ice_dynamics/">Glacial Flow »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.0 on <span class="colophon-date" title="Sunday 8 October 2023 17:39">Sunday 8 October 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
