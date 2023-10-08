@@ -219,15 +219,6 @@ to_graphviz(Poise)
 Then we can create the mesh and solve the equation.
 
 ```@example Poiseuille
-# Create mesh and subdivide it.
-function linear_pipe(n::Int)
-  s = EmbeddedDeltaSet1D{Bool,Point3D}()
-  add_vertices!(s, n, point=[Point3D(i, 0, 0) for i in 1:n])
-  add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
-  sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
-  subdivide_duals!(sd, Circumcenter())
-end
-
 sd = linear_pipe(20)
 
 sim = eval(gensim(Poise, dimension=1))
