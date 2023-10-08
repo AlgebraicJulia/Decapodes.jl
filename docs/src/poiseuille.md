@@ -96,7 +96,9 @@ Then we solve the equations.
 using MultiScaleArrays
 sim = eval(gensim(Poise))
 fₘ = sim(sd, generate)
-u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
+q = EForm([2.0])
+P = VForm([10.0, 5.0])
+u = construct(PhysicsState, [VectorForm(q), VectorForm(P)], Float64[], [:q, :P])
 params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
