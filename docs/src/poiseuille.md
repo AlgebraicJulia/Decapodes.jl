@@ -27,6 +27,7 @@ The `@decapode` macro creates the data structure representing the equations of P
 Poise = @decapode begin
   P::Form0
   q::Form1
+  (R, μ̃ )::Constant
 
   # Laplacian of q for the viscous effect
   Δq == Δ(q)
@@ -37,7 +38,6 @@ Poise = @decapode begin
   ∂ₜ(q) == q̇
 
   # The core equation
-#  q̇ == μ̃(Δq) + ∇P + R * q
   q̇ == μ̃  * ∂q(Δq) + ∇P + R * q
 end
 
@@ -57,12 +57,12 @@ include("../../examples/boundary_helpers.jl")
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :∂ρ => x -> begin
+    :∂q => x -> begin
       x[boundary_edges(sd)] .= 0
       x
     end
     :∧₀₁ => (x,y) -> begin
-      ∧(Tuple{(0,1)}, sd, x,y)
+      ∧(0,1, sd, x,y)
     end
     :∂ρ => ρ -> begin
       ρ[1] = 0
@@ -94,10 +94,12 @@ Then we solve the equations.
 
 ```@example Poiseuille
 using MultiScaleArrays
-sim = eval(gensim(Poise))
+sim = eval(gensim(Poise, dimension=1))
 fₘ = sim(sd, generate)
-u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
-params = (k = -0.01, μ̃ = 0.5)
+q = [2.0]
+P = [10.0, 5.0]
+u = construct(PhysicsState, [VectorForm(q), VectorForm(P)], Float64[], [:q, :P])
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
 sol.u
@@ -127,9 +129,10 @@ Note that we do not generate new simulation code for Poiseuille flow with `gensi
 
 ```@example Poiseuille
 fₘ = sim(sd, generate)
+P = [9,8,7,6,5,4,3,2,1,0]
 q = [5,3,4,2,5,2,8,4,3]
-u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
-params = (k = -0.01, μ̃ = 0.5)
+u = construct(PhysicsState, [VectorForm(q), VectorForm(P)], Float64[], [:q, :P])
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5());
 sol.u
@@ -165,9 +168,10 @@ Then we solve the equations.
 
 ```@example Poiseuille
 fₘ = sim(sd, generate)
+P = collect(1.0:nv(sd))
 q = fill(5.0, ne(sd))
-u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
-params = (k = -0.01, μ̃ = 0.5)
+u = construct(PhysicsState, [VectorForm(q), VectorForm(P)], Float64[], [:q, :P])
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
 sol.u
@@ -187,23 +191,18 @@ The Decapode can be visualized with graphviz, note that the boundary conditions 
 # R = drag of pipe boundary
 # k = pressure as a function of density
 Poise = @decapode begin
-#  ∇P::Form1
-#  (q, q̇, Δq)::Form1
   q::Form1
   (P, ρ)::Form0
+  (k, R, μ̃ )::Constant
 
   # Poiseuille Flow
-  Δq == ∘(d, ⋆, d, ⋆)(q)
   ∂ₜ(q) == q̇
-#  ∇P == d₀(P)
   ∇P == d(P)
-#  q̇ == sum₁(sum₁(μ̃(Δq), ¬(∇P)),R(q))
-  q̇ == μ̃ * ∂q(Δq) - ∇P + R * q
+  q̇ == μ̃ * ∂q(Δ(q)) - ∇P + R * q
   
   # Pressure/Density Coupling
   P == k * ρ
   ∂ₜ(ρ) == ρ̇
-  #ρ̇ == ⋆₀⁻¹(dual_d₀(⋆₁(∧₀₁(ρ,q)))) # advection
   ρ_up == ∘(⋆, d, ⋆)(-1 * ∧₀₁(ρ,q)) # advection
   
   # Boundary conditions
@@ -219,21 +218,17 @@ to_graphviz(Poise)
 Then we can create the mesh and solve the equation.
 
 ```@example Poiseuille
-# Create mesh and subdivide it.
-function linear_pipe(n::Int)
-  s = EmbeddedDeltaSet1D{Bool,Point3D}()
-  add_vertices!(s, n, point=[Point3D(i, 0, 0) for i in 1:n])
-  add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
-  sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
-  subdivide_duals!(sd, Circumcenter())
-end
+sd = linear_pipe(20)
 
-sd = linear_pipe(10)
-
-sim = gensim(Poise)
+sim = eval(gensim(Poise, dimension=1))
 func = sim(sd, generate)
 
-prob = ODEProblem(func, [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5], (0.0, 10000.0), [10. *i for i in 1:10])
+q = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5]
+ρ = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5,5]
+u = construct(PhysicsState, [VectorForm(q), VectorForm(ρ)], Float64[], [:q, :ρ])
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
+
+prob = ODEProblem(func, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
 sol.u
 ```
