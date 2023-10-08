@@ -193,7 +193,7 @@ The Decapode can be visualized with graphviz, note that the boundary conditions 
 Poise = @decapode begin
   q::Form1
   (P, ρ)::Form0
-  (R, μ̃ )::Constant
+  (k, R, μ̃ )::Constant
 
   # Poiseuille Flow
   Δq == ∘(d, ⋆, d, ⋆)(q)
