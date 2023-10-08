@@ -341,7 +341,7 @@ Colorbar(fig[1,2], ob)
 framerate = 30
 
 # Animation
-record(fig, "diff_adv_testing.gif", range(0.0, 100.0; length=150); framerate = 30) do t
+record(fig, "diff_adv.gif", range(0.0, 100.0; length=150); framerate = 30) do t
 ob.color = findnode(sol(t), :C)[point_map]
 end
 ```

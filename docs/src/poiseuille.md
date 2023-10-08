@@ -27,6 +27,7 @@ The `@decapode` macro creates the data structure representing the equations of P
 Poise = @decapode begin
   P::Form0
   q::Form1
+  R::Constant
 
   # Laplacian of q for the viscous effect
   Δq == Δ(q)
@@ -37,7 +38,6 @@ Poise = @decapode begin
   ∂ₜ(q) == q̇
 
   # The core equation
-#  q̇ == μ̃(Δq) + ∇P + R * q
   q̇ == μ̃  * ∂q(Δq) + ∇P + R * q
 end
 
@@ -97,7 +97,7 @@ using MultiScaleArrays
 sim = eval(gensim(Poise))
 fₘ = sim(sd, generate)
 u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
-params = (k = -0.01, μ̃ = 0.5)
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
 sol.u
@@ -129,7 +129,7 @@ Note that we do not generate new simulation code for Poiseuille flow with `gensi
 fₘ = sim(sd, generate)
 q = [5,3,4,2,5,2,8,4,3]
 u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
-params = (k = -0.01, μ̃ = 0.5)
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5());
 sol.u
@@ -167,7 +167,7 @@ Then we solve the equations.
 fₘ = sim(sd, generate)
 q = fill(5.0, ne(sd))
 u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
-params = (k = -0.01, μ̃ = 0.5)
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
 sol.u
@@ -187,23 +187,19 @@ The Decapode can be visualized with graphviz, note that the boundary conditions 
 # R = drag of pipe boundary
 # k = pressure as a function of density
 Poise = @decapode begin
-#  ∇P::Form1
-#  (q, q̇, Δq)::Form1
   q::Form1
   (P, ρ)::Form0
+  R::Constant
 
   # Poiseuille Flow
   Δq == ∘(d, ⋆, d, ⋆)(q)
   ∂ₜ(q) == q̇
-#  ∇P == d₀(P)
   ∇P == d(P)
-#  q̇ == sum₁(sum₁(μ̃(Δq), ¬(∇P)),R(q))
   q̇ == μ̃ * ∂q(Δq) - ∇P + R * q
   
   # Pressure/Density Coupling
   P == k * ρ
   ∂ₜ(ρ) == ρ̇
-  #ρ̇ == ⋆₀⁻¹(dual_d₀(⋆₁(∧₀₁(ρ,q)))) # advection
   ρ_up == ∘(⋆, d, ⋆)(-1 * ∧₀₁(ρ,q)) # advection
   
   # Boundary conditions
@@ -228,12 +224,16 @@ function linear_pipe(n::Int)
   subdivide_duals!(sd, Circumcenter())
 end
 
-sd = linear_pipe(10)
+sd = linear_pipe(20)
 
 sim = gensim(Poise)
 func = sim(sd, generate)
 
-prob = ODEProblem(func, [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5], (0.0, 10000.0), [10. *i for i in 1:10])
+q = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5]
+u = construct(PhysicsState, [VectorForm(q)], Float64[], [:q])
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
+
+prob = ODEProblem(func, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
 sol.u
 ```

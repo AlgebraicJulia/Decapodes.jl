@@ -85,8 +85,8 @@ to_graphviz(ice_dynamics3)
 # Define the mesh #
 ###################
 
-#include("../../grid_meshes.jl")
-include("../grid_meshes.jl")
+include("../../grid_meshes.jl")
+#include("../grid_meshes.jl")
 s′ = triangulated_grid(10_000,10_000,800,800,Point3D)
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
