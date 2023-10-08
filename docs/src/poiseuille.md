@@ -196,7 +196,7 @@ Poise = @decapode begin
   (k, R, μ̃ )::Constant
 
   # Poiseuille Flow
-  Δq == ∘(d, ⋆, d, ⋆)(q)
+  Δq == ∘(⋆, d, ⋆, d)(q)
   ∂ₜ(q) == q̇
   ∇P == d(P)
   q̇ == μ̃ * ∂q(Δq) - ∇P + R * q
