@@ -27,7 +27,7 @@ The `@decapode` macro creates the data structure representing the equations of P
 Poise = @decapode begin
   P::Form0
   q::Form1
-  R::Constant
+  (R, μ̃ )::Constant
 
   # Laplacian of q for the viscous effect
   Δq == Δ(q)
@@ -193,7 +193,7 @@ The Decapode can be visualized with graphviz, note that the boundary conditions 
 Poise = @decapode begin
   q::Form1
   (P, ρ)::Form0
-  R::Constant
+  (R, μ̃ )::Constant
 
   # Poiseuille Flow
   Δq == ∘(d, ⋆, d, ⋆)(q)
