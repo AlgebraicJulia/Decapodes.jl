@@ -230,7 +230,7 @@ end
 
 sd = linear_pipe(20)
 
-sim = gensim(Poise)
+sim = eval(gensim(Poise))
 func = sim(sd, generate)
 
 q = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5]
