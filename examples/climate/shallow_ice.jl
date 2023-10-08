@@ -190,7 +190,7 @@ mesh(s′, color=findnode(soln(tₑ), :h), colormap=:jet)
 # Create a gif
 begin
   frames = 100
-  fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :h), colormap=:jet, colorrange=extrema(findnode(soln(tₑ), :h)))
+  fig, ax, ob = CairoMakie.mesh(s′, color=findnode(soln(0), :h), colormap=:jet, colorrange=extrema(findnode(soln(tₑ), :h)))
   Colorbar(fig[1,2], ob)
   record(fig, "ice_dynamics.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
     ob.color = findnode(soln(t), :h)
