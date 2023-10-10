@@ -470,6 +470,23 @@ function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
     return Diagonal(hodge_diag_1 ./ sd[:length])
 end
 
+#= function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
+    num_v_sd = nv(sd)
+    num_e_sd = ne(sd)
+
+    hodge_diag_1 = zeros(num_e_sd)
+
+    v1_list = sd[:D_∂v1] .- num_v_sd
+    dual_lengths = sd[:dual_length]
+    
+    for edge_idx in eachindex(v1_list)
+        v1 = v1_list[edge_idx]
+        if(1 <= v1 <= num_e_sd)
+            hodge_diag_1[v1] += dual_lengths[edge_idx]
+        end
+    end
+    return Diagonal(hodge_diag_1 ./ sd[:length])
+end =#
 
 function dec_p_hodge_diag(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D)
     return Diagonal(1 ./ CombinatorialSpaces.volume(Val{2}, sd, triangles(sd)))
