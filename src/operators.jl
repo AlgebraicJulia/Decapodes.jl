@@ -354,8 +354,23 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
     sparse(I, J, V)
 end
 
-function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
+function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
+    hodge_diag_0 = zeros(nv(sd))
+    centers = vertex_center(sd)
+    dual_areas = sd[:dual_area]
+    to_find = [:D_∂e1, :D_∂v1]
+    for v in vertices(sd)
+        duals = incident(sd, centers[v], to_find)
+        for dual in duals
+            hodge_diag_0[v] += dual_areas[dual]
+        end
+    end
+    return Diagonal(hodge_diag_0)
+end
+
+#= function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
     hodge_diag_1 = zeros(ne(sd))
+    # TODO: Check that edge_center is always sorted
     centers = edge_center(sd)
     dual_lengths = sd[:dual_length]
     for e in edges(sd)
@@ -365,10 +380,99 @@ function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
         end
     end
     return Diagonal(hodge_diag_1 ./ sd[:length])
+end =#
+
+#= function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
+    hodge_diag_1 = zeros(ne(sd))
+    # TODO: Check that edge_center is always sorted
+    centers = edge_center(sd)
+
+    # The index of the v1 vertice is the dual edge it belongs to
+    # We then sort by permutation to keep track of the above info
+    v1_list = sd[:D_∂v1]
+    v1_perm_list = sortperm(v1_list, rev=true)
+
+    dual_lengths = sd[:dual_length]
+
+    v1_perm_list_iter = 1
+    centers_iter = length(centers)
+
+    # Loop through the both the centers and v1 lists to match them
+    # Since they are both sorted, we can do a linear search
+    while(v1_perm_list_iter <= length(v1_perm_list) && 0 < centers_iter)
+        curr_center = centers[centers_iter]
+        curr_v1_idx = v1_perm_list[v1_perm_list_iter]
+        curr_v1 = v1_list[curr_v1_idx]
+
+        if(curr_center == curr_v1)
+            hodge_diag_1[centers_iter] += dual_lengths[curr_v1_idx]
+            v1_perm_list_iter +=1 
+        elseif(curr_center > curr_v1)
+            centers_iter -= 1
+        else
+            v1_perm_list_iter += 1
+        end
+    end
+        
+    return Diagonal(hodge_diag_1 ./ sd[:length])
+end =#
+
+function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
+    hodge_diag_1 = Vector{Float64}(undef, ne(sd))
+    # TODO: Check that edge_center is always sorted
+    centers = edge_center(sd)
+
+    # The index of the v1 vertice is the dual edge it belongs to
+    # We then sort by permutation to keep track of the above info
+    v1_list = sd[:D_∂v1]
+    v1_perm_list = sortperm(v1_list, rev=true)
+
+    dual_lengths = sd[:dual_length]
+
+    v1_perm_list_iter = 1
+
+    # Loop through the both the centers and v1 lists to match them
+    # Since they are both sorted, we can do a linear search
+    # TODO: Don't know if we actually need this if the mesh ACSet is nice
+    while(last(centers) != v1_list[v1_perm_list[v1_perm_list_iter]])
+        v1_perm_list_iter += 1
+    end
+
+    for edge_idx in length(centers):-1:2
+        center = centers[edge_idx]
+        curr_v1_idx = v1_perm_list[v1_perm_list_iter]
+        next_v1_idx = v1_perm_list[v1_perm_list_iter + 1]
+        next_v1 = v1_list[next_v1_idx]
+
+        hodge_diag_1[edge_idx] = dual_lengths[curr_v1_idx]
+        v1_perm_list_iter += 1
+        if(center == next_v1)
+            hodge_diag_1[edge_idx] += dual_lengths[next_v1_idx]
+            v1_perm_list_iter += 1
+        end
+    end
+
+    edge_idx = 1
+    center = first(centers)
+    curr_v1_idx = v1_perm_list[v1_perm_list_iter]
+
+    if(v1_perm_list_iter + 1 > length(v1_list))
+        hodge_diag_1[edge_idx] = dual_lengths[curr_v1_idx]
+    else
+        next_v1_idx = v1_perm_list[v1_perm_list_iter + 1]
+        next_v1 = v1_list[next_v1_idx]
+
+        hodge_diag_1[edge_idx] = dual_lengths[curr_v1_idx]
+        if(center == next_v1)
+            hodge_diag_1[edge_idx] += dual_lengths[next_v1_idx]
+        end
+    end
+    return Diagonal(hodge_diag_1 ./ sd[:length])
 end
 
+
 function dec_p_hodge_diag(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D)
-    return Diagonal(1 ./ volume(Val{2}, sd, triangles(sd)))
+    return Diagonal(1 ./ CombinatorialSpaces.volume(Val{2}, sd, triangles(sd)))
 end
 
 dec_p_laplace_de_rham(n::Int, sd::HasDeltaSet, hodge = GeometricHodge()) = dec_p_laplace_de_rham(Val{n}, sd, hodge)

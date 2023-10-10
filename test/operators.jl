@@ -49,6 +49,12 @@ end
     end
 end
 
+@testset "In-House Diagonal Hodge for Form1" begin
+    for sd in dual_meshes
+        @test dec_p_hodge_diag(Val{1}, sd) == hodge_star(1, sd, DiagonalHodge())
+    end
+end
+
 @testset "In-House Diagonal Hodge for Form2" begin
     for sd in dual_meshes
         @test dec_p_hodge_diag(Val{2}, sd) == hodge_star(2, sd, DiagonalHodge())
