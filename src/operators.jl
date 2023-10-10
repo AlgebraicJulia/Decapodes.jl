@@ -417,26 +417,18 @@ end =#
     return Diagonal(hodge_diag_1 ./ sd[:length])
 end =#
 
-function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
+#= function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
     hodge_diag_1 = Vector{Float64}(undef, ne(sd))
     # TODO: Check that edge_center is always sorted
-    centers = edge_center(sd)
+    centers::Vector{Int64} = edge_center(sd)
 
     # The index of the v1 vertice is the dual edge it belongs to
     # We then sort by permutation to keep track of the above info
-    v1_list = sd[:D_∂v1]
+    v1_list::Vector{Int64} = sd[:D_∂v1]
     v1_perm_list = sortperm(v1_list, rev=true)
 
-    dual_lengths = sd[:dual_length]
-
+    dual_lengths::Vector{Float64} = sd[:dual_length]
     v1_perm_list_iter = 1
-
-    # Loop through the both the centers and v1 lists to match them
-    # Since they are both sorted, we can do a linear search
-    # TODO: Don't know if we actually need this if the mesh ACSet is nice
-    while(last(centers) != v1_list[v1_perm_list[v1_perm_list_iter]])
-        v1_perm_list_iter += 1
-    end
 
     for edge_idx in length(centers):-1:2
         center = centers[edge_idx]
@@ -467,26 +459,28 @@ function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
             hodge_diag_1[edge_idx] += dual_lengths[next_v1_idx]
         end
     end
-    return Diagonal(hodge_diag_1 ./ sd[:length])
-end
+    lengths::Vector{Float64} = sd[:length]
+    return Diagonal(hodge_diag_1 ./ lengths)
+end =#
 
-#= function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
+function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
     num_v_sd = nv(sd)
     num_e_sd = ne(sd)
 
     hodge_diag_1 = zeros(num_e_sd)
 
-    v1_list = sd[:D_∂v1] .- num_v_sd
-    dual_lengths = sd[:dual_length]
+    v1_list::Vector{Int64} = sd[:D_∂v1]
+    dual_lengths::Vector{Float64} = sd[:dual_length]
+    lengths::Vector{Float64} = sd[:length]
     
-    for edge_idx in eachindex(v1_list)
-        v1 = v1_list[edge_idx]
-        if(1 <= v1 <= num_e_sd)
-            hodge_diag_1[v1] += dual_lengths[edge_idx]
+    for d_edge_idx in eachindex(v1_list)
+        v1_shift = v1_list[d_edge_idx] - num_v_sd
+        if(1 <= v1_shift <= num_e_sd)
+            hodge_diag_1[v1_shift] += dual_lengths[d_edge_idx] / lengths[v1_shift]
         end
     end
-    return Diagonal(hodge_diag_1 ./ sd[:length])
-end =#
+    return Diagonal(hodge_diag_1)
+end
 
 function dec_p_hodge_diag(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D)
     return Diagonal(1 ./ CombinatorialSpaces.volume(Val{2}, sd, triangles(sd)))
