@@ -188,16 +188,16 @@ end
 function dec_p_wedge_product_ones(sd)
     simples = simplices(2, sd)
 
-    coeffs = map(simples) do x
+    coeffs::Vector{Float64} = map(simples) do x
         dual_es = incident(sd, triangle_center(sd, x), :D_∂v0)[4:6]
         map(dual_es) do e
             sum(dual_volume(2, sd, incident(sd, e, :D_∂e1)))
         end / CombinatorialSpaces.volume(2, sd, x)
     end
   
-    e0 = ∂(2,0,sd)
-    e1 = ∂(2,1,sd)
-    e2 = ∂(2,2,sd)
+    # e0 = ∂(2,0,sd)
+    # e1 = ∂(2,1,sd)
+    # e2 = ∂(2,2,sd)
 
     e = Array{Int64}(undef, 3, last(simples))
     e[1, :] = ∂(2,0,sd)
@@ -286,12 +286,15 @@ dec_p_differential(n::Int, sd::HasDeltaSet) = dec_p_differential(Val{n}, sd)
 function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
     vec_size = 2 * ne(sd)
 
-    I = zeros(Int64, vec_size)
-    J = zeros(Int64, vec_size)
-    V = zeros(Int64, vec_size)
+    I = Vector{Int64}(undef, vec_size)
+    J = Vector{Int64}(undef, vec_size)
+    V = Vector{Int64}(undef, vec_size)
 
-    sign_term = sign(1, sd, 1)
-    recompute_signs = !(allequal(sd[:edge_orientation]))
+    sign_term::Int = sign(1, sd, 1)
+    recompute_signs::Bool = !(allequal(sd[:edge_orientation]))
+
+    v0_list::Vector{Int64} = sd[:∂v0]
+    v1_list::Vector{Int64} = sd[:∂v1]
 
     for i in edges(sd)
         j = 2 * i - 1
@@ -299,15 +302,15 @@ function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
         I[j] = i
         I[j + 1] = i
 
-        J[j] = sd[i, :∂v0]
-        J[j + 1] = sd[i, :∂v1]
+        J[j] = v0_list[i]
+        J[j + 1] = v1_list[i]
 
         if(recompute_signs)
             sign_term = sign(1, sd, i)
         end
 
         V[j] = sign_term
-        V[j + 1] = -sign_term
+        V[j + 1] = -1 * sign_term
     end
 
     sparse(I, J, V)
@@ -316,12 +319,21 @@ end
 function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
     vec_size = 3 * ntriangles(sd)
 
-    I = zeros(Int64, vec_size)
-    J = zeros(Int64, vec_size)
-    V = zeros(Int64, vec_size)
+    I = Vector{Int64}(undef, vec_size)
+    J = Vector{Int64}(undef, vec_size)
+    V = Vector{Int64}(undef, vec_size)
 
-    sign_term = sign(1, sd, 1)
-    recompute_signs = !(allequal(sd[:edge_orientation]))
+    sign_term::Int = sign(1, sd, 1)
+    recompute_signs::Bool = !(allequal(sd[:edge_orientation]))
+    e0_list::Vector{Int64} = sd[:∂e0]
+    e1_list::Vector{Int64} = sd[:∂e1]
+    e2_list::Vector{Int64} = sd[:∂e2]
+
+    tri_sign_list::Vector{Int64} = sign(2, sd)
+
+    edge_sign_0::Int = sign_term
+    edge_sign_1::Int = sign_term
+    edge_sign_2::Int = sign_term
 
     for i in triangles(sd)
         j = 3 * i - 2
@@ -330,21 +342,17 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
         I[j + 1] = i
         I[j + 2] = i
 
-        tri_sign = sign(2, sd, i)
+        J[j] = e0_list[i]
+        J[j + 1] = e1_list[i]
+        J[j + 2] = e2_list[i]
 
-        J[j] = sd[i, :∂e0]
-        J[j + 1] = sd[i, :∂e1]
-        J[j + 2] = sd[i, :∂e2]
-
-        edge_sign_0 = sign_term
-        edge_sign_1 = sign_term
-        edge_sign_2 = sign_term
-        
         if(recompute_signs)
             edge_sign_0 = sign(1, sd, J[j])
             edge_sign_1 = sign(1, sd, J[j + 1])
             edge_sign_2 = sign(1, sd, J[j + 2])
         end
+
+        tri_sign = tri_sign_list[i]
 
         V[j] = edge_sign_0 * tri_sign
         V[j + 1] = -1 * edge_sign_1 * tri_sign
@@ -354,18 +362,45 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
     sparse(I, J, V)
 end
 
+# These are Diagonal Hodges 
+
+# TODO: Check this Hodge with a 1D mesh
+function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D)
+    num_v_sd = nv(sd)
+
+    hodge_diag_0 = zeros(num_v_sd)
+
+    v1_list::Vector{Int64} = sd[:D_∂v1]
+    dual_lengths::Vector{Float64} = sd[:dual_length]
+    
+    for d_edge_idx in eachindex(v1_list)
+        v1 = v1_list[d_edge_idx]
+        if(1 <= v1 <= num_v_sd)
+            hodge_diag_1[v1] += dual_lengths[d_edge_idx]
+        end
+    end
+    return hodge_diag_0
+end
+
+# TODO: Check this Hodge with a 1D mesh
+function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D)
+    return 1 ./ CombinatorialSpaces.volume(Val{1}, sd, edges(sd))
+end
+
+# TODO: This function could still use some work
 function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
     hodge_diag_0 = zeros(nv(sd))
-    centers = vertex_center(sd)
+    # centers = vertex_center(sd)
     dual_areas = sd[:dual_area]
     to_find = [:D_∂e1, :D_∂v1]
     for v in vertices(sd)
-        duals = incident(sd, centers[v], to_find)
+        # duals = incident(sd, centers[v], to_find)
+        duals = incident(sd, v, to_find)
         for dual in duals
             hodge_diag_0[v] += dual_areas[dual]
         end
     end
-    return Diagonal(hodge_diag_0)
+    return hodge_diag_0
 end
 
 #= function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
@@ -479,12 +514,59 @@ function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
             hodge_diag_1[v1_shift] += dual_lengths[d_edge_idx] / lengths[v1_shift]
         end
     end
-    return Diagonal(hodge_diag_1)
+    return hodge_diag_1
 end
 
 function dec_p_hodge_diag(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D)
-    return Diagonal(1 ./ CombinatorialSpaces.volume(Val{2}, sd, triangles(sd)))
+    return 1 ./ CombinatorialSpaces.volume(Val{2}, sd, triangles(sd))
 end
+
+dec_hodge_star(::Type{Val{k}}, sd::HasDeltaSet, ::DiagonalHodge) where k = 
+    Diagonal(dec_p_hodge_diag(Val{k}, sd))
+
+# These are Geometric Hodges 
+# TODO: Still need implementation for Hodge 1 in 2D
+dec_hodge_star(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge) = 
+    dec_hodge_star(Val{0}, sd, DiagonalHodge())
+
+dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge) = 
+    dec_hodge_star(Val{1}, sd, DiagonalHodge())
+
+dec_hodge_star(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
+    dec_hodge_star(Val{0}, sd, DiagonalHodge())
+
+dec_hodge_star(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
+    dec_hodge_star(Val{2}, sd, DiagonalHodge())
+
+# These are Diagonal Inverse Hodges
+function dec_inv_hodge(::Type{Val{k}}, sd::HasDeltaSet, ::DiagonalHodge) where k
+    hdg = dec_p_hodge_diag(Val{k}, sd)
+    mult_term = iseven(k*(ndims(sd)-k)) ? 1 : -1
+    hdg .= (1 ./ hdg) .* mult_term
+    return Diagonal(hdg)
+end
+
+# These are Geometric Inverse Hodges
+dec_inv_hodge(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge) = 
+    dec_inv_hodge(Val{0}, sd, ::DiagonalHodge)
+
+dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge) = 
+    dec_inv_hodge(Val{1}, sd, ::DiagonalHodge)
+
+dec_inv_hodge(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
+    dec_inv_hodge(Val{0}, sd, ::DiagonalHodge)
+
+# TODO: Change this hodge to dec hodge when implemented
+function dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
+    hdg_lu = lu(hodge_star(1, sd, GeometricHodge()))
+    x -> hdg_lu \ x
+end
+
+dec_inv_hodge(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
+    dec_inv_hodge(Val{2}, sd, ::DiagonalHodge)
+
+
+
 
 dec_p_laplace_de_rham(n::Int, sd::HasDeltaSet, hodge = GeometricHodge()) = dec_p_laplace_de_rham(Val{n}, sd, hodge)
 
