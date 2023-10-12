@@ -32,7 +32,6 @@ function collate(equations, boundaries, uwd, symbols)
 
     # Update tangent variable pointers, if any.
     tangent_op1s = filter(x -> f[x, :op1]==:∂ₜ, incident(f, var, :src))
-    println(en_key, tangent_op1s)
     isempty(tangent_op1s) && continue
     f[only(tangent_op1s), :src] = b_var
   end

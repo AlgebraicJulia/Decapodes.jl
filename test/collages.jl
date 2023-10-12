@@ -44,7 +44,7 @@ DiffusionCollage = collate(
   TVar = 1
   Op1 = 2
   Op2 = 3
-  src  = [1, 1]
+  src  = [5, 1]
   tgt  = [2, 2]
   proj1  = [3, 5, 7]
   proj2  = [4, 6, 8]
@@ -52,8 +52,8 @@ DiffusionCollage = collate(
   incl  = [2]
   op1  = Any[:∂ₜ, [:d, :⋆, :d, :⋆]]
   op2  = [:rb1_leftwall, :rb2_rightwall, :rb3]
-  type  = [:Form0, :infer, :Form0, :Form0, :Form0, :Form0, :infer, :infer]
-  name  = [:r_K, :r_K̇, :r_K, :Kb1, :K, :Kb2, :K̇, :Null]
+  type  = [:Form0, :infer, :Form0, :Form0, :Form0, :Form0, :infer, :Form0]
+  name  = [:r1_K, :r3_K̇, :r2_K, :Kb1, :K, :Kb2, :K̇, :Null]
 end
 
 # Note: Since the order does not matter in which rb1 and rb2 are applied, it

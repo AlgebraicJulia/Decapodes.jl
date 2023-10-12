@@ -12,6 +12,10 @@ end
   include("composition.jl")
 end
 
+@testset "Collages" begin
+  include("collages.jl")
+end
+
 @testset "Coordinates" begin
   include("coordinates.jl")
 end
