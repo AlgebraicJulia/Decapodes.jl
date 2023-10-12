@@ -23,14 +23,18 @@ function collate(equations, boundaries, uwd, symbols)
     en_key = uwd[junction(uwd, ev), :variable]
     bn_key = uwd[junction(uwd, bv), :variable]
     en = symbols[en_key]
-    bn = symbols[bn_key] # This will be used when we do error-checking on types.
-    println(en_key, en)
+    bn = symbols[bn_key]
     var = only(incident(f, en, :name))
     b_var = add_part!(f, :Var, type=f[var, :type], name=f[var, :name])
-    f[var, :name] = Symbol("r_" * string(f[var, :name]))
-    #add_part!(f, :Op1, src=b_var, tgt=var, op1=uwd[b, :name])
-    s_var = add_part!(f, :Var, type=f[var, :type], name=bn)
+    f[var, :name] = Symbol("r$(b)_" * string(f[var, :name]))
+    s_var = add_part!(f, :Var, type=boundaries[only(incident(boundaries, bn, :name)), :type], name=bn)
     add_part!(f, :Op2, proj1=b_var, proj2=s_var, res=var, op2=uwd[b, :name])
+
+    # Update tangent variable pointers, if any.
+    tangent_op1s = filter(x -> f[x, :op1]==:∂ₜ, incident(f, var, :src))
+    println(en_key, tangent_op1s)
+    isempty(tangent_op1s) && continue
+    f[only(tangent_op1s), :src] = b_var
   end
 
   f
