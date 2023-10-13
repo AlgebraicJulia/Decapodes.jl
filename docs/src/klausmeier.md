@@ -18,7 +18,7 @@ In this document, we will use Decapodes to formally represent these equations. M
 
 The lofty goal of this document, and of Decapodes itself, is that through both explicitly representing a model - such as Klausmeier's - and handling the generation of simulation code, we can amplify its accessibility and composability, and ultimately spur further research. Lets start by `using Decapodes`.
 
-![Klausmeier GIF]("klausmeier.gif")
+![Klausmeier GIF](klausmeier.gif)
 
 ## using Decapodes
 ```@example DEC
@@ -200,7 +200,7 @@ end
 save_dynamics(:N, 20, "klausmeier.gif")
 ```
 
-![Klausmeier]("klausmeier.gif")
+![Klausmeier](klausmeier.gif)
 
 We can observe a few interesting phenomena that we wanted to capture:
 - The vegetation density bands move uphill in traveling waves.
