@@ -43,6 +43,7 @@ makedocs(
   pages     = Any[
     "Decapodes.jl" => "index.md",
     "Overview" => "overview.md",
+    "Klausmeier" => "klausmeier.md",
     "Equations" => "equations.md",
     "ASCII Operators" => "ascii.md",
     "Misc Features" => "bc_debug.md",
