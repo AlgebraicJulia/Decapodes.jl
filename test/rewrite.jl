@@ -1,7 +1,6 @@
 using Test
 
 using Decapodes
-using Catlab.CSetDataStructures
 import Decapodes: average_rewrite
 
 #= draw(g; kw...) = to_graphviz(g; node_labels=true, edge_labels=true, kw...)
@@ -336,7 +335,7 @@ Test8Res = average_rewrite(Test8)
 Test8Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 3
   type = Any[:Form1, :Form2, :Form0]
-  name = [:D₁, :D₂, :D₁̇ ]
+  name = [:D₁, :D₂, :F]
 
   TVar = 1
   incl = [3]

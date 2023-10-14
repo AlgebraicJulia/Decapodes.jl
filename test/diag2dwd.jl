@@ -2,7 +2,6 @@ using Test
 using Catlab
 using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
-using Catlab.Present
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
@@ -40,9 +39,9 @@ import Decapodes: DecaExpr
   #######
   
   # Construct roughly what the @decapode macro should return for Diffusion
-  js = [Judge(Var(:C), :Form0, :X), 
-        Judge(Var(:Ċ₁), :Form0, :X),
-        Judge(Var(:Ċ₂), :Form0, :X)
+  js = [Judgement(Var(:C), :Form0, :X), 
+        Judgement(Var(:Ċ₁), :Form0, :X),
+        Judgement(Var(:Ċ₂), :Form0, :X)
   ]
   # TODO: Do we need to handle the fact that all the functions are parameterized by a space?
   eqs = [Eq(Var(:Ċ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
@@ -67,9 +66,9 @@ import Decapodes: DecaExpr
   
   all(isassigned(test_cset_named[:name], i) for i in parts(test_cset_named,:Var))
   
-  sup_js = js = [Judge(Var(:C), :Form0, :X), 
-  Judge(Var(:ϕ₁), :Form0, :X),
-  Judge(Var(:ϕ₂), :Form0, :X)
+  sup_js = js = [Judgement(Var(:C), :Form0, :X), 
+  Judgement(Var(:ϕ₁), :Form0, :X),
+  Judgement(Var(:ϕ₂), :Form0, :X)
   ]
   sup_eqs = [Eq(Var(:ϕ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
          Eq(Var(:ϕ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
@@ -80,9 +79,9 @@ import Decapodes: DecaExpr
   sup_cset_named = SummationDecapode(sup_d)
   
   
-  Decapodes.compile(diffusion_cset_named, [:C,])
-  Decapodes.compile(test_cset_named, [:C,])
-  Decapodes.compile(sup_cset_named, [:C,])
+  # Decapodes.compile(diffusion_cset_named, [:C,])
+  # Decapodes.compile(test_cset_named, [:C,])
+  # Decapodes.compile(sup_cset_named, [:C,])
   
   term(:(∧₀₁(C,V)))
 
@@ -197,10 +196,13 @@ import Decapodes: DecaExpr
     E == ∂ₜ(D)
   end
   pt3 = SummationDecapode(parse_decapode(ParseTest3))
-  @test pt3[:name] == [:Ċ, :Ċ̇, :C]
+  @test pt3[:name] == [:D, :E, :C]
   @test pt3[:incl] == [1,2]
   @test pt3[:src] == [3, 1]
   @test pt3[:tgt] == [1, 2]
+
+  dot_rename!(pt3)
+  @test pt3[:name] == [Symbol('C'*'\U0307'), Symbol('C'*'\U0307'*'\U0307'), :C]
 
   # TODO: We should eventually recognize this equivalence
   #= ParseTest4 = quote
@@ -208,6 +210,21 @@ import Decapodes: DecaExpr
     D + C == C
   end
   pt4 = SummationDecapode(parse_decapode(ParseTest4)) =#
+
+  # Do not rename TVars if they are given a name.
+  pt5 = SummationDecapode(parse_decapode(quote
+    X::Form0{Point}
+    V::Form0{Point}
+
+    k::Constant{Point}
+
+    ∂ₜ(X) == V
+    ∂ₜ(V) == -1*k*(X)
+  end))
+
+  @test pt5[:name] == [:X, :V, :k, :mult_1, Symbol('V'*'\U0307'), Symbol("-1")]
+  dot_rename!(pt5)
+  @test pt5[:name] == [:X, Symbol('X'*'\U0307'), :k, :mult_1, Symbol('X'*'\U0307'*'\U0307'), Symbol("-1")]
 
 end
 Deca = quote
@@ -390,7 +407,7 @@ end
 
   # We use set equality because we do not care about the order of the Var table.
   names_types_1 = Set(zip(t1[:name], t1[:type]))
-  names_types_expected_1 = Set([(:Ċ, :Form0)])
+  names_types_expected_1 = Set([(:C, :Form0)])
   @test issetequal(names_types_1, names_types_expected_1)
 
   # The type of the src of ∂ₜ is inferred.
@@ -399,11 +416,11 @@ end
     ∂ₜ(C) == C
   end
   t2 = SummationDecapode(parse_decapode(Test2))
-  t2[:type][only(incident(t2, :Ċ, :name))] = :Form0
+  t2[only(incident(t2, :C, :name)), :type] = :Form0
   infer_types!(t2)
 
   names_types_2 = Set(zip(t2[:name], t2[:type]))
-  names_types_expected_2 = Set([(:Ċ, :Form0)])
+  names_types_expected_2 = Set([(:C, :Form0)])
   @test issetequal(names_types_2, names_types_expected_2)
 
   # The type of the tgt of d is inferred.
@@ -665,6 +682,38 @@ end
   names_types_expected_15 = Set([(:A, :Form1), (:B, :Form2), (:C, :Form1)])
   @test issetequal(names_types_15, names_types_expected_15)
 
+  # Special case of a summation with a mix of infer and Literal.
+  t16 = @decapode begin
+    A == 2 + C + D
+  end
+  infer_types!(t16)
+
+  names_types_16 = get_name_type_pair(t16)
+  names_types_expected_16 = Set([(:A, :Constant), (:C, :Constant), (:D, :Constant), (Symbol("2"), :Literal)])
+  @test issetequal(names_types_16, names_types_expected_16)
+
+  # Special case of a summation with a mix of Form, Constant, and infer.
+  t17 = @decapode begin
+    A::Form0
+    C::Constant
+    A == C + D
+  end
+  infer_types!(t17)
+
+  names_types_17 = get_name_type_pair(t17)
+  names_types_expected_17 = Set([(:A, :Form0), (:C, :Constant), (:D, :Form0)])
+  @test issetequal(names_types_17, names_types_expected_17)
+
+  # Special case of a summation with a mix of infer and Constant.
+  t18 = @decapode begin
+    C::Constant
+    A == C + D
+  end
+  infer_types!(t18)
+
+  names_types_18 = get_name_type_pair(t18)
+  names_types_expected_18 = Set([(:A, :Constant), (:C, :Constant), (:D, :Constant)])
+  @test issetequal(names_types_18, names_types_expected_18)
 end
 
 @testset "Overloading Resolution" begin
@@ -838,52 +887,19 @@ end
   HeatXfer = apex(heatXfer_cospan)
 
   bespoke_op1_inf_rules = [
-  # Rules for avg where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form1, op = :avg),
-  # Rules for avg where src is unknown.
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form0, op = :avg),
-  # Rules for R₀ where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :R₀),
-  # Rules for R₀ where src is unknown.
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form0, op = :R₀),
-  # Rules for neg where tgt is unknown.
-  (src_type = :Form0, tgt_type = :infer, replacement_type = :Form0, op = :neg),
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :neg),
-  (src_type = :Form2, tgt_type = :infer, replacement_type = :Form2, op = :neg),
-  # Rules for neg where src is unknown.
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form0, op = :neg),
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form1, op = :neg),
-  (src_type = :infer, tgt_type = :Form2, replacement_type = :Form2, op = :neg),
-  # Rules for Δ where tgt is unknown.
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form1, op = :Δ),
-  # Rules for Δ where src is unknown.
-  (src_type = :infer, tgt_type = :Form1, replacement_type = :Form1, op = :Δ),
-  # Rules for δ where tgt is unknown.
-  (src_type = :Form1, tgt_type = :infer, replacement_type = :Form0, op = :δ),
-  # Rules for δ where src is unknown.
-  (src_type = :infer, tgt_type = :Form0, replacement_type = :Form1, op = :δ)]
+  # Rules for avg.
+  (src_type = :Form0, tgt_type = :Form1, op_names = [:avg]),
+  # Rules for R₀.
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:R₀])]
 
   bespoke_op2_inf_rules = [
-  # Rules for / where res is unknown.
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :/),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :/),
-  (proj1_type = :Form2, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :/),
-  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :/),
-  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :/),
-  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :/),
-  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form0, op = :/),
-  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form1, op = :/),
-  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form2, op = :/),
-  # Rules for * where res is unknown.
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :*),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :*),
-  (proj1_type = :Form2, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :*),
-  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :infer, replacement_type = :Form0, op = :*),
-  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :infer, replacement_type = :Form1, op = :*),
-  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :infer, replacement_type = :Form2, op = :*),
-  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form0, op = :*),
-  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form1, op = :*),
-  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :infer, replacement_type = :Form2, op = :*)]
+  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
+
+  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
+  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*])]
 
   infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
     vcat(bespoke_op2_inf_rules, op2_inf_rules_2D))
@@ -911,3 +927,332 @@ end
   op2s_expected_hx = [:*, :/, :/, :L₀, :/, :L₁′, :*, :/, :*, :i₁, :/, :*, :*, :L₀]
   @test op2s_hx == op2s_expected_hx
 end
+
+@testset "Compilation Transformation" begin
+
+  # contract_operators does not change the order of op1s.
+  Test1 = quote
+    (A,B)::Form0{X}
+    B == ∘(j,i,h,g,f)(A)
+  end
+  t1_orig = SummationDecapode(parse_decapode(Test1))
+  t1_expanded = expand_operators(t1_orig)
+  t1_contracted = contract_operators(t1_expanded)
+  @test t1_orig == t1_contracted
+  # contract_operators does not mutate its argument.
+  @test t1_contracted !== t1_expanded
+
+  # contract_operators works on multiple chains.
+  Test2 = quote
+    (A,B,C,D)::Form0{X}
+    B == ∘(d,d,⋆,d,d)(A)
+    D == ∘(d,d,⋆,d,d)(C)
+  end
+  t2_orig = SummationDecapode(parse_decapode(Test2))
+  t2_expanded = expand_operators(t2_orig)
+  t2_contracted = contract_operators(t2_expanded)
+  #@test t2_orig == t2_contracted
+  @test issetequal(
+                   [(t2_orig[:src][i], t2_orig[:tgt][i], t2_orig[:op1][i]) for i in parts(t2_orig, :Op1)],
+                   [(t2_contracted[:src][i], t2_contracted[:tgt][i], t2_contracted[:op1][i]) for i in parts(t2_contracted, :Op1)])
+
+
+  # contract_operators "absorbs ∘s".
+  t3_orig = SummationDecapode(parse_decapode(quote
+    (A,B)::Form0{X}
+    B == f(∘(g)(A))
+    #D == ∘(g)(f(C)) # Uncomment when parsing supports this
+  end))
+  t3_expanded = expand_operators(t3_orig)
+  t3_contracted = contract_operators(t3_expanded)
+  @test t3_contracted == SummationDecapode(parse_decapode(quote
+    (A,B)::Form0{X}
+    B == ∘(g,f)(A)
+  end))
+
+  # contract_operators does not contract through when a var is
+  # the target of multiple ops.
+  t4_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D)::Form0{X}
+    C == f(A)
+    C == g(B)
+    D == h(C)
+  end))
+  @test t4_orig == contract_operators(t4_orig)
+
+  # contract_operators does not contract through when a var is a summand.
+  t5_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D,E)::Form0{X}
+    B == f(A)
+    C == g(B)
+    E == B + D
+  end))
+  @test t5_orig == contract_operators(t5_orig)
+
+  # recursive_delete_parents does not change an empty Decapode.
+  t6_orig = SummationDecapode(parse_decapode(quote
+
+  end))
+  t6_rec_del = recursive_delete_parents(t6_orig, Vector{Int64}())
+  @test t6_orig == SummationDecapode{Any, Any, Symbol}()
+  # recursive_delete_parents does not mutate its argument.
+  @test t6_orig !== t6_rec_del
+
+  # recursive_delete_parents deletes a chain of single-child parents.
+  t7_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C)::Form0{X}
+    B == f(A)
+    C == g(B)
+  end))
+  t7_rec_del = recursive_delete_parents(t7_orig, incident(t7_orig, :C, :name))
+  @test t7_rec_del == SummationDecapode{Any, Any, Symbol}()
+
+  # recursive_delete_parents deletes a chain of single-child parents until a
+  # multi-child parent is found.
+  t8_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D,E)::Form0{X}
+    B == f(A)
+    C == g(B)
+    D == h(C)
+
+    E == i(B)
+  end))
+  t8_rec_del = recursive_delete_parents(t8_orig, incident(t8_orig, :D, :name))
+  @test t8_rec_del == SummationDecapode(parse_decapode(quote
+    (A, B, E)::Form0{X}
+    B == f(A)
+
+    E == i(B)
+  end))
+
+  # recursive_delete_parents deletes a multi-child parent if all its children are
+  # deleted.
+  t9_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D,E)::Form0{X}
+    B == f(A)
+    C == g(B)
+
+    D == i(A)
+    E == j(D)
+  end))
+  t9_rec_del = recursive_delete_parents(t9_orig,
+                                reduce(vcat, incident(t9_orig, [:C, :E], :name)))
+  @test t9_rec_del == SummationDecapode{Any, Any, Symbol}()
+
+  # recursive_delete_parents deletes π₁ and π₂ of an Op2 with missing result.
+  t10_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D)::Form0{X}
+    C == f(A,B)
+    D == g(C)
+  end))
+  t10_rec_del = recursive_delete_parents(t10_orig, incident(t10_orig, :D, :name))
+  @test t10_rec_del == SummationDecapode{Any, Any, Symbol}()
+
+  # recursive_delete_parents only deletes an π₁ or π₂ of an Op2 if it is not used in
+  # another Op2.
+  t11_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D,E)::Form0{X}
+    D == f(A,B)
+    E == g(B,C)
+  end))
+  t11_rec_del = recursive_delete_parents(t11_orig, incident(t11_orig, :D, :name))
+  # We should test if Decapodes are isomorphic, but Catlab
+  # doesn't do this yet.
+  #@test t11_rec_del == SummationDecapode(parse_decapode(quote
+  #  (B,C,E)::Form0{X}
+  #  E == g(B,C)
+  #end))
+  @test t11_rec_del == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var  = 3
+    Op2  = 1
+
+    type = [:Form0, :Form0, :Form0]
+    name = [:E, :B, :C]
+
+    proj1 = [2]
+    proj2 = [3]
+    res   = [1]
+    op2   = [:g]
+  end
+
+  # If π₁ and π₂ of an Op2 point to the same Var, that Var is used in some
+  # other computation, but this Op2 has deleted result, then delete the Op2,
+  # but not the Var.
+  t12_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D)::Form0{X}
+    C == f(A,A)
+    D == g(A,B)
+  end))
+  t12_rec_del = recursive_delete_parents(t12_orig, incident(t12_orig, :C, :name))
+  @test t12_rec_del == SummationDecapode(parse_decapode(quote
+    (A,B,D)::Form0{X}
+    D == g(A,B)
+  end))
+
+  # recursive_delete_parents does not delete a Var if it is used in a summation.
+  t13_orig = SummationDecapode(parse_decapode(quote
+    (A,B,C,D,E)::Form0{X}
+    D == A + B + C
+
+    E == f(A)
+  end))
+  t13_rec_del = recursive_delete_parents(t13_orig, incident(t13_orig, :E, :name))
+  @test t13_rec_del == SummationDecapode(parse_decapode(quote
+    (A,B,C,D)::Form0{X}
+    D == A + B + C
+  end))
+
+  # Test recursive_delete_parents on a real physics.
+  Veronis = SummationDecapode(parse_decapode(quote
+    B::DualForm0{X}
+    E::Form1{X}
+    σ::Form1{X}
+    J::Form1{X}
+    (negone,c,ε₀)::Constant{X}
+
+    ∂ₜ(E) == ((negone * (J - σ .* E))./ε₀) + ((c * c).*(⋆₁⁻¹(d₀(B))))
+
+    ∂ₜ(B) == ⋆₂(d₁(E))
+  end))
+  Veronis_rec_del = recursive_delete_parents(Veronis, incident(Veronis, :Ḃ, :name))
+  @test Veronis_rec_del == SummationDecapode(parse_decapode(quote
+    B::DualForm0{X}
+    E::Form1{X}
+    σ::Form1{X}
+    J::Form1{X}
+    (negone,c,ε₀)::Constant{X}
+
+    ∂ₜ(E) == ((negone * (J - σ .* E))./ε₀) + ((c * c).*(⋆₁⁻¹(d₀(B))))
+  end))
+
+  # Test recursive_delete_parents on a real physics.
+  Veronis = SummationDecapode(parse_decapode(quote
+    B::DualForm0{X}
+    E::Form1{X}
+    σ::Form1{X}
+    J::Form1{X}
+    (negone,c,ε₀)::Constant{X}
+
+    ∂ₜ(E) == ((negone * (J - σ .* E))./ε₀) + ((c * c).*(⋆₁⁻¹(d₀(B))))
+
+    ∂ₜ(B) == ⋆₂(d₁(E))
+  end))
+  Veronis_rec_del = recursive_delete_parents(Veronis, incident(Veronis, :Ė, :name))
+  # We should test if Decapodes are isomorphic, but Catlab
+  # doesn't do this yet.
+  #@test Veronis_rec_del == SummationDecapode(parse_decapode(quote
+  #  B::DualForm0{X}
+  #  E::Form1{X}
+
+  #  ∂ₜ(B) == ⋆₂(d₁(E))
+  #end))
+  @test Veronis_rec_del ==  @acset SummationDecapode{Any, Any, Symbol} begin
+    Var  = 4
+    TVar = 1
+    Op1  = 3
+
+    type = [:DualForm0, :Form1, :infer, :infer]
+    name = [:B, :E, :sum_1, :Ḃ]
+    
+    incl = [4]
+
+    src = [3, 1, 2]
+    tgt = [4, 4, 3]
+
+    op1 = [:⋆₂, :∂ₜ, :d₁]
+  end
+end
+
+@testset "ASCII & Vector Calculus Operators" begin
+  # Test ASCII to Unicode conversion on an Op2.
+  t1 = @decapode begin
+    A == wedge(C, D)
+  end
+  unicode!(t1)
+
+  op2s_1 = Set(t1[:op2])
+  op2s_expected_1 = Set([:∧])
+  @test issetequal(op2s_1, op2s_expected_1)
+
+  # Test ASCII to Unicode conversion with multiple occurences of the same operator.
+  t2 = @decapode begin
+    A == wedge(C, D)
+    B == wedge(E, F)
+  end
+  unicode!(t2)
+
+  op2s_2 = Set(t2[:op2])
+  op2s_expected_2 = Set([:∧])
+  @test issetequal(op2s_2, op2s_expected_2)
+
+  # Test ASCII to Unicode conversion works with composed operators after expansion.
+  t3 = @decapode begin
+    A == ∘(star, lapl, star_inv)(B)
+  end
+  t3 = expand_operators(t3)
+  unicode!(t3)
+
+  op1s_3 = Set(t3[:op1])
+  op1s_expected_3 = Set([:⋆,:Δ,:⋆⁻¹])
+  @test issetequal(op1s_3, op1s_expected_3)
+
+  # Test ASCII tangent operator identifies a TVar.
+  t4 = @decapode begin
+    A == dt(B)
+  end
+  @test nparts(t4, :TVar) == 1
+
+  # Test vec_to_dec! on a single operator.
+  t5 = @decapode begin
+    A == div(B)
+  end
+  vec_to_dec!(t5)
+
+  op1s_5 = Set(t5[:op1])
+  op1s_expected_5 = Set([[:⋆,:d,:⋆]])
+  @test issetequal(op1s_5, op1s_expected_5)
+
+  # Test divergence of gradient is the Laplacian.
+  t6 = @decapode begin
+    A == ∘(grad, div)(B)
+  end
+  t6 = expand_operators(t6)
+  vec_to_dec!(t6)
+  t6 = contract_operators(t6)
+  @test only(t6[:op1]) == [:d,:⋆,:d,:⋆]
+
+  # Test curl of curl is a vector Laplacian.
+  t7 = @decapode begin
+    A == ∘(∇x, ∇x)(B)
+  end
+  t7 = expand_operators(t7)
+  vec_to_dec!(t7)
+  t7 = contract_operators(t7)
+  @test only(t7[:op1]) == [:d,:⋆,:d,:⋆]
+
+  # Test advection is divergence of wedge product.
+  t8 = @decapode begin
+    A == adv(B, C)
+  end
+  vec_to_dec!(t8)
+
+  @test only(t8[:op1]) == [:⋆,:d,:⋆]
+  @test only(t8[:op2]) == :∧
+
+  # Test multiple advections.
+  t9 = @decapode begin
+    A == adv(B, C)
+    D == adv(E, F)
+  end
+  vec_to_dec!(t9)
+
+  t9_expected = @decapode begin
+    A == ∘(⋆,d,⋆)(B ∧ C)
+    D == ∘(⋆,d,⋆)(E ∧ F)
+  end
+  t9_expected[incident(t9_expected, Symbol("•1"), :name), :name] = Symbol("•_adv_1")
+  t9_expected[incident(t9_expected, Symbol("•2"), :name), :name] = Symbol("•_adv_2")
+  @test is_isomorphic(t9, t9_expected)
+
+end
+
