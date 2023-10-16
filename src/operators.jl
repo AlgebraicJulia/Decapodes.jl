@@ -52,7 +52,7 @@ function dec_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge)
 end
 
 function dec_mat_differential(k::Int, sd::HasDeltaSet)
-    diff = dec_p_differential(k, sd)
+    diff = dec_differential(k, sd)
     return (diff, x-> diff * x)
 end
 
@@ -281,7 +281,21 @@ function default_dec_generate_2D(sd, my_symbol, hodge=GeometricHodge())
     return (args...) ->  op(args...)
 end
 
-dec_p_differential(n::Int, sd::HasDeltaSet) = dec_p_differential(Val{n}, sd)
+dec_boundary(n::Int, sd::HasDeltaSet) = sparse(dec_p_boundary(Val{n}, sd)...)
+
+function dec_p_boundary(::Type{Val{1}}, sd::HasDeltaSet1D)
+    return dec_p_differential(Val{0}, sd)[[2, 1, 3]]
+end
+
+function dec_p_boundary(::Type{Val{1}}, sd::HasDeltaSet2D)
+    return dec_p_differential(Val{0}, sd)[[2, 1, 3]]
+end
+
+function dec_p_boundary(::Type{Val{2}}, sd::HasDeltaSet2D)
+    return dec_p_differential(Val{1}, sd)[[2, 1, 3]]
+end
+
+dec_differential(n::Int, sd::HasDeltaSet) = sparse(dec_p_differential(Val{n}, sd)...)
 
 function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
     vec_size = 2 * ne(sd)
@@ -313,7 +327,7 @@ function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
         V[j + 1] = -1 * sign_term
     end
 
-    sparse(I, J, V)
+    (I, J, V)
 end
 
 function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
@@ -359,7 +373,7 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
         V[j + 2] = edge_sign_2 * tri_sign
     end
 
-    sparse(I, J, V)
+    (I, J, V)
 end
 
 # These are Diagonal Hodges 
@@ -538,6 +552,92 @@ dec_hodge_star(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
 dec_hodge_star(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
     dec_hodge_star(Val{2}, sd, DiagonalHodge())
 
+function crossdot(a, b)
+    x, y, z = 1, 2, 3
+    c_x = a[y] * b[z] - a[z] * b[y]
+    c_y = a[z] * b[x] - a[x] * b[z]
+    c_z = a[x] * b[y] - a[y] * b[x]
+
+    flipbit = (c_z == 0 ? 1.0 : sign(c_z))
+    c_norm = sqrt(c_x^2 + c_y^2 + c_z^2)
+    return c_norm * flipbit
+end
+
+function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
+
+    I = Vector{Int64}()
+    J = Vector{Int64}()
+    V = Vector{Float64}()
+  
+    rel_orient = 0.0
+    # tri_edges_0 = sd[:∂e0]
+    # tri_edges_1 = sd[:∂e1]
+    # tri_edges_2 = sd[:∂e2]
+
+    edge_centers = sd[:edge_center]
+    tri_centers = sd[:tri_center]
+
+    points = sd[:point]
+    dual_points = sd[:dual_point]
+
+    tgts = sd[:∂v0]
+    srcs = sd[:∂v1]
+
+    tri_signs = sign(2, sd)
+
+    for t in triangles(sd)
+      e = reverse(triangle_edges(sd, t))
+      # ev = point(sd, tgt(sd, e)) .- point(sd, src(sd,e))
+      ev = points[tgts[e]] .- points[srcs[e]]
+
+      # tc = dual_point(sd, triangle_center(sd, t))
+      tc = dual_points[tri_centers[t]]
+      #= dv = map(enumerate(dual_point(sd, edge_center(sd, e)))) do (i,v)
+        (tc - v) * (i == 2 ? -1 : 1)
+      end =#
+  
+      dv = map(enumerate(dual_points[edge_centers[e]])) do (i,v)
+        (tc - v) * (i == 2 ? -1 : 1)
+      end
+
+      diag_dot = map(1:3) do i
+        dot(ev[i], dv[i]) / dot(ev[i], ev[i])
+      end
+  
+      # This relative orientation needs to be redefined for each triangle in the
+      # case that the mesh has multiple independent connected components
+      rel_orient = 0.0
+      for i in 1:3
+        diag_cross = tri_signs[t] * crossdot(ev[i], dv[i]) /
+                        dot(ev[i], ev[i])
+        if diag_cross != 0.0
+          # Decide the orientation of the mesh relative to z-axis (see crossdot)
+          # For optimization, this could be moved out of this loop
+          if rel_orient == 0.0
+            rel_orient = sign(diag_cross)
+          end
+  
+          push!(I, e[i])
+          push!(J, e[i])
+          push!(V, diag_cross * rel_orient)
+        end
+      end
+  
+      for p ∈ ((1,2,3), (1,3,2), (2,1,3),
+               (2,3,1), (3,1,2), (3,2,1))
+        val = rel_orient * tri_signs[t] * diag_dot[p[1]] *
+                dot(ev[p[1]], ev[p[3]]) / crossdot(ev[p[2]], ev[p[3]])
+        if val != 0.0
+          push!(I, e[p[1]])
+          push!(J, e[p[2]])
+          push!(V, val)
+        end
+      end
+    end
+    sparse(I,J,V)
+  end
+  
+
 # These are Diagonal Inverse Hodges
 function dec_inv_hodge(::Type{Val{k}}, sd::HasDeltaSet, ::DiagonalHodge) where k
     hdg = dec_p_hodge_diag(Val{k}, sd)
@@ -548,39 +648,36 @@ end
 
 # These are Geometric Inverse Hodges
 dec_inv_hodge(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge) = 
-    dec_inv_hodge(Val{0}, sd, ::DiagonalHodge)
+    dec_inv_hodge(Val{0}, sd, DiagonalHodge())
 
 dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge) = 
-    dec_inv_hodge(Val{1}, sd, ::DiagonalHodge)
+    dec_inv_hodge(Val{1}, sd, DiagonalHodge())
 
 dec_inv_hodge(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
-    dec_inv_hodge(Val{0}, sd, ::DiagonalHodge)
+    dec_inv_hodge(Val{0}, sd, DiagonalHodge())
 
 # TODO: Change this hodge to dec hodge when implemented
 function dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
-    hdg_lu = lu(hodge_star(1, sd, GeometricHodge()))
+    hdg_lu = LinearAlgebra.factorize(hodge_star(1, sd, GeometricHodge()))
     x -> hdg_lu \ x
 end
 
 dec_inv_hodge(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
-    dec_inv_hodge(Val{2}, sd, ::DiagonalHodge)
-
-
-
+    dec_inv_hodge(Val{2}, sd, DiagonalHodge())
 
 dec_p_laplace_de_rham(n::Int, sd::HasDeltaSet, hodge = GeometricHodge()) = dec_p_laplace_de_rham(Val{n}, sd, hodge)
 
 dec_p_laplace_de_rham(::Type{Val{0}}, sd::HasDeltaSet, hodge = GeometricHodge()) = 
-    return δ(1, sd; hodge = hodge) * dec_p_differential(0, sd)
+    return δ(1, sd; hodge = hodge) * dec_differential(0, sd)
 
 dec_p_laplace_de_rham(::Type{Val{n}}, sd::HasDeltaSet, hodge = GeometricHodge()) where n = 
-    return δ(n + 1, sd; hodge = hodge) * dec_p_differential(n, sd) + dec_p_differential(n - 1, sd) * δ(n, sd; hodge = hodge)
+    return δ(n + 1, sd; hodge = hodge) * dec_differential(n, sd) + dec_differential(n - 1, sd) * δ(n, sd; hodge = hodge)
 
 dec_p_laplace_de_rham(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D, hodge = GeometricHodge()) = 
-    return dec_p_differential(0, sd) * δ(1, sd; hodge = hodge)
+    return dec_differential(0, sd) * δ(1, sd; hodge = hodge)
     
 dec_p_laplace_de_rham(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, hodge = GeometricHodge()) = 
-    return dec_p_differential(1, sd) * δ(2, sd; hodge = hodge)
+    return dec_differential(1, sd) * δ(2, sd; hodge = hodge)
 
 function open_operators(d::SummationDecapode; dimension::Int = 2)
     e = deepcopy(d)

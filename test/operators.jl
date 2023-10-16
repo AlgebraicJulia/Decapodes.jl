@@ -7,8 +7,7 @@ using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 
-import Decapodes: dec_p_differential, dec_p_laplace_de_rham, dec_p_hodge_diag, open_operators!
-
+import Decapodes: dec_differential, dec_boundary, dec_p_laplace_de_rham, dec_hodge_star, dec_inv_hodge, open_operators!
 include("../examples/grid_meshes.jl")
 include("../examples/sw/spherical_meshes.jl")
 
@@ -22,42 +21,62 @@ end
 dual_meshes = [(generate_dual_mesh ∘ loadmesh ∘ Icosphere).(1:3)...,
                (generate_dual_mesh ∘ loadmesh)(Rectangle_30x10()),
                (generate_dual_mesh).([triangulated_grid(10,10,8,8,Point3D), makeSphere(5, 175, 5, 0, 360, 5, 6371+90)[1]])...,
-               (loadmesh)(Torus_30x10())]
+               (loadmesh)(Torus_30x10())];
 
-@testset "In-House Exterior Derivative for Form0" begin    
-    for sd in dual_meshes
-        @test dec_p_differential(Val{0}, sd) == d(0, sd)
+@testset "In-House Exterior Derivative" begin
+    for i in 0:1 
+        for sd in dual_meshes
+            @test all(dec_differential(i, sd) .== d(i, sd))
+        end
     end
 end
 
-@testset "In-House Exterior Derivative for Form1" begin
-    for sd in dual_meshes
-        @test dec_p_differential(Val{1}, sd) == d(1, sd)
+@testset "In-House Boundary" begin
+    for i in 1:2
+        for sd in dual_meshes
+            @test all(dec_boundary(i, sd) .== ∂(i, sd))
+        end
     end
 end
 
-@testset "In-House Laplace DeRham for Form1" begin
+@testset "In-House Diagonal Hodge" begin
+    for i in [0,2]
+        for sd in dual_meshes
+            @test all(dec_hodge_star(Val{i}, sd, DiagonalHodge()) .== hodge_star(i, sd, DiagonalHodge()))
+        end
+    end
+end
+
+#TODO: For hodge star 1, the values seems to be extremely close yet not quite equal
+@testset "In-House Diagonal Hodge" begin
+    for sd in dual_meshes
+        @test all(isapprox.(dec_hodge_star(Val{1}, sd, DiagonalHodge()), hodge_star(1, sd, DiagonalHodge()); rtol = 1e-15))
+    end
+end
+
+@testset "In-House Diagonal Hodge" begin
+    for i in [0,2]
+        for sd in dual_meshes
+            @test all(dec_inv_hodge(Val{i}, sd, DiagonalHodge()) .== inv_hodge_star(i, sd, DiagonalHodge()))
+        end
+    end
+end
+
+#TODO: For inv hodge star 1, the values seems to be extremely close yet not quite equal
+@testset "In-House Diagonal Hodge" begin
+    for sd in dual_meshes
+        @test all(isapprox.(dec_inv_hodge(Val{1}, sd, DiagonalHodge()), inv_hodge_star(1, sd, DiagonalHodge()); rtol = 1e-15))
+    end
+end
+
+@testset "In-House Laplace DeRham" begin
     for sd in dual_meshes
         @test dec_p_laplace_de_rham(0, sd) == Δ(0, sd)
     end
-end
 
-#TODO: The laplace DeRham on Torus produces a non-singular matrix
-@testset "In-House Laplace DeRham for Form1" begin
+    #TODO: The laplace DeRham on Torus produces a non-singular matrix
     for sd in dual_meshes[1:6]
         @test dec_p_laplace_de_rham(1, sd) == Δ(1, sd)
-    end
-end
-
-@testset "In-House Diagonal Hodge for Form1" begin
-    for sd in dual_meshes
-        @test dec_p_hodge_diag(Val{1}, sd) == hodge_star(1, sd, DiagonalHodge())
-    end
-end
-
-@testset "In-House Diagonal Hodge for Form2" begin
-    for sd in dual_meshes
-        @test dec_p_hodge_diag(Val{2}, sd) == hodge_star(2, sd, DiagonalHodge())
     end
 end
 
