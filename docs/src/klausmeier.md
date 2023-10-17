@@ -215,6 +215,9 @@ Due to the ease of composition of Decapodes, representing the Klausmeier model o
 
 ## References
 \[1\] W. A. Macfadyen, “Vegetation Patterns in the Semi-Desert Plains of British Somaliland,” The Geographical Journal, vol. 116, no. 4/6, p. 199, Oct. 1950, doi: 10.2307/1789384.
+
 \[2\] C. A. Klausmeier, “Regular and Irregular Patterns in Semiarid Vegetation,” Science, vol. 284, no. 5421, pp. 1826–1828, Jun. 1999, doi: 10.1126/science.284.5421.1826.
+
 \[3\] W. A. Macfadyen, “Soil and Vegetation in British Somaliland,” Nature, vol. 165, no. 4186, Art. no. 4186, Jan. 1950, doi: 10.1038/165121a0.
+
 \[4\] O. Lejeune and M. Tlidi, “A Model for the Explanation of Vegetation Stripes (Tiger Bush),” Journal of Vegetation Science, vol. 10, no. 2, pp. 201–208, 1999, doi: 10.2307/3237141.
