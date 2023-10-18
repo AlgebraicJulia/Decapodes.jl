@@ -33,6 +33,13 @@ function default_dec_matrix_generate(sd, my_symbol, hodge=GeometricHodge())
         :Δ₁ => dec_mat_laplace_de_rham(1, sd, hodge)
         :Δ₂ => dec_mat_laplace_de_rham(2, sd, hodge)
 
+        # Wedge Products
+        :∧₀₁ => dec_pair_wedge_product(Tuple{0, 1}, sd)
+        :∧₁₀ => dec_pair_wedge_product(Tuple{1, 0}, sd)
+        :∧₀₂ => dec_pair_wedge_product(Tuple{0, 2}, sd)
+        :∧₂₀ => dec_pair_wedge_product(Tuple{2, 0}, sd)
+        :∧₁₁ => dec_pair_wedge_product(Tuple{1, 1}, sd)
+
         _ => error("Unmatched operator $my_symbol")
     end
 
@@ -40,7 +47,7 @@ function default_dec_matrix_generate(sd, my_symbol, hodge=GeometricHodge())
 end
 
 function dec_mat_hodge(k, sd::HasDeltaSet, hodge)
-    hodge = ⋆(k,sd,hodge=hodge)
+    hodge = dec_hodge_star(k, sd, hodge=hodge)
     return (hodge, x-> hodge * x)
 end
 
@@ -57,7 +64,7 @@ function dec_mat_differential(k::Int, sd::HasDeltaSet)
 end
 
 function dec_mat_dual_differential(k::Int, sd::HasDeltaSet)
-    dualdiff = dual_derivative(k,sd)
+    dualdiff = dec_dual_derivative(k, sd)
     return (dualdiff, x-> dualdiff * x)
 end
 
@@ -76,6 +83,25 @@ function dec_mat_laplace_beltrami(k::Int, sd::HasDeltaSet)
     return (lpbt, x-> lpbt * x)
 end
 
+function dec_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where k
+    val_pack = dec_p_wedge_product(Tuple{0, k}, sd)
+    ((y, α, g) -> dec_c_wedge_product!(Tuple{0, k}, y, g, α, val_pack), 
+    (α, g) -> dec_c_wedge_product(Tuple{0, k}, g, α, val_pack))
+end
+
+function dec_pair_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where k
+    val_pack = dec_p_wedge_product(Tuple{0, k}, sd)
+    ((y, f, β) -> dec_c_wedge_product!(Tuple{0, k}, y, f, β, val_pack), 
+     (f, β) -> dec_c_wedge_product(Tuple{0, k}, f, β, val_pack))
+end
+
+function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
+    val_pack = dec_p_wedge_product(Tuple{1,1}, sd)
+    ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β,val_pack), 
+     (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β,val_pack))
+end
+
+
 function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
     
     op = @match my_symbol begin
@@ -83,13 +109,9 @@ function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
         :plus => (+)
         :(-) || :neg => x-> -1 .* x
         :.* => (x,y) -> x .* y
-        :./ => (x,y) -> x ./ y
+        :./ => (x,y) -> x ./ y        
 
-        # Wedge products
-        :∧₀₀ => dec_wedge_product(Tuple{0, 0}, sd)
-        :∧₀₁ => dec_wedge_product(Tuple{0, 1}, sd)
-        :∧₁₀ => dec_wedge_product(Tuple{1, 0}, sd)
-        :∧₁₁ => dec_wedge_product(Tuple{1, 1}, sd)
+        # :⋆₁⁻¹ 
 
         _ => default_dec_matrix_generate(sd, my_symbol, hodge)
     end
@@ -99,18 +121,18 @@ end
 
 # TODO: This relies on the assumption of a well ordering of the 
 # the dual space simplices. If changed, use dec_p_wedge_product_zero
-function dec_p_wedge_product_zero_one(sd)
+function dec_p_wedge_product(::Type{Tuple{0, 1}}, sd)
     return (hcat(sd[:∂v0], sd[:∂v1]), simplices(1, sd))
 end
 
 # TODO: This relies on the assumption of a well ordering of the 
 # the dual space simplices. If changed, use dec_c_wedge_product_zero
 # TODO: This assumes that the dual vertice on an edge is always the midpoint
-function dec_c_wedge_product_zero_one(f, α, val_pack)
+function dec_c_wedge_product!(::Type{Tuple{0, 1}}, wedge_terms, f, α, val_pack)
     primal_vertices, simples = val_pack
 
     # wedge_terms = Vector{Float64}(undef, last(simples))
-    wedge_terms = 0.5 * α
+    wedge_terms .= 0.5 .* α
     @inbounds for i in simples
         wedge_terms[i] *= (f[primal_vertices[i, 1]] + f[primal_vertices[i, 2]])
     end
@@ -118,7 +140,52 @@ function dec_c_wedge_product_zero_one(f, α, val_pack)
     return wedge_terms
 end
 
-function dec_p_wedge_product_zero(k, sd)
+function dec_p_wedge_product(::Type{Tuple{0, 2}}, sd::HasDeltaSet)
+
+    # Gets a list of all of the 0 -> vertices, 1 -> edges, 2 -> triangles on mesh
+    simples = simplices(2, sd)
+
+    #These are a memory killers!!
+
+    # For 1 -> edges, grabs the two dual edges that form the primal edge 
+    # For 2 -> triangles, grabs all of the edges that radiate from the triangle center 
+    subsimples = map(x -> subsimplices(2, sd, x), simples)
+
+    # For 1 -> edges, gets the primal vertices of the dual edges 
+    # For 2 -> triangles, gets primal vertices at the primal triangle corners
+    pv = primal_vertex(2, sd)
+    primal_vertices = map(x -> pv[x], subsimples)
+
+    # Finding coeffs in wedge product is brutal on memory, around 345976 allocations for one map
+    # vols = map(x -> volume(k,sd,x), simples)
+    vols = CombinatorialSpaces.volume(2,sd,simples)
+
+    dv = sd[:dual_area]
+    dual_vols = map(y -> dv[y], subsimples)
+
+    coeffs = dual_vols ./ vols
+    return (primal_vertices, coeffs, simples)
+end
+
+# Remove any allocations for f_terms
+function dec_c_wedge_product!(::Type{Tuple{0, 2}}, wedge_terms, f, α, val_pack)
+    primal_vertices, coeffs, simples = val_pack
+
+    # TODO: May want to move this to be in the loop in case the coeffs width does change
+    # Can use the below code in the preallocation to determine if we do have to recompute
+    # the width at every step or if we can just compute it once.
+    # all(map(x -> length(coeffs[x]), simples) .== length(coeffs[1]))
+    @inbounds for i in simples
+                pv = primal_vertices[i]
+                coeff = coeffs[i]
+                wedge_terms[i] = α[i] * (coeff[1] * f[pv[1]] + coeff[2] * f[pv[2]] + coeff[3] * f[pv[3]]
+                                         + coeff[4] * f[pv[4]] + coeff[5] * f[pv[5]] + coeff[6] * f[pv[6]])
+    end
+    
+    return wedge_terms
+end
+
+function dec_p_wedge_product(::Type{Tuple{0, k}}, sd) where k
 
     # Gets a list of all of the 0 -> vertices, 1 -> edges, 2 -> triangles on mesh
     simples = simplices(k, sd)
@@ -142,7 +209,7 @@ function dec_p_wedge_product_zero(k, sd)
 end
 
 # Remove any allocations for f_terms
-function dec_c_wedge_product_zero(f, α, val_pack)
+function dec_c_wedge_product!(::Type{Tuple{0, k}}, wedge_terms, f, α, val_pack) where k
     primal_vertices, coeffs, simples = val_pack
 
     # TODO: May want to move this to be in the loop in case the coeffs width does change
@@ -150,8 +217,6 @@ function dec_c_wedge_product_zero(f, α, val_pack)
     # the width at every step or if we can just compute it once.
     # all(map(x -> length(coeffs[x]), simples) .== length(coeffs[1]))
     width_iter = 1:length(coeffs[1])
-    wedge_terms = zeros(last(simples))
-
     @inbounds for i in simples
                 for j in width_iter
                     wedge_terms[i] += coeffs[i][j] * f[primal_vertices[i][j]]
@@ -164,7 +229,7 @@ end
 
 # This is adapted almost directly from the CombinatorialSpaces package
 # Use this if some assumptions in the embedded delta sets changes
-function dec_p_wedge_product_ones_safe(sd)
+function dec_p_wedge_product_safe(::Type{Tuple{1, 1}}, sd)
     simples = simplices(2, sd)
 
     coeffs = map(simples) do x
@@ -176,19 +241,19 @@ function dec_p_wedge_product_ones_safe(sd)
         end / CombinatorialSpaces.volume(2, sd, x)
     end
   
-    e0 = map(x -> ∂(2,0,sd,x), simples)
-    e1 = map(x -> ∂(2,1,sd,x), simples)
-    e2 = map(x -> ∂(2,2,sd,x), simples)
-
-    return (e0, e1, e2, coeffs, simples)
+    e = Array{Int64}(undef, 3, last(simples))
+    e[1, :] = ∂(2,0,sd)
+    e[2, :] = ∂(2,1,sd)
+    e[3, :] = ∂(2,2,sd)
+    return (e, coeffs, simples)
 end
 
 # TODO: This relies on a well established ordering for 
 # the dual space simplices. If changed, use dec_p_wedge_product_ones_safe
-function dec_p_wedge_product_ones(sd)
+function dec_p_wedge_product(::Type{Tuple{1, 1}}, sd)
     simples = simplices(2, sd)
 
-    coeffs::Vector{Float64} = map(simples) do x
+    coeffs::Vector{Vector{Float64}} = map(simples) do x
         dual_es = incident(sd, triangle_center(sd, x), :D_∂v0)[4:6]
         map(dual_es) do e
             sum(dual_volume(2, sd, incident(sd, e, :D_∂e1)))
@@ -209,11 +274,9 @@ function dec_p_wedge_product_ones(sd)
     # return(hcat(∂(2,0,sd), ∂(2,1,sd), ∂(2,2,sd)), coeffs, simples)
 end
 
-function dec_c_wedge_product_ones(α, β, val_pack)
+function dec_c_wedge_product!(::Type{Tuple{1, 1}}, wedge_terms, α, β, val_pack)
     # e0, e1, e2, coeffs, simples = val_pack
     e, coeffs, simples = val_pack
-
-    wedge_terms = zeros(last(simples))
 
     for i in simples
         # ae0, ae1, ae2 = α[e0[i]], α[e1[i]], α[e2[i]]
@@ -230,35 +293,31 @@ function dec_c_wedge_product_ones(α, β, val_pack)
     return wedge_terms
 end
 
-dec_wedge_product(n::Int, m::Int, sd::HasDeltaSet) = dec_wedge_product(Tuple{n,m}, sd::HasDeltaSet)
+function dec_c_wedge_product(::Type{Tuple{m, n}}, f, α, val_pack) where {m, n}
+    # The last item in the val_pack should always be the range of simplices
+    wedge_terms = zeros(last(last(val_pack)))
+    return dec_c_wedge_product!(Tuple{m, n}, wedge_terms, f, α, val_pack)
+end
+
+dec_wedge_product(m::Int, n::Int, sd::HasDeltaSet) = dec_wedge_product(Tuple{m,n}, sd::HasDeltaSet)
 
 function dec_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
     (f, g) -> f .* g
 end
 
-function dec_wedge_product(::Type{Tuple{1,0}}, sd::HasDeltaSet)
-    val_pack = dec_p_wedge_product_zero_one(sd)
-    (α, g) -> dec_c_wedge_product_zero_one(g, α, val_pack)
-end
-
-function dec_wedge_product(::Type{Tuple{0,1}}, sd::HasDeltaSet)
-    val_pack = dec_p_wedge_product_zero_one(sd)
-    (f, β) -> dec_c_wedge_product_zero_one(f, β, val_pack)
-end
-
 function dec_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where k
-    val_pack = dec_p_wedge_product_zero(k, sd)
-    (α, g) -> dec_c_wedge_product_zero(g, α, val_pack)
+    val_pack = dec_p_wedge_product(Tuple{0, k}, sd)
+    (α, g) -> dec_c_wedge_product(Tuple{0, k}, g, α, val_pack)
 end
 
 function dec_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where k
-    val_pack = dec_p_wedge_product_zero(k, sd)
-    (f, β) -> dec_c_wedge_product_zero(f, β, val_pack)
+    val_pack = dec_p_wedge_product(Tuple{0, k}, sd)
+    (f, β) -> dec_c_wedge_product(Tuple{0, k}, f, β, val_pack)
 end
 
 function dec_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
-    val_pack = dec_p_wedge_product_ones(sd)
-    (α, β) -> dec_c_wedge_product_ones(α, β,val_pack)
+    val_pack = dec_p_wedge_product(Tuple{1,1}, sd)
+    (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β,val_pack)
 end
 
 function default_dec_generate_1D(sd, my_symbol, hodge=GeometricHodge())
@@ -281,23 +340,28 @@ function default_dec_generate_2D(sd, my_symbol, hodge=GeometricHodge())
     return (args...) ->  op(args...)
 end
 
+# Boundary Operators
 dec_boundary(n::Int, sd::HasDeltaSet) = sparse(dec_p_boundary(Val{n}, sd)...)
 
-function dec_p_boundary(::Type{Val{1}}, sd::HasDeltaSet1D)
-    return dec_p_differential(Val{0}, sd)[[2, 1, 3]]
-end
+dec_p_boundary(::Type{Val{k}}, sd::HasDeltaSet; negate = false) where k = 
+    dec_p_derivbound(Val{k - 1}, sd, transpose = true, negate = negate)
 
-function dec_p_boundary(::Type{Val{1}}, sd::HasDeltaSet2D)
-    return dec_p_differential(Val{0}, sd)[[2, 1, 3]]
-end
+# Dual Derivative Operators
+dec_dual_derivative(n::Int, sd::HasDeltaSet) = sparse(dec_p_dual_derivative(Val{n}, sd)...)
 
-function dec_p_boundary(::Type{Val{2}}, sd::HasDeltaSet2D)
-    return dec_p_differential(Val{1}, sd)[[2, 1, 3]]
-end
+dec_p_dual_derivative(::Type{Val{0}}, sd::HasDeltaSet1D) = 
+    dec_p_boundary(Val{1}, sd, negate = true)
 
-dec_differential(n::Int, sd::HasDeltaSet) = sparse(dec_p_differential(Val{n}, sd)...)
+dec_p_dual_derivative(::Type{Val{0}}, sd::HasDeltaSet2D) = 
+    dec_p_boundary(Val{2}, sd)
 
-function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
+dec_p_dual_derivative(::Type{Val{1}}, sd::HasDeltaSet2D) = 
+    dec_p_boundary(Val{1}, sd, negate = true)
+
+# Exterior Derivative Operators
+dec_differential(n::Int, sd::HasDeltaSet) = sparse(dec_p_derivbound(Val{n}, sd)...)
+
+function dec_p_derivbound(::Type{Val{0}}, sd::HasDeltaSet; transpose = false, negate = false)
     vec_size = 2 * ne(sd)
 
     I = Vector{Int64}(undef, vec_size)
@@ -326,11 +390,18 @@ function dec_p_differential(::Type{Val{0}}, sd::HasDeltaSet)
         V[j] = sign_term
         V[j + 1] = -1 * sign_term
     end
-
+    
+    if(transpose)
+        I, J = J, I
+    end
+    if(negate)
+        V .= -1 .* V
+    end
+    
     (I, J, V)
 end
 
-function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
+function dec_p_derivbound(::Type{Val{1}}, sd::HasDeltaSet; transpose = false, negate = false)
     vec_size = 3 * ntriangles(sd)
 
     I = Vector{Int64}(undef, vec_size)
@@ -372,6 +443,12 @@ function dec_p_differential(::Type{Val{1}}, sd::HasDeltaSet)
         V[j + 1] = -1 * edge_sign_1 * tri_sign
         V[j + 2] = edge_sign_2 * tri_sign
     end
+    if(transpose)
+        I, J = J, I
+    end
+    if(negate)
+        V .= -1 .* V
+    end
 
     (I, J, V)
 end
@@ -406,6 +483,8 @@ function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
     hodge_diag_0 = zeros(nv(sd))
     # centers = vertex_center(sd)
     dual_areas = sd[:dual_area]
+
+    #This is the same as vcat(incident(sd, incident(sd, v, :D_∂v1), :D_∂e1)...)
     to_find = [:D_∂e1, :D_∂v1]
     for v in vertices(sd)
         # duals = incident(sd, centers[v], to_find)
@@ -535,6 +614,10 @@ function dec_p_hodge_diag(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D)
     return 1 ./ CombinatorialSpaces.volume(Val{2}, sd, triangles(sd))
 end
 
+dec_hodge_star(n::Int, sd::HasDeltaSet; hodge = GeometricHodge()) = dec_hodge_star(n, sd, hodge) 
+dec_hodge_star(n::Int, sd::HasDeltaSet, ::DiagonalHodge) = dec_hodge_star(Val{n}, sd, DiagonalHodge())
+dec_hodge_star(n::Int, sd::HasDeltaSet, ::GeometricHodge) = dec_hodge_star(Val{n}, sd, GeometricHodge())
+
 dec_hodge_star(::Type{Val{k}}, sd::HasDeltaSet, ::DiagonalHodge) where k = 
     Diagonal(dec_p_hodge_diag(Val{k}, sd))
 
@@ -658,7 +741,7 @@ dec_inv_hodge(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) 
 
 # TODO: Change this hodge to dec hodge when implemented
 function dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
-    hdg_lu = LinearAlgebra.factorize(hodge_star(1, sd, GeometricHodge()))
+    hdg_lu = LinearAlgebra.factorize(dec_hodge_star(1, sd, GeometricHodge()))
     x -> hdg_lu \ x
 end
 

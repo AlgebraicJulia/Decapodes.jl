@@ -8,6 +8,8 @@ using Catlab
 using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
 
+const gensim_in_place_stub = Symbol("GenSim-M")
+
 struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
     values::Vector{B}
 end
@@ -57,6 +59,11 @@ Base.Expr(c::BinaryCall) = begin
     #= if isa(c.operator, AbstractArray)
         operator = :(compose($(c.operator)))
     end =#
+
+    # These operators can be done in-place
+    if(c.equality == :.= && get_stub(c.operator) == gensim_in_place_stub)
+        return Expr(:call, c.operator, c.output, c.input1, c.input2)
+    end
     return Expr(c.equality, c.output, Expr(:call, c.operator, c.input1, c.input2))
 end
 
@@ -134,7 +141,14 @@ is_infer(d::SummationDecapode, var_id::Int) = (d[var_id, :type] == :infer)
 is_infer(d::SummationDecapode, var_name::Symbol) = is_infer(d, first(incident(d, var_name, :name)))
 
 add_stub(stub_name::Symbol, var_name::Symbol) = return Symbol("$(stub_name)_$(var_name)")
-
+function get_stub(var_name::Symbol)
+    var_str = String(var_name)
+    idx = findfirst("_", var_str)
+    if(isnothing(idx) || first(idx) == 1)
+        return nothing
+    end
+    return Symbol(var_str[begin:first(idx) - 1])
+end
 
 function infer_states(d::SummationDecapode)
     filter(parts(d, :Var)) do v
@@ -160,7 +174,7 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol})
         end
 
         quote_op = QuoteNode(op)
-        mat_op = add_stub(:M, op)
+        mat_op = add_stub(gensim_in_place_stub, op)
         # Could turn this into a special call
         def = :(($mat_op, $op) = default_dec_matrix_generate(mesh, $quote_op, hodge))
         push!(defs.args, def)
@@ -266,7 +280,8 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
     optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₁⁻¹, 
                                     :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
                                     :δ₀, :δ₁,
-                                    :Δ₀, :Δ₁, :Δ₂])
+                                    :Δ₀, :Δ₁, :Δ₂,
+                                    :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
     # FIXME: this is a quadratic implementation of topological_sort inlined in here.
     op_order = []
@@ -293,7 +308,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
 
                     if(is_form(d, t))
                         equality = promote_arithmetic_map[equality]
-                        operator = add_stub(:M, operator)
+                        operator = add_stub(gensim_in_place_stub, operator)
 
                         push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension))
                     end
@@ -318,6 +333,17 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                 operator = d[op, :op2]
                 equality = :(=)
 
+                # This is meant for wedge products
+                if(operator in optimizable_dec_operators)
+                    push!(dec_matrices, operator)
+                end
+
+                # TODO: Might want to move this to a specific function where this
+                # aliasing takes place
+                if(operator == :(∧₀₀))
+                    operator = :(.*)
+                end
+
                 # TODO: Check to make sure that this logic never breaks
                 if(is_form(d, r))
                     if(operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-)
@@ -334,8 +360,11 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                             equality = promote_arithmetic_map[equality]
                             push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
                         end
+                    elseif(operator in optimizable_dec_operators)
+                        operator = add_stub(gensim_in_place_stub, operator)
+                        equality = promote_arithmetic_map[equality]
+                        push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
                     end
-
                 end
 
                 if(operator == :(*))

@@ -7,7 +7,7 @@ using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 
-import Decapodes: dec_differential, dec_boundary, dec_p_laplace_de_rham, dec_hodge_star, dec_inv_hodge, open_operators!
+import Decapodes: dec_wedge_product, dec_differential, dec_boundary, dec_dual_derivative, dec_p_laplace_de_rham, dec_hodge_star, dec_inv_hodge, open_operators!
 include("../examples/grid_meshes.jl")
 include("../examples/sw/spherical_meshes.jl")
 
@@ -39,6 +39,14 @@ end
     end
 end
 
+@testset "In-House Dual Derivative" begin
+    for i in 0:1
+        for sd in dual_meshes
+            @test all(dec_dual_derivative(i, sd) .== dual_derivative(i, sd))
+        end
+    end
+end
+
 @testset "In-House Diagonal Hodge" begin
     for i in [0,2]
         for sd in dual_meshes
@@ -66,6 +74,25 @@ end
 @testset "In-House Diagonal Hodge" begin
     for sd in dual_meshes
         @test all(isapprox.(dec_inv_hodge(Val{1}, sd, DiagonalHodge()), inv_hodge_star(1, sd, DiagonalHodge()); rtol = 1e-15))
+    end
+end
+
+@testset "In-House Wedge" begin
+    for sd in dual_meshes
+        V_1, V_2 = rand(nv(sd)), rand(nv(sd))
+        E_1, E_2 = rand(ne(sd)), rand(ne(sd))
+        T_2 = rand(ntriangles(sd))
+        V_ones = ones(nv(sd))
+        E_ones = ones(ne(sd))
+        @test all(dec_wedge_product(Tuple{0, 0}, sd)(V_1, V_2) .== ∧(Tuple{0, 0}, sd, V_1, V_2))
+
+        wdg01 = dec_wedge_product(Tuple{0, 1}, sd)
+        @test all(isapprox.(wdg01(V_1, E_2), ∧(Tuple{0, 1}, sd, V_1, E_2); rtol = 1e-14))
+        @test all(wdg01(V_ones, E_ones) .== E_ones)
+
+        @test all(dec_wedge_product(Tuple{0, 2}, sd)(V_1, T_2) / 2 .== ∧(Tuple{0, 2}, sd, V_1, T_2))
+
+        @test all(dec_wedge_product(Tuple{1, 1}, sd)(E_1, E_2) / 2 .== ∧(Tuple{1, 1}, sd, E_1, E_2))
     end
 end
 
