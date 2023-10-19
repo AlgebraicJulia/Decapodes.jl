@@ -479,7 +479,7 @@ function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D)
 end
 
 # TODO: This function could still use some work
-function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
+#= function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
     hodge_diag_0 = zeros(nv(sd))
     # centers = vertex_center(sd)
     dual_areas = sd[:dual_area]
@@ -489,12 +489,30 @@ function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
     for v in vertices(sd)
         # duals = incident(sd, centers[v], to_find)
         duals = incident(sd, v, to_find)
+        # v_duals = incident(sd, v, :D_∂v1)
+        # v_duals = v_duals[1:length(vduals) / 2 + 1]
+        # duals = incident(sd, v_duals, :D_∂e1)
         for dual in duals
             hodge_diag_0[v] += dual_areas[dual]
         end
     end
     return hodge_diag_0
+end =#
+
+function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
+    hodge_diag_0 = zeros(nv(sd))
+
+    dual_areas = sd[:dual_area]
+    dual_edges_1 = sd[:D_∂e1]
+    dual_v_1 = sd[:D_∂v1]
+
+    for dual_tri in eachindex(dual_edges_1)
+        v = dual_v_1[dual_edges_1[dual_tri]]
+        hodge_diag_0[v] += dual_areas[dual_tri]
+    end
+    return hodge_diag_0
 end
+
 
 #= function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
     hodge_diag_1 = zeros(ne(sd))
