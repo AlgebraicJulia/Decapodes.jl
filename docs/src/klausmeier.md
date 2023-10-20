@@ -60,7 +60,7 @@ Phytodynamics = @decapode begin
   m::Constant
 
   ∂ₜ(n) == w * n^2 - m*n + Δ(n)
-end
+end # hide
 ```
 
 Now that we have our two component models, we can specify a means of composing them via a composition pattern.
