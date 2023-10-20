@@ -1,6 +1,6 @@
 # Klausmeier
 
-```@raw DEC
+```@raw html
 <figure>
     <img src="https://www.cise.ufl.edu/~luke.morris/imgs/somaliland_vegetation.png"
          alt="Somaliland Vegetation">
@@ -166,7 +166,7 @@ cs_ps = (phyto_m = 0.45,
 Let's execute our simulation.
 ```@example DEC
 # Run Simulation
-tₑ = 600.0
+tₑ = 1000.0
 prob = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
 sol = solve(prob, Tsit5())
 sol.retcode
