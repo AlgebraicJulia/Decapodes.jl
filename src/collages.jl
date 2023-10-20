@@ -1,5 +1,14 @@
 
-"""    function collate(acset, column_names::Vector{Symbol})
+struct Collage
+  src::SummationDecapode{Any,Any,Symbol}
+  tgt::SummationDecapode{Any,Any,Symbol}
+  uwd::Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol}
+  symbols::Dict{Symbol, Symbol}
+end
+
+collate(c::Collage) = collate(c.src, c.tgt, c.uwd, c.symbols)
+
+"""    function collate(equations, boundaries, uwd, symbols)
 
 Create a collage of two Decapodes that simulates with boundary conditions.
 ```

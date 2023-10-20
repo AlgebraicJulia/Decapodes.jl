@@ -24,7 +24,7 @@ export normalize_unicode, DerivOp, append_dot, unicode!, vec_to_dec!,
   CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat,
   average_rewrite, recursive_delete_parents, contract_operators,
   default_dec_matrix_generate, default_dec_generate, 
-  collate,
+  Collage,
   @decapode
 
 normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)

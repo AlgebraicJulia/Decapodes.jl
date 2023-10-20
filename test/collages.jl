@@ -27,17 +27,18 @@ DiffusionMorphism = @relation () begin
   rb3(Ċ, Zero)
 end
 
-DiffusionCollage = collate(
+DiffusionSymbols = Dict(
+  :C => :K,
+  :Ċ => :K̇,
+  :Cb1 => :Kb1,
+  :Cb2 => :Kb2,
+  :Zero => :Null)
+
+DiffusionCollage = Decapodes.collate(
   DiffusionDynamics,
   DiffusionBoundaries,
   DiffusionMorphism,
-  Dict(
-    :C => :K,
-    :Ċ => :K̇,
-    :Cb1 => :Kb1,
-    :Cb2 => :Kb2,
-    :Zero => :Null))
-#to_graphviz(DiffusionCollage)
+  DiffusionSymbols)
 
 @test DiffusionCollage == @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 8
@@ -65,3 +66,9 @@ end
 #  ∂ₜ(C) == rb3(∘(d,⋆,d,⋆)(rb2(C)))
 #end
 # Such a technique would preserve the technical definition of "collage".
+
+# Test gensim on a collage.
+c = Collage(DiffusionDynamics, DiffusionBoundaries,
+  DiffusionMorphism, DiffusionSymbols)
+
+@test gensim(c) == gensim(DiffusionCollage)

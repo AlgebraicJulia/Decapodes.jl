@@ -436,6 +436,9 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2)
     end
 end
 
+gensim(c::Collage; dimension::Int=2) = 
+    gensim(collate(c); dimension=dimension)
+
 """    function gensim(d::AbstractNamedDecapode; dimension::Int=2)
 
 Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
