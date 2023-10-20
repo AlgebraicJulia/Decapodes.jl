@@ -166,7 +166,7 @@ cs_ps = (phyto_m = 0.45,
 Let's execute our simulation.
 ```@example DEC
 # Run Simulation
-tₑ = 1000.0
+tₑ = 600.0
 prob = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
 sol = solve(prob, Tsit5())
 sol.retcode
