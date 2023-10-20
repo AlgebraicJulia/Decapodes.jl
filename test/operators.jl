@@ -50,7 +50,7 @@ end
 @testset "In-House Diagonal Hodge" begin
     for i in [0,2]
         for sd in dual_meshes
-            @test all(dec_hodge_star(Val{i}, sd, DiagonalHodge()) .== hodge_star(i, sd, DiagonalHodge()))
+            @test all(isapprox.(dec_hodge_star(Val{i}, sd, DiagonalHodge()), hodge_star(i, sd, DiagonalHodge()); rtol = 1e-15))
         end
     end
 end
@@ -62,16 +62,16 @@ end
     end
 end
 
-@testset "In-House Diagonal Hodge" begin
+@testset "In-House Inverse Diagonal Hodge" begin
     for i in [0,2]
         for sd in dual_meshes
-            @test all(dec_inv_hodge(Val{i}, sd, DiagonalHodge()) .== inv_hodge_star(i, sd, DiagonalHodge()))
+            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, DiagonalHodge()), inv_hodge_star(i, sd, DiagonalHodge()); rtol = 1e-15))
         end
     end
 end
 
 #TODO: For inv hodge star 1, the values seems to be extremely close yet not quite equal
-@testset "In-House Diagonal Hodge" begin
+@testset "In-House Inverse Diagonal Hodge" begin
     for sd in dual_meshes
         @test all(isapprox.(dec_inv_hodge(Val{1}, sd, DiagonalHodge()), inv_hodge_star(1, sd, DiagonalHodge()); rtol = 1e-15))
     end

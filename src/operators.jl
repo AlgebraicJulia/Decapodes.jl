@@ -369,10 +369,14 @@ function dec_p_derivbound(::Type{Val{0}}, sd::HasDeltaSet; transpose = false, ne
     V = Vector{Int64}(undef, vec_size)
 
     sign_term::Int = sign(1, sd, 1)
-    recompute_signs::Bool = !(allequal(sd[:edge_orientation]))
+    e_orient = @view sd[:edge_orientation]
+    recompute_signs::Bool = !(allequal(e_orient))
 
-    v0_list::Vector{Int64} = sd[:∂v0]
-    v1_list::Vector{Int64} = sd[:∂v1]
+    # v0_list::Vector{Int64} = sd[:∂v0]
+    # v1_list::Vector{Int64} = sd[:∂v1]
+
+    v0_list = @view sd[:∂v0]
+    v1_list = @view sd[:∂v1]
 
     for i in edges(sd)
         j = 2 * i - 1
@@ -409,10 +413,15 @@ function dec_p_derivbound(::Type{Val{1}}, sd::HasDeltaSet; transpose = false, ne
     V = Vector{Int64}(undef, vec_size)
 
     sign_term::Int = sign(1, sd, 1)
-    recompute_signs::Bool = !(allequal(sd[:edge_orientation]))
-    e0_list::Vector{Int64} = sd[:∂e0]
-    e1_list::Vector{Int64} = sd[:∂e1]
-    e2_list::Vector{Int64} = sd[:∂e2]
+    e_orient = @view sd[:edge_orientation]
+    recompute_signs::Bool = !(allequal(e_orient))
+    # e0_list::Vector{Int64} = sd[:∂e0]
+    # e1_list::Vector{Int64} = sd[:∂e1]
+    # e2_list::Vector{Int64} = sd[:∂e2]
+
+    e0_list = @view sd[:∂e0]
+    e1_list = @view sd[:∂e1]
+    e2_list = @view sd[:∂e2]
 
     tri_sign_list::Vector{Int64} = sign(2, sd)
 
@@ -461,8 +470,8 @@ function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D)
 
     hodge_diag_0 = zeros(num_v_sd)
 
-    v1_list::Vector{Int64} = sd[:D_∂v1]
-    dual_lengths::Vector{Float64} = sd[:dual_length]
+    v1_list = @view sd[:D_∂v1]
+    dual_lengths = @view sd[:dual_length]
     
     for d_edge_idx in eachindex(v1_list)
         v1 = v1_list[d_edge_idx]
@@ -502,9 +511,9 @@ end =#
 function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
     hodge_diag_0 = zeros(nv(sd))
 
-    dual_areas = sd[:dual_area]
-    dual_edges_1 = sd[:D_∂e1]
-    dual_v_1 = sd[:D_∂v1]
+    dual_edges_1 = @view sd[:D_∂e1]
+    dual_v_1 = @view sd[:D_∂v1]
+    dual_areas = @view sd[:dual_area]
 
     for dual_tri in eachindex(dual_edges_1)
         v = dual_v_1[dual_edges_1[dual_tri]]
@@ -513,112 +522,20 @@ function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
     return hodge_diag_0
 end
 
-
-#= function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
-    hodge_diag_1 = zeros(ne(sd))
-    # TODO: Check that edge_center is always sorted
-    centers = edge_center(sd)
-    dual_lengths = sd[:dual_length]
-    for e in edges(sd)
-        duals = incident(sd, centers[e], :D_∂v1)
-        for dual in duals
-            hodge_diag_1[e] += dual_lengths[dual]
-        end
-    end
-    return Diagonal(hodge_diag_1 ./ sd[:length])
-end =#
-
-#= function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
-    hodge_diag_1 = zeros(ne(sd))
-    # TODO: Check that edge_center is always sorted
-    centers = edge_center(sd)
-
-    # The index of the v1 vertice is the dual edge it belongs to
-    # We then sort by permutation to keep track of the above info
-    v1_list = sd[:D_∂v1]
-    v1_perm_list = sortperm(v1_list, rev=true)
-
-    dual_lengths = sd[:dual_length]
-
-    v1_perm_list_iter = 1
-    centers_iter = length(centers)
-
-    # Loop through the both the centers and v1 lists to match them
-    # Since they are both sorted, we can do a linear search
-    while(v1_perm_list_iter <= length(v1_perm_list) && 0 < centers_iter)
-        curr_center = centers[centers_iter]
-        curr_v1_idx = v1_perm_list[v1_perm_list_iter]
-        curr_v1 = v1_list[curr_v1_idx]
-
-        if(curr_center == curr_v1)
-            hodge_diag_1[centers_iter] += dual_lengths[curr_v1_idx]
-            v1_perm_list_iter +=1 
-        elseif(curr_center > curr_v1)
-            centers_iter -= 1
-        else
-            v1_perm_list_iter += 1
-        end
-    end
-        
-    return Diagonal(hodge_diag_1 ./ sd[:length])
-end =#
-
-#= function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
-    hodge_diag_1 = Vector{Float64}(undef, ne(sd))
-    # TODO: Check that edge_center is always sorted
-    centers::Vector{Int64} = edge_center(sd)
-
-    # The index of the v1 vertice is the dual edge it belongs to
-    # We then sort by permutation to keep track of the above info
-    v1_list::Vector{Int64} = sd[:D_∂v1]
-    v1_perm_list = sortperm(v1_list, rev=true)
-
-    dual_lengths::Vector{Float64} = sd[:dual_length]
-    v1_perm_list_iter = 1
-
-    for edge_idx in length(centers):-1:2
-        center = centers[edge_idx]
-        curr_v1_idx = v1_perm_list[v1_perm_list_iter]
-        next_v1_idx = v1_perm_list[v1_perm_list_iter + 1]
-        next_v1 = v1_list[next_v1_idx]
-
-        hodge_diag_1[edge_idx] = dual_lengths[curr_v1_idx]
-        v1_perm_list_iter += 1
-        if(center == next_v1)
-            hodge_diag_1[edge_idx] += dual_lengths[next_v1_idx]
-            v1_perm_list_iter += 1
-        end
-    end
-
-    edge_idx = 1
-    center = first(centers)
-    curr_v1_idx = v1_perm_list[v1_perm_list_iter]
-
-    if(v1_perm_list_iter + 1 > length(v1_list))
-        hodge_diag_1[edge_idx] = dual_lengths[curr_v1_idx]
-    else
-        next_v1_idx = v1_perm_list[v1_perm_list_iter + 1]
-        next_v1 = v1_list[next_v1_idx]
-
-        hodge_diag_1[edge_idx] = dual_lengths[curr_v1_idx]
-        if(center == next_v1)
-            hodge_diag_1[edge_idx] += dual_lengths[next_v1_idx]
-        end
-    end
-    lengths::Vector{Float64} = sd[:length]
-    return Diagonal(hodge_diag_1 ./ lengths)
-end =#
-
 function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
     num_v_sd = nv(sd)
     num_e_sd = ne(sd)
 
     hodge_diag_1 = zeros(num_e_sd)
 
-    v1_list::Vector{Int64} = sd[:D_∂v1]
-    dual_lengths::Vector{Float64} = sd[:dual_length]
-    lengths::Vector{Float64} = sd[:length]
-    
+    # v1_list::Vector{Int64} = sd[:D_∂v1]
+    # dual_lengths::Vector{Float64} = sd[:dual_length]
+    # lengths::Vector{Float64} = sd[:length]
+
+    v1_list = @view sd[:D_∂v1]
+    dual_lengths = @view sd[:dual_length]
+    lengths = @view sd[:length]
+
     for d_edge_idx in eachindex(v1_list)
         v1_shift = v1_list[d_edge_idx] - num_v_sd
         if(1 <= v1_shift <= num_e_sd)
@@ -629,7 +546,8 @@ function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
 end
 
 function dec_p_hodge_diag(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D)
-    return 1 ./ CombinatorialSpaces.volume(Val{2}, sd, triangles(sd))
+    tri_areas = @view sd[:area]
+    return 1 ./ tri_areas
 end
 
 dec_hodge_star(n::Int, sd::HasDeltaSet; hodge = GeometricHodge()) = dec_hodge_star(n, sd, hodge) 
@@ -669,22 +587,29 @@ function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Geomet
     I = Vector{Int64}()
     J = Vector{Int64}()
     V = Vector{Float64}()
-  
-    rel_orient = 0.0
+
+    # sizehint!(I, ne(sd))
+    # sizehint!(J, ne(sd))
+    # sizehint!(V, ne(sd))
+
+    rel_orient::Float64 = 0.0
     # tri_edges_0 = sd[:∂e0]
     # tri_edges_1 = sd[:∂e1]
     # tri_edges_2 = sd[:∂e2]
 
-    edge_centers = sd[:edge_center]
-    tri_centers = sd[:tri_center]
+    edge_centers = @view sd[:edge_center]
+    tri_centers = @view sd[:tri_center]
 
-    points = sd[:point]
-    dual_points = sd[:dual_point]
+    points::Vector{Point3{Float64}} = sd[:point]
+    dual_points::Vector{Point3{Float64}} = sd[:dual_point]
 
-    tgts = sd[:∂v0]
-    srcs = sd[:∂v1]
+    # points = sd[:point]
+    # dual_points = sd[:dual_point]
 
-    tri_signs = sign(2, sd)
+    tgts = @view sd[:∂v0]
+    srcs = @view sd[:∂v1]
+
+    tri_signs::Vector{Int64} = sign(2, sd)
 
     for t in triangles(sd)
       e = reverse(triangle_edges(sd, t))
