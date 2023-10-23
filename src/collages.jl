@@ -8,42 +8,44 @@ end
 
 collate(c::Collage) = collate(c.src, c.tgt, c.uwd, c.symbols)
 
-"""    function collate(equations, boundaries, uwd, symbols)
+"""    function collate(dm::ACSetTransformation)
 
-Create a collage of two Decapodes that simulates with boundary conditions.
+"Compile" a collage of Decapodes to a simulatable one.
 ```
 """
-function collate(equations, boundaries, uwd, symbols)
-  # TODO: This is assuming only "restriction"-type morphisms.
+function collate(dm::ACSetTransformation)
+  d = SummationDecapode{Any, Any, Symbol}()
+  copy_parts!(d, dm.codom, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
+  # TODO: Type the mask value as a Parameter.
 
-  f = SummationDecapode{Any, Any, Symbol}()
-  # TODO: Double-check
-  copy_parts!(f, equations, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
+  for (i,x) in enumerate(dm.components.Var.func)
+    mask_name = dm.dom[i, :name]
+    op_name = Symbol("∂b" * string(mask_name))
+    mask_var = add_part!(d, :Var, type=:Parameter, name=dm.dom[i, :name])
+    tgt_name = dm.codom[x, :name]
+    tgt_idx = only(incident(d, tgt_name, :name))
+    if isempty(incident(d, tgt_idx, :incl)) # State variable
+      d[tgt_idx, :name] = Symbol(string(d[tgt_idx, :name]) * string(i))
+      res_var = add_part!(d, :Var, type=dm.codom[x, :type], name=tgt_name)
+      add_part!(d, :Op2, proj1=res_var, proj2=mask_var, res=tgt_idx, op2=op_name)
 
-  # TODO: Throw an error if the user tries to use a boundary value differential
-  # form that is of a different type of the thing that we are applying the bound
-  # to. i.e. Form1 but target is a Form0.
+      # Update tangent variable pointers, if any.
+      tangent_op1s = filter(x -> d[x, :op1]==:∂ₜ, incident(d, tgt_idx, :src))
+      isempty(tangent_op1s) && continue
+      d[only(tangent_op1s), :src] = res_var
+      d[incident(d, tgt_idx, :incl), :incl] = res_var
+    else # Tangent variable
+      d[tgt_idx, :name] = Symbol(string(d[tgt_idx, :name]) * string(i))
+      res_var = add_part!(d, :Var, type=dm.codom[x, :type], name=tgt_name)
+      add_part!(d, :Op2, proj1=tgt_idx, proj2=mask_var, res=res_var, op2=op_name)
 
-  # TODO: This sets restrictions as Op1s. They are actually Op2s. i.e. Use `bv`.
-  for b in boxes(uwd)
-    ps = incident(uwd, b, :box)
-    ev = first(ps)
-    bv = last(ps)
-    en_key = uwd[junction(uwd, ev), :variable]
-    bn_key = uwd[junction(uwd, bv), :variable]
-    en = symbols[en_key]
-    bn = symbols[bn_key]
-    var = only(incident(f, en, :name))
-    b_var = add_part!(f, :Var, type=f[var, :type], name=f[var, :name])
-    f[var, :name] = Symbol("r$(b)_" * string(f[var, :name]))
-    s_var = add_part!(f, :Var, type=boundaries[only(incident(boundaries, bn, :name)), :type], name=bn)
-    add_part!(f, :Op2, proj1=b_var, proj2=s_var, res=var, op2=uwd[b, :name])
-
-    # Update tangent variable pointers, if any.
-    tangent_op1s = filter(x -> f[x, :op1]==:∂ₜ, incident(f, var, :src))
-    isempty(tangent_op1s) && continue
-    f[only(tangent_op1s), :src] = b_var
+      # Update tangent variable pointers, if any.
+      tangent_op1s = filter(x -> d[x, :op1]==:∂ₜ, incident(d, tgt_idx, :tgt))
+      println(tangent_op1s)
+      isempty(tangent_op1s) && continue
+      d[only(tangent_op1s), :tgt] = res_var
+      d[incident(d, tgt_idx, :incl), :incl] = res_var
+    end
   end
-
-  f
+  d
 end
