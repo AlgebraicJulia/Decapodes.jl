@@ -436,8 +436,8 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2)
     end
 end
 
-gensim(c::Collage; dimension::Int=2) = 
-    gensim(collate(c); dimension=dimension)
+gensim(dm::ACSetTransformation; dimension::Int=2) = 
+  gensim(collate(dm); dimension=dimension)
 
 """    function gensim(d::AbstractNamedDecapode; dimension::Int=2)
 

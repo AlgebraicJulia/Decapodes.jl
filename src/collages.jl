@@ -1,12 +1,12 @@
 
-struct Collage
-  src::SummationDecapode{Any,Any,Symbol}
-  tgt::SummationDecapode{Any,Any,Symbol}
-  uwd::Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol}
-  symbols::Dict{Symbol, Symbol}
-end
-
-collate(c::Collage) = collate(c.src, c.tgt, c.uwd, c.symbols)
+#struct Collage
+#  src::SummationDecapode{Any,Any,Symbol}
+#  tgt::SummationDecapode{Any,Any,Symbol}
+#  uwd::Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol}
+#  symbols::Dict{Symbol, Symbol}
+#end
+#
+#collate(c::Collage) = collate(c.src, c.tgt, c.uwd, c.symbols)
 
 """    function collate(dm::ACSetTransformation)
 
@@ -37,7 +37,6 @@ function collate(dm::ACSetTransformation)
       add_part!(d, :Op2, proj1=tgt_idx, proj2=mask_var, res=res_var, op2=op_name)
 
       tangent_op1s = filter(x -> d[x, :op1]==:∂ₜ, incident(d, tgt_idx, :tgt))
-      println(tangent_op1s)
       isempty(tangent_op1s) && continue
       d[only(tangent_op1s), :tgt] = res_var
       d[incident(d, tgt_idx, :incl), :incl] = res_var

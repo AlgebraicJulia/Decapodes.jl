@@ -70,9 +70,6 @@ DiffusionCollage = Decapodes.collate(StateTangentMorphism)
 end
 
 # Test gensim on a collage.
-#c = Collage(DiffusionDynamics, DiffusionBoundaries,
-#  DiffusionMorphism, DiffusionSymbols)
-#
-#@test gensim(c) == gensim(DiffusionCollage)
+@test gensim(StateTangentMorphism) == gensim(DiffusionCollage)
 
 # TODO: Test intermediate variable masks.
