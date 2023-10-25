@@ -142,44 +142,48 @@ end
 
 function dec_p_wedge_product(::Type{Tuple{0, 2}}, sd::HasDeltaSet)
 
-    # Gets a list of all of the 0 -> vertices, 1 -> edges, 2 -> triangles on mesh
     simples = simplices(2, sd)
 
-    #These are a memory killers!!
+    dual_edges_1 = @view sd[:D_∂e1]
+    dual_v_0 = @view sd[:D_∂v0]
 
-    # For 1 -> edges, grabs the two dual edges that form the primal edge 
-    # For 2 -> triangles, grabs all of the edges that radiate from the triangle center 
-    subsimples = map(x -> subsimplices(2, sd, x), simples)
+    dual_edges_2 = @view sd[:D_∂e2]
+    dual_v_1 = @view sd[:D_∂v1]
 
-    # For 1 -> edges, gets the primal vertices of the dual edges 
-    # For 2 -> triangles, gets primal vertices at the primal triangle corners
-    pv = primal_vertex(2, sd)
-    primal_vertices = map(x -> pv[x], subsimples)
+    dv = @view sd[:dual_area]
+    vols = @view sd[:area]
 
-    # Finding coeffs in wedge product is brutal on memory, around 345976 allocations for one map
-    # vols = map(x -> volume(k,sd,x), simples)
-    vols = CombinatorialSpaces.volume(2,sd,simples)
+    primal_vertices = Array{Int64}(undef, 6, ntriangles(sd))
+    coeffs = Array{Float64}(undef, 6, ntriangles(sd))
 
-    dv = sd[:dual_area]
-    dual_vols = map(y -> dv[y], subsimples)
+    row_idx_in_col = ones(Int8, ntriangles(sd))
+    shift::Int64 = nv(sd) + ne(sd)
+    
+    for dual_tri in eachindex(dual_edges_1)
+        primal_tri = dual_v_0[dual_edges_1[dual_tri]] - shift
+        row_idx = row_idx_in_col[primal_tri]
+        
+        primal_vertices[row_idx, primal_tri] = dual_v_1[dual_edges_2[dual_tri]]
+        coeffs[row_idx, primal_tri] = dv[dual_tri] / vols[primal_tri]
 
-    coeffs = dual_vols ./ vols
+        row_idx_in_col[primal_tri] += 1;
+    end
+
     return (primal_vertices, coeffs, simples)
 end
 
 # Remove any allocations for f_terms
 function dec_c_wedge_product!(::Type{Tuple{0, 2}}, wedge_terms, f, α, val_pack)
-    primal_vertices, coeffs, simples = val_pack
+    pv, coeffs, simples = val_pack
 
     # TODO: May want to move this to be in the loop in case the coeffs width does change
     # Can use the below code in the preallocation to determine if we do have to recompute
     # the width at every step or if we can just compute it once.
     # all(map(x -> length(coeffs[x]), simples) .== length(coeffs[1]))
     @inbounds for i in simples
-                pv = primal_vertices[i]
-                coeff = coeffs[i]
-                wedge_terms[i] = α[i] * (coeff[1] * f[pv[1]] + coeff[2] * f[pv[2]] + coeff[3] * f[pv[3]]
-                                         + coeff[4] * f[pv[4]] + coeff[5] * f[pv[5]] + coeff[6] * f[pv[6]])
+                wedge_terms[i] = α[i] * (coeffs[1, i] * f[pv[1, i]] + coeffs[2, i] * f[pv[2, i]] 
+                                         + coeffs[3, i] * f[pv[3, i]] + coeffs[4, i] * f[pv[4, i]] 
+                                         + coeffs[5, i] * f[pv[5, i]] + coeffs[6, i] * f[pv[6, i]])
     end
     
     return wedge_terms
@@ -248,46 +252,57 @@ function dec_p_wedge_product_safe(::Type{Tuple{1, 1}}, sd)
     return (e, coeffs, simples)
 end
 
-# TODO: This relies on a well established ordering for 
-# the dual space simplices. If changed, use dec_p_wedge_product_ones_safe
-function dec_p_wedge_product(::Type{Tuple{1, 1}}, sd)
-    simples = simplices(2, sd)
-
-    coeffs::Vector{Vector{Float64}} = map(simples) do x
-        dual_es = incident(sd, triangle_center(sd, x), :D_∂v0)[4:6]
-        map(dual_es) do e
-            sum(dual_volume(2, sd, incident(sd, e, :D_∂e1)))
-        end / CombinatorialSpaces.volume(2, sd, x)
-    end
-  
-    # e0 = ∂(2,0,sd)
-    # e1 = ∂(2,1,sd)
-    # e2 = ∂(2,2,sd)
-
-    e = Array{Int64}(undef, 3, last(simples))
-    e[1, :] = ∂(2,0,sd)
-    e[2, :] = ∂(2,1,sd)
-    e[3, :] = ∂(2,2,sd)
-    return (e, coeffs, simples)
-    # return (e0, e1, e2, coeffs, simples)
-
-    # return(hcat(∂(2,0,sd), ∂(2,1,sd), ∂(2,2,sd)), coeffs, simples)
-end
-
-function dec_c_wedge_product!(::Type{Tuple{1, 1}}, wedge_terms, α, β, val_pack)
-    # e0, e1, e2, coeffs, simples = val_pack
+function dec_c_wedge_product_safe!(::Type{Tuple{1, 1}}, wedge_terms, α, β, val_pack)
     e, coeffs, simples = val_pack
 
-    for i in simples
-        # ae0, ae1, ae2 = α[e0[i]], α[e1[i]], α[e2[i]]
-        # be0, be1, be2 = β[e0[i]], β[e1[i]], β[e2[i]]
-
+    @inbounds for i in simples
         ae0, ae1, ae2 = α[e[1, i]], α[e[2, i]], α[e[3, i]]
         be0, be1, be2 = β[e[1, i]], β[e[2, i]], β[e[3, i]]
 
         wedge_terms[i] += (coeffs[i][1] * (ae2 * be1 - ae1 * be2) 
                          + coeffs[i][2] * (ae2 * be0 - ae0 * be2) 
                          + coeffs[i][3] * (ae1 * be0 - ae0 * be1))
+    end
+
+    return wedge_terms
+end
+
+# TODO: This relies on a well established ordering for 
+# the dual space simplices. If changed, use dec_p_wedge_product_ones_safe
+function dec_p_wedge_product(::Type{Tuple{1, 1}}, sd)
+    simples = simplices(2, sd)
+
+    areas = @view sd[:area]
+    d_areas = @view sd[:dual_area]
+
+    coeffs = Array{Float64}(undef, 3, ntriangles(sd))
+
+    shift = ntriangles(sd)
+    for i in 1:ntriangles(sd)
+        area = areas[i]
+        coeffs[1, i] = (d_areas[i] + d_areas[i + shift]) / area
+        coeffs[2, i] = (d_areas[i + 2 * shift] + d_areas[i + 3 * shift]) / area
+        coeffs[3, i] = (d_areas[i + 4 * shift] + d_areas[i + 5 * shift]) / area
+    end
+
+    e = Array{Int64}(undef, 3, ntriangles(sd))
+    e[1, :] = ∂(2,0,sd)
+    e[2, :] = ∂(2,1,sd)
+    e[3, :] = ∂(2,2,sd)
+    
+    return (e, coeffs, simples)
+end
+
+function dec_c_wedge_product!(::Type{Tuple{1, 1}}, wedge_terms, α, β, val_pack)
+    e, coeffs, simples = val_pack
+
+    @inbounds for i in simples
+        ae0, ae1, ae2 = α[e[1, i]], α[e[2, i]], α[e[3, i]]
+        be0, be1, be2 = β[e[1, i]], β[e[2, i]], β[e[3, i]]
+
+        wedge_terms[i] += (coeffs[1, i] * (ae2 * be1 - ae1 * be2) 
+                         + coeffs[2, i] * (ae2 * be0 - ae0 * be2) 
+                         + coeffs[3, i] * (ae1 * be0 - ae0 * be1))
     end
 
     return wedge_terms
@@ -368,12 +383,10 @@ function dec_p_derivbound(::Type{Val{0}}, sd::HasDeltaSet; transpose = false, ne
     J = Vector{Int64}(undef, vec_size)
     V = Vector{Int64}(undef, vec_size)
 
-    sign_term::Int = sign(1, sd, 1)
-    e_orient = @view sd[:edge_orientation]
-    recompute_signs::Bool = !(allequal(e_orient))
-
-    # v0_list::Vector{Int64} = sd[:∂v0]
-    # v1_list::Vector{Int64} = sd[:∂v1]
+    e_orient::Vector{Int8} = sd[:edge_orientation]
+    for i in eachindex(e_orient)
+        e_orient[i] = (e_orient[i] == 1 ? 1 : -1)
+    end
 
     v0_list = @view sd[:∂v0]
     v1_list = @view sd[:∂v1]
@@ -387,9 +400,7 @@ function dec_p_derivbound(::Type{Val{0}}, sd::HasDeltaSet; transpose = false, ne
         J[j] = v0_list[i]
         J[j + 1] = v1_list[i]
 
-        if(recompute_signs)
-            sign_term = sign(1, sd, i)
-        end
+        sign_term = e_orient
 
         V[j] = sign_term
         V[j + 1] = -1 * sign_term
@@ -412,22 +423,16 @@ function dec_p_derivbound(::Type{Val{1}}, sd::HasDeltaSet; transpose = false, ne
     J = Vector{Int64}(undef, vec_size)
     V = Vector{Int64}(undef, vec_size)
 
-    sign_term::Int = sign(1, sd, 1)
-    e_orient = @view sd[:edge_orientation]
-    recompute_signs::Bool = !(allequal(e_orient))
-    # e0_list::Vector{Int64} = sd[:∂e0]
-    # e1_list::Vector{Int64} = sd[:∂e1]
-    # e2_list::Vector{Int64} = sd[:∂e2]
+    tri_sign_list::Vector{Int64} = sign(2, sd)
+    
+    e_orient::Vector{Int8} = sd[:edge_orientation]
+    for i in eachindex(e_orient)
+        e_orient[i] = (e_orient[i] == 1 ? 1 : -1)
+    end
 
     e0_list = @view sd[:∂e0]
     e1_list = @view sd[:∂e1]
     e2_list = @view sd[:∂e2]
-
-    tri_sign_list::Vector{Int64} = sign(2, sd)
-
-    edge_sign_0::Int = sign_term
-    edge_sign_1::Int = sign_term
-    edge_sign_2::Int = sign_term
 
     for i in triangles(sd)
         j = 3 * i - 2
@@ -436,21 +441,20 @@ function dec_p_derivbound(::Type{Val{1}}, sd::HasDeltaSet; transpose = false, ne
         I[j + 1] = i
         I[j + 2] = i
 
+        tri_sign = tri_sign_list[i]
+
         J[j] = e0_list[i]
         J[j + 1] = e1_list[i]
         J[j + 2] = e2_list[i]
 
-        if(recompute_signs)
-            edge_sign_0 = sign(1, sd, J[j])
-            edge_sign_1 = sign(1, sd, J[j + 1])
-            edge_sign_2 = sign(1, sd, J[j + 2])
-        end
-
-        tri_sign = tri_sign_list[i]
+        edge_sign_0 = e_orient[e0_list[i]]
+        edge_sign_1 = e_orient[e1_list[i]]
+        edge_sign_2 = e_orient[e2_list[i]]
 
         V[j] = edge_sign_0 * tri_sign
         V[j + 1] = -1 * edge_sign_1 * tri_sign
         V[j + 2] = edge_sign_2 * tri_sign
+
     end
     if(transpose)
         I, J = J, I
