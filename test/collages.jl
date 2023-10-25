@@ -21,54 +21,58 @@ DiffusionBoundaries = @decapode begin
   (Kb1, Kb2, Null)::Form0
 end
 
-DiffusionMorphism = @relation () begin
-  rb1_leftwall(C, Cb1)
-  rb2_rightwall(C, Cb2)
-  rb3(Ċ, Zero)
-end
+# Test that simple boundary masks work on state variables.
+StateMorphism = ACSetTransformation(
+  DiffusionBoundaries, DiffusionDynamics,
+  Var = [1,1,1])
 
-DiffusionSymbols = Dict(
-  :C => :K,
-  :Ċ => :K̇,
-  :Cb1 => :Kb1,
-  :Cb2 => :Kb2,
-  :Zero => :Null)
-
-DiffusionCollage = Decapodes.collate(
-  DiffusionDynamics,
-  DiffusionBoundaries,
-  DiffusionMorphism,
-  DiffusionSymbols)
+DiffusionCollage = Decapodes.collate(StateMorphism)
 
 @test DiffusionCollage == @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 8
   TVar = 1
   Op1 = 2
   Op2 = 3
-  src  = [5, 1]
-  tgt  = [2, 2]
-  proj1  = [3, 5, 7]
-  proj2  = [4, 6, 8]
-  res  = [1, 3, 2]
-  incl  = [2]
-  op1  = Any[:∂ₜ, [:d, :⋆, :d, :⋆]]
-  op2  = [:rb1_leftwall, :rb2_rightwall, :rb3]
-  type  = [:Form0, :infer, :Form0, :Form0, :Form0, :Form0, :infer, :Form0]
-  name  = [:r1_K, :r3_K̇, :r2_K, :Kb1, :K, :Kb2, :K̇, :Null]
+  src = [8, 1]
+  tgt = [2, 2]
+  proj1  = [4, 6, 8]
+  proj2  = [3, 5, 7]
+  res  = [1, 4, 6]
+  incl = [2]
+  op1 = Any[:∂ₜ, [:d, :⋆, :d, :⋆]]
+  op2 = [:∂bKb1, :∂bKb2, :∂bNull]
+  type  = [:Form0, :infer, :Parameter, :Form0, :Parameter, :Form0, :Parameter, :Form0]
+  name  = [:K1, :K̇, :Kb1, :K2, :Kb2, :K3, :Null, :K]
 end
 
-# Note: Since the order does not matter in which rb1 and rb2 are applied, it
-# seems informal to state that one goes before the other.
-# It might be better to provide a semantics for incident edges a la:
-#Diffusion = @decapode begin
-#  C::Form0
-#  ∂ₜ(C) == rb3(∘(d,⋆,d,⋆)(rb1(C)))
-#  ∂ₜ(C) == rb3(∘(d,⋆,d,⋆)(rb2(C)))
-#end
-# Such a technique would preserve the technical definition of "collage".
+# Test that simple boundary masks work on state and tangent variables.
+StateTangentMorphism = ACSetTransformation(
+  DiffusionBoundaries, DiffusionDynamics,
+  Var = [1,1,2])
+
+DiffusionCollage = Decapodes.collate(StateTangentMorphism)
+
+@test DiffusionCollage == @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 8
+  TVar = 1
+  Op1 = 2
+  Op2 = 3
+  src  = [6, 1]
+  tgt  = [8, 2]
+  proj1  = [4, 6, 2]
+  proj2  = [3, 5, 7]
+  res = [1, 4, 8]
+  incl = [8]
+  op1  = Any[:∂ₜ, [:d, :⋆, :d, :⋆]]
+  op2  = [:∂bKb1, :∂bKb2, :∂bNull]
+  type  = [:Form0, :infer, :Parameter, :Form0, :Parameter, :Form0, :Parameter, :infer]
+  name = [:K1, :K̇3, :Kb1, :K2, :Kb2, :K, :Null, :K̇]
+end
 
 # Test gensim on a collage.
-c = Collage(DiffusionDynamics, DiffusionBoundaries,
-  DiffusionMorphism, DiffusionSymbols)
+#c = Collage(DiffusionDynamics, DiffusionBoundaries,
+#  DiffusionMorphism, DiffusionSymbols)
+#
+#@test gensim(c) == gensim(DiffusionCollage)
 
-@test gensim(c) == gensim(DiffusionCollage)
+# TODO: Test intermediate variable masks.
