@@ -32,6 +32,7 @@ term(expr::Expr) = begin
     @match expr begin
         #TODO: Would we want ∂ₜ to be used with general expressions or just Vars?
         Expr(:call, :∂ₜ, b) => Tan(Var(b)) 
+        Expr(:call, :dt, b) => Tan(Var(b)) 
 
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, term(b))
         Expr(:call, a, b) => App1(a, term(b))

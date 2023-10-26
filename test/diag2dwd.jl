@@ -716,7 +716,6 @@ end
   names_types_18 = get_name_type_pair(t18)
   names_types_expected_18 = Set([(:A, :Constant), (:C, :Constant), (:D, :Constant)])
   @test issetequal(names_types_18, names_types_expected_18)
-
 end
 
 @testset "Overloading Resolution" begin
@@ -1170,3 +1169,97 @@ end
     op1 = [:⋆₂, :∂ₜ, :d₁]
   end
 end
+
+@testset "ASCII & Vector Calculus Operators" begin
+  # Test ASCII to Unicode conversion on an Op2.
+  t1 = @decapode begin
+    A == wedge(C, D)
+  end
+  unicode!(t1)
+
+  op2s_1 = Set(t1[:op2])
+  op2s_expected_1 = Set([:∧])
+  @test issetequal(op2s_1, op2s_expected_1)
+
+  # Test ASCII to Unicode conversion with multiple occurences of the same operator.
+  t2 = @decapode begin
+    A == wedge(C, D)
+    B == wedge(E, F)
+  end
+  unicode!(t2)
+
+  op2s_2 = Set(t2[:op2])
+  op2s_expected_2 = Set([:∧])
+  @test issetequal(op2s_2, op2s_expected_2)
+
+  # Test ASCII to Unicode conversion works with composed operators after expansion.
+  t3 = @decapode begin
+    A == ∘(star, lapl, star_inv)(B)
+  end
+  t3 = expand_operators(t3)
+  unicode!(t3)
+
+  op1s_3 = Set(t3[:op1])
+  op1s_expected_3 = Set([:⋆,:Δ,:⋆⁻¹])
+  @test issetequal(op1s_3, op1s_expected_3)
+
+  # Test ASCII tangent operator identifies a TVar.
+  t4 = @decapode begin
+    A == dt(B)
+  end
+  @test nparts(t4, :TVar) == 1
+
+  # Test vec_to_dec! on a single operator.
+  t5 = @decapode begin
+    A == div(B)
+  end
+  vec_to_dec!(t5)
+
+  op1s_5 = Set(t5[:op1])
+  op1s_expected_5 = Set([[:⋆,:d,:⋆]])
+  @test issetequal(op1s_5, op1s_expected_5)
+
+  # Test divergence of gradient is the Laplacian.
+  t6 = @decapode begin
+    A == ∘(grad, div)(B)
+  end
+  t6 = expand_operators(t6)
+  vec_to_dec!(t6)
+  t6 = contract_operators(t6)
+  @test only(t6[:op1]) == [:d,:⋆,:d,:⋆]
+
+  # Test curl of curl is a vector Laplacian.
+  t7 = @decapode begin
+    A == ∘(∇x, ∇x)(B)
+  end
+  t7 = expand_operators(t7)
+  vec_to_dec!(t7)
+  t7 = contract_operators(t7)
+  @test only(t7[:op1]) == [:d,:⋆,:d,:⋆]
+
+  # Test advection is divergence of wedge product.
+  t8 = @decapode begin
+    A == adv(B, C)
+  end
+  vec_to_dec!(t8)
+
+  @test only(t8[:op1]) == [:⋆,:d,:⋆]
+  @test only(t8[:op2]) == :∧
+
+  # Test multiple advections.
+  t9 = @decapode begin
+    A == adv(B, C)
+    D == adv(E, F)
+  end
+  vec_to_dec!(t9)
+
+  t9_expected = @decapode begin
+    A == ∘(⋆,d,⋆)(B ∧ C)
+    D == ∘(⋆,d,⋆)(E ∧ F)
+  end
+  t9_expected[incident(t9_expected, Symbol("•1"), :name), :name] = Symbol("•_adv_1")
+  t9_expected[incident(t9_expected, Symbol("•2"), :name), :name] = Symbol("•_adv_2")
+  @test is_isomorphic(t9, t9_expected)
+
+end
+
