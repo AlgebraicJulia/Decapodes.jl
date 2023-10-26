@@ -1,27 +1,34 @@
 
-#struct Collage
-#  src::SummationDecapode{Any,Any,Symbol}
-#  tgt::SummationDecapode{Any,Any,Symbol}
-#  uwd::Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol}
-#  symbols::Dict{Symbol, Symbol}
-#end
-#
-#collate(c::Collage) = collate(c.src, c.tgt, c.uwd, c.symbols)
+abstract type AbstractDecapodeMorphism end
 
-"""    function collate(dm::ACSetTransformation)
+struct BCMorphism <: AbstractDecapodeMorphism
+  morphism::ACSetTransformation
+end
+
+struct ICMorphism <: AbstractDecapodeMorphism
+  morphism::ACSetTransformation
+end
+
+abstract type AbstractCollage end
+
+struct Collage <: AbstractCollage
+  bc::BCMorphism
+  ic::ICMorphism
+end
+
+"""    function collate(dm::BCMorphism)
 
 "Compile" a collage of Decapodes to a simulatable one.
 ```
 """
-function collate(dm::ACSetTransformation)
+function collate(dm::BCMorphism)
+  dm = dm.morphism
   d = SummationDecapode{Any, Any, Symbol}()
   copy_parts!(d, dm.codom, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
-  # TODO: Type the mask value as a Parameter.
 
   for (i,x) in enumerate(dm.components.Var.func)
-    mask_name = dm.dom[i, :name]
-    op_name = Symbol("∂b" * string(mask_name))
-    mask_var = add_part!(d, :Var, type=:Parameter, name=dm.dom[i, :name])
+    op_name = Symbol("∂_mask")
+    mask_var = add_part!(d, :Var, type=dm.dom[i, :type], name=dm.dom[i, :name])
     tgt_name = dm.codom[x, :name]
     tgt_idx = only(incident(d, tgt_name, :name))
     d[tgt_idx, :name] = Symbol(string(d[tgt_idx, :name]) * string(i))
