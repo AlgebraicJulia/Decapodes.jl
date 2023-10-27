@@ -44,6 +44,7 @@ makedocs(
     "Decapodes.jl" => "index.md",
     "Overview" => "overview.md",
     "Equations" => "equations.md",
+    "BCs & ICs" => "collages.md",
     "ASCII Operators" => "ascii.md",
     "Misc Features" => "bc_debug.md",
     "Pipe Flow" => "poiseuille.md",
