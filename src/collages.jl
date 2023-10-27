@@ -107,9 +107,11 @@ function make_ic_loader(dm::Collage, dimension)
         var_idx = incident(dm.ic.morphism.dom, var, :name)
         type = only(dm.ic.morphism.dom[var_idx, :type])
         simplex = Decapodes.form_simplex(type, dimension)
-        if simplex == :AllocVecCall_Error &&
+        if simplex != :AllocVecCall_Error &&
           (dm.ic.morphism.dom[var_idx, :type] ∉ [:Constant, :Parameter, :infer]) &&
           length(ic) != nparts(sd, simplex)
+            # TODO: This error-catch may not work if say, the number of edges is
+            # equal to the number of vertices, (i.e. in a circle).
             error("IC Variable $(string(var)) was declared to be a $(string(type)), but is of length $(length(ic)), not $(nparts(sd, simplex)).")
         end
       end

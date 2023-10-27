@@ -151,10 +151,21 @@ p = bc_generator(sd, (a = 1.0, b = 2.0))
 @test sizeof(p) / Base.summarysize(p)  < 0.01
 @test sizeof(p) / Base.summarysize(sd) < 0.01
 
+# Test that the boundary condition generator will catch if initial conditions
+# are not provided.
+bc_generator = bc_loader(Dict(
+    :Kb1 => constant_bc_function,
+    #:Kb2 => constant_bc_function,
+    :Null => time_varying_bc_function))
+# Test that the BC generator returns a tuple of the correct type.
+@test_throws "BC Variable Kb2 is not given a generating function." bc_generator(sd, (a = 1.0, b = 2.0))
+
 # Initial Condition:
 #   Assign each vertex the sin of their y-coordinate.
-ic_function(sd) = 
-  map(x -> sin(x[2]), sd[:point])
+ic_function(sd) = map(x -> sin(x[2]), sd[:point])
+# This function will return a vector of length the number of edges in the mesh,
+# and we will erroneously assign it to a Form0 so as to test error-checking.
+false_ic_function(sd) = ones(ne(sd))
 
 ic_loader = Decapodes.make_ic_loader(DiffusionCollage, 2)
 ic_generator = ic_loader(Dict(:Kic => ic_function))
@@ -172,6 +183,9 @@ u = ic_generator(sd)
 v = construct(PhysicsState, [VectorForm(ic_function(sd))], Float64[], [:K])
 @test all(findnode(u, :K) .- findnode(v, :K) .== 0)
 
+# Test the error-checking on the length of initial condition data.
+ic_generator = ic_loader(Dict(:Kic => false_ic_function))
+@test_throws "IC Variable Kic was declared to be a Form0, but is of length 7680, not 2562." ic_generator(sd)
 
 # Test the `simulation_helper` function, which wraps the boundary conditions
 # loader, initial conditions loader, and the simulation generator.
