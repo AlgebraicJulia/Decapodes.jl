@@ -540,6 +540,12 @@ function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
         # Lie Derivative 0
         :L₀ => dec_lie_derivative_zero(sd, hodge)
 
+        # Mask application
+        :∂_mask => (x,y) -> begin
+            x[y[1]] .= y[2]
+            x
+        end
+
         x => error("Unmatched operator $my_symbol")
     end
 
