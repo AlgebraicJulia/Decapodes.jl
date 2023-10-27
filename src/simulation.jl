@@ -80,23 +80,25 @@ struct AllocVecCall <: AbstractCall
     dimension
 end
 
+form_simplex(form, dim) = @match (form, dim) begin
+  (:Form0, 2) => :V
+  (:Form1, 2) => :E
+  (:Form2, 2) => :Tri
+  (:DualForm0, 2) => :Tri
+  (:DualForm1, 2) => :E
+  (:DualForm2, 2) => :V
+
+  (:Form0, 1) => :V
+  (:Form1, 1) => :E
+  (:DualForm0, 1) => :E
+  (:DualForm1, 1) => :V
+  _ => return :AllocVecCall_Error
+end
+
 # TODO: There are likely better ways of dispatching on dimension instead of
 # storing it inside an AllocVecCall.
 Base.Expr(c::AllocVecCall) = begin
-    resolved_form = @match (c.name, c.form, c.dimension) begin
-        (_, :Form0, 2) => :V
-        (_, :Form1, 2) => :E
-        (_, :Form2, 2) => :Tri
-        (_, :DualForm0, 2) => :Tri
-        (_, :DualForm1, 2) => :E
-        (_, :DualForm2, 2) => :V
-
-        (_, :Form0, 1) => :V
-        (_, :Form1, 1) => :E
-        (_, :DualForm0, 1) => :E
-        (_, :DualForm1, 1) => :V
-        _ => return :AllocVecCall_Error
-    end
+    resolved_form = form_simplex(c.form, c.dimension)
 
     :($(c.name) = Vector{Float64}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end

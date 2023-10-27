@@ -4,6 +4,7 @@ using Catlab
 using CombinatorialSpaces
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
+using MultiScaleArrays
 
 # TODO: Test intermediate variable masks.
 # TODO: Initial conditions.
@@ -101,83 +102,166 @@ DiffusionCollage = Collage(
     DiffusionICs, DiffusionDynamics,
     Var = [1])))
 
-# TODO: Make changes to the function that takes `generate` that automatically generates the mask application functions `∂Kb1`.
-# TODO: Actually, it sounds like this can now be a single function called
-# `∂_mask`.
-"""    function make_bc_loader(dm::Collage)
+## TODO: Make changes to the function that takes `generate` such that it defines
+## the mask application function `∂_mask` by default.
+#"""    function make_bc_loader(dm::Collage, dimension)
+#
+#Given a collage, return a function that accepts a mapping of Vars to masking functions.
+#
+#This returned function will take in a mesh and non-boundary constants-and-parameters, and return a named tuple containing the parameters as evaluated on the mesh, and the regular parameters. (This final named tuple is suitable to be passed to an ODEProblem as `p`.)
+#"""
+#function make_bc_loader(dm::Collage, dimension)
+#  function loader(mask_funcs::Dict{Symbol, N}) where {N <: Function}
+#    function generator(sd, cs_ps::NamedTuple)
+#      vars = keys(mask_funcs)
+#      for (_, bc_var) in enumerate(dm.bc.morphism.dom[:name])
+#        bc_var ∉ vars && error("BC Variable $(string(bc_var)) is not given a generating function.")
+#        # TODO: Also perform error checking on the return type of the
+#        # corresponding mask_func. i.e. Base.return_types
+#        # Parameter return types should be <: Function, and Constants should be
+#        # tuples. Base.return_types behavior is not guaranteed to not return
+#        # Any, though.
+#      end
+#      mask_pairs = map(values(mask_funcs)) do func
+#        func(sd)
+#      end
+#      merge(
+#        NamedTuple{Tuple(vars)}(mask_pairs),
+#        cs_ps)
+#    end
+#  end
+#  loader
+#end
+#
+#"""    function make_ic_loader(dm::Collage, dimension)
+#
+#Given a collage, return a function that accepts a mapping of Vars to initial conditions.
+#
+#This returned function will take in a mesh, and return a MultScaleArray as evaluated on the mesh. (This final MultiScaleArray is suitable to be passed to an ODEProblem as `u`.)
+#"""
+#function make_ic_loader(dm::Collage, dimension)
+#  function loader(ic_funcs::Dict{Symbol, N}) where {N <: Function}
+#    function generator(sd)
+#      vars = keys(ic_funcs)
+#      for ic_var in dm.ic.morphism.dom[:name]
+#        ic_var ∉ vars && error("IC Variable $(string(ic_var)) is not given a generating function.")
+#      end
+#      ics = map(values(ic_funcs)) do func
+#        func(sd)
+#      end
+#      codom_names = map(collect(vars)) do var
+#        var_idx = incident(dm.ic.morphism.dom, var, :name)
+#        only(dm.ic.morphism.codom[dm.ic.morphism.components.Var.func[var_idx], :name])
+#      end
+#      for (var, ic) in zip(vars,ics)
+#        var_idx = incident(dm.ic.morphism.dom, var, :name)
+#        type = only(dm.ic.morphism.dom[var_idx, :type])
+#        simplex = Decapodes.form_simplex(type, dimension)
+#        if simplex == :AllocVecCall_Error &&
+#          (dm.ic.morphism.dom[var_idx, :type] ∉ [:Constant, :Parameter, :infer]) &&
+#          length(ic) != nparts(sd, simplex)
+#            error("IC Variable $(string(var)) was declared to be a $(string(type)), but is of length $(length(ic)), not $(nparts(sd, simplex)).")
+#        end
+#      end
+#      construct(PhysicsState,
+#        VectorForm.(ics),
+#        Float64[],
+#        collect(codom_names))
+#    end
+#  end
+#  loader
+#end
+#
+#"""    function simulation_helper(dm::Collage, dimension=2)
+#
+#Given a collage, return functions to load boundary conditions, initial conditions, and a simulation.
+#```
+#"""
+#simulation_helper(dm::Collage; dimension=2) = (
+#  make_bc_loader(dm.bc, dimension), make_ic_loader(dm.ic, dimension), gensim(dm.bc, dimension))
 
-Given a collage, return a function that accepts a mapping of Vars to masking functions.
-
-This returned function will take in a mesh and non-boundary constants-and-parameters, and return a named tuple containing the parameters as evaluated on the mesh, and the regular parameters. (This final named tuple is suitable to be passed to an ODEProblem.)
-"""
-function make_bc_loader(dm::Collage)
-  function loader(mask_funcs::Dict{Symbol, N}) where {N <: Function}
-    function generator(sd, cs_ps::NamedTuple)
-      vars = keys(mask_funcs)
-      mask_pairs = map(values(mask_funcs)) do func
-        func(sd)
-      end
-      merge(
-        NamedTuple{Tuple(vars)}(mask_pairs),
-        cs_ps)
-    end
-  end
-  loader
-end
-
-function make_ic_loader(dm::Collage)
-end
-
-"""    function simulation_helper(dm::BCMorphism)
-
-Given a collage, return functions to load boundary conditions, initial conditions, and a simulation.
-```
-"""
-simulation_helper(dm::Collage) = (
-  make_bc_loader(dm.bc), make_ic_loader(dm.ic), gensim(dm.bc))
+# We will use this mesh to test that Boundary and Initial Condition generators
+# generate appropriate data structures.
+# The fifth subdivision is chosen so that numeric results of applying the
+# boundary condition computations can be compared with analytic methods up to
+# some number of digits.
+s = loadmesh(Icosphere(5))
+sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
+subdivide_duals!(sd, Barycenter())
 
 # Boundary Condition:
 #   Set all points with y-coordinate above cos(t) to sin(t).
 # e.g. The polar ice cap is a source term, which expands and contracts
 # seasonally, and so does its albedo.
-constant_function(sd) = 
+time_varying_bc_function(sd) = 
   t -> (map(x -> x[2] > cos(t), sd[:point]),
         fill(sin(t), count(x -> x[2] > 0.9, sd[:point])))
 # Boundary Condition:
 #   Set all points with y-coordinate below -0.9 to 0.0.
-time_varying_function(sd) = (
+constant_bc_function(sd) = (
   map(x -> x[2] > 0.9, sd[:point]),
   fill(0.0, count(x -> x[2] > 0.9, sd[:point])))
 
-bc_loader = make_bc_loader(DiffusionCollage)
+bc_loader = Decapodes.make_bc_loader(DiffusionCollage, 2)
 
 bc_generator = bc_loader(Dict(
-    :Kb1 => constant_function,
-    :Kb2 => time_varying_function))
+    :Kb1 => constant_bc_function,
+    :Kb2 => constant_bc_function,
+    :Null => time_varying_bc_function))
 
-s = loadmesh(Icosphere(5))
-sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
-subdivide_duals!(sd, Barycenter())
-
+# Test that the BC generator returns a tuple of the correct type.
 p = bc_generator(sd, (a = 1.0, b = 2.0))
 @test typeof(p) <:
-  NamedTuple{(:Kb2, :Kb1, :a, :b), Tuple{
+  NamedTuple{(:Kb2, :Kb1, :Null, :a, :b), Tuple{
     # Constant: a bit mask and a vector of floats
+    Tuple{Vector{Bool}, Vector{Float64}},
     Tuple{Vector{Bool}, Vector{Float64}},
     # Parameter: a function that returns ''
     N,
     # "Regular" constants and parameters: which happen to be floats here
-    Float64, Float64}} where {N <: Function, M <: Function}
+    Float64, Float64}} where {N <: Function}
 
 # Test that the p functions are passed and evaluate as expected.
-@test typeof(p.Kb1(π/4)) == Tuple{Vector{Bool}, Vector{Float64}}
+@test typeof(p.Null(π/4)) == Tuple{Vector{Bool}, Vector{Float64}}
 # Some basic trigonometry to check the correct number of vertices are selected.
-@test count(p.Kb1(π/4)[1]) / nv(sd) -
-  ((1/2)*(sqrt(1-1^2)*1 + asin(1)) - 
-    (1/2)*(sqrt(1-cos(π/4)^2)*cos(π/4) + asin(cos(π/4)))) < 1e-3
-@test all(p.Kb1(π/4)[2] .== sin(π/4))
+@test count(p.Null(π/4)[1]) / nv(sd) -
+  abs((1/2)*(sqrt(1-       1^2)*1        + asin(1       )) - 
+      (1/2)*(sqrt(1-cos(π/4)^2)*cos(π/4) + asin(cos(π/4)))) < 1e-3
+@test all(p.Null(π/4)[2] .== sin(π/4))
 
 # Test that p does not "blow up" memory by making a copy of the mesh.
 # This 1% mark is a heuristic.
 @test sizeof(p) / Base.summarysize(p)  < 0.01
 @test sizeof(p) / Base.summarysize(sd) < 0.01
+
+# Initial Condition:
+#   Assign each vertex the sin of their y-coordinate.
+ic_function(sd) = 
+  map(x -> sin(x[2]), sd[:point])
+
+ic_loader = Decapodes.make_ic_loader(DiffusionCollage, 2)
+ic_generator = ic_loader(Dict(:Kic => ic_function))
+u = ic_generator(sd)
+
+# Test that the initial condition functions are passed and evaluate as expected.
+@test typeof(u) == PhysicsState{VectorForm{Float64}, Float64}
+@test findnode(u, :K) == ic_function(sd)
+# Test that the generator is equivalent to setting initial conditions manually.
+# Note: Testing equality with `==` fails for MultiScaleArrays.
+# i.e. This test will fail:
+#@test construct(PhysicsState,[VectorForm(ic_function(sd))], Float64[], [:K]) ==
+#      construct(PhysicsState,[VectorForm(ic_function(sd))], Float64[], [:K])
+# So, we check for equality between the accessed components.
+v = construct(PhysicsState, [VectorForm(ic_function(sd))], Float64[], [:K])
+@test all(findnode(u, :K) .- findnode(v, :K) .== 0)
+
+
+# Test the `simulation_helper` function, which wraps the boundary conditions
+# loader, initial conditions loader, and the simulation generator.
+sim = gensim(Decapodes.collate(DiffusionCollage.bc))
+
+auto_bc_loader, auto_ic_loader, auto_sim =
+  simulation_helper(DiffusionCollage, dimension=2)
+@test auto_bc_loader == bc_loader
+@test auto_ic_loader == ic_loader
+@test auto_sim == sim
