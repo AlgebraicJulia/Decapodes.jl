@@ -22,7 +22,8 @@ export normalize_unicode, DerivOp, append_dot, unicode!, vec_to_dec!,
   AbstractMeshKey, loadmesh, Icosphere, Rectangle_30x10, Torus_30x10, Point_Map,
   Open, OpenSummationDecapodeOb, OpenSummationDecapode, unique_by, unique_by!, oapply,
   CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat,
-  average_rewrite, recursive_delete_parents, contract_operators,
+  #average_rewrite,
+  recursive_delete_parents, contract_operators,
   default_dec_matrix_generate, default_dec_generate, 
   @decapode
 
@@ -38,6 +39,6 @@ include("coordinates.jl")
 include("visualization.jl")
 include("simulation.jl")
 include("meshes.jl")
-include("rewrite.jl")
+#include("rewrite.jl")
 
 end
