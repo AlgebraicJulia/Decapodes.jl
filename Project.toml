@@ -1,16 +1,9 @@
 name = "Decapodes"
 uuid = "679ab3ea-c928-4fe6-8d59-fd451142d391"
-authors = [
-  "James Fairbanks",
-  "Andrew Baas",
-  "Evan Patterson",
-  "Luke Morris",
-  "George Rauta",
-]
+authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
 version = "0.4.0"
 
 [deps]
-AlgebraicRewriting = "725a01d3-f174-5bbd-84e1-b9417bad95d9"
 Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 CombinatorialSpaces = "b1c52339-7909-45ad-8b6a-6e388f7c67f2"
@@ -30,9 +23,8 @@ Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [compat]
-AlgebraicRewriting = "0.2"
-Catlab = "0.15"
-CombinatorialSpaces = "0.5"
+Catlab = "0.15, 0.16"
+CombinatorialSpaces = "0.5, 0.6"
 DataStructures = "0.18.13"
 Distributions = "0.25"
 FileIO = "1.16"
@@ -40,11 +32,13 @@ GLMakie = "0.8"
 GeometryBasics = "0.4.2"
 JLD2 = "0.4"
 JSON = "0.21"
+LinearAlgebra = "1.9"
 MLStyle = "0.4.17"
 MultiScaleArrays = "1.10"
 OrdinaryDiffEq = "6.47"
 PreallocationTools = "0.4"
 Requires = "1.3"
+Unicode = "1.9"
 julia = "1.9"
 
 [extras]
