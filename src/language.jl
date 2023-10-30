@@ -3,27 +3,8 @@
 # TODO: Add support for higher order functions.
 #   - This is straightforward from a language perspective but unclear the best
 #   - way to represent this in a Decapode ACSet.
-@data Term begin
-  Var(name::Symbol)
-  Lit(name::Symbol)
-  Judgement(var::Var, dim::Symbol, space::Symbol) # Symbol 1: Form0 Symbol 2: X
-  AppCirc1(fs::Vector{Symbol}, arg::Term)
-  App1(f::Symbol, arg::Term)
-  App2(f::Symbol, arg1::Term, arg2::Term)
-  Plus(args::Vector{Term})
-  Mult(args::Vector{Term})
-  Tan(var::Term)
-end
 
-@data Equation begin
-  Eq(lhs::Term, rhs::Term)
-end
-
-# A struct to store a complete Decapode
-@as_record struct DecaExpr
-  context::Vector{Judgement}
-  equations::Vector{Equation}
-end
+include(as_intertypes(), "language.it")
 
 term(s::Symbol) = Var(normalize_unicode(s))
 term(s::Number) = Lit(Symbol(s))
@@ -53,11 +34,11 @@ function parse_decapode(expr::Expr)
             ::LineNumberNode => missing
             # TODO: If user doesn't provide space, this gives a temp space so we can continue to construction
             # For now spaces don't matter so this is fine but if they do, this will need to change
-            Expr(:(::), a::Symbol, b::Symbol) => Judgement(Var(a), b, :I)
-            Expr(:(::), a::Expr, b::Symbol) => map(sym -> Judgement(Var(sym), b, :I), a.args)
+            Expr(:(::), a::Symbol, b::Symbol) => Judgement(a, b, :I)
+            Expr(:(::), a::Expr, b::Symbol) => map(sym -> Judgement(sym, b, :I), a.args)
 
-            Expr(:(::), a::Symbol, b) => Judgement(Var(a), b.args[1], b.args[2])
-            Expr(:(::), a::Expr, b) => map(sym -> Judgement(Var(sym), b.args[1], b.args[2]), a.args)
+            Expr(:(::), a::Symbol, b) => Judgement(a, b.args[1], b.args[2])
+            Expr(:(::), a::Expr, b) => map(sym -> Judgement(sym, b.args[1], b.args[2]), a.args)
 
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
             _ => error("The line $line is malformed")
@@ -203,7 +184,7 @@ function Decapode(e::DecaExpr)
   symbol_table = Dict{Symbol, Int}()
   for judgement in e.context
     var_id = add_part!(d, :Var, type=(judgement.dim, judgement.space))
-    symbol_table[judgement.var.name] = var_id
+    symbol_table[judgement.var] = var_id
   end
   deletions = Vector{Int}()
   for eq in e.equations
@@ -219,8 +200,8 @@ function SummationDecapode(e::DecaExpr)
     symbol_table = Dict{Symbol, Int}()
 
     for judgement in e.context
-      var_id = add_part!(d, :Var, name=judgement.var.name, type=judgement.dim)
-      symbol_table[judgement.var.name] = var_id
+      var_id = add_part!(d, :Var, name=judgement.var, type=judgement.dim)
+      symbol_table[judgement.var] = var_id
     end
 
     deletions = Vector{Int}()

@@ -39,9 +39,9 @@ import Decapodes: DecaExpr
   #######
   
   # Construct roughly what the @decapode macro should return for Diffusion
-  js = [Judgement(Var(:C), :Form0, :X), 
-        Judgement(Var(:Ċ₁), :Form0, :X),
-        Judgement(Var(:Ċ₂), :Form0, :X)
+  js = [Judgement(:C, :Form0, :X), 
+        Judgement(:Ċ₁, :Form0, :X),
+        Judgement(:Ċ₂, :Form0, :X)
   ]
   # TODO: Do we need to handle the fact that all the functions are parameterized by a space?
   eqs = [Eq(Var(:Ċ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
@@ -66,9 +66,9 @@ import Decapodes: DecaExpr
   
   all(isassigned(test_cset_named[:name], i) for i in parts(test_cset_named,:Var))
   
-  sup_js = js = [Judgement(Var(:C), :Form0, :X), 
-  Judgement(Var(:ϕ₁), :Form0, :X),
-  Judgement(Var(:ϕ₂), :Form0, :X)
+  sup_js = js = [Judgement(:C, :Form0, :X), 
+  Judgement(:ϕ₁, :Form0, :X),
+  Judgement(:ϕ₂, :Form0, :X)
   ]
   sup_eqs = [Eq(Var(:ϕ₁), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
          Eq(Var(:ϕ₂), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
