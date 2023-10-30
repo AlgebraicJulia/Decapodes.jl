@@ -10,17 +10,49 @@ using MultiScaleArrays
 # relationships between what the boundary "is" and how to interpret state to
 # provide values there.)
 
-# Test `transfer_targets!` transfers sums, op1s, and op2s.
+# Test `transfer_sources!` transfers summands, op1s, proj1s, and proj2s.
 Test1 = @decapode begin
+  To::Form0
+  A == B+From+D
+  X == f(From)
+  Y == g(From,G)
+  Z == h(F,From)
+end
+Decapodes.transfer_sources!(Test1,
+  only(incident(Test1, :From, :name)), only(incident(Test1, :To, :name)))
+
+@test Test1 == @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 10
+  Op1 = 1
+  Op2 = 2
+  Σ = 1
+  Summand = 3
+  src = [1]
+  tgt = [7]
+  proj1 = [1, 10]
+  proj2 = [6, 1]
+  res = [9, 8]
+  incl = Int64[]
+  summand = [3, 1, 5]
+  summation = [1, 1, 1]
+  sum = [2]
+  op1 = [:f]
+  op2 = [:g, :h]
+  type = [:Form0, :infer, :infer, :infer, :infer, :infer, :infer, :infer, :infer, :infer]
+  name = [:To, :A, :B, :From, :D, :G, :X, :Z, :Y, :F]
+end
+
+# Test `transfer_targets!` transfers sums, op1s, and op2s.
+Test2 = @decapode begin
   To::Form0
   From == B+C+D
   From == f(E)
   From == g(F,G)
 end
-Test1_Transfer = Decapodes.transfer_targets!(Test1,
-  only(incident(Test1, :From, :name)), only(incident(Test1, :To, :name)))
+Decapodes.transfer_targets!(Test2,
+  only(incident(Test2, :From, :name)), only(incident(Test2, :To, :name)))
 
-@test Test1_Transfer == @acset SummationDecapode{Any, Any, Symbol} begin
+@test Test2 == @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 8
   Op1 = 1
   Op2 = 1
@@ -97,6 +129,43 @@ Diffusion = Decapodes.collate(StateTangentMorphism)
   op2  = [:∂_mask, :∂_mask, :∂_mask]
   type  = [:Form0, :infer, :Constant, :Form0, :Constant, :Form0, :Parameter, :infer]
   name = [:K1, :K̇3, :Kb1, :K2, :Kb2, :K, :Null, :K̇]
+end
+
+# Test that simple boundary masks work on second order tangent variables.
+SecondDerivatives = @decapode begin
+  (X,Y)::Form0
+  ∂ₜ(X) == Z
+  Z == Δ(X)
+  ∂ₜ(Y) == Δ(Z)
+end
+SingleBC = @decapode begin
+  M::Form0
+end
+to_graphviz(SecondDerivatives)
+TangentTangentMorphism = BCMorphism(ACSetTransformation(
+  SingleBC, SecondDerivatives,
+  Var = [4]))
+
+SecondDerivativesBounded = Decapodes.collate(TangentTangentMorphism)
+
+@test SecondDerivativesBounded == @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 6
+  TVar = 2
+  Op1 = 4
+  Op2 = 1
+  src = [1, 1, 2, 6]
+  tgt = [6, 4, 3, 3]
+  proj1 = [4]
+  proj2 = [5]
+  res = [6]
+  incl = [6, 3]
+  summand = Int64[]
+  summation = Int64[]
+  sum = Int64[]
+  op1 = [:∂ₜ, :Δ, :∂ₜ, :Δ]
+  op2 = [:∂_mask]
+  type = [:Form0, :Form0, :infer, :infer, :Form0, :infer]
+  name = [:X, :Y, :Ẏ, :Z1, :M, :Z]
 end
 
 # Test gensim on a collage.

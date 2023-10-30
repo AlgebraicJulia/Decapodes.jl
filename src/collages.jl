@@ -16,7 +16,33 @@ struct Collage <: AbstractCollage
   ic::ICMorphism
 end
 
-"""    function tranfer_targets!(d::SummationDecapode, from::Int, to::Int)
+"""    function transfer_sources!(d::SummationDecapode, from::Int, to::Int)
+
+Transfer any operations of which the Var `from` is the source of to `to`, excluding the special `∂ₜ` operator.
+"""
+function transfer_sources!(d::SummationDecapode, from::Int, to::Int)
+  # All Σ of which `from` is a summand:
+  summands = incident(d, from, :summand)
+  # All Op1s of which `from` is the source, excluding ∂ₜ:
+  op1s = filter(i -> d[i, :name] != :∂ₜ, incident(d, from, :src))
+  # All Op2s of which `from` is the proj1:
+  proj1s = incident(d, from, :proj1)
+  proj2s = incident(d, from, :proj2)
+
+  # Transfer summands:
+  # TODO: Change this fill idiom when ACSet assignment syntax changes.
+  d[summands, :summand] = fill(to, length(summands))
+  # Transfer op1s:
+  d[op1s, :src] = fill(to, length(op1s))
+  # Transfer proj1s:
+  d[proj1s, :proj1] = fill(to, length(proj1s))
+  # Transfer proj2s:
+  d[proj2s, :proj2] = fill(to, length(proj2s))
+
+  d
+end
+
+"""    function transfer_targets!(d::SummationDecapode, from::Int, to::Int)
 
 Transfer any operations of which the Var `from` is the target of to `to`, excluding the special `∂ₜ` operator.
 """
@@ -57,8 +83,8 @@ function collate(dm::BCMorphism)
     d[tgt_idx, :name] = Symbol(string(d[tgt_idx, :name]) * string(i))
     res_var = add_part!(d, :Var, type=dm.codom[x, :type], name=tgt_name)
     is_tvar = !isempty(incident(d, tgt_idx, :incl))
-    @show tgt_idx, mask_var, res_var
     if is_tvar
+      transfer_sources!(d, tgt_idx, res_var)
       add_part!(d, :Op2, proj1=tgt_idx, proj2=mask_var, res=res_var, op2=op_name)
     else
       transfer_targets!(d, tgt_idx, res_var)
@@ -73,8 +99,6 @@ function collate(dm::BCMorphism)
   d
 end
 
-# TODO: Make changes to the function that takes `generate` such that it defines
-# the mask application function `∂_mask` by default.
 """    function make_bc_loader(dm::Collage, dimension)
 
 Given a collage, return a function that accepts a mapping of Vars to masking functions.
