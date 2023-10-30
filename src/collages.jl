@@ -16,6 +16,29 @@ struct Collage <: AbstractCollage
   ic::ICMorphism
 end
 
+"""    function tranfer_targets!(d::SummationDecapode, from::Int, to::Int)
+
+Transfer any operations of which the Var `from` is the target of to `to`, excluding the special `∂ₜ` operator.
+"""
+function transfer_targets!(d::SummationDecapode, from::Int, to::Int)
+  # All Σ of which `from` is the target:
+  summations = incident(d, from, :sum)
+  # All Op1s of which `from` is the target, excluding ∂ₜ:
+  op1s = filter(i -> d[i, :name] != :∂ₜ, incident(d, from, :tgt))
+  # All Op2s of which `from` is the target:
+  op2s = incident(d, from, :res)
+
+  # Transfer sums:
+  # TODO: Change this fill idiom when ACSet assignment syntax changes.
+  d[summations, :sum] = fill(to, length(summations))
+  # Transfer op1s:
+  d[op1s, :tgt] = fill(to, length(op1s))
+  # Transfer op2s:
+  d[op2s, :res] = fill(to, length(op2s))
+
+  d
+end
+
 """    function collate(dm::BCMorphism)
 
 "Compile" a collage of Decapodes to a simulatable one.
@@ -33,21 +56,19 @@ function collate(dm::BCMorphism)
     tgt_idx = only(incident(d, tgt_name, :name))
     d[tgt_idx, :name] = Symbol(string(d[tgt_idx, :name]) * string(i))
     res_var = add_part!(d, :Var, type=dm.codom[x, :type], name=tgt_name)
-    if isempty(incident(d, tgt_idx, :incl)) # State variable
-      add_part!(d, :Op2, proj1=res_var, proj2=mask_var, res=tgt_idx, op2=op_name)
-
-      tangent_op1s = filter(x -> d[x, :op1]==:∂ₜ, incident(d, tgt_idx, :src))
-      isempty(tangent_op1s) && continue
-      d[only(tangent_op1s), :src] = res_var
-      d[incident(d, tgt_idx, :incl), :incl] = res_var
-    else # Tangent variable
+    is_tvar = !isempty(incident(d, tgt_idx, :incl))
+    @show tgt_idx, mask_var, res_var
+    if is_tvar
       add_part!(d, :Op2, proj1=tgt_idx, proj2=mask_var, res=res_var, op2=op_name)
-
-      tangent_op1s = filter(x -> d[x, :op1]==:∂ₜ, incident(d, tgt_idx, :tgt))
-      isempty(tangent_op1s) && continue
-      d[only(tangent_op1s), :tgt] = res_var
-      d[incident(d, tgt_idx, :incl), :incl] = res_var
+    else
+      transfer_targets!(d, tgt_idx, res_var)
+      add_part!(d, :Op2, proj1=res_var, proj2=mask_var, res=tgt_idx, op2=op_name)
     end
+    tan_dir = is_tvar ? :tgt : :src
+    tangent_op1s = filter(x -> d[x, :op1]==:∂ₜ, incident(d, tgt_idx, tan_dir))
+    isempty(tangent_op1s) && continue
+    d[only(tangent_op1s), tan_dir] = res_var
+    d[incident(d, tgt_idx, :incl), :incl] = res_var
   end
   d
 end

@@ -6,8 +6,40 @@ using GeometryBasics: Point2
 Point2D = Point2{Float64}
 using MultiScaleArrays
 
-# TODO: Test intermediate variable masks.
-# TODO: General boundaries i.e. arbitrary functions of solutions. (More compelx relationships between what the boundary "is" and how to interpret state to provide values there.)
+# TODO: General boundaries i.e. arbitrary functions of solutions. (More complex
+# relationships between what the boundary "is" and how to interpret state to
+# provide values there.)
+
+# Test `transfer_targets!` transfers sums, op1s, and op2s.
+Test1 = @decapode begin
+  To::Form0
+  From == B+C+D
+  From == f(E)
+  From == g(F,G)
+end
+Test1_Transfer = Decapodes.transfer_targets!(Test1,
+  only(incident(Test1, :From, :name)), only(incident(Test1, :To, :name)))
+
+@test Test1_Transfer == @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 8
+  Op1 = 1
+  Op2 = 1
+  Σ = 1
+  Summand = 3
+  src = [8]
+  tgt = [1]
+  proj1 = [7]
+  proj2 = [6]
+  res = [1]
+  incl = Int64[]
+  summand = [3, 4, 5]
+  summation = [1, 1, 1]
+  sum = [1]
+  op1 = [:f]
+  op2 = [:g]
+  type = [:Form0, :infer, :infer, :infer, :infer, :infer, :infer, :infer]
+  name = [:To, :From, :B, :C, :D, :G, :F, :E]
+end
 
 # Test simple boundary masks.
 DiffusionDynamics = @decapode begin
@@ -69,6 +101,31 @@ end
 
 # Test gensim on a collage.
 @test gensim(StateTangentMorphism) == gensim(Diffusion)
+
+# Test that simple boundary masks work on intermediate variables.
+DiffusionExpanded = expand_operators(DiffusionDynamics)
+IntermediateMorphism = BCMorphism(ACSetTransformation(
+  DiffusionBoundaries, DiffusionExpanded,
+  Var = [3,3,3]))
+
+Diffusion = Decapodes.collate(IntermediateMorphism)
+@test Diffusion == @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 11
+  TVar = 1
+  Op1 = 5
+  Op2 = 3
+  src = [1, 1, 3, 4, 5]
+  tgt = [2, 11, 4, 5, 2]
+  proj1 = [7, 9, 11]
+  proj2 = [6, 8, 10]
+  res = [3, 7, 9]
+  incl = [2]
+  op1 = [:∂ₜ, :d, :⋆, :d, :⋆]
+  op2 = [:∂_mask, :∂_mask, :∂_mask]
+  type = [:Form0, :infer, :infer, :infer, :infer, :Constant, :infer, :Constant, :infer, :Parameter, :infer]
+  name = [:K, :K̇, Symbol("•_2_11"), Symbol("•_2_2"), 
+Symbol("•_2_3"), :Kb1, Symbol("•_2_12"), :Kb2, Symbol("•_2_13"), :Null, Symbol("•_2_1")]
+end
 
 # Test collate with empty boundaries.
 EmptyBoundaries = @decapode begin
