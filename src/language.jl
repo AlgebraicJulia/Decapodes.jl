@@ -4,7 +4,9 @@
 #   - This is straightforward from a language perspective but unclear the best
 #   - way to represent this in a Decapode ACSet.
 
-include(as_intertypes(), "language.it")
+@intertypes "decapodes.it" module decapodes end
+
+using .decapodes
 
 term(s::Symbol) = Var(normalize_unicode(s))
 term(s::Number) = Lit(Symbol(s))
