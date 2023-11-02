@@ -167,7 +167,7 @@ fₘ = sim(plot_mesh_dual, generate)
 velocity(p) = [-0.5, 0.0, 0.0]
 v = ♭(plot_mesh_dual, DualVectorField(velocity.(plot_mesh_dual[triangle_center(plot_mesh_dual),:dual_point]))).data
 
-u₀ = ComponentArrays(C=c)
+u₀ = ComponentArray(C=c)
 params = (V = v,)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0), params)

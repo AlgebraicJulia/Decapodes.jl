@@ -163,7 +163,7 @@ using LinearAlgebra
 using ComponentArrays
 using OrdinaryDiffEq
 
-u₀ = ComponentArrays(C=c)
+u₀ = ComponentArray(C=c)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
 sol = solve(prob, Tsit5());
@@ -325,7 +325,7 @@ fₘ = sim(periodic_mesh, generate, DiagonalHodge())
 velocity(p) = [-0.5, -0.5, 0.0]
 v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
 
-u₀ = ComponentArrays(C=c,V=v)
+u₀ = ComponentArray(C=c,V=v)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
 sol = solve(prob, Tsit5());

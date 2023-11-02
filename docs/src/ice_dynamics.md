@@ -141,7 +141,7 @@ lines(map(x -> x[1], point(s′)), h₀, linewidth=5)
 We need to tell our Decapode which data maps to which symbols. We can wrap up our data like so:
 
 ``` @example DEC
-u₀ = ComponentArrays(dynamics_h=h₀)
+u₀ = ComponentArray(dynamics_h=h₀)
 
 constants_and_parameters = (
   n = n,
@@ -327,7 +327,7 @@ mesh(s′, color=h₀, colormap=:jet)
 ```
 
 ``` @example DEC
-u₀ = ComponentArrays(dynamics_h=h₀)
+u₀ = ComponentArray(dynamics_h=h₀)
 
 constants_and_parameters = (
   n = n,
@@ -452,7 +452,7 @@ mesh(s′, color=h₀, colormap=:jet)
 ```
 
 ``` @example DEC
-u₀ = ComponentArrays(dynamics_h=h₀)
+u₀ = ComponentArray(dynamics_h=h₀)
 
 constants_and_parameters = (
   n = n,

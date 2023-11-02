@@ -167,7 +167,7 @@ lines(map(x -> x[1], point(s′)), h₀)
 
 ``` @example DEC
 # Store these values to be passed to the solver.
-u₀ = ComponentArrays(Tₛ=Tₛ₀,halfar_h=h₀)
+u₀ = ComponentArray(Tₛ=Tₛ₀,halfar_h=h₀)
 
 constants_and_parameters = (
   budyko_sellers_absorbed_radiation_α = α,
