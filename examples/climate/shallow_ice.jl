@@ -110,7 +110,7 @@ end
 mesh(s′, color=h₀, colormap=:jet)
 
 # Store these values to be passed to the solver.
-u₀ = ComponentArrays(h = h₀, stress_A = A)
+u₀ = ComponentArray(h = h₀, stress_A = A)
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
