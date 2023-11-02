@@ -11,7 +11,7 @@ using Decapodes
 
 # External Dependencies
 using MLStyle
-using MultiScaleArrays
+using ComponentArrays
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
@@ -141,7 +141,8 @@ lines(map(x -> x[1], point(s′)), h₀, linewidth=5)
 We need to tell our Decapode which data maps to which symbols. We can wrap up our data like so:
 
 ``` @example DEC
-u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:dynamics_h])
+u₀ = ComponentArrays(dynamics_h=h₀)
+
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
@@ -326,7 +327,8 @@ mesh(s′, color=h₀, colormap=:jet)
 ```
 
 ``` @example DEC
-u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:dynamics_h])
+u₀ = ComponentArrays(dynamics_h=h₀)
+
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
@@ -450,7 +452,8 @@ mesh(s′, color=h₀, colormap=:jet)
 ```
 
 ``` @example DEC
-u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:dynamics_h])
+u₀ = ComponentArrays(dynamics_h=h₀)
+
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,

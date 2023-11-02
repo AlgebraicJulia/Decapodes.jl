@@ -160,10 +160,10 @@ Finally, we solve this PDE problem using the `Tsit5()` solver and generate an an
 
 ```@example DEC
 using LinearAlgebra
-using MultiScaleArrays
+using ComponentArrays
 using OrdinaryDiffEq
 
-u₀ = construct(PhysicsState, [VectorForm(c)], Float64[], [:C])
+u₀ = ComponentArrays(C=c)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
 sol = solve(prob, Tsit5());
@@ -325,7 +325,7 @@ fₘ = sim(periodic_mesh, generate, DiagonalHodge())
 velocity(p) = [-0.5, -0.5, 0.0]
 v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
 
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(v)], Float64[], [:C, :V])
+u₀ = ComponentArrays(C=c,V=v)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
 sol = solve(prob, Tsit5());

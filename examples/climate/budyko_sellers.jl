@@ -7,10 +7,11 @@ using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
 using Decapodes
+using ComponentArrays
 
 # External Dependencies
 using MLStyle
-using MultiScaleArrays
+using ComponentArray
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
@@ -159,7 +160,9 @@ Tₛ₀ = map(point(s′)) do ϕ
 end
 
 # Store these values to be passed to the solver.
-u₀ = construct(PhysicsState, [VectorForm(Tₛ₀)], Float64[], [:Tₛ])
+
+u₀ = ComponentArray{Float64}(Tₛ = Tₛ₀)
+
 constants_and_parameters = (
   absorbed_radiation_α = α,
   outgoing_radiation_A = A,
@@ -180,6 +183,76 @@ function generate(sd, my_symbol; hodge=GeometricHodge()) end
 #######################
 # Generate simulation #
 #######################
+
+gencode = quote
+  #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:427 =#
+  function simulate(mesh, operators, hodge = GeometricHodge())
+      #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:427 =#
+      #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:428 =#
+      begin
+          #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:155 =#
+          (M_d₀, d₀) = default_dec_matrix_generate(mesh, :d₀, hodge)
+          (var"M_⋆₁", ⋆₁) = default_dec_matrix_generate(mesh, :⋆₁, hodge)
+          (M_dual_d₀, dual_d₀) = default_dec_matrix_generate(mesh, :dual_d₀, hodge)
+          (var"M_⋆₀⁻¹", ⋆₀⁻¹) = default_dec_matrix_generate(mesh, :⋆₀⁻¹, hodge)
+      end
+      #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:429 =#
+      begin
+          #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:214 =#
+          var"diffusion_•1" = Vector{Float64}(undef, nparts(mesh, :E))
+          var"diffusion_•6" = Vector{Float64}(undef, nparts(mesh, :E))
+          var"absorbed_radiation_•1" = Vector{Float64}(undef, nparts(mesh, :V))
+          var"outgoing_radiation_•1" = Vector{Float64}(undef, nparts(mesh, :V))
+          OLR = Vector{Float64}(undef, nparts(mesh, :V))
+          var"diffusion_•2" = Vector{Float64}(undef, nparts(mesh, :V))
+          var"diffusion_•5" = Vector{Float64}(undef, nparts(mesh, :E))
+          Q = Vector{Float64}(undef, nparts(mesh, :V))
+          var"diffusion_•4" = Vector{Float64}(undef, nparts(mesh, :V))
+          var"diffusion_•3" = Vector{Float64}(undef, nparts(mesh, :V))
+          ASR = Vector{Float64}(undef, nparts(mesh, :V))
+          HT = Vector{Float64}(undef, nparts(mesh, :V))
+          var"energy_•1" = Vector{Float64}(undef, nparts(mesh, :V))
+          energy_sum_1 = Vector{Float64}(undef, nparts(mesh, :V))
+          energy_Tₛ̇ = Vector{Float64}(undef, nparts(mesh, :V))
+      end
+      #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:430 =#
+      f(du, u, p, t) = begin
+              #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:430 =#
+              #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:431 =#
+              begin
+                  #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:236 =#
+                  Tₛ = (u.Tₛ).values
+                  energy_C = p.energy_C
+                  absorbed_radiation_α = p.absorbed_radiation_α
+                  outgoing_radiation_A = p.outgoing_radiation_A
+                  outgoing_radiation_B = p.outgoing_radiation_B
+                  diffusion_D = p.diffusion_D
+                  cosϕᵖ = p.cosϕᵖ
+                  diffusion_cosϕᵈ = p.diffusion_cosϕᵈ
+                  var"1" = 1.0
+                  var"450" = 450.0
+              end
+              #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:432 =#
+              mul!(var"diffusion_•1", M_d₀, Tₛ)
+              mul!(var"diffusion_•6", var"M_⋆₁", var"diffusion_•1")
+              var"absorbed_radiation_•1" .= var"1" .- absorbed_radiation_α
+              var"outgoing_radiation_•1" .= outgoing_radiation_B .* Tₛ
+              OLR .= outgoing_radiation_A .+ var"outgoing_radiation_•1"
+              var"diffusion_•2" .= diffusion_D ./ cosϕᵖ
+              var"diffusion_•5" .= diffusion_cosϕᵈ .* var"diffusion_•6"
+              Q .= var"450" .* cosϕᵖ
+              mul!(var"diffusion_•4", M_dual_d₀, var"diffusion_•5")
+              mul!(var"diffusion_•3", var"M_⋆₀⁻¹", var"diffusion_•4")
+              ASR .= var"absorbed_radiation_•1" .* Q
+              HT .= var"diffusion_•2" .* var"diffusion_•3"
+              var"energy_•1" .= ASR .- OLR
+              energy_sum_1 .= (.+)(var"energy_•1", HT)
+              energy_Tₛ̇ .= energy_sum_1 ./ energy_C
+              #= /Users/chrisrackauckas/.julia/dev/Decapodes/src/simulation.jl:433 =#
+              (du.Tₛ).values .= energy_Tₛ̇
+          end
+  end
+end
 
 sim = eval(gensim(budyko_sellers, dimension=1))
 fₘ = sim(s, generate)
@@ -209,19 +282,19 @@ soln = solve(prob, Tsit5())
 # Visualize #
 #############
 
-lines(map(x -> x[1], point(s′)), findnode(soln(0.0), :Tₛ))
-lines(map(x -> x[1], point(s′)), findnode(soln(tₑ), :Tₛ))
+lines(map(x -> x[1], point(s′)), soln(0.0).Tₛ)
+lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)
 
 # Initial frame
 frames = 100
 fig = Figure(resolution = (800, 800))
 ax1 = Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
-ylims!(ax1, extrema(findnode(soln(tₑ), :Tₛ)))
+ylims!(ax1, extrema(soln(tₑ).Tₛ))
 Label(fig[1,1,Top()], "Surface temperature, Tₛ, [C°]")
 Label(fig[2,1,Top()], "Line plot of temperature from North to South pole, every $(tₑ/frames) time units")
 
 # Animation
 record(fig, "budyko_sellers.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-  lines!(fig[1,1], map(x -> x[1], point(s′)), findnode(soln(t), :Tₛ))
+  lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).Tₛ)
 end

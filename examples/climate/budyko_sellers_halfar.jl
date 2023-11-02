@@ -11,12 +11,12 @@ using Decapodes: SchSummationDecapode
 
 # External Dependencies
 using MLStyle
-using MultiScaleArrays
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
 using GLMakie
 using GeometryBasics: Point2
+using ComponentArray
 Point2D = Point2{Float64}
 
 #######################
@@ -129,12 +129,8 @@ end
 lines(map(x -> x[1], point(s′)), h₀)
 
 # Store these values to be passed to the solver.
-u₀ = construct(PhysicsState, [
-  VectorForm(Tₛ₀),
-  VectorForm(h₀),
-  ], Float64[], [
-  :Tₛ,
-  :halfar_h])
+u₀ = ComponentArray(Tₛ=Tₛ₀, halfar_h=h₀)
+
 constants_and_parameters = (
   budyko_sellers_absorbed_radiation_α = α,
   budyko_sellers_outgoing_radiation_A = A,
@@ -225,8 +221,8 @@ soln = solve(prob, Tsit5())
 @show soln.retcode
 @info("Done")
 
-extrema(findnode(soln(0.0), :halfar_h))
-extrema(findnode(soln(tₑ), :halfar_h))
+extrema(soln(0.0).halfar_h)
+extrema(soln(tₑ).halfar_h)
 
 @save "budyko_sellers_halfar.jld2" soln
 
@@ -234,11 +230,11 @@ extrema(findnode(soln(tₑ), :halfar_h))
 # Visualize #
 #############
 
-lines(map(x -> x[1], point(s′)), findnode(soln(0.0), :Tₛ))
-lines(map(x -> x[1], point(s′)), findnode(soln(tₑ), :Tₛ))
+lines(map(x -> x[1], point(s′)), soln(0.0).Tₛ)
+lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)
 
-lines(map(x -> x[1], point(s′)), findnode(soln(0.0), :halfar_h))
-lines(map(x -> x[1], point(s′)), findnode(soln(tₑ), :halfar_h))
+lines(map(x -> x[1], point(s′)), soln(0.0).halfar_h)
+lines(map(x -> x[1], point(s′)), soln(tₑ).halfar_h)
 
 begin
 # Initial frame
@@ -246,13 +242,13 @@ frames = 100
 fig = Figure(resolution = (800, 800))
 ax1 = Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
-ylims!(ax1, extrema(findnode(soln(tₑ), :Tₛ)))
+ylims!(ax1, extrema(soln(tₑ).Tₛ))
 Label(fig[1,1,Top()], "Surface temperature, Tₛ, [C°]")
 Label(fig[2,1,Top()], "Line plot of temperature from North to South pole, every $(tₑ/frames) time units")
 
 # Animation
 record(fig, "budyko_sellers_halfar_T.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-  lines!(fig[1,1], map(x -> x[1], point(s′)), findnode(soln(t), :Tₛ))
+  lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).Tₛ)
 end
 end
 
@@ -262,12 +258,12 @@ frames = 100
 fig = Figure(resolution = (800, 800))
 ax1 = Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
-ylims!(ax1, extrema(findnode(soln(tₑ), :halfar_h)))
+ylims!(ax1, extrema(soln(tₑ).halfar_h))
 Label(fig[1,1,Top()], "Ice height, h")
 Label(fig[2,1,Top()], "Line plot of ice height from North to South pole, every $(tₑ/frames) time units")
 
 # Animation
 record(fig, "budyko_sellers_halfar_h.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-  lines!(fig[1,1], map(x -> x[1], point(s′)), findnode(soln(t), :halfar_h))
+  lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).halfar_h)
 end
 end

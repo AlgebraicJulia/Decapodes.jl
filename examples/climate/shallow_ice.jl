@@ -6,11 +6,11 @@ using Decapodes
 
 # External Dependencies
 using MLStyle
-using MultiScaleArrays
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
 using SparseArrays
+using ComponentArrays
 # Uncomment to load GLMakie if your system supports it.
 # Otherwise, do using CairoMakie
 #using GLMakie
@@ -110,7 +110,7 @@ end
 mesh(s′, color=h₀, colormap=:jet)
 
 # Store these values to be passed to the solver.
-u₀ = construct(PhysicsState, [VectorForm(h₀), VectorForm(A)], Float64[], [:h, :stress_A])
+u₀ = ComponentArrays(h = h₀, stress_A = A)
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
@@ -185,14 +185,14 @@ soln = solve(prob, Tsit5())
 #############
 
 # Visualize the final conditions.
-mesh(s′, color=findnode(soln(tₑ), :h), colormap=:jet)
+mesh(s′, color=soln(tₑ).h, colormap=:jet)
 
 # Create a gif
 begin
   frames = 100
-  fig, ax, ob = CairoMakie.mesh(s′, color=findnode(soln(0), :h), colormap=:jet, colorrange=extrema(findnode(soln(tₑ), :h)))
+  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).h, colormap=:jet, colorrange=extrema(soln(tₑ).h))
   Colorbar(fig[1,2], ob)
   record(fig, "ice_dynamics.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
-    ob.color = findnode(soln(t), :h)
+    ob.color = soln(t).h
   end
 end

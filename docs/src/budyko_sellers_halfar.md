@@ -11,7 +11,7 @@ using Decapodes
 
 # External Dependencies
 using MLStyle
-using MultiScaleArrays
+using ComponentArrays
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
@@ -167,12 +167,8 @@ lines(map(x -> x[1], point(s′)), h₀)
 
 ``` @example DEC
 # Store these values to be passed to the solver.
-u₀ = construct(PhysicsState, [
-  VectorForm(Tₛ₀),
-  VectorForm(h₀),
-  ], Float64[], [
-  :Tₛ,
-  :halfar_h])
+u₀ = ComponentArrays(Tₛ=Tₛ₀,halfar_h=h₀)
+
 constants_and_parameters = (
   budyko_sellers_absorbed_radiation_α = α,
   budyko_sellers_outgoing_radiation_A = A,

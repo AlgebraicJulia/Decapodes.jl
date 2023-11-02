@@ -14,8 +14,8 @@ using GeometryBasics: Point3
 using GLMakie
 using JLD2
 using LinearAlgebra
-using MultiScaleArrays
 using OrdinaryDiffEq
+using ComponentArrays
 Point3D = Point3{Float64}
 
 ####################
@@ -181,41 +181,12 @@ dtuˢ = zeros(ne(s))
 
 τ = zeros(ntriangles(s))
 
-u₀ = construct(PhysicsState, [
-  VectorForm(f),
-  VectorForm(v),
-  VectorForm(V),
-  VectorForm(g),
-  VectorForm(Fᵥ),
-  VectorForm(uˢ),
-  VectorForm(τ),
-  VectorForm(dtuˢ),
-  VectorForm(p),
-  VectorForm(T),
-  VectorForm(Fₜ),
-  VectorForm(qₜ),
-  VectorForm(Cₜ),
-  VectorForm(S),
-  VectorForm(Fₛ),
-  VectorForm(qₛ),
-  VectorForm(Cₛ)], Float64[], [
-  :momentum_f,
-  :v,
-  :V,
-  :momentum_g,
-  :momentum_Fᵥ,
-  :momentum_uˢ,
-  :momentum_τ,
-  :momentum_dtuˢ,
-  :momentum_p,
-  :T,
-  :temperature_F,
-  :temperature_q,
-  :temperature_C,
-  :S,
-  :salinity_F,
-  :salinity_q,
-  :salinity_C])
+u₀ = ComponentArrays(momentum_f=f,v=v,V=V,momentum_g=g,
+      momentum_Fᵥ=Fᵥ,momentum_uˢ=uˢ,momentum_τ=τ,
+      momentum_dtuˢ=dtuˢ,momentum_p=p,T=T,
+      temperature_F=Fₜ,temperature_q=qₜ,
+      temperature_C=Cₜ,S=S,salinity_F=Fₛ,
+      salinity_q=qₛ,salinity_C=Cₛ)
 
 gᶜ = 9.81
 α = 2e-3
@@ -240,19 +211,19 @@ soln = solve(prob, Tsit5(), dtmin=1e-3, force_dtmin=true)
 @show soln.retcode
 @info("Done")
 
-mesh(s′, color=findnode(soln(1.5), :T), colormap=:jet)
-extrema(findnode(soln(0), :T))
-extrema(findnode(soln(1.5), :T))
+mesh(s′, color=soln(1.5).T, colormap=:jet)
+extrema(soln(0).T)
+extrema(soln(1.5).T)
 
 # Create a gif
 begin
   frames = 100
-  #fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :T), colormap=:jet, colorrange=extrema(findnode(soln(tₑ), :h)))
-  fig, ax, ob = GLMakie.mesh(s′, color=findnode(soln(0), :T), colormap=:jet, colorrange=extrema(findnode(soln(1.5), :T)))
+  #fig, ax, ob = GLMakie.mesh(s′, color=soln(0).T, colormap=:jet, colorrange=extrema(soln(tₑ).h))
+  fig, ax, ob = GLMakie.mesh(s′, color=soln(0).T, colormap=:jet, colorrange=extrema(soln(1.5).T))
   Colorbar(fig[1,2], ob)
   #record(fig, "oceananigans.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
   record(fig, "oceananigans.gif", range(0.0, 1.5; length=frames); framerate = 30) do t
-    ob.color = findnode(soln(t), :T)
+    ob.color = soln(t).T
   end
 end
 
