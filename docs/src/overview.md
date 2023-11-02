@@ -170,7 +170,7 @@ sol = solve(prob, Tsit5());
 
 # Plot the result
 times = range(0.0, 100.0, length=150)
-colors = [findnode(sol(t), :C)[point_map] for t in times]
+colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
 fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
@@ -180,7 +180,7 @@ framerate = 30
 
 # Animation
 record(fig, "diffusion.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-ob.color = findnode(sol(t), :C)[point_map]
+ob.color = sol(t).C[point_map]
 end
 ```
 
@@ -332,7 +332,7 @@ sol = solve(prob, Tsit5());
 
 # Plot the result
 times = range(0.0, 100.0, length=150)
-colors = [findnode(sol(t), :C)[point_map] for t in times]
+colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
 fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
@@ -342,7 +342,7 @@ framerate = 30
 
 # Animation
 record(fig, "diff_adv.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-ob.color = findnode(sol(t), :C)[point_map]
+ob.color = sol(t).C[point_map]
 end
 ```
 

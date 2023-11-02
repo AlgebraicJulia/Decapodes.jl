@@ -245,7 +245,7 @@ We can save our solution file in case we want to examine its contents when this 
 Let's examine the final conditions:
 
 ``` @example DEC
-fig,ax,ob = lines(map(x -> x[1], point(s′)), findnode(soln(tₑ), :dynamics_h), linewidth=5)
+fig,ax,ob = lines(map(x -> x[1], point(s′)), soln(tₑ).dynamics_h, linewidth=5)
 ylims!(ax, extrema(h₀))
 display(fig)
 ```
@@ -258,10 +258,10 @@ Let's create a GIF to examine an animation of these dynamics:
 # Create a gif
 begin
   frames = 100
-  fig, ax, ob = lines(map(x -> x[1], point(s′)), findnode(soln(0), :dynamics_h))
+  fig, ax, ob = lines(map(x -> x[1], point(s′)), soln(0).dynamics_h)
   ylims!(ax, extrema(h₀))
   record(fig, "ice_dynamics1D.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    lines!(map(x -> x[1], point(s′)), findnode(soln(t), :dynamics_h))
+    lines!(map(x -> x[1], point(s′)), soln(t).dynamics_h)
   end
 end
 ```
@@ -407,16 +407,16 @@ soln = solve(prob, Tsit5())
 
 ``` @example DEC
 # Final conditions:
-mesh(s′, color=findnode(soln(tₑ), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))
+mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 ```
 
 ``` @example DEC
 begin
   frames = 100
-  fig, ax, ob = CairoMakie.mesh(s′, color=findnode(soln(0), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))
+  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
   Colorbar(fig[1,2], ob)
   record(fig, "ice_dynamics2D.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    ob.color = findnode(soln(t), :dynamics_h)
+    ob.color = soln(t).dynamics_h
   end
 end
 ```
@@ -478,23 +478,23 @@ soln = solve(prob, Tsit5())
 @info("Done")
 
 # Compare the extrema of the initial and final conditions of ice height.
-extrema(findnode(soln(0), :dynamics_h)), extrema(findnode(soln(tₑ), :dynamics_h))
+extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)
 ```
 
 ``` @example DEC
-mesh(s′, color=findnode(soln(tₑ), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))
+mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 ```
 
 ``` @example DEC
 begin
   frames = 200
-  fig, ax, ob = CairoMakie.mesh(s′, color=findnode(soln(0), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))
+  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 
   Colorbar(fig[1,2], ob)
   # These particular initial conditions diffuse quite quickly, so let's just look at
   # the first moments of those dynamics.
   record(fig, "ice_dynamics2D_sphere.gif", range(0.0, tₑ/64; length=frames); framerate = 20) do t
-    ob.color = findnode(soln(t), :dynamics_h)
+    ob.color = soln(t).dynamics_h
   end
 end
 ```
