@@ -53,7 +53,7 @@ ImplicitDecapode = SummationDecapode(implicit_terms)
 
 
 # Test: Roundtripping James' case:
-dexp = parse_decapode(quote
+mixed_exp = parse_decapode(quote
   A::Form0{X}
   B::Form1{X}
   C::Form0{X}
@@ -65,11 +65,9 @@ dexp = parse_decapode(quote
   ∂ₜ(D) == C + D
 end)
 
-d = SummationDecapode(dexp)
+Mix = SummationDecapode(mixed_exp)
 
-dexpr′ = Term(d)
-d′ = SummationDecapode(Term(d))
-@test d′ == d
+@test SummationDecapode(Term(Mix)) == Mix
 
 # Test Decapode -> DecaExpr conversion on Halfar.
 halfar_terms = parse_decapode(quote
