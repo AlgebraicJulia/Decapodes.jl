@@ -8,6 +8,10 @@ end
   include("summation.jl")
 end
 
+@testset "SummationDecapode Deconstruction" begin
+  include("colanguage.jl")
+end
+
 @testset "Composition" begin
   include("composition.jl")
 end

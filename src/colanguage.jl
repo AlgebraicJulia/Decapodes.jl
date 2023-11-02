@@ -3,6 +3,7 @@ using Catlab
 using Catlab.CategoricalAlgebra
 
 function Term(s::SummationDecapode)
+  s = expand_operators(s)
   judgements = map(parts(s,:Var)) do v
     var = s[v, :name]
     typ = s[v, :type]

@@ -70,3 +70,16 @@ d = SummationDecapode(dexp)
 dexpr′ = Term(d)
 d′ = SummationDecapode(Term(d))
 @test d′ == d
+
+# Test Decapode -> DecaExpr conversion on Halfar.
+halfar_terms = parse_decapode(quote
+  h::Form0
+  Γ::Form1
+  n::Constant
+
+  ḣ == ∂ₜ(h)
+  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+end)
+HalfarDecapode = SummationDecapode(halfar_terms)
+# Observe that expand_operators is called:
+@test SummationDecapode(Term(HalfarDecapode)) == expand_operators(HalfarDecapode)
