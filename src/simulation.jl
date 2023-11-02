@@ -98,7 +98,7 @@ Base.Expr(c::AllocVecCall) = begin
         _ => return :AllocVecCall_Error
     end
 
-    :($(c.name) = Vector{Float64}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
+    :($(c.name) = Vector{ComplexF64}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end
 
 #= function get_form_number(d::SummationDecapode, var_id::Int)
@@ -225,8 +225,8 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
         elseif all(d[incident(d, s, :name) , :type] .== :Parameter)
             :($s = (p.$s)(t))
         elseif all(d[incident(d, s, :name) , :type] .== :Literal)
-            # TODO: Fix this. We assume that all literals are Float64s.
-            :($s = $(parse(Float64, String(s))))
+            # TODO: Fix this. We assume that all literals are ComplexF64s.
+            :($s = $(parse(ComplexF64, String(s))))
         else
             # TODO: If names are not unique, then the type is assumed to be a
             # form for all of the vars sharing a same name.
@@ -681,7 +681,7 @@ function closest_point(p1, p2, dims)
             end
         end
     end
-    Point3{Float64}(p_res...)
+    Point3{ComplexF64}(p_res...)
 end
 
 function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, Inf, Inf])
