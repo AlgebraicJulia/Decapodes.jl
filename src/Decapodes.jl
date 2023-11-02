@@ -41,5 +41,6 @@ include("simulation.jl")
 include("meshes.jl")
 #include("rewrite.jl")
 include("colanguage.jl")
+include("pretty.jl")
 
 end
