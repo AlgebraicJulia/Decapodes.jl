@@ -1,5 +1,5 @@
 using CombinatorialSpaces
-using MultiScaleArrays
+using ComponentArrays
 using OrdinaryDiffEq
 using GeometryBasics
 using LinearAlgebra
@@ -7,20 +7,6 @@ using Base.Iterators
 using Catlab
 using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
-
-struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
-    values::Vector{B}
-end
-
-struct PhysicsState{T<:AbstractMultiScaleArray,B<:Number} <: AbstractMultiScaleArray{B}
-    nodes::Vector{T}
-    values::Vector{B}
-    end_idxs::Vector{Int}
-    names::Vector{Symbol}
-end
-
-findname(u::PhysicsState, s::Symbol) = findfirst(isequal(s), u.names)
-findnode(u::PhysicsState, s::Symbol) = u.nodes[findname(u, s)]
 
 abstract type AbstractCall end
 
@@ -230,7 +216,7 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
         else
             # TODO: If names are not unique, then the type is assumed to be a
             # form for all of the vars sharing a same name.
-            :($s = findnode(u, $ssymbl).values)
+            :($s = getproperty(u, $ssymbl))
         end
     end
     return quote $(stmts...) end
@@ -241,7 +227,7 @@ function set_tanvars_code(d::AbstractNamedDecapode)
     tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
     stmts = map(tanvars) do (s,t)
         ssymb = QuoteNode(s)
-        :(findnode(du, $ssymb).values .= $t)
+        :(getproperty(du, $ssymb) .= $t)
     end
     return stmts
 end

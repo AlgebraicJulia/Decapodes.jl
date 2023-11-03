@@ -20,8 +20,8 @@ end
   include("meshes.jl")
 end
 
-@testset "MultiScaleArrays.jl Integration" begin
-  include("multiscalearrays.jl")
+@testset "ComponentArrays.jl Integration" begin
+  include("componentarrays.jl")
 end
 
 #@testset "Average Rewriting" begin

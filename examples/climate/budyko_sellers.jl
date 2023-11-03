@@ -10,7 +10,7 @@ using Decapodes
 
 # External Dependencies
 using MLStyle
-using MultiScaleArrays
+using ComponentArrays
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
@@ -159,7 +159,9 @@ Tₛ₀ = map(point(s′)) do ϕ
 end
 
 # Store these values to be passed to the solver.
-u₀ = construct(PhysicsState, [VectorForm(Tₛ₀)], Float64[], [:Tₛ])
+
+u₀ = ComponentArray{Float64}(Tₛ = Tₛ₀)
+
 constants_and_parameters = (
   absorbed_radiation_α = α,
   outgoing_radiation_A = A,
@@ -209,19 +211,19 @@ soln = solve(prob, Tsit5())
 # Visualize #
 #############
 
-lines(map(x -> x[1], point(s′)), findnode(soln(0.0), :Tₛ))
-lines(map(x -> x[1], point(s′)), findnode(soln(tₑ), :Tₛ))
+lines(map(x -> x[1], point(s′)), soln(0.0).Tₛ)
+lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)
 
 # Initial frame
 frames = 100
 fig = Figure(resolution = (800, 800))
-ax1 = Axis(fig[1,1])
+ax1 = CairoMakie.Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
-ylims!(ax1, extrema(findnode(soln(tₑ), :Tₛ)))
+ylims!(ax1, extrema(soln(tₑ).Tₛ))
 Label(fig[1,1,Top()], "Surface temperature, Tₛ, [C°]")
 Label(fig[2,1,Top()], "Line plot of temperature from North to South pole, every $(tₑ/frames) time units")
 
 # Animation
 record(fig, "budyko_sellers.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-  lines!(fig[1,1], map(x -> x[1], point(s′)), findnode(soln(t), :Tₛ))
+  lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).Tₛ)
 end
