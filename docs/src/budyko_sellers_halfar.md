@@ -287,7 +287,7 @@ begin
 # Initial frame
 frames = 100
 fig = Figure(resolution = (800, 800))
-ax1 = Axis(fig[1,1])
+ax1 = GLMakie.Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
 ylims!(ax1, extrema(soln(tₑ).Tₛ))
 Label(fig[1,1,Top()], "Surface temperature, Tₛ, [C°]")
@@ -303,7 +303,7 @@ begin
 # Initial frame
 frames = 100
 fig = Figure(resolution = (800, 800))
-ax1 = Axis(fig[1,1])
+ax1 = GLMakie.Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
 ylims!(ax1, extrema(soln(tₑ).halfar_h))
 Label(fig[1,1,Top()], "Ice height, h")
