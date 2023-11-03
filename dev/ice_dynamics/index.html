@@ -7,7 +7,7 @@ using Decapodes
 
 # External Dependencies
 using MLStyle
-using MultiScaleArrays
+using ComponentArrays
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
@@ -125,7 +125,8 @@ h₀ = map(point(s′)) do (x,_)
 end
 
 # Visualize initial conditions for ice sheet height.
-lines(map(x -&gt; x[1], point(s′)), h₀, linewidth=5)</code></pre><img src="f7c9e917.png" alt="Example block output"/><p>We need to tell our Decapode which data maps to which symbols. We can wrap up our data like so:</p><pre><code class="language-julia hljs">u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:dynamics_h])
+lines(map(x -&gt; x[1], point(s′)), h₀, linewidth=5)</code></pre><img src="f7c9e917.png" alt="Example block output"/><p>We need to tell our Decapode which data maps to which symbols. We can wrap up our data like so:</p><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
+
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
@@ -190,16 +191,16 @@ soln = solve(prob, Tsit5())
 @info(&quot;Done&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Precompiling Solver
 [ Info: Solving
 soln.retcode = SciMLBase.ReturnCode.Success
-[ Info: Done</code></pre><p>We can save our solution file in case we want to examine its contents when this Julia session ends.</p><pre><code class="language-julia hljs">@save &quot;ice_dynamics1D.jld2&quot; soln</code></pre><h1 id="Visualize"><a class="docs-heading-anchor" href="#Visualize">Visualize</a><a id="Visualize-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize" title="Permalink"></a></h1><p>Let&#39;s examine the final conditions:</p><pre><code class="language-julia hljs">fig,ax,ob = lines(map(x -&gt; x[1], point(s′)), findnode(soln(tₑ), :dynamics_h), linewidth=5)
+[ Info: Done</code></pre><p>We can save our solution file in case we want to examine its contents when this Julia session ends.</p><pre><code class="language-julia hljs">@save &quot;ice_dynamics1D.jld2&quot; soln</code></pre><h1 id="Visualize"><a class="docs-heading-anchor" href="#Visualize">Visualize</a><a id="Visualize-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize" title="Permalink"></a></h1><p>Let&#39;s examine the final conditions:</p><pre><code class="language-julia hljs">fig,ax,ob = lines(map(x -&gt; x[1], point(s′)), soln(tₑ).dynamics_h, linewidth=5)
 ylims!(ax, extrema(h₀))
 display(fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">CairoMakie.Screen{IMAGE}
 </code></pre><p>We see that our distribution converges to a more uniform ice height across our domain, which matches our physical intuition.</p><p>Let&#39;s create a GIF to examine an animation of these dynamics:</p><pre><code class="language-julia hljs"># Create a gif
 begin
   frames = 100
-  fig, ax, ob = lines(map(x -&gt; x[1], point(s′)), findnode(soln(0), :dynamics_h))
+  fig, ax, ob = lines(map(x -&gt; x[1], point(s′)), soln(0).dynamics_h)
   ylims!(ax, extrema(h₀))
   record(fig, &quot;ice_dynamics1D.gif&quot;, range(0.0, tₑ; length=frames); framerate = 15) do t
-    lines!(map(x -&gt; x[1], point(s′)), findnode(soln(t), :dynamics_h))
+    lines!(map(x -&gt; x[1], point(s′)), soln(t).dynamics_h)
   end
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics1D.gif&quot;</code></pre><p><img src="../ice_dynamics1D.gif" alt="IceDynamics1D"/></p><h1 id="D-Re-interpretation"><a class="docs-heading-anchor" href="#D-Re-interpretation">2D Re-interpretation</a><a id="D-Re-interpretation-1"></a><a class="docs-heading-anchor-permalink" href="#D-Re-interpretation" title="Permalink"></a></h1><p>The first, one-dimensional, semantics that we provided to our Decapode restricted the kinds of glacial sheets that we could model. (i.e. We could only look at glacial sheets which were constant along y). We can give our Decapode an alternate semantics, as some physics on a 2-dimensional manifold.</p><p>Note that for these physics, we make no adjustments to the underlying &quot;dimension-agnostic&quot; Decapode, we only provide a different set of rules for inferring what the type of each quantity is.</p><pre><code class="language-julia hljs">ice_dynamics2D = expand_operators(ice_dynamics)
 infer_types!(ice_dynamics2D)
@@ -225,7 +226,8 @@ h₀ = map(point(s′)) do (x,y)
 end
 
 # Visualize initial condition for ice sheet height.
-mesh(s′, color=h₀, colormap=:jet)</code></pre><img src="3a1df0a7.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:dynamics_h])
+mesh(s′, color=h₀, colormap=:jet)</code></pre><img src="3a1df0a7.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
+
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
@@ -274,12 +276,12 @@ soln = solve(prob, Tsit5())
 @info(&quot;Done&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Solving
 soln.retcode = SciMLBase.ReturnCode.Success
 [ Info: Done</code></pre><pre><code class="language-julia hljs">@save &quot;ice_dynamics2D.jld2&quot; soln</code></pre><h1 id="Visualize-2"><a class="docs-heading-anchor" href="#Visualize-2">Visualize</a><a class="docs-heading-anchor-permalink" href="#Visualize-2" title="Permalink"></a></h1><pre><code class="language-julia hljs"># Final conditions:
-mesh(s′, color=findnode(soln(tₑ), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))</code></pre><img src="ab468085.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
+mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))</code></pre><img src="ab468085.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
   frames = 100
-  fig, ax, ob = CairoMakie.mesh(s′, color=findnode(soln(0), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))
+  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
   Colorbar(fig[1,2], ob)
   record(fig, &quot;ice_dynamics2D.gif&quot;, range(0.0, tₑ; length=frames); framerate = 15) do t
-    ob.color = findnode(soln(t), :dynamics_h)
+    ob.color = soln(t).dynamics_h
   end
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D.gif&quot;</code></pre><p><img src="../ice_dynamics2D.gif" alt="IceDynamics2D"/></p><h1 id="Manifold-in-3D"><a class="docs-heading-anchor" href="#Manifold-in-3D">2-Manifold in 3D</a><a id="Manifold-in-3D-1"></a><a class="docs-heading-anchor-permalink" href="#Manifold-in-3D" title="Permalink"></a></h1><p>We note that just because our physics is happening on a 2-manifold, (a surface), this doesn&#39;t restrict us to the 2D plane. In fact, we can &quot;embed&quot; our 2-manifold in 3D space to simulate a glacial sheets spread across the globe.</p><pre><code class="language-julia hljs">s′ = loadmesh(Icosphere(3, 10_000))
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
@@ -296,7 +298,8 @@ end
 
 # Visualize initial condition for ice sheet height.
 # There is lots of ice at the poles, and no ice at the equator.
-mesh(s′, color=h₀, colormap=:jet)</code></pre><img src="a9a8ab14.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = construct(PhysicsState, [VectorForm(h₀)], Float64[], [:dynamics_h])
+mesh(s′, color=h₀, colormap=:jet)</code></pre><img src="a9a8ab14.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
+
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
@@ -313,14 +316,14 @@ soln = solve(prob, Tsit5())
 @info(&quot;Done&quot;)
 
 # Compare the extrema of the initial and final conditions of ice height.
-extrema(findnode(soln(0), :dynamics_h)), extrema(findnode(soln(tₑ), :dynamics_h))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((0.0, 1.0), (0.32248436900448735, 0.34351747793592685))</code></pre><pre><code class="language-julia hljs">mesh(s′, color=findnode(soln(tₑ), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))</code></pre><img src="26d01c65.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
+extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((0.0, 1.0), (0.32219582014421494, 0.3435660639456841))</code></pre><pre><code class="language-julia hljs">mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))</code></pre><img src="eb22c8ae.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
   frames = 200
-  fig, ax, ob = CairoMakie.mesh(s′, color=findnode(soln(0), :dynamics_h), colormap=:jet, colorrange=extrema(findnode(soln(0), :dynamics_h)))
+  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 
   Colorbar(fig[1,2], ob)
   # These particular initial conditions diffuse quite quickly, so let&#39;s just look at
   # the first moments of those dynamics.
   record(fig, &quot;ice_dynamics2D_sphere.gif&quot;, range(0.0, tₑ/64; length=frames); framerate = 20) do t
-    ob.color = findnode(soln(t), :dynamics_h)
+    ob.color = soln(t).dynamics_h
   end
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D_sphere.gif&quot;</code></pre><p><img src="../ice_dynamics2D_sphere.gif" alt="IceDynamics2DSphere"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../poiseuille/">« Pipe Flow</a><a class="docs-footer-nextpage" href="../budyko_sellers_halfar/">Budyko-Sellers-Halfar »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Friday 3 November 2023 03:59">Friday 3 November 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D_sphere.gif&quot;</code></pre><p><img src="../ice_dynamics2D_sphere.gif" alt="IceDynamics2DSphere"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../poiseuille/">« Pipe Flow</a><a class="docs-footer-nextpage" href="../budyko_sellers_halfar/">Budyko-Sellers-Halfar »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Friday 3 November 2023 14:17">Friday 3 November 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

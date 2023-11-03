@@ -292,17 +292,17 @@ c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
 fig, ax, ob = mesh(plot_mesh; color=c[point_map])
 ax.aspect = AxisAspect(3.0)
 fig</code></pre><img src="9d766568.png" alt="Example block output"/><p>Finally, we solve this PDE problem using the <code>Tsit5()</code> solver and generate an animation of the result!</p><pre><code class="language-julia hljs">using LinearAlgebra
-using MultiScaleArrays
+using ComponentArrays
 using OrdinaryDiffEq
 
-u₀ = construct(PhysicsState, [VectorForm(c)], Float64[], [:C])
+u₀ = ComponentArray(C=c)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
 sol = solve(prob, Tsit5());
 
 # Plot the result
 times = range(0.0, 100.0, length=150)
-colors = [findnode(sol(t), :C)[point_map] for t in times]
+colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
 fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
@@ -312,7 +312,7 @@ framerate = 30
 
 # Animation
 record(fig, &quot;diffusion.gif&quot;, range(0.0, 100.0; length=150); framerate = 30) do t
-ob.color = findnode(sol(t), :C)[point_map]
+ob.color = sol(t).C[point_map]
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;diffusion.gif&quot;</code></pre><p><img src="../diffusion.gif" alt/></p><h2 id="Merging-Multiple-Physics"><a class="docs-heading-anchor" href="#Merging-Multiple-Physics">Merging Multiple Physics</a><a id="Merging-Multiple-Physics-1"></a><a class="docs-heading-anchor-permalink" href="#Merging-Multiple-Physics" title="Permalink"></a></h2><p>Now that we&#39;ve seen the basic pipeline, it&#39;s time for a more complex example that demonstrates some of the benefits reaped from using Catlab.jl as the backend to our data structures. In this example, we will take two separate physics (diffusion and advection), and combine them together using a higher-level composition pattern.</p><p>We begin by defining the three systems we need. The first two systems are the relationships between concentration and flux under diffusion and advection respectively. The third is the relationship between the two fluxes and the change of concentration under superposition of fluxes.</p><pre><code class="language-julia hljs">Diffusion = @decapode begin
   C::Form0
   ϕ::Form1
@@ -767,14 +767,14 @@ fₘ = sim(periodic_mesh, generate, DiagonalHodge())
 velocity(p) = [-0.5, -0.5, 0.0]
 v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
 
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(v)], Float64[], [:C, :V])
+u₀ = ComponentArray(C=c,V=v)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
 sol = solve(prob, Tsit5());
 
 # Plot the result
 times = range(0.0, 100.0, length=150)
-colors = [findnode(sol(t), :C)[point_map] for t in times]
+colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
 fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
@@ -784,5 +784,5 @@ framerate = 30
 
 # Animation
 record(fig, &quot;diff_adv.gif&quot;, range(0.0, 100.0; length=150); framerate = 30) do t
-ob.color = findnode(sol(t), :C)[point_map]
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;diff_adv.gif&quot;</code></pre><p><img src="../diff_adv.gif" alt/> ```</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Decapodes.jl</a><a class="docs-footer-nextpage" href="../equations/">Equations »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Friday 3 November 2023 03:59">Friday 3 November 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ob.color = sol(t).C[point_map]
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;diff_adv.gif&quot;</code></pre><p><img src="../diff_adv.gif" alt/> ```</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Decapodes.jl</a><a class="docs-footer-nextpage" href="../equations/">Equations »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Friday 3 November 2023 14:17">Friday 3 November 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
