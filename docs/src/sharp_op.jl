@@ -32,7 +32,7 @@ end
 
 function ♯_assign!(♯_mat::AbstractSparseMatrix, s::AbstractDeltaDualComplex2D, 
   v₀::Int, _::Int, t::Int, i::Int, tri_edges::SVector{3, Int}, tri_center::Int,
-  out_vec, DS::CombinatorialSpaces.DiscreteExteriorCalculus.DiscreteSharp)
+  out_vec)
   for e in deleteat(tri_edges, i)
     v, sgn = src(s,e) == v₀ ? (tgt(s,e), -1) : (src(s,e), +1)
     # | ⋆vₓ ∩ σⁿ |
@@ -53,7 +53,7 @@ function ♯_mat(s::AbstractDeltaDualComplex2D)
       h = norm(out_vec)
       #out_vec /= DS == DesbrunSharp() ? h : h^2
       out_vec /= h^2
-      ♯_assign!(♯_mat, s, v₀, e₀, t, i, tri_edges, tri_center, out_vec, DS)
+      ♯_assign!(♯_mat, s, v₀, e₀, t, i, tri_edges, tri_center, out_vec)
     end
   end
   ♯_mat
