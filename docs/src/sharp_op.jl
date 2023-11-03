@@ -43,7 +43,7 @@ function ♯_assign!(♯_mat::AbstractSparseMatrix, s::AbstractDeltaDualComplex2
   end
 end
 
-function ♯_mat(s::AbstractDeltaDualComplex2D, DS::CombinatorialSpaces.DiscreteExteriorCalculus.DiscreteSharp)
+function ♯_mat(s::AbstractDeltaDualComplex2D)
   ♯_mat = spzeros(attrtype_type(s, :Point), (nv(s), ne(s)))
   for t in triangles(s)
     tri_center, tri_edges = triangle_center(s,t), triangle_edges(s,t)

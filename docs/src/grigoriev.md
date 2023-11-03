@@ -134,7 +134,7 @@ to_graphviz(ice_dynamics)
 ``` @example DEC
 include("sharp_op.jl")
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  ♯_m = ♯_mat(sd, AltPPSharp())
+  ♯_m = ♯_mat(sd)
   I = Vector{Int64}()
   J = Vector{Int64}()
   V = Vector{Float64}()
