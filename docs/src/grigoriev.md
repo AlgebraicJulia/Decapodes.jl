@@ -17,7 +17,7 @@ using Decapodes
 using FileIO  
 using Interpolations
 using MLStyle
-using MultiScaleArrays # This is using the "slow" accessor.
+using ComponentArrays
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
@@ -89,7 +89,7 @@ h₀ = map(s[:point]) do (x,y,_)
 end
 
 # Store these values to be passed to the solver.
-u₀ = construct(PhysicsState, [VectorForm(h₀), VectorForm(A)], Float64[], [:h, :stress_A])
+u₀ = ComponentArray(h=h₀, stress_A=A)
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
@@ -197,7 +197,7 @@ function plot_ic()
             title="Grigoriev Ice Cap Initial Thickness [m]",
             xticks = range(MIN_X, MAX_X; length=5),
             yticks = range(MIN_Y, MAX_Y; length=5))
-  msh = mesh!(ax, s′, color=findnode(soln(0.0), :h), colormap=:jet)
+  msh = mesh!(ax, s′, color=soln(0.0).h, colormap=:jet)
   Colorbar(f[1,2], msh)
   f
 end
@@ -211,7 +211,7 @@ function plot_fc()
             title="Grigoriev Ice Cap Final Thickness [m]",
             xticks = range(MIN_X, MAX_X; length=5),
             yticks = range(MIN_Y, MAX_Y; length=5))
-  msh = mesh!(ax, s′, color=findnode(soln(tₑ), :h), colormap=:jet)
+  msh = mesh!(ax, s′, color=soln(tₑ).h, colormap=:jet)
   Colorbar(f[1,2], msh)
   f
 end
@@ -221,11 +221,11 @@ save("grigoriev_fc.png", f)
 # Create a gif
 function save_dynamics(save_file_name)
   time = Observable(0.0)
-  h = @lift(findnode(soln($time), :h))
+  h = @lift(soln($time).h)
   f,a,o = mesh(s′, color=h, colormap=:jet,
-             colorrange=extrema(findnode(soln(tₑ), :h));
+             colorrange=extrema(soln(tₑ).h);
              axis = (; title = @lift("Grigoriev Ice Cap Dynamic Thickness [m] at time $($time))")))
-  Colorbar(f[1,2], limits=extrema(findnode(soln(0.0), :h)), colormap=:jet)
+  Colorbar(f[1,2], limits=extrema(soln(0.0).h), colormap=:jet)
   timestamps = range(0, tₑ, step=1e-1)
   record(f, save_file_name, timestamps; framerate = 15) do t
     time[] = t
