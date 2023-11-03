@@ -187,7 +187,7 @@ soln = solve(prob, Tsit5())
 @save "grigoriev.jld2" soln
 ```
 
-# Visualize
+# Results and Discussion
 
 ``` @example DEC
 # Visualize the initial conditions.
@@ -233,6 +233,8 @@ function save_dynamics(save_file_name)
 end
 save_dynamics("grigoriev.gif")
 ```
+
+We observe the usual Halfar model phenomena of ice "melting". Note that since the "shallow slope" approximation does not hold on the boundaries (due to the so-called "ice cliffs" described in the Van Tricht et al. paper), we do not expect the "creep" effect to be physical in this region of the domain. Rather, the Halfar model's predictive power is tuned for the interiors of ice caps and glaciers. Note that we also assume here that the bedrock that the ice rests on is flat. We may in further documents demonstrate how to use topographic data from Digital Elevation Models to inform the elevation of points in the mesh itself.
 
 ![Grigoriev_ICs](grigoriev_ic.png)
 ![Grigoriev_FCs](grigoriev_fc.png)
