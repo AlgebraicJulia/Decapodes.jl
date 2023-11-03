@@ -170,7 +170,7 @@ end
 # Generate simulation
 
 ``` @example DEC
-sim = eval(gensim(ice_dynamics2D, dimension=2))
+sim = eval(gensim(ice_dynamics, dimension=2))
 fₘ = sim(s, generate)
 ```
 
