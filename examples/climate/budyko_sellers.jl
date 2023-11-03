@@ -204,8 +204,9 @@ prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
 @show soln.retcode
 @info("Done")
-
 @save "budyko_sellers.jld2" soln
+
+soln = solve(prob, FBDF())
 
 #############
 # Visualize #
