@@ -194,7 +194,7 @@ soln = solve(prob, Tsit5())
 # Visualize the initial conditions.
 function plot_ic()
   f = Figure()
-  ax = Axis(f[1,1],
+  ax = CairoMakie.Axis(f[1,1],
             title="Grigoriev Ice Cap Initial Thickness [m]",
             xticks = range(MIN_X, MAX_X; length=5),
             yticks = range(MIN_Y, MAX_Y; length=5))
@@ -208,7 +208,7 @@ save("grigoriev_ic.png", f)
 # Visualize the final conditions.
 function plot_fc()
   f = Figure()
-  ax = Axis(f[1,1],
+  ax = CairoMakie.Axis(f[1,1],
             title="Grigoriev Ice Cap Final Thickness [m]",
             xticks = range(MIN_X, MAX_X; length=5),
             yticks = range(MIN_Y, MAX_Y; length=5))
