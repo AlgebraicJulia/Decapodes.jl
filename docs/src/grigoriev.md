@@ -93,7 +93,8 @@ u₀ = ComponentArray(h=h₀, stress_A=A)
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
-  stress_g = g)
+  stress_g = g,
+  stress_A = A)
 ```
 
 # Defining and Composing Models
