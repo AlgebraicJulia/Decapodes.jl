@@ -478,6 +478,6 @@ end
   # arbitrary internal variable naming.
   @test budyko_sellers[only(incident(budyko_sellers, Symbol("•1"), :name)), :type] == :DualForm0
   # A dual 0-form consists of ne(s) floats.
-  @test occursin("var\"•1\" = Vector{Float64}(undef, nparts(mesh, :E))",
+  @test occursin("var\"__•1\" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))",
     repr(gensim(budyko_sellers, dimension=1)))
 end
