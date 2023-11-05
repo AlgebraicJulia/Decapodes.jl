@@ -207,6 +207,8 @@ end
 
 # This is the block of parameter setting inside f
 # TODO: Pass this an extra type parameter that sets the size of the Floats
+get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}) = get_vars_code(d, vars, Float64)
+
 function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{stateeltype}) where stateeltype
     stmts = map(vars) do s
         ssymbl = QuoteNode(s)
@@ -216,12 +218,13 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{st
         elseif all(d[incident(d, s, :name) , :type] .== :Parameter)
             :($s = (p.$s)(t))
         elseif all(d[incident(d, s, :name) , :type] .== :Literal)
-            # TODO: Fix this. We assume that all literals are Float64s.
-            :($s = $(parse(Float64, String(s))))
+            # Literals don't need assignments, because they are literals, but we stored them as Symbols.
+            # #TODO: we should fix that upstream so that we don't need this.
+            :($s = $(parse(stateeltype, String(s))))
         else
             # TODO: If names are not unique, then the type is assumed to be a
             # form for all of the vars sharing a same name.
-            :($s = getproperty(u, $ssymbl))
+            :($s = u.$s)
         end
     end
     return quote $(stmts...) end
