@@ -67,11 +67,15 @@ struct AllocVecCall <: AbstractCall
     T
 end
 
+struct AllocVecCallError <: Exception
+    c::AllocVecCall
+end
+
 # TODO: There are likely better ways of dispatching on dimension instead of
 # storing it inside an AllocVecCall.
 Base.Expr(c::AllocVecCall) = begin
     resolved_form = @match (c.form, c.dimension) begin
-        (:Form0, 2, _) => :V
+        (:Form0, 2) => :V
         (:Form1, 2) => :E
         (:Form2, 2) => :Tri
         (:DualForm0, 2) => :Tri
@@ -82,7 +86,7 @@ Base.Expr(c::AllocVecCall) = begin
         (:Form1, 1) => :E
         (:DualForm0, 1) => :E
         (:DualForm1, 1) => :V
-        _ => return :AllocVecCall_Error
+        _ => throw(AllocVecCallError(c))
     end
 
     :($(Symbol(:__,c.name)) = Decapodes.FixedSizeDiffCache(Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form))))))
