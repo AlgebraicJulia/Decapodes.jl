@@ -23,3 +23,54 @@ struct DecaExpr
   context::Vector{Judgement}
   equations::Vector{Equation}
 end
+
+@schema SchDecapode begin
+  (Var, TVar, Op1, Op2)::Ob
+  (Type, Operator)::AttrType(Symbol)
+  src::Hom(Op1, Var)
+  tgt::Hom(Op1, Var)
+  proj1::Hom(Op2, Var)
+  proj2::Hom(Op2, Var)
+  res::Hom(Op2, Var)
+  incl::Hom(TVar, Var)
+
+  op1::Attr(Op1, Operator)
+  op2::Attr(Op2, Operator)
+  type::Attr(Var, Type)
+end
+
+@schema SchNamedDecapode <: SchDecapode begin
+  Name::AttrType(Symbol)
+  name::Attr(Var, Name)
+end
+
+@abstract_acset_type AbstractDecapode
+@abstract_acset_type AbstractNamedDecapode <: AbstractDecapode
+
+@acset_type DecapodeSym(
+  SchDecapode,
+  index=[:src, :tgt, :res, :incl, :op1, :op2, :type],
+  generic=Decapode
+) <: AbstractDecapode
+
+@acset_type NamedDecapodeSym(
+  SchNamedDecapode,
+  index=[:src, :tgt, :res, :incl, :op1, :op2, :type, :name],
+  generic=NamedDecapode
+) <: AbstractNamedDecapode
+
+@schema SchSummationDecapode <: SchNamedDecapode begin
+  # Σ are the white nodes in the Decapode drawing
+  # Summands are the edges that connect white nodes to variables (the projection maps)
+  # because addition is commutative, we don't need to distinguish the order
+  (Σ, Summand)::Ob
+  summand::Hom(Summand, Var)
+  summation::Hom(Summand, Σ)
+  sum::Hom(Σ, Var)
+end
+
+@acset_type SummationDecapodeSym(
+  SchSummationDecapode,
+  index=[:src, :tgt, :res, :incl, :op1, :op2, :type],
+  generic=SummationDecapode
+) <: AbstractNamedDecapode
