@@ -1,5 +1,7 @@
 using Test
 
+include("pretty.jl")
+
 @testset "Construction" begin
   include("diag2dwd.jl")
 end
