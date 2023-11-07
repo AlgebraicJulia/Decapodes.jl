@@ -24,7 +24,7 @@ export normalize_unicode, DerivOp, append_dot, unicode!, vec_to_dec!,
   CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat,
   #average_rewrite,
   recursive_delete_parents, contract_operators,
-  default_dec_matrix_generate, default_dec_generate, 
+  default_dec_matrix_generate, default_dec_generate, Term,
   @decapode
 
 normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
@@ -40,5 +40,7 @@ include("visualization.jl")
 include("simulation.jl")
 include("meshes.jl")
 #include("rewrite.jl")
+include("colanguage.jl")
+include("pretty.jl")
 
 end
