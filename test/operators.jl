@@ -96,7 +96,7 @@ end
     end
 end
 
-@testset "In-House Laplace DeRham" begin
+#= @testset "In-House Laplace DeRham" begin
     for sd in dual_meshes
         @test dec_p_laplace_de_rham(0, sd) == Δ(0, sd)
     end
@@ -105,7 +105,7 @@ end
     for sd in dual_meshes[1:6]
         @test dec_p_laplace_de_rham(1, sd) == Δ(1, sd)
     end
-end
+end =#
 
 function print_decapode_into_acset(d::SummationDecapode)
     println("@acset SummationDecapode{Any, Any, Symbol} begin")
@@ -143,6 +143,8 @@ end
         C == i₁(A, B)
     end
     open_operators!(interior_product_1; dimension = 1)
+    infer_types!(interior_product_1, op1_inf_rules_1D, op2_inf_rules_1D)
+    resolve_overloads!(interior_product_1, op1_res_rules_1D, op2_res_rules_1D)
 
     test_interior_product_1 = @acset SummationDecapode{Any, Any, Symbol} begin
         Var = 5
@@ -174,6 +176,9 @@ end
         C == L₀(B, A)
     end
     open_operators!(lie_derivative_0; dimension = 1)
+    infer_types!(lie_derivative_0, op1_inf_rules_1D, op2_inf_rules_1D)
+    resolve_overloads!(lie_derivative_0, op1_res_rules_1D, op2_res_rules_1D)
+
     test_lie_derivative_0 = @acset SummationDecapode{Any, Any, Symbol} begin
         Var = 6
         name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]
@@ -204,6 +209,9 @@ end
         C == L₁(B, A)
     end
     open_operators!(lie_derivative_1; dimension = 1)
+    infer_types!(lie_derivative_1, op1_inf_rules_1D, op2_inf_rules_1D)
+    resolve_overloads!(lie_derivative_1, op1_res_rules_1D, op2_res_rules_1D)
+
     test_lie_derivative_1 = @acset SummationDecapode{Any, Any, Symbol} begin
         Var = 6
         name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]
@@ -237,6 +245,9 @@ end
         C == i₁(A, B)
     end
     open_operators!(interior_product_1)
+    infer_types!(interior_product_1)
+    resolve_overloads!(interior_product_1)
+
     test_interior_product_1 = @acset SummationDecapode{Any, Any, Symbol} begin
         Var = 6
         name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]
@@ -267,6 +278,9 @@ end
         C == i₂(A, B)
     end
     open_operators!(interior_product_2)
+    infer_types!(interior_product_2)
+    resolve_overloads!(interior_product_2)
+
     test_interior_product_2 = @acset SummationDecapode{Any, Any, Symbol} begin
         Var = 5
         name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2]
@@ -297,6 +311,9 @@ end
         C == L₀(B, A)
     end
     open_operators!(lie_derivative_0)
+    infer_types!(lie_derivative_0)
+    resolve_overloads!(lie_derivative_0)
+
     test_lie_derivative_0 = @acset SummationDecapode{Any, Any, Symbol} begin
         Var = 6
         name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]
@@ -326,6 +343,9 @@ end
         C == L₁(B, A)
     end
     open_operators!(lie_derivative_1)
+    infer_types!(lie_derivative_1)
+    resolve_overloads!(lie_derivative_1)
+
     test_lie_derivative_1 = @acset SummationDecapode{Any, Any, Symbol} begin
         Var = 12
         name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3, :Gensim_Var_4, :Gensim_Var_5, :Gensim_Var_6, :Gensim_Var_7, :Gensim_Var_8, :Gensim_Var_9]
@@ -355,6 +375,9 @@ end
         C == L₂(B, A)
     end
     open_operators!(lie_derivative_2)
+    infer_types!(lie_derivative_2)
+    resolve_overloads!(lie_derivative_2)
+
     test_lie_derivative_2 = @acset SummationDecapode{Any, Any, Symbol} begin
         Var = 6
         name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]

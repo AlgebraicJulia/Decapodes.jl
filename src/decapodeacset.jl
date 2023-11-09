@@ -186,14 +186,14 @@ Find chains of Op1s in the given Decapode, and replace them with
 a single Op1 with a vector of function names. After this process,
 all Vars that are not a part of any computation are removed.
 """
-function contract_operators(d::SummationDecapode)
+function contract_operators(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
   e = expand_operators(d)
-  contract_operators!(e)
+  contract_operators!(e, allowable_ops = allowable_ops)
   #return e
 end
 
-function contract_operators!(d::SummationDecapode)
-  chains = find_chains(d)
+function contract_operators!(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
+  chains = find_chains(d, allowable_ops = allowable_ops)
   filter!(x -> length(x) != 1, chains)
   for chain in chains
     add_part!(d, :Op1, src=d[:src][first(chain)], tgt=d[:tgt][last(chain)], op1=Vector{Symbol}(d[:op1][chain]))
@@ -223,13 +223,15 @@ function remove_neighborless_vars!(d::SummationDecapode)
 end
 
 #"""
-#  function find_chains(d::SummationDecapode)
+#  function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
 #
 #Find chains of Op1s in the given Decapode. A chain ends when the
 #target of the last Op1 is part of an Op2 or sum, or is a target
-#of multiple Op1s.
+#of multiple Op1s. Only operators with names included in the 
+# allowable_ops set are allowed to be contracted. If the set is
+# empty then all operators are allowed.
 #"""
-function find_chains(d::SummationDecapode)
+function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
   chains = []
   visited = falses(nparts(d, :Op1))
   # TODO: Re-write this without two reduce-vcats.
@@ -238,6 +240,10 @@ function find_chains(d::SummationDecapode)
                         [incident(d, Vector{Int64}(filter(i -> !isnothing(i), Decapodes.infer_states(d))), :src),
                          incident(d, d[:res], :src),
                          incident(d, d[:sum], :src)])))
+
+  if(!isempty(allowable_ops))
+    filter!(x -> x ∈ allowable_ops, chain_starts)  
+  end
   
   s = Stack{Int64}()
   foreach(x -> push!(s, x), chain_starts)
@@ -260,7 +266,7 @@ function find_chains(d::SummationDecapode)
         # Terminate chain.
         append!(chains, [curr_chain])
         for next_op1 in next_op1s
-          visited[next_op1] || push!(s, next_op1)
+          visited[next_op1] || (!isempty(allowable_ops) && d[next_op1, :op1] ∉ allowable_ops) || push!(s, next_op1)
         end
         break
       end

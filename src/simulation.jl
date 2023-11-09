@@ -141,6 +141,7 @@ is_infer(d::SummationDecapode, var_id::Int) = (d[var_id, :type] == :infer)
 is_infer(d::SummationDecapode, var_name::Symbol) = is_infer(d, first(incident(d, var_name, :name)))
 
 add_stub(stub_name::Symbol, var_name::Symbol) = return Symbol("$(stub_name)_$(var_name)")
+
 function get_stub(var_name::Symbol)
     var_str = String(var_name)
     idx = findfirst("_", var_str)
@@ -149,6 +150,8 @@ function get_stub(var_name::Symbol)
     end
     return Symbol(var_str[begin:first(idx) - 1])
 end
+
+add_inplace_stub(var_name::Symbol) = add_stub(gensim_in_place_stub, var_name)
 
 function infer_states(d::SummationDecapode)
     filter(parts(d, :Var)) do v
@@ -162,14 +165,14 @@ end
 infer_state_names(d) = d[infer_states(d), :name]
 
 # This will be the function and matrix generation
-function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol})
+function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol})
     assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./])
     defined_ops = Set()
 
     defs = quote end
 
     for op in dec_matrices
-        if(op in defined_ops)
+        if(op in defined_ops )
             continue
         end
 
@@ -183,24 +186,11 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol})
     end
 
     for op in d[:op1]
-      if op == DerivOp
+      if op == DerivOp 
         continue
       end
-      #= if typeof(op) <: AbstractArray
-        for sub_op in op
-          if(sub_op in defined_ops)
-              continue
-          end
-  
-          ops = QuoteNode(sub_op)
-          def = :($sub_op = generate(mesh, $ops))
-          push!(defs.args, def)
-  
-          push!(defined_ops, sub_op)
-        end
-        continue
-      end =#
-      if(op in defined_ops)
+
+      if(op in con_dec_operators || op in defined_ops)
           continue
       end
   
@@ -240,7 +230,7 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
             :($s = (p.$s)(t))
         elseif all(d[incident(d, s, :name) , :type] .== :Literal)
             # TODO: Fix this. We assume that all literals are Float64s.
-            :($s = $(parse(Float64, String(s))))
+            :($s::Float64 = $(parse(Float64, String(s))))
         else
             # TODO: If names are not unique, then the type is assumed to be a
             # form for all of the vars sharing a same name.
@@ -260,7 +250,7 @@ function set_tanvars_code(d::AbstractNamedDecapode)
     return stmts
 end
 
-function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}; dimension=2)
+function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}; dimension=2)
     # Get the Vars of the inputs (probably state Vars).
     visited_Var = falses(nparts(d, :Var))
 
@@ -276,12 +266,6 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
 
     promote_arithmetic_map = Dict(:(+) => :.+, :(-) => :.-, :(*) => :.*, :(/) => :./, :(=) => :.=,
                                   :.+ => :.+, :.- => :.-, :.* => :.*, :./ => :./, :.= => :.=)
-
-    optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₁⁻¹, 
-                                    :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
-                                    :δ₀, :δ₁,
-                                    :Δ₀, :Δ₁, :Δ₂,
-                                    :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
     # FIXME: this is a quadratic implementation of topological_sort inlined in here.
     op_order = []
@@ -304,7 +288,7 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
 
                 # TODO: Check to see if this is a DEC operator
                 if(operator in optimizable_dec_operators)
-                    push!(dec_matrices, operator)
+                    # push!(dec_matrices, operator)
 
                     if(is_form(d, t))
                         equality = promote_arithmetic_map[equality]
@@ -334,15 +318,9 @@ function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symb
                 equality = :(=)
 
                 # This is meant for wedge products
-                if(operator in optimizable_dec_operators)
+                #= if(operator in optimizable_dec_operators)
                     push!(dec_matrices, operator)
-                end
-
-                # TODO: Might want to move this to a specific function where this
-                # aliasing takes place
-                if(operator == :(∧₀₀))
-                    operator = :(.*)
-                end
+                end =#
 
                 # TODO: Check to make sure that this logic never breaks
                 if(is_form(d, r))
@@ -420,7 +398,95 @@ function resolve_types_compiler!(d::SummationDecapode)
         end
         return x
     end
-    d
+end
+
+function replace_negation_with_multiply!(d::SummationDecapode, input_vars)
+    found_negation = false
+    rem_negations = []
+
+    neg1var = 0
+
+    for (i, op) in enumerate(d[:op1])
+        if(op == :(-) || op == :neg)
+            if(!found_negation)
+                neg1var = add_part!(d, :Var, type = :Literal, name = Symbol("-1.0"))
+                push!(input_vars, Symbol("-1.0"))
+                found_negation = true
+            end
+            push!(rem_negations, i)
+            add_part!(d, :Op2, proj1 = neg1var, proj2 = d[i, :src], res = d[i, :tgt], op2 = :.*)
+        end
+        
+    end
+    rem_parts!(d, :Op1, rem_negations)
+end
+
+function replace_names_compiler!(d::SummationDecapode)
+    dec_op1 = Pair{Symbol, Any}[]
+
+    dec_op2 = Pair{Symbol, Symbol}[(:∧₀₀ => :.*)]
+
+    replace_names!(d, dec_op1, dec_op2)
+end
+
+function infer_overload_compiler!(d::SummationDecapode, dimension::Int)
+    if(dimension == 1)
+        infer_types!(d, op1_inf_rules_1D, op2_inf_rules_1D)
+        resolve_overloads!(d, op1_res_rules_1D, op2_res_rules_1D)
+    elseif(dimension == 2)
+        infer_types!(d, op1_inf_rules_2D, op2_inf_rules_2D)
+        resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
+    end
+end
+
+function init_dec_matrices!(d::SummationDecapode, dec_matrices::Vector{Symbol}, optimizable_dec_operators::Set{Symbol})
+
+    for op1_name in d[:op1]
+        if(op1_name ∈ optimizable_dec_operators)
+            push!(dec_matrices, op1_name)
+        end
+    end
+
+    for op2_name in d[:op2]
+        if(op2_name ∈ optimizable_dec_operators)
+            push!(dec_matrices, op2_name)
+        end
+    end
+end
+
+function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol})
+
+    contract_defs = quote end
+
+    compute_to_name = Dict()
+    curr_id = 1
+
+    for op1_id in parts(d, :Op1)
+        op1_name = d[op1_id, :op1]
+        if isa(op1_name, AbstractArray)
+            computation = reverse!(map(x -> add_inplace_stub(x), op1_name))
+            compute_key = join(computation, " * ")
+
+            computation_name = get(compute_to_name, compute_key, :Error)
+            if(computation_name == :Error)
+                computation_name = Symbol("Gensim_ConMat_$curr_id")
+                get!(compute_to_name, compute_key, computation_name)
+                push!(con_dec_operators, computation_name)
+
+                expr_line = Expr(Symbol("="), add_inplace_stub(computation_name), Expr(:call, :*, computation...))
+                push!(contract_defs.args, expr_line)
+
+                expr_line = Expr(Symbol("="), computation_name, Expr(Symbol("->"), :x, Expr(:call, :*, add_inplace_stub(computation_name), :x)))
+                push!(contract_defs.args, expr_line)
+
+                curr_id += 1
+            end
+
+            d[op1_id, :op1] = computation_name
+        end
+    end
+
+    contract_defs
 end
 
 # TODO: Will want to eventually support contracted operations
@@ -433,6 +499,8 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2)
     d′ = expand_operators(user_d)
     #d′ = average_rewrite(d′)
 
+    replace_negation_with_multiply!(d′, input_vars)
+
     dec_matrices = Vector{Symbol}();
     alloc_vectors = Vector{AllocVecCall}();
 
@@ -441,21 +509,39 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2)
     
     # We need to run this after we grab the constants and parameters out
     resolve_types_compiler!(d′)
+    infer_overload_compiler!(d′, dimension)
 
-    # Mutates
-    infer_types!(d′)
-    resolve_overloads!(d′)
+    # This should probably be followed by an expand_operators
+    replace_names_compiler!(d′)
     open_operators!(d′, dimension = dimension)
-    
-    # rhs = compile(d′, input_vars)
-    equations = compile(d′, input_vars, dec_matrices, alloc_vectors, dimension=dimension)
+    infer_overload_compiler!(d′, dimension)
 
-    func_defs = compile_env(d′, dec_matrices)
+    # This will generate all of the fundemental DEC operators present
+    optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₁⁻¹, 
+                                    :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
+                                    :δ₀, :δ₁,
+                                    :Δ₀, :Δ₁, :Δ₂,
+                                    :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
+
+    init_dec_matrices!(d′, dec_matrices, optimizable_dec_operators)
+
+    # This contracts matrices together into a single matrix
+    contracted_dec_operators = Set{Symbol}();
+    contract_operators!(d′, allowable_ops = optimizable_dec_operators)
+    cont_defs = link_contract_operators(d′, contracted_dec_operators)
+
+    union!(optimizable_dec_operators, contracted_dec_operators)
+
+    # Compilation of the simulation
+    equations = compile(d′, input_vars, alloc_vectors, optimizable_dec_operators, dimension=dimension)
+
+    func_defs = compile_env(d′, dec_matrices, contracted_dec_operators)
     vect_defs = compile_var(alloc_vectors)
 
     quote
         function simulate(mesh, operators, hodge=GeometricHodge())
             $func_defs
+            $cont_defs
             $vect_defs
             f(du, u, p, t) = begin
                 $vars

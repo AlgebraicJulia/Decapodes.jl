@@ -101,7 +101,6 @@ function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
      (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β,val_pack))
 end
 
-
 function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
     
     op = @match my_symbol begin
@@ -110,8 +109,6 @@ function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
         :(-) || :neg => x-> -1 .* x
         :.* => (x,y) -> x .* y
         :./ => (x,y) -> x ./ y        
-
-        # :⋆₁⁻¹ 
 
         _ => default_dec_matrix_generate(sd, my_symbol, hodge)
     end
@@ -289,7 +286,7 @@ function dec_p_wedge_product(::Type{Tuple{1, 1}}, sd)
     e[1, :] = ∂(2,0,sd)
     e[2, :] = ∂(2,1,sd)
     e[3, :] = ∂(2,2,sd)
-    
+
     return (e, coeffs, simples)
 end
 
@@ -400,7 +397,7 @@ function dec_p_derivbound(::Type{Val{0}}, sd::HasDeltaSet; transpose = false, ne
         J[j] = v0_list[i]
         J[j + 1] = v1_list[i]
 
-        sign_term = e_orient
+        sign_term = e_orient[i]
 
         V[j] = sign_term
         V[j + 1] = -1 * sign_term
@@ -667,6 +664,9 @@ function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Geomet
     sparse(I,J,V)
   end
   
+dec_inv_hodge(n::Int, sd::HasDeltaSet; hodge = GeometricHodge()) = dec_inv_hodge(Val{n}, sd, hodge)
+dec_inv_hodge(n::Int, sd::HasDeltaSet, ::DiagonalHodge) = dec_inv_hodge(Val{n}, sd, DiagonalHodge())
+dec_inv_hodge(n::Int, sd::HasDeltaSet, ::GeometricHodge) = dec_inv_hodge(Val{n}, sd, GeometricHodge())
 
 # These are Diagonal Inverse Hodges
 function dec_inv_hodge(::Type{Val{k}}, sd::HasDeltaSet, ::DiagonalHodge) where k
@@ -692,6 +692,7 @@ function dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Geometr
     x -> hdg_lu \ x
 end
 
+
 dec_inv_hodge(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
     dec_inv_hodge(Val{2}, sd, DiagonalHodge())
 
@@ -716,7 +717,30 @@ function open_operators(d::SummationDecapode; dimension::Int = 2)
 end
 
 function open_operators!(d::SummationDecapode; dimension::Int = 2)
-    op2_remove_stack = Vector{Int}();
+    op1_remove_stack = Vector{Int}()
+    for op1_idx in parts(d, :Op1)
+        op1_src = d[op1_idx, :src]
+        op1_tgt = d[op1_idx, :tgt]
+        op1_name = d[op1_idx, :op1]
+
+        remove_op1 = 0
+        @match (op1_name, dimension) begin
+            (:Δ₀, 1) => begin remove_op1 = add_De_Rham_1D!(Val{1}, d, op1_src, op1_tgt) end
+            (:Δ₁, 1) => begin remove_op1 = add_De_Rham_1D!(Val{2}, d, op1_src, op1_tgt) end
+
+            (:Δ₀, 2) => begin remove_op1 = add_De_Rham_2D!(Val{0}, d, op1_src, op1_tgt) end
+            (:Δ₁, 2) => begin remove_op1 = add_De_Rham_2D!(Val{1}, d, op1_src, op1_tgt) end
+            (:Δ₂, 2) => begin remove_op1 = add_De_Rham_2D!(Val{2}, d, op1_src, op1_tgt) end
+
+            (:δ₁, _) => begin remove_op1 = add_Codiff!(d, op1_src, op1_tgt) end
+            (:δ₂, _) => begin remove_op1 = add_Codiff!(d, op1_src, op1_tgt) end
+
+            _ => nothing
+        end
+        (remove_op1 > 0) && push!(op1_remove_stack, op1_idx)
+    end
+
+    op2_remove_stack = Vector{Int}()
     for op2_idx in parts(d, :Op2)
         op2_proj1 = d[op2_idx, :proj1]
         op2_proj2 = d[op2_idx, :proj2]
@@ -746,23 +770,14 @@ function open_operators!(d::SummationDecapode; dimension::Int = 2)
     end
 
     ## Remove all subbed operators
+    rem_parts!(d, :Op1, op1_remove_stack)
     rem_parts!(d, :Op2, op2_remove_stack)
-
-    ## Infer types and resolves overloads for all newly subbed operators
-    ## TODO: This can be removed by explicitly typing and overloading in the sub rules themselves
-    if(dimension == 1)
-        infer_types!(d, op1_inf_rules_1D, op2_inf_rules_1D)
-        resolve_overloads!(d, op1_res_rules_1D, op2_res_rules_1D)
-    elseif(dimension == 2)
-        infer_types!(d, op1_inf_rules_2D, op2_inf_rules_2D)
-        resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
-    end
 
     ## Add unique names for all newly added variables
     fill_names!(d, lead_symbol = Symbol("Gensim_Var_"));
 end
 
-function add_Inter_Prod(d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+function add_Inter_Prod!(d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
     ## Adds the hodge Dual to Primal
     inv_hodge_tgt = add_part!(d, :Var, type = :infer, name = nothing)
     add_part!(d, :Op1, src = proj1_Inter, tgt = inv_hodge_tgt, op1 = :⋆)
@@ -776,20 +791,20 @@ function add_Inter_Prod(d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int
 end
 
 function add_Inter_Prod_1D!(::Type{Val{1}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
-    add_Inter_Prod(d, proj1_Inter, proj2_Inter, res_Inter)
+    add_Inter_Prod!(d, proj1_Inter, proj2_Inter, res_Inter)
 end
 
 function add_Inter_Prod_2D!(::Type{Val{1}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
     ## Takes generic interior product
     pos_inter_prod = add_part!(d, :Var, type = :infer, name = nothing)
-    add_Inter_Prod(d, proj1_Inter, proj2_Inter, pos_inter_prod)
+    add_Inter_Prod!(d, proj1_Inter, proj2_Inter, pos_inter_prod)
 
     ## Outputs negated value
     add_part!(d, :Op1, src = pos_inter_prod, tgt = res_Inter, op1 = :neg)
 end
 
 function add_Inter_Prod_2D!(::Type{Val{2}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
-    add_Inter_Prod(d, proj1_Inter, proj2_Inter, res_Inter)
+    add_Inter_Prod!(d, proj1_Inter, proj2_Inter, res_Inter)
 end
 
 function add_Lie_1D!(::Type{Val{0}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
@@ -855,4 +870,49 @@ function add_Lie_2D!(::Type{Val{2}}, d::SummationDecapode, proj1_Lie::Int, proj2
 
     ## Outputs result of dual derivative Dual1 to Dual2
     add_part!(d, :Op1, src = inter_product_2_tgt, tgt = res_Lie, op1 = :d)
+end
+
+function add_Codiff!(d::SummationDecapode, src_Codiff::Int, tgt_Codiff::Int)
+    hodge_star_first = add_part!(d, :Var, type = :infer, name = nothing)
+    add_part!(d, :Op1, src = src_Codiff, tgt = hodge_star_first, op1 = :⋆)
+
+    exterior_deriv = add_part!(d, :Var, type = :infer, name = nothing)
+    add_part!(d, :Op1, src = hodge_star_first, tgt = exterior_deriv, op1 = :d)
+
+    add_part!(d, :Op1, src = exterior_deriv, tgt = tgt_Codiff, op1 = :⋆)
+end
+
+function add_De_Rham_1D!(::Type{Val{0}}, d::SummationDecapode, src_De_Rham::Int, tgt_De_Rham::Int)
+    exterior_deriv = add_part!(d, :Var, type = :infer, name = nothing)
+    add_part!(d, :Op1, src = src_De_Rham, tgt = exterior_deriv, op1 = :d)
+    
+    add_Codiff!(d, exterior_deriv, tgt_De_Rham)
+end
+
+function add_De_Rham_1D!(::Type{Val{1}}, d::SummationDecapode, src_De_Rham::Int, tgt_De_Rham::Int)
+    codiff = add_part!(d, :Var, type = :infer, name = nothing)
+    add_Codiff!(d, src_De_Rham, codiff)
+
+    add_part!(d, :Op1, src = codiff, tgt = tgt_De_Rham, op1 = :d)
+end
+
+function add_De_Rham_2D!(::Type{Val{0}}, d::SummationDecapode, src_De_Rham::Int, tgt_De_Rham::Int)
+    add_De_Rham_1D!(Val{0}, d, src_De_Rham, tgt_De_Rham)
+end
+
+function add_De_Rham_2D!(::Type{Val{1}}, d::SummationDecapode, src_De_Rham::Int, tgt_De_Rham::Int)
+    sum_part_1 = add_part!(d, :Var, type = :infer, name = nothing)
+    add_De_Rham_2D!(Val{0}, d, src_De_Rham, sum_part_1)
+
+    sum_part_2 = add_part!(d, :Var, type = :infer, name = nothing)
+    add_De_Rham_2D!(Val{2}, d, src_De_Rham, sum_part_2)
+
+    summation_tgt = add_part!(d, :Σ, sum = tgt_De_Rham)
+
+    add_part!(d, :Summand, summand = sum_part_1, summation = summation_tgt)
+    add_part!(d, :Summand, summand = sum_part_2, summation = summation_tgt)
+end
+
+function add_De_Rham_2D!(::Type{Val{2}}, d::SummationDecapode, src_De_Rham::Int, tgt_De_Rham::Int)
+    add_De_Rham_1D!(Val{1}, d, src_De_Rham, tgt_De_Rham)
 end
