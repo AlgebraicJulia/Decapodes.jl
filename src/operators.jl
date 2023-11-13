@@ -332,26 +332,6 @@ function dec_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
     (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β,val_pack)
 end
 
-function default_dec_generate_1D(sd, my_symbol, hodge=GeometricHodge())
-    
-    op = @match my_symbol begin
-
-        _ => default_dec_generate(sd, my_symbol, hodge)
-    end
-
-    return (args...) ->  op(args...)
-end
-
-function default_dec_generate_2D(sd, my_symbol, hodge=GeometricHodge())
-    
-    op = @match my_symbol begin
-
-        _ => default_dec_generate(sd, my_symbol, hodge)
-    end
-
-    return (args...) ->  op(args...)
-end
-
 # Boundary Operators
 dec_boundary(n::Int, sd::HasDeltaSet) = sparse(dec_p_boundary(Val{n}, sd)...)
 
@@ -488,26 +468,6 @@ function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D)
     return 1 ./ CombinatorialSpaces.volume(Val{1}, sd, edges(sd))
 end
 
-# TODO: This function could still use some work
-#= function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
-    hodge_diag_0 = zeros(nv(sd))
-    # centers = vertex_center(sd)
-    dual_areas = sd[:dual_area]
-
-    #This is the same as vcat(incident(sd, incident(sd, v, :D_∂v1), :D_∂e1)...)
-    to_find = [:D_∂e1, :D_∂v1]
-    for v in vertices(sd)
-        # duals = incident(sd, centers[v], to_find)
-        duals = incident(sd, v, to_find)
-        # v_duals = incident(sd, v, :D_∂v1)
-        # v_duals = v_duals[1:length(vduals) / 2 + 1]
-        # duals = incident(sd, v_duals, :D_∂e1)
-        for dual in duals
-            hodge_diag_0[v] += dual_areas[dual]
-        end
-    end
-    return hodge_diag_0
-end =#
 
 function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
     hodge_diag_0 = zeros(nv(sd))
@@ -529,10 +489,6 @@ function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
 
     hodge_diag_1 = zeros(num_e_sd)
 
-    # v1_list::Vector{Int64} = sd[:D_∂v1]
-    # dual_lengths::Vector{Float64} = sd[:dual_length]
-    # lengths::Vector{Float64} = sd[:length]
-
     v1_list = @view sd[:D_∂v1]
     dual_lengths = @view sd[:dual_length]
     lengths = @view sd[:length]
@@ -551,7 +507,7 @@ function dec_p_hodge_diag(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D)
     return 1 ./ tri_areas
 end
 
-dec_hodge_star(n::Int, sd::HasDeltaSet; hodge = GeometricHodge()) = dec_hodge_star(n, sd, hodge) 
+dec_hodge_star(n::Int, sd::HasDeltaSet; hodge = GeometricHodge()) = dec_hodge_star(Val{n}, sd, hodge) 
 dec_hodge_star(n::Int, sd::HasDeltaSet, ::DiagonalHodge) = dec_hodge_star(Val{n}, sd, DiagonalHodge())
 dec_hodge_star(n::Int, sd::HasDeltaSet, ::GeometricHodge) = dec_hodge_star(Val{n}, sd, GeometricHodge())
 
@@ -572,7 +528,7 @@ dec_hodge_star(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
 dec_hodge_star(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
     dec_hodge_star(Val{2}, sd, DiagonalHodge())
 
-function crossdot(a, b)
+#= function crossdot(a, b)
     x, y, z = 1, 2, 3
     c_x = a[y] * b[z] - a[z] * b[y]
     c_y = a[z] * b[x] - a[x] * b[z]
@@ -581,7 +537,12 @@ function crossdot(a, b)
     flipbit = (c_z == 0 ? 1.0 : sign(c_z))
     c_norm = sqrt(c_x^2 + c_y^2 + c_z^2)
     return c_norm * flipbit
-end
+end =#
+
+crossdot(v1, v2) = begin
+    v1v2 = cross(v1, v2)
+    norm(v1v2) * (last(v1v2) == 0 ? 1.0 : sign(last(v1v2)))
+  end
 
 function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
 
@@ -589,23 +550,17 @@ function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Geomet
     J = Vector{Int64}()
     V = Vector{Float64}()
 
-    # sizehint!(I, ne(sd))
-    # sizehint!(J, ne(sd))
-    # sizehint!(V, ne(sd))
-
     rel_orient::Float64 = 0.0
-    # tri_edges_0 = sd[:∂e0]
-    # tri_edges_1 = sd[:∂e1]
-    # tri_edges_2 = sd[:∂e2]
 
     edge_centers = @view sd[:edge_center]
     tri_centers = @view sd[:tri_center]
 
-    points::Vector{Point3{Float64}} = sd[:point]
-    dual_points::Vector{Point3{Float64}} = sd[:dual_point]
+    # points::Vector{Point3{Float64}} = sd[:point]
+    # dual_points::Vector{Point3{Float64}} = sd[:dual_point]
 
-    # points = sd[:point]
-    # dual_points = sd[:dual_point]
+    #TODO: Figure out how to type these since both Point2D and Point3D can be used
+    points = sd[:point]
+    dual_points = sd[:dual_point]
 
     tgts = @view sd[:∂v0]
     srcs = @view sd[:∂v1]
@@ -614,14 +569,9 @@ function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Geomet
 
     for t in triangles(sd)
       e = reverse(triangle_edges(sd, t))
-      # ev = point(sd, tgt(sd, e)) .- point(sd, src(sd,e))
       ev = points[tgts[e]] .- points[srcs[e]]
 
-      # tc = dual_point(sd, triangle_center(sd, t))
       tc = dual_points[tri_centers[t]]
-      #= dv = map(enumerate(dual_point(sd, edge_center(sd, e)))) do (i,v)
-        (tc - v) * (i == 2 ? -1 : 1)
-      end =#
   
       dv = map(enumerate(dual_points[edge_centers[e]])) do (i,v)
         (tc - v) * (i == 2 ? -1 : 1)
@@ -692,23 +642,8 @@ function dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Geometr
     x -> hdg_lu \ x
 end
 
-
 dec_inv_hodge(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
     dec_inv_hodge(Val{2}, sd, DiagonalHodge())
-
-dec_p_laplace_de_rham(n::Int, sd::HasDeltaSet, hodge = GeometricHodge()) = dec_p_laplace_de_rham(Val{n}, sd, hodge)
-
-dec_p_laplace_de_rham(::Type{Val{0}}, sd::HasDeltaSet, hodge = GeometricHodge()) = 
-    return δ(1, sd; hodge = hodge) * dec_differential(0, sd)
-
-dec_p_laplace_de_rham(::Type{Val{n}}, sd::HasDeltaSet, hodge = GeometricHodge()) where n = 
-    return δ(n + 1, sd; hodge = hodge) * dec_differential(n, sd) + dec_differential(n - 1, sd) * δ(n, sd; hodge = hodge)
-
-dec_p_laplace_de_rham(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D, hodge = GeometricHodge()) = 
-    return dec_differential(0, sd) * δ(1, sd; hodge = hodge)
-    
-dec_p_laplace_de_rham(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, hodge = GeometricHodge()) = 
-    return dec_differential(1, sd) * δ(2, sd; hodge = hodge)
 
 function open_operators(d::SummationDecapode; dimension::Int = 2)
     e = deepcopy(d)
