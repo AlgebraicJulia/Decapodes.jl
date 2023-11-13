@@ -277,6 +277,39 @@ function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symb
   return chains
 end
 
+#""" function get_valid_op1s(deca_source::SummationDecapode, varID)
+#Searches SummationDecapode, deca_source, at the request varID
+#and returns all op1s which are allowed to be averaged. Returns
+#an array of indices of valid op1 sources.
+#
+#Namely this is meant to exclude ∂ₜ from being included in an average.
+#"""
+function get_valid_op1s(deca_source::SummationDecapode, varID)
+    # skip_ops = Set([:∂ₜ])
+    indices = incident(deca_source, varID, :tgt)
+    return filter!(x -> deca_source[x, :op1] != :∂ₜ, indices)
+end
+
+#""" function is_tgt_of_many_ops(d::SummationDecapode, var)
+#Return true if there are two or more distinct operations leading
+#into Var var (not counting ∂ₜ).
+#"""
+function is_tgt_of_many_ops(d::SummationDecapode, var)
+  op1Count = length(get_valid_op1s(d, var))
+  op2Count = length(incident(d, var, :res))
+  sumCount = length(incident(d, var, :sum))
+
+  op1Count + op2Count + sumCount >= 2
+end
+
+#""" function find_tgts_of_many_ops(d::SummationDecapode)
+#Searches SummationDecapode, d, for all Vars which have two or
+#more distinct operations leading into the same variable.
+#"""
+function find_tgts_of_many_ops(d::SummationDecapode)
+  filter(var -> is_tgt_of_many_ops(d, var), parts(d, :Var))
+end
+
 function add_constant!(d::AbstractNamedDecapode, k::Symbol)
     return add_part!(d, :Var, type=:Constant, name=k)
 end
@@ -293,12 +326,18 @@ op1_inf_rules_1D = [
   # Rules for ∂ₜ 
   (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ,:dt]),
   (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ,:dt]),
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ,:dt]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ,:dt]),
 
   # Rules for d
   (src_type = :Form0, tgt_type = :Form1, op_names = [:d, :d₀]),
   (src_type = :DualForm0, tgt_type = :DualForm1, op_names = [:d, :dual_d₀, :d̃₀]),
 
   # Rules for ⋆
+  (src_type = :Form0, tgt_type = :DualForm1, op_names = [:⋆, :⋆₀, :star]),
+  (src_type = :Form1, tgt_type = :DualForm0, op_names = [:⋆, :⋆₁, :star]),
+  (src_type = :DualForm1, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
+  (src_type = :DualForm0, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹, :star_inv]),
   (src_type = :Form0, tgt_type = :DualForm1, op_names = [:⋆, :⋆₀, :star]),
   (src_type = :Form1, tgt_type = :DualForm0, op_names = [:⋆, :⋆₁, :star]),
   (src_type = :DualForm1, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
@@ -310,6 +349,7 @@ op1_inf_rules_1D = [
 
   # Rules for δ
   (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
+  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
 
   # Rules for negation
   (src_type = :Form0, tgt_type = :Form0, op_names = [:neg, :(-)]),
@@ -317,6 +357,9 @@ op1_inf_rules_1D = [
 
 op2_inf_rules_1D = [
   # Rules for ∧₀₀, ∧₁₀, ∧₀₁
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:∧, :∧₀₀, :wedge]),
+  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, op_names = [:∧, :∧₁₀, :wedge]),
+  (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, op_names = [:∧, :∧₀₁, :wedge]),
   (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:∧, :∧₀₀, :wedge]),
   (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, op_names = [:∧, :∧₁₀, :wedge]),
   (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, op_names = [:∧, :∧₀₁, :wedge]),
@@ -371,6 +414,9 @@ op1_inf_rules_2D = [
   (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ, :dt]),
   (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ, :dt]),
   (src_type = :Form2, tgt_type = :Form2, op_names = [:∂ₜ, :dt]),
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ, :dt]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ, :dt]),
+  (src_type = :Form2, tgt_type = :Form2, op_names = [:∂ₜ, :dt]),
 
   # Rules for d
   (src_type = :Form0, tgt_type = :Form1, op_names = [:d, :d₀]),
@@ -382,7 +428,13 @@ op1_inf_rules_2D = [
   (src_type = :Form0, tgt_type = :DualForm2, op_names = [:⋆, :⋆₀, :star]),
   (src_type = :Form1, tgt_type = :DualForm1, op_names = [:⋆, :⋆₁, :star]),
   (src_type = :Form2, tgt_type = :DualForm0, op_names = [:⋆, :⋆₂, :star]),
+  (src_type = :Form0, tgt_type = :DualForm2, op_names = [:⋆, :⋆₀, :star]),
+  (src_type = :Form1, tgt_type = :DualForm1, op_names = [:⋆, :⋆₁, :star]),
+  (src_type = :Form2, tgt_type = :DualForm0, op_names = [:⋆, :⋆₂, :star]),
 
+  (src_type = :DualForm2, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
+  (src_type = :DualForm1, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹, :star_inv]),
+  (src_type = :DualForm0, tgt_type = :Form2, op_names = [:⋆, :⋆₂⁻¹, :star_inv]),
   (src_type = :DualForm2, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
   (src_type = :DualForm1, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹, :star_inv]),
   (src_type = :DualForm0, tgt_type = :Form2, op_names = [:⋆, :⋆₂⁻¹, :star_inv]),
@@ -391,8 +443,13 @@ op1_inf_rules_2D = [
   (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀, :lapl]),
   (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁, :lapl]),
   (src_type = :Form2, tgt_type = :Form2, op_names = [:Δ, :Δ₂, :lapl]),
+  (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀, :lapl]),
+  (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁, :lapl]),
+  (src_type = :Form2, tgt_type = :Form2, op_names = [:Δ, :Δ₂, :lapl]),
 
   # Rules for δ
+  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
+  (src_type = :Form2, tgt_type = :Form1, op_names = [:δ, :δ₂, :codif]),
   (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
   (src_type = :Form2, tgt_type = :Form1, op_names = [:δ, :δ₂, :codif]),
 

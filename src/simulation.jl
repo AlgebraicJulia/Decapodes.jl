@@ -1,5 +1,5 @@
 using CombinatorialSpaces
-using MultiScaleArrays
+using ComponentArrays
 using OrdinaryDiffEq
 using GeometryBasics
 using LinearAlgebra
@@ -7,22 +7,6 @@ using Base.Iterators
 using Catlab
 using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
-
-const gensim_in_place_stub = Symbol("GenSim-M")
-
-struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
-    values::Vector{B}
-end
-
-struct PhysicsState{T<:AbstractMultiScaleArray,B<:Number} <: AbstractMultiScaleArray{B}
-    nodes::Vector{T}
-    values::Vector{B}
-    end_idxs::Vector{Int}
-    names::Vector{Symbol}
-end
-
-findname(u::PhysicsState, s::Symbol) = findfirst(isequal(s), u.names)
-findnode(u::PhysicsState, s::Symbol) = u.nodes[findname(u, s)]
 
 abstract type AbstractCall end
 
@@ -85,27 +69,32 @@ struct AllocVecCall <: AbstractCall
     name
     form
     dimension
+    T
+end
+
+struct AllocVecCallError <: Exception
+    c::AllocVecCall
 end
 
 # TODO: There are likely better ways of dispatching on dimension instead of
 # storing it inside an AllocVecCall.
 Base.Expr(c::AllocVecCall) = begin
-    resolved_form = @match (c.name, c.form, c.dimension) begin
-        (_, :Form0, 2) => :V
-        (_, :Form1, 2) => :E
-        (_, :Form2, 2) => :Tri
-        (_, :DualForm0, 2) => :Tri
-        (_, :DualForm1, 2) => :E
-        (_, :DualForm2, 2) => :V
+    resolved_form = @match (c.form, c.dimension) begin
+        (:Form0, 2) => :V
+        (:Form1, 2) => :E
+        (:Form2, 2) => :Tri
+        (:DualForm0, 2) => :Tri
+        (:DualForm1, 2) => :E
+        (:DualForm2, 2) => :V
 
-        (_, :Form0, 1) => :V
-        (_, :Form1, 1) => :E
-        (_, :DualForm0, 1) => :E
-        (_, :DualForm1, 1) => :V
-        _ => return :AllocVecCall_Error
+        (:Form0, 1) => :V
+        (:Form1, 1) => :E
+        (:DualForm0, 1) => :E
+        (:DualForm1, 1) => :V
+        _ => throw(AllocVecCallError(c))
     end
 
-    :($(c.name) = Vector{Float64}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
+    :($(Symbol(:__,c.name)) = Decapodes.FixedSizeDiffCache(Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form))))))
 end
 
 #= function get_form_number(d::SummationDecapode, var_id::Int)
@@ -220,7 +209,9 @@ end
 
 # This is the block of parameter setting inside f
 # TODO: Pass this an extra type parameter that sets the size of the Floats
-function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
+get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}) = get_vars_code(d, vars, Float64)
+
+function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{stateeltype}) where stateeltype
     stmts = map(vars) do s
         ssymbl = QuoteNode(s)
         if all(d[incident(d, s, :name) , :type] .== :Constant)
@@ -229,12 +220,13 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
         elseif all(d[incident(d, s, :name) , :type] .== :Parameter)
             :($s = (p.$s)(t))
         elseif all(d[incident(d, s, :name) , :type] .== :Literal)
-            # TODO: Fix this. We assume that all literals are Float64s.
-            :($s::Float64 = $(parse(Float64, String(s))))
+            # Literals don't need assignments, because they are literals, but we stored them as Symbols.
+            # #TODO: we should fix that upstream so that we don't need this.
+            :($s::stateeltype = $(parse(stateeltype, String(s))))
         else
             # TODO: If names are not unique, then the type is assumed to be a
             # form for all of the vars sharing a same name.
-            :($s = findnode(u, $ssymbl).values)
+            :($s = u.$s)
         end
     end
     return quote $(stmts...) end
@@ -245,12 +237,12 @@ function set_tanvars_code(d::AbstractNamedDecapode)
     tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
     stmts = map(tanvars) do (s,t)
         ssymb = QuoteNode(s)
-        :(findnode(du, $ssymb).values .= $t)
+        :(getproperty(du, $ssymb) .= $t)
     end
     return stmts
 end
 
-function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}; dimension=2)
+function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}; dimension=2, stateeltype=Float64)
     # Get the Vars of the inputs (probably state Vars).
     visited_Var = falses(nparts(d, :Var))
 
@@ -294,7 +286,7 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
                         equality = promote_arithmetic_map[equality]
                         operator = add_stub(gensim_in_place_stub, operator)
 
-                        push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension))
+                        push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype))
                     end
                 end
 
@@ -327,7 +319,7 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
                     if(operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-)
                         operator = promote_arithmetic_map[operator]
                         equality = promote_arithmetic_map[equality]
-                        push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
+                        push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype))
                     
                     # TODO: Do we want to support the ability of a user to use the backslash operator?
                     elseif(operator == :(*) || operator == :(/) || operator == :.* || operator == :./)
@@ -336,7 +328,7 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
                         if(!is_infer(d, arg1) && !is_infer(d, arg2))
                             operator = promote_arithmetic_map[operator]
                             equality = promote_arithmetic_map[equality]
-                            push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
+                            push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype))
                         end
                     elseif(operator in optimizable_dec_operators)
                         operator = add_stub(gensim_in_place_stub, operator)
@@ -374,7 +366,7 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
                 if(is_form(d, r))
                     operator = promote_arithmetic_map[operator]
                     equality = promote_arithmetic_map[equality]
-                    push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
+                    push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype))
                 end
 
                 operator = :(.+)
@@ -387,7 +379,12 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
         end
     end
 
-    return map(Expr, op_order)
+    cache_exprs = map(alloc_vectors) do vec
+        :($(vec.name) = Decapodes.get_tmp($(Symbol(:__,vec.name)), u))
+    end
+
+    eq_exprs = map(Expr, op_order)
+    vcat(cache_exprs,eq_exprs)
 end
   
 # TODO: Add more specific types later for optimization
@@ -490,7 +487,8 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
 end
 
 # TODO: Will want to eventually support contracted operations
-function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2)
+function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2,
+                stateeltype = Float64)
     # TODO: May want to move this after infer_types if we let users
     # set their own inference rules
     recognize_types(user_d)
@@ -504,7 +502,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2)
     dec_matrices = Vector{Symbol}();
     alloc_vectors = Vector{AllocVecCall}();
 
-    vars = get_vars_code(d′, input_vars)
+    vars = get_vars_code(d′, input_vars, stateeltype)
     tars = set_tanvars_code(d′)
     
     # We need to run this after we grab the constants and parameters out
@@ -533,7 +531,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2)
     union!(optimizable_dec_operators, contracted_dec_operators)
 
     # Compilation of the simulation
-    equations = compile(d′, input_vars, alloc_vectors, optimizable_dec_operators, dimension=dimension)
+    equations = compile(d′, input_vars, alloc_vectors, optimizable_dec_operators, dimension=dimension, stateeltype=stateeltype)
 
     func_defs = compile_env(d′, dec_matrices, contracted_dec_operators)
     vect_defs = compile_var(alloc_vectors)
@@ -556,8 +554,8 @@ end
 
 Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
 """
-gensim(d::AbstractNamedDecapode; dimension::Int=2) = gensim(d,
-    vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension)
+gensim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64) = gensim(d,
+    vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype)
 
 evalsim(d::AbstractNamedDecapode) = eval(gensim(d))
 evalsim(d::AbstractNamedDecapode, input_vars) = eval(gensim(d, input_vars))

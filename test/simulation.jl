@@ -11,7 +11,7 @@ using CombinatorialSpaces
 using GeometryBasics: Point3
 using LinearAlgebra
 using Distributions
-using MultiScaleArrays
+using ComponentArrays
 using OrdinaryDiffEq
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
@@ -103,8 +103,8 @@ torus = loadmesh(Torus_30x10())
 c_dist = MvNormal([5, 5], LinearAlgebra.Diagonal(map(abs2, [1.5, 1.5])))
 c = [pdf(c_dist, [p[1], p[2]]) for p in torus[:point]]
 
-u₀ = construct(PhysicsState, [VectorForm(c)],Float64[], [:C])
-du = construct(PhysicsState, [VectorForm(zero(c))],Float64[], [:C])
+u₀ = ComponentArray(C=c)
+du = ComponentArray(C=zero(c))
 
 f = eval(gensim(expand_operators(ddp)))
 fₘₛ = f(torus, generate)
@@ -254,8 +254,8 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
     return begin
             f(du, u, p, t) = begin
                     begin
-                        C = (findnode(u, :C)).values
-                        V = (findnode(u, :V)).values
+                        C = (u.C)
+                        V = (u.V)
                     end
                     ϕ₁ = (∘(⋆₁, k, d₀))(C)
                     var"•1" = L₀(V, C)
@@ -264,7 +264,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
                     Ċ = ((⋆₀⁻¹) ∘ dual_d₁)(ϕ)
                     du .= 0.0
                     begin
-                        (findnode(du, :C)).values .= Ċ
+                        (du.C) .= Ċ
                     end
                 end
         end
@@ -284,7 +284,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
     vmag = 500
     v = flatten(velocity, earth)
 
-    u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(collect(v))],Float64[], [:C, :V])
+    u₀ = ComponentArray(C=c,V=collect(v))
     tₑ = 6
     prob = ODEProblem(fₙ,u₀,(0, tₑ))
     old_soln = solve(prob, Tsit5())
@@ -298,7 +298,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
     vmag = 500
     v = flatten(velocity, earth)
 
-    u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(collect(v))],Float64[], [:C, :V])
+    u₀ = ComponentArray(C=c,V=collect(v))
     tₑ = 6
     prob = ODEProblem(fₘ,u₀,(0, tₑ))
     new_soln = solve(prob, Tsit5())
@@ -354,8 +354,8 @@ end =#
     return begin
             f(du, u, p, t) = begin
                     begin
-                        U = (findnode(u, :U)).values
-                        V = (findnode(u, :V)).values
+                        U = u.U
+                        V = u.V
                         α = p.α
                         One = p.One
                         F = p.F(t)
@@ -375,8 +375,8 @@ end =#
                     U̇ = var"•5" + aTU + F
                     du .= 0.0
                     begin
-                        (findnode(du, :U)).values .= U̇
-                        (findnode(du, :V)).values .= V̇
+                        (du.U) .= U̇
+                        (du.V) .= V̇
                     end
                 end
         end
@@ -409,7 +409,7 @@ end =#
         F = t -> t ≥ 1.1 ? F₁ : F₂,
         One = One)
 
-    u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V)],Float64[], [:U, :V])
+    u₀ = ComponentArray(U=U,V=V)
     tₑ = 11.5
     prob = ODEProblem(fₙ,u₀,(0, tₑ), constants_and_parameters)
     old_soln = solve(prob, Tsit5())
@@ -437,7 +437,7 @@ end =#
           F = t -> t ≥ 1.1 ? F₁ : F₂,
           One = One)
 
-      u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V)],Float64[], [:U, :V])
+      u₀ = ComponentArray(U=U,V=V)
       tₑ = 11.5
       prob = ODEProblem(fₘ,u₀,(0, tₑ), constants_and_parameters)
       new_soln = solve(prob, Tsit5())
@@ -468,6 +468,6 @@ end
   # arbitrary internal variable naming.
   @test budyko_sellers[only(incident(budyko_sellers, Symbol("•1"), :name)), :type] == :DualForm0
   # A dual 0-form consists of ne(s) floats.
-  @test occursin("var\"•1\" = Vector{Float64}(undef, nparts(mesh, :E))",
+  @test occursin("var\"__•1\" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))",
     repr(gensim(budyko_sellers, dimension=1)))
 end

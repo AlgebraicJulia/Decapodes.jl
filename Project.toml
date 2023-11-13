@@ -1,29 +1,21 @@
 name = "Decapodes"
 uuid = "679ab3ea-c928-4fe6-8d59-fd451142d391"
-authors = [
-  "James Fairbanks",
-  "Andrew Baas",
-  "Evan Patterson",
-  "Luke Morris",
-  "George Rauta",
-]
-version = "0.4.0"
+authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
+version = "0.5.0"
 
 [deps]
-AlgebraicRewriting = "725a01d3-f174-5bbd-84e1-b9417bad95d9"
+ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
 Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 CombinatorialSpaces = "b1c52339-7909-45ad-8b6a-6e388f7c67f2"
+ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
-MultiScaleArrays = "f9640e96-87f6-5992-9c3b-0743c6a49ffa"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 PreallocationTools = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
@@ -32,28 +24,31 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [compat]
-AlgebraicRewriting = "0.2"
-Catlab = "0.15"
-CombinatorialSpaces = "0.5"
+ACSets = "0.2"
+Artifacts = "1"
+Catlab = "0.15, 0.16"
+CombinatorialSpaces = "0.5, 0.6"
+ComponentArrays = "0.15"
 DataStructures = "0.18.13"
 Distributions = "0.25"
 FileIO = "1.16"
-GLMakie = "0.8"
 GeometryBasics = "0.4.2"
 JLD2 = "0.4"
 JSON = "0.21"
+LinearAlgebra = "1.9"
 MLStyle = "0.4.17"
-MultiScaleArrays = "1.10"
 OrdinaryDiffEq = "6.47"
 PreallocationTools = "0.4"
 Requires = "1.3"
+Unicode = "1.9"
 julia = "1.9"
 
 [extras]
 AlgebraicPetri = "4f99eebe-17bf-4e98-b6a1-2c4f205a959b"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["AlgebraicPetri", "Test", "Random", "GeometryBasics"]
+test = ["AlgebraicPetri", "Distributions", "Test", "Random", "GeometryBasics"]
