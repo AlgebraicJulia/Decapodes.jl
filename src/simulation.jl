@@ -8,6 +8,8 @@ using Catlab
 using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
 
+const gensim_in_place_stub = Symbol("GenSim-M")
+
 abstract type AbstractCall end
 
 struct UnaryCall <: AbstractCall 
@@ -222,7 +224,7 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{st
         elseif all(d[incident(d, s, :name) , :type] .== :Literal)
             # Literals don't need assignments, because they are literals, but we stored them as Symbols.
             # #TODO: we should fix that upstream so that we don't need this.
-            :($s::stateeltype = $(parse(stateeltype, String(s))))
+            :($s::($stateeltype) = $(parse(stateeltype, String(s))))
         else
             # TODO: If names are not unique, then the type is assumed to be a
             # form for all of the vars sharing a same name.
@@ -333,7 +335,7 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
                     elseif(operator in optimizable_dec_operators)
                         operator = add_stub(gensim_in_place_stub, operator)
                         equality = promote_arithmetic_map[equality]
-                        push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
+                        push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype))
                     end
                 end
 
