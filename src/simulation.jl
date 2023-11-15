@@ -467,7 +467,6 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
     for op1_id in parts(d, :Op1)
         op1_name = d[op1_id, :op1]
         if isa(op1_name, AbstractArray)
-            println("here")
             computation = reverse!(map(x -> add_inplace_stub(x), op1_name))
             compute_key = join(computation, " * ")
 
@@ -523,21 +522,17 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2,
 
     # This will generate all of the fundemental DEC operators present
     optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
-                                    :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
-                                    :δ₀, :δ₁,
-                                    :Δ₀, :Δ₁, :Δ₂])
+                                    :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁])
+    extra_dec_operators = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
-    init_dec_matrices!(d′, dec_matrices, optimizable_dec_operators)
+    init_dec_matrices!(d′, dec_matrices, union(optimizable_dec_operators, extra_dec_operators))
 
     # This contracts matrices together into a single matrix
     contracted_dec_operators = Set{Symbol}();
     contract_operators!(d′, allowable_ops = optimizable_dec_operators)
     cont_defs = link_contract_operators(d′, contracted_dec_operators)
 
-    union!(optimizable_dec_operators, contracted_dec_operators)
-
-    extra_dec_operators = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
-    union!(optimizable_dec_operators, extra_dec_operators)
+    union!(optimizable_dec_operators, contracted_dec_operators, extra_dec_operators)
 
     # Compilation of the simulation
     equations = compile(d′, input_vars, alloc_vectors, optimizable_dec_operators, dimension=dimension, float_type=float_type)

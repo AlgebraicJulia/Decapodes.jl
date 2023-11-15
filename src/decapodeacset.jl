@@ -258,15 +258,17 @@ function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symb
       tgt = d[op_to_visit, :tgt]
       next_op1s = incident(d, tgt, :src)
       next_op2s = vcat(incident(d, tgt, :proj1), incident(d, tgt, :proj2))
+
       if (length(next_op1s) != 1 ||
           length(next_op2s) != 0 ||
           is_tgt_of_many_ops(d, tgt) ||
           !isempty(incident(d, tgt, :sum)) ||
-          !isempty(incident(d, tgt, :summand)))
+          !isempty(incident(d, tgt, :summand)) ||
+          (!isempty(allowable_ops) && d[only(next_op1s), :op1] ∉ allowable_ops))
         # Terminate chain.
         append!(chains, [curr_chain])
         for next_op1 in next_op1s
-          visited[next_op1] || (!isempty(allowable_ops) && d[next_op1, :op1] ∉ allowable_ops) || push!(s, next_op1)
+          visited[next_op1] || (!isempty(allowable_ops) && d[only(next_op1s), :op1] ∉ allowable_ops) || push!(s, next_op1)
         end
         break
       end
