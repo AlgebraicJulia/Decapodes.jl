@@ -7,7 +7,7 @@ using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 
-import Decapodes: dec_wedge_product, dec_differential, dec_boundary, dec_dual_derivative, dec_p_laplace_de_rham, dec_hodge_star, dec_inv_hodge, open_operators!
+import Decapodes: dec_wedge_product, dec_differential, dec_boundary, dec_dual_derivative, dec_hodge_star, dec_inv_hodge, open_operators!
 include("../examples/grid_meshes.jl")
 include("../examples/sw/spherical_meshes.jl")
 

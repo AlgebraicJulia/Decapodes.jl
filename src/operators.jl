@@ -3,17 +3,18 @@ using LinearAlgebra
 using Base.Iterators
 using Catlab
 
-function default_dec_matrix_generate(sd, my_symbol, hodge=GeometricHodge())
+function default_dec_matrix_generate(sd, my_symbol, hodge, float_type)
     op = @match my_symbol begin
 
         # Regular Hodge Stars
-        :⋆₀ => dec_mat_hodge(0, sd, hodge)
-        :⋆₁ => dec_mat_hodge(1, sd, hodge)
-        :⋆₂ => dec_mat_hodge(2, sd, hodge)
+        :⋆₀ => dec_mat_hodge(0, sd, hodge, float_type)
+        :⋆₁ => dec_mat_hodge(1, sd, hodge, float_type)
+        :⋆₂ => dec_mat_hodge(2, sd, hodge, float_type)
 
         # Inverse Hodge Stars
-        :⋆₀⁻¹ => dec_mat_inverse_hodge(0, sd, hodge)
-        :⋆₁⁻¹ => dec_mat_inverse_hodge(1, sd, hodge)
+        :⋆₀⁻¹ => dec_mat_inverse_hodge(0, sd, hodge, float_type)
+        :⋆₁⁻¹ => dec_pair_inv_hodge(Val{1}, sd, hodge, float_type) # Special since Geo is a solver
+        :⋆₂⁻¹ => dec_mat_inverse_hodge(1, sd, hodge, float_type)
 
         # Differentials
         :d₀ => dec_mat_differential(0, sd)
@@ -25,13 +26,13 @@ function default_dec_matrix_generate(sd, my_symbol, hodge=GeometricHodge())
 
         # Codifferential
         # TODO: Why do we have a matrix type parameter which is unused?
-        :δ₁ => dec_mat_codifferential(1, sd, hodge)
-        :δ₂ => dec_mat_codifferential(2, sd, hodge)
+        # :δ₁ => dec_mat_codifferential(1, sd, hodge)
+        # :δ₂ => dec_mat_codifferential(2, sd, hodge)
 
         # Laplace-de Rham
-        :Δ₀ => dec_mat_laplace_de_rham(0, sd, hodge)
-        :Δ₁ => dec_mat_laplace_de_rham(1, sd, hodge)
-        :Δ₂ => dec_mat_laplace_de_rham(2, sd, hodge)
+        # :Δ₀ => dec_mat_laplace_de_rham(0, sd, hodge)
+        # :Δ₁ => dec_mat_laplace_de_rham(1, sd, hodge)
+        # :Δ₂ => dec_mat_laplace_de_rham(2, sd, hodge)
 
         # Wedge Products
         :∧₀₁ => dec_pair_wedge_product(Tuple{0, 1}, sd)
@@ -46,16 +47,25 @@ function default_dec_matrix_generate(sd, my_symbol, hodge=GeometricHodge())
     return op
 end
 
-function dec_mat_hodge(k, sd::HasDeltaSet, hodge)
-    hodge = dec_hodge_star(k, sd, hodge=hodge)
+function dec_mat_hodge(k, sd::HasDeltaSet, hodge, float_type)
+    hodge = dec_hodge_star(k, sd, hodge=hodge, float_type=float_type)
     return (hodge, x-> hodge * x)
 end
 
-# TODO: Need to figure how to handle inverse hodge on
-# DualForm1 in 2D due to it needing to take a matrix inverse
-function dec_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge)
-    invhodge = inv_hodge_star(k,sd,hodge)
+function dec_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge, float_type)
+    invhodge = dec_inv_hodge(k,sd, hodge=hodge, float_type=float_type)
     return (invhodge, x-> invhodge * x)
+end
+
+# Special case for inverse hodge for DualForm1 to Form1
+function dec_pair_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge, float_type)
+    inv_hdg = LinearAlgebra.factorize(dec_hodge_star(1, sd, GeometricHodge(), float_type=float_type))
+    ((y, x) -> ldiv!(y, inv_hdg, x), x -> inv_hdg \ x)
+end
+
+function dec_pair_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::DiagonalHodge, float_type)
+    inv_hdg = dec_inv_hodge(1, sd, DiagonalHodge(), float_type=float_type)
+    ((y, x) -> mul!(y, inv_hdg, x), x -> inv_hdg * x)
 end
 
 function dec_mat_differential(k::Int, sd::HasDeltaSet)
@@ -110,7 +120,7 @@ function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
         :.* => (x,y) -> x .* y
         :./ => (x,y) -> x ./ y        
 
-        _ => default_dec_matrix_generate(sd, my_symbol, hodge)
+        _ => error("Unmatched operator $my_symbol")
     end
 
     return (args...) ->  op(args...)
@@ -358,7 +368,7 @@ function dec_p_derivbound(::Type{Val{0}}, sd::HasDeltaSet; transpose = false, ne
 
     I = Vector{Int64}(undef, vec_size)
     J = Vector{Int64}(undef, vec_size)
-    V = Vector{Int64}(undef, vec_size)
+    V = Vector{Int8}(undef, vec_size)
 
     e_orient::Vector{Int8} = sd[:edge_orientation]
     for i in eachindex(e_orient)
@@ -398,9 +408,9 @@ function dec_p_derivbound(::Type{Val{1}}, sd::HasDeltaSet; transpose = false, ne
 
     I = Vector{Int64}(undef, vec_size)
     J = Vector{Int64}(undef, vec_size)
-    V = Vector{Int64}(undef, vec_size)
+    V = Vector{Int8}(undef, vec_size)
 
-    tri_sign_list::Vector{Int64} = sign(2, sd)
+    tri_sign_list::Vector{Int8} = sign(2, sd)
     
     e_orient::Vector{Int8} = sd[:edge_orientation]
     for i in eachindex(e_orient)
@@ -446,10 +456,10 @@ end
 # These are Diagonal Hodges 
 
 # TODO: Check this Hodge with a 1D mesh
-function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D)
+function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D; float_type = Float64)
     num_v_sd = nv(sd)
 
-    hodge_diag_0 = zeros(num_v_sd)
+    hodge_diag_0 = zeros(float_type, num_v_sd)
 
     v1_list = @view sd[:D_∂v1]
     dual_lengths = @view sd[:dual_length]
@@ -457,20 +467,21 @@ function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D)
     for d_edge_idx in eachindex(v1_list)
         v1 = v1_list[d_edge_idx]
         if(1 <= v1 <= num_v_sd)
-            hodge_diag_1[v1] += dual_lengths[d_edge_idx]
+            hodge_diag_0[v1] += dual_lengths[d_edge_idx]
         end
     end
     return hodge_diag_0
 end
 
 # TODO: Check this Hodge with a 1D mesh
-function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D)
-    return 1 ./ CombinatorialSpaces.volume(Val{1}, sd, edges(sd))
+function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D; float_type = Float64)
+    vols::Vector{float_type} = CombinatorialSpaces.volume(Val{1}, sd, edges(sd))
+    return 1 ./ vols
 end
 
 
-function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
-    hodge_diag_0 = zeros(nv(sd))
+function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D; float_type = Float64)
+    hodge_diag_0 = zeros(float_type, nv(sd))
 
     dual_edges_1 = @view sd[:D_∂e1]
     dual_v_1 = @view sd[:D_∂v1]
@@ -483,11 +494,11 @@ function dec_p_hodge_diag(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D)
     return hodge_diag_0
 end
 
-function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
+function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D; float_type = Float64)
     num_v_sd = nv(sd)
     num_e_sd = ne(sd)
 
-    hodge_diag_1 = zeros(num_e_sd)
+    hodge_diag_1 = zeros(float_type, num_e_sd)
 
     v1_list = @view sd[:D_∂v1]
     dual_lengths = @view sd[:dual_length]
@@ -502,31 +513,32 @@ function dec_p_hodge_diag(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D)
     return hodge_diag_1
 end
 
-function dec_p_hodge_diag(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D)
-    tri_areas = @view sd[:area]
+function dec_p_hodge_diag(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D; float_type = Float64)
+    # tri_areas = @view sd[:area]
+    tri_areas::Vector{float_type}  = sd[:area]
     return 1 ./ tri_areas
 end
 
-dec_hodge_star(n::Int, sd::HasDeltaSet; hodge = GeometricHodge()) = dec_hodge_star(Val{n}, sd, hodge) 
-dec_hodge_star(n::Int, sd::HasDeltaSet, ::DiagonalHodge) = dec_hodge_star(Val{n}, sd, DiagonalHodge())
-dec_hodge_star(n::Int, sd::HasDeltaSet, ::GeometricHodge) = dec_hodge_star(Val{n}, sd, GeometricHodge())
+dec_hodge_star(n::Int, sd::HasDeltaSet; hodge = GeometricHodge(), float_type = Float64) = dec_hodge_star(Val{n}, sd, hodge, float_type = float_type) 
+dec_hodge_star(n::Int, sd::HasDeltaSet, ::DiagonalHodge; float_type = Float64) = dec_hodge_star(Val{n}, sd, DiagonalHodge(), float_type = float_type)
+dec_hodge_star(n::Int, sd::HasDeltaSet, ::GeometricHodge; float_type = Float64) = dec_hodge_star(Val{n}, sd, GeometricHodge(), float_type = float_type)
 
-dec_hodge_star(::Type{Val{k}}, sd::HasDeltaSet, ::DiagonalHodge) where k = 
-    Diagonal(dec_p_hodge_diag(Val{k}, sd))
+dec_hodge_star(::Type{Val{k}}, sd::HasDeltaSet, ::DiagonalHodge; float_type = Float64) where k = 
+    Diagonal(dec_p_hodge_diag(Val{k}, sd, float_type = float_type))
 
 # These are Geometric Hodges 
 # TODO: Still need implementation for Hodge 1 in 2D
-dec_hodge_star(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge) = 
-    dec_hodge_star(Val{0}, sd, DiagonalHodge())
+dec_hodge_star(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge; float_type = Float64) = 
+    dec_hodge_star(Val{0}, sd, DiagonalHodge(), float_type = float_type)
 
-dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge) = 
-    dec_hodge_star(Val{1}, sd, DiagonalHodge())
+dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge; float_type = Float64) = 
+    dec_hodge_star(Val{1}, sd, DiagonalHodge(), float_type = float_type)
 
-dec_hodge_star(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
-    dec_hodge_star(Val{0}, sd, DiagonalHodge())
+dec_hodge_star(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge; float_type = Float64) = 
+    dec_hodge_star(Val{0}, sd, DiagonalHodge(), float_type = float_type)
 
-dec_hodge_star(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
-    dec_hodge_star(Val{2}, sd, DiagonalHodge())
+dec_hodge_star(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge; float_type = Float64) = 
+    dec_hodge_star(Val{2}, sd, DiagonalHodge(), float_type = float_type)
 
 #= function crossdot(a, b)
     x, y, z = 1, 2, 3
@@ -544,13 +556,13 @@ crossdot(v1, v2) = begin
     norm(v1v2) * (last(v1v2) == 0 ? 1.0 : sign(last(v1v2)))
   end
 
-function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
+function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge; float_type = Float64)
 
     I = Vector{Int64}()
     J = Vector{Int64}()
-    V = Vector{Float64}()
+    V = Vector{float_type}()
 
-    rel_orient::Float64 = 0.0
+    rel_orient::float_type = 0.0
 
     edge_centers = @view sd[:edge_center]
     tri_centers = @view sd[:tri_center]
@@ -565,7 +577,7 @@ function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Geomet
     tgts = @view sd[:∂v0]
     srcs = @view sd[:∂v1]
 
-    tri_signs::Vector{Int64} = sign(2, sd)
+    tri_signs::Vector{Int8} = sign(2, sd)
 
     for t in triangles(sd)
       e = reverse(triangle_edges(sd, t))
@@ -614,36 +626,35 @@ function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Geomet
     sparse(I,J,V)
   end
   
-dec_inv_hodge(n::Int, sd::HasDeltaSet; hodge = GeometricHodge()) = dec_inv_hodge(Val{n}, sd, hodge)
-dec_inv_hodge(n::Int, sd::HasDeltaSet, ::DiagonalHodge) = dec_inv_hodge(Val{n}, sd, DiagonalHodge())
-dec_inv_hodge(n::Int, sd::HasDeltaSet, ::GeometricHodge) = dec_inv_hodge(Val{n}, sd, GeometricHodge())
+dec_inv_hodge(n::Int, sd::HasDeltaSet; hodge = GeometricHodge(), float_type = Float64) = dec_inv_hodge(Val{n}, sd, hodge, float_type = float_type)
+dec_inv_hodge(n::Int, sd::HasDeltaSet, ::DiagonalHodge; float_type = Float64) = dec_inv_hodge(Val{n}, sd, DiagonalHodge(), float_type = float_type)
+dec_inv_hodge(n::Int, sd::HasDeltaSet, ::GeometricHodge; float_type = Float64) = dec_inv_hodge(Val{n}, sd, GeometricHodge(), float_type = float_type)
 
 # These are Diagonal Inverse Hodges
-function dec_inv_hodge(::Type{Val{k}}, sd::HasDeltaSet, ::DiagonalHodge) where k
-    hdg = dec_p_hodge_diag(Val{k}, sd)
+function dec_inv_hodge(::Type{Val{k}}, sd::HasDeltaSet, ::DiagonalHodge; float_type = Float64) where k
+    hdg = dec_p_hodge_diag(Val{k}, sd, float_type = float_type)
     mult_term = iseven(k*(ndims(sd)-k)) ? 1 : -1
     hdg .= (1 ./ hdg) .* mult_term
     return Diagonal(hdg)
 end
 
 # These are Geometric Inverse Hodges
-dec_inv_hodge(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge) = 
-    dec_inv_hodge(Val{0}, sd, DiagonalHodge())
+dec_inv_hodge(::Type{Val{0}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge; float_type = Float64) = 
+    dec_inv_hodge(Val{0}, sd, DiagonalHodge(), float_type = float_type)
 
-dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge) = 
-    dec_inv_hodge(Val{1}, sd, DiagonalHodge())
+dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex1D, ::GeometricHodge; float_type = Float64) = 
+    dec_inv_hodge(Val{1}, sd, DiagonalHodge(), float_type = float_type)
 
-dec_inv_hodge(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
-    dec_inv_hodge(Val{0}, sd, DiagonalHodge())
+dec_inv_hodge(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge; float_type = Float64) = 
+    dec_inv_hodge(Val{0}, sd, DiagonalHodge(), float_type = float_type)
 
-# TODO: Change this hodge to dec hodge when implemented
-function dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
-    hdg_lu = LinearAlgebra.factorize(dec_hodge_star(1, sd, GeometricHodge()))
+function dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge; float_type = Float64)
+    hdg_lu = LinearAlgebra.factorize(dec_hodge_star(1, sd, GeometricHodge(), float_type = float_type))
     x -> hdg_lu \ x
 end
 
-dec_inv_hodge(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge) = 
-    dec_inv_hodge(Val{2}, sd, DiagonalHodge())
+dec_inv_hodge(::Type{Val{2}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge; float_type = Float64) = 
+    dec_inv_hodge(Val{2}, sd, DiagonalHodge(), float_type = float_type)
 
 function open_operators(d::SummationDecapode; dimension::Int = 2)
     e = deepcopy(d)

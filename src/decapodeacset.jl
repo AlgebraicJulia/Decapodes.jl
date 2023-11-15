@@ -242,7 +242,7 @@ function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symb
                          incident(d, d[:sum], :src)])))
 
   if(!isempty(allowable_ops))
-    filter!(x -> x ∈ allowable_ops, chain_starts)  
+    filter!(x -> d[x, :op1] ∈ allowable_ops, chain_starts)  
   end
   
   s = Stack{Int64}()
