@@ -93,20 +93,20 @@ function dec_mat_laplace_beltrami(k::Int, sd::HasDeltaSet)
     return (lpbt, x-> lpbt * x)
 end
 
-function dec_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where k
-    val_pack = dec_p_wedge_product(Tuple{0, k}, sd)
+function dec_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet; float_type = Float64) where k
+    val_pack = dec_p_wedge_product(Tuple{0, k}, sd, float_type = float_type)
     ((y, α, g) -> dec_c_wedge_product!(Tuple{0, k}, y, g, α, val_pack), 
     (α, g) -> dec_c_wedge_product(Tuple{0, k}, g, α, val_pack))
 end
 
-function dec_pair_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where k
-    val_pack = dec_p_wedge_product(Tuple{0, k}, sd)
+function dec_pair_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet; float_type = Float64) where k
+    val_pack = dec_p_wedge_product(Tuple{0, k}, sd, float_type = float_type)
     ((y, f, β) -> dec_c_wedge_product!(Tuple{0, k}, y, f, β, val_pack), 
      (f, β) -> dec_c_wedge_product(Tuple{0, k}, f, β, val_pack))
 end
 
-function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
-    val_pack = dec_p_wedge_product(Tuple{1,1}, sd)
+function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D; float_type = Float64)
+    val_pack = dec_p_wedge_product(Tuple{1,1}, sd, float_type = float_type)
     ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β,val_pack), 
      (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β,val_pack))
 end
@@ -128,13 +128,15 @@ end
 
 # TODO: This relies on the assumption of a well ordering of the 
 # the dual space simplices. If changed, use dec_p_wedge_product_zero
-function dec_p_wedge_product(::Type{Tuple{0, 1}}, sd)
-    return (hcat(sd[:∂v0], sd[:∂v1]), simplices(1, sd))
+function dec_p_wedge_product(::Type{Tuple{0, 1}}, sd; float_type = Float64)
+    return (hcat(convert(Vector{Int32}, sd[:∂v0]), convert(Vector{Int32}, sd[:∂v1])), simplices(1, sd))
+    # return (hcat(sd[:∂v0], sd[:∂v1]), simplices(1, sd))
 end
 
 # TODO: This relies on the assumption of a well ordering of the 
 # the dual space simplices. If changed, use dec_c_wedge_product_zero
 # TODO: This assumes that the dual vertice on an edge is always the midpoint
+# TODO: Add options to change 0.5 to a different float
 function dec_c_wedge_product!(::Type{Tuple{0, 1}}, wedge_terms, f, α, val_pack)
     primal_vertices, simples = val_pack
 
@@ -147,7 +149,7 @@ function dec_c_wedge_product!(::Type{Tuple{0, 1}}, wedge_terms, f, α, val_pack)
     return wedge_terms
 end
 
-function dec_p_wedge_product(::Type{Tuple{0, 2}}, sd::HasDeltaSet)
+function dec_p_wedge_product(::Type{Tuple{0, 2}}, sd::HasDeltaSet; float_type = Float64)
 
     simples = simplices(2, sd)
 
@@ -160,11 +162,13 @@ function dec_p_wedge_product(::Type{Tuple{0, 2}}, sd::HasDeltaSet)
     dv = @view sd[:dual_area]
     vols = @view sd[:area]
 
-    primal_vertices = Array{Int64}(undef, 6, ntriangles(sd))
-    coeffs = Array{Float64}(undef, 6, ntriangles(sd))
+    # TODO: This is assuming that meshes don't have too many entries
+    # This type should be settable by the user and default set to Int32
+    primal_vertices = Array{Int32}(undef, 6, ntriangles(sd))
+    coeffs = Array{float_type}(undef, 6, ntriangles(sd))
 
     row_idx_in_col = ones(Int8, ntriangles(sd))
-    shift::Int64 = nv(sd) + ne(sd)
+    shift::Int = nv(sd) + ne(sd)
     
     for dual_tri in eachindex(dual_edges_1)
         primal_tri = dual_v_0[dual_edges_1[dual_tri]] - shift
@@ -196,7 +200,7 @@ function dec_c_wedge_product!(::Type{Tuple{0, 2}}, wedge_terms, f, α, val_pack)
     return wedge_terms
 end
 
-function dec_p_wedge_product(::Type{Tuple{0, k}}, sd) where k
+function dec_p_wedge_product(::Type{Tuple{0, k}}, sd; float_type = Float64) where k
 
     # Gets a list of all of the 0 -> vertices, 1 -> edges, 2 -> triangles on mesh
     simples = simplices(k, sd)
@@ -240,7 +244,7 @@ end
 
 # This is adapted almost directly from the CombinatorialSpaces package
 # Use this if some assumptions in the embedded delta sets changes
-function dec_p_wedge_product_safe(::Type{Tuple{1, 1}}, sd)
+function dec_p_wedge_product_safe(::Type{Tuple{1, 1}}, sd; float_type = Float64)
     simples = simplices(2, sd)
 
     coeffs = map(simples) do x
@@ -276,13 +280,13 @@ end
 
 # TODO: This relies on a well established ordering for 
 # the dual space simplices. If changed, use dec_p_wedge_product_ones_safe
-function dec_p_wedge_product(::Type{Tuple{1, 1}}, sd)
+function dec_p_wedge_product(::Type{Tuple{1, 1}}, sd; float_type = Float64)
     simples = simplices(2, sd)
 
     areas = @view sd[:area]
     d_areas = @view sd[:dual_area]
 
-    coeffs = Array{Float64}(undef, 3, ntriangles(sd))
+    coeffs = Array{float_type}(undef, 3, ntriangles(sd))
 
     shift = ntriangles(sd)
     for i in 1:ntriangles(sd)
@@ -291,8 +295,11 @@ function dec_p_wedge_product(::Type{Tuple{1, 1}}, sd)
         coeffs[2, i] = (d_areas[i + 2 * shift] + d_areas[i + 3 * shift]) / area
         coeffs[3, i] = (d_areas[i + 4 * shift] + d_areas[i + 5 * shift]) / area
     end
+    # TODO: This is assuming that meshes don't have too many entries
+    # This type should be settable by the user and default set to Int32
+    # e = Array{Int64}(undef, 3, ntriangles(sd))
+    e = Array{Int32}(undef, 3, ntriangles(sd))
 
-    e = Array{Int64}(undef, 3, ntriangles(sd))
     e[1, :] = ∂(2,0,sd)
     e[2, :] = ∂(2,1,sd)
     e[3, :] = ∂(2,2,sd)
@@ -323,22 +330,22 @@ end
 
 dec_wedge_product(m::Int, n::Int, sd::HasDeltaSet) = dec_wedge_product(Tuple{m,n}, sd::HasDeltaSet)
 
-function dec_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
+function dec_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet, float_type = Float64)
     (f, g) -> f .* g
 end
 
-function dec_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where k
-    val_pack = dec_p_wedge_product(Tuple{0, k}, sd)
+function dec_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet; float_type = Float64) where k
+    val_pack = dec_p_wedge_product(Tuple{0, k}, sd, float_type = float_type)
     (α, g) -> dec_c_wedge_product(Tuple{0, k}, g, α, val_pack)
 end
 
-function dec_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where k
-    val_pack = dec_p_wedge_product(Tuple{0, k}, sd)
+function dec_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet; float_type = Float64) where k
+    val_pack = dec_p_wedge_product(Tuple{0, k}, sd, float_type = float_type)
     (f, β) -> dec_c_wedge_product(Tuple{0, k}, f, β, val_pack)
 end
 
-function dec_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
-    val_pack = dec_p_wedge_product(Tuple{1,1}, sd)
+function dec_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D; float_type = Float64)
+    val_pack = dec_p_wedge_product(Tuple{1,1}, sd, float_type = float_type)
     (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β,val_pack)
 end
 
@@ -366,8 +373,13 @@ dec_differential(n::Int, sd::HasDeltaSet) = sparse(dec_p_derivbound(Val{n}, sd).
 function dec_p_derivbound(::Type{Val{0}}, sd::HasDeltaSet; transpose = false, negate = false)
     vec_size = 2 * ne(sd)
 
-    I = Vector{Int64}(undef, vec_size)
-    J = Vector{Int64}(undef, vec_size)
+    # TODO: This is assuming that meshes don't have too many entries
+    # This type should be settable by the user and default set to Int32
+    # I = Vector{Int64}(undef, vec_size)
+    # J = Vector{Int64}(undef, vec_size)
+    I = Vector{Int32}(undef, vec_size)
+    J = Vector{Int32}(undef, vec_size)
+
     V = Vector{Int8}(undef, vec_size)
 
     e_orient::Vector{Int8} = sd[:edge_orientation]
@@ -406,8 +418,13 @@ end
 function dec_p_derivbound(::Type{Val{1}}, sd::HasDeltaSet; transpose = false, negate = false)
     vec_size = 3 * ntriangles(sd)
 
-    I = Vector{Int64}(undef, vec_size)
-    J = Vector{Int64}(undef, vec_size)
+    # TODO: This is assuming that meshes don't have too many entries
+    # This type should be settable by the user and default set to Int32
+    # I = Vector{Int64}(undef, vec_size)
+    # J = Vector{Int64}(undef, vec_size)
+    I = Vector{Int32}(undef, vec_size)
+    J = Vector{Int32}(undef, vec_size)
+
     V = Vector{Int8}(undef, vec_size)
 
     tri_sign_list::Vector{Int8} = sign(2, sd)
