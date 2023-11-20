@@ -13,7 +13,7 @@ end
 end
 
 @testset "Collages" begin
-  include("collages.jl")
+  include("migrate/collages.jl")
 end
 
 @testset "Coordinates" begin
@@ -29,7 +29,7 @@ end
 end
 
 @testset "Average Rewriting" begin
-  include("rewrite.jl")
+  include("migrate/rewrite.jl")
 end
 
 @testset "Simulation" begin
@@ -37,6 +37,6 @@ end
 end
 
 @testset "Visualization" begin
-  include("visualization.jl")
+  include("migrate/visualization.jl")
 end
 

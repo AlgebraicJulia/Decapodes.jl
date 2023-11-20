@@ -135,17 +135,17 @@ is_infer(d::SummationDecapode, var_name::Symbol) = is_infer(d, first(incident(d,
 
 add_stub(stub_name::Symbol, var_name::Symbol) = return Symbol("$(stub_name)_$(var_name)")
 
+# TODO: Matt - Delete
+# function infer_states(d::SummationDecapode)
+#     filter(parts(d, :Var)) do v
+#         length(incident(d, v, :tgt)) == 0 &&
+#         length(incident(d, v, :res)) == 0 &&
+#         length(incident(d, v, :sum)) == 0 &&
+#         d[v, :type] != :Literal
+#     end
+# end
 
-function infer_states(d::SummationDecapode)
-    filter(parts(d, :Var)) do v
-        length(incident(d, v, :tgt)) == 0 &&
-        length(incident(d, v, :res)) == 0 &&
-        length(incident(d, v, :sum)) == 0 &&
-        d[v, :type] != :Literal
-    end
-end
-
-infer_state_names(d) = d[infer_states(d), :name]
+# infer_state_names(d) = d[infer_states(d), :name]
 
 # This will be the function and matrix generation
 function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol})
@@ -616,61 +616,62 @@ function find_unreachable_tvars(d)
   TVars = d[:incl]
 end
 
-"""
-    function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
+# TODO: Matt - DELETE
+# """
+#     function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
 
-Delete the given nodes and their parents in the decapode, recursively.
-"""
-function recursive_delete_parents(d::SummationDecapode, to_delete::Vector{Int64})
-  e = SummationDecapode{Any, Any, Symbol}()
-  copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
-  isempty(to_delete) || recursive_delete_parents!(e, to_delete)
-  return e
-end
+# Delete the given nodes and their parents in the decapode, recursively.
+# """
+# function recursive_delete_parents(d::SummationDecapode, to_delete::Vector{Int64})
+#   e = SummationDecapode{Any, Any, Symbol}()
+#   copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
+#   isempty(to_delete) || recursive_delete_parents!(e, to_delete)
+#   return e
+# end
 
-function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
-  # TODO: We assume to_delete vars have no children. Is that okay?
-  # TODO: Explicitly check that a Var in to_delete is not a summand.
-  vars_to_remove = Vector{Int64}()
-  s = Stack{Int64}()
-  foreach(v -> push!(s, v), to_delete)
-  while true
-    curr = pop!(s)
-    parents = reduce(vcat,
-                     [d[incident(d, curr, :tgt), :src],
-                      d[incident(d, curr, :res), :proj1],
-                      d[incident(d, curr, :res), :proj2],
-                      d[incident(d, curr, [:summation, :sum]), :summand]])
+# function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
+#   # TODO: We assume to_delete vars have no children. Is that okay?
+#   # TODO: Explicitly check that a Var in to_delete is not a summand.
+#   vars_to_remove = Vector{Int64}()
+#   s = Stack{Int64}()
+#   foreach(v -> push!(s, v), to_delete)
+#   while true
+#     curr = pop!(s)
+#     parents = reduce(vcat,
+#                      [d[incident(d, curr, :tgt), :src],
+#                       d[incident(d, curr, :res), :proj1],
+#                       d[incident(d, curr, :res), :proj2],
+#                       d[incident(d, curr, [:summation, :sum]), :summand]])
 
-    # Remove the operations which have curr as the result.
-    rem_parts!(d, :TVar,    incident(d, curr, :incl))
-    rem_parts!(d, :Op1,     incident(d, curr, :tgt))
-    rem_parts!(d, :Op2,     incident(d, curr, :proj1))
-    rem_parts!(d, :Op2,     incident(d, curr, :proj2))
-    rem_parts!(d, :Op2,     incident(d, curr, :res))
-    # Note: Delete Summands before Σs.
-    rem_parts!(d, :Summand, incident(d, curr, [:summation, :sum]))
-    rem_parts!(d, :Σ,       incident(d, curr, :sum))
+#     # Remove the operations which have curr as the result.
+#     rem_parts!(d, :TVar,    incident(d, curr, :incl))
+#     rem_parts!(d, :Op1,     incident(d, curr, :tgt))
+#     rem_parts!(d, :Op2,     incident(d, curr, :proj1))
+#     rem_parts!(d, :Op2,     incident(d, curr, :proj2))
+#     rem_parts!(d, :Op2,     incident(d, curr, :res))
+#     # Note: Delete Summands before Σs.
+#     rem_parts!(d, :Summand, incident(d, curr, [:summation, :sum]))
+#     rem_parts!(d, :Σ,       incident(d, curr, :sum))
 
-    # Do not remove parents which are used in some other computation. We rely
-    # on the fact that a parent is guaranteed to point to curr.
-    filter!(parents) do p
-      # p must not be the src of any Op1.
-      isempty(incident(d, p, :src)) &&
-      # p must not be a proj of any Op2.
-      isempty(incident(d, p, :proj1)) &&
-      isempty(incident(d, p, :proj2)) &&
-      # p must not be a summand of any summation.
-      isempty(incident(d, p, :summand))
-    end
-    foreach(p -> push!(s, p), parents)
+#     # Do not remove parents which are used in some other computation. We rely
+#     # on the fact that a parent is guaranteed to point to curr.
+#     filter!(parents) do p
+#       # p must not be the src of any Op1.
+#       isempty(incident(d, p, :src)) &&
+#       # p must not be a proj of any Op2.
+#       isempty(incident(d, p, :proj1)) &&
+#       isempty(incident(d, p, :proj2)) &&
+#       # p must not be a summand of any summation.
+#       isempty(incident(d, p, :summand))
+#     end
+#     foreach(p -> push!(s, p), parents)
 
-    push!(vars_to_remove, curr)
+#     push!(vars_to_remove, curr)
 
-    isempty(s) && break
-  end
-  rem_parts!(d, :Var, sort!(unique!(vars_to_remove)))
-end
+#     isempty(s) && break
+#   end
+#   rem_parts!(d, :Var, sort!(unique!(vars_to_remove)))
+# end
 
 function closest_point(p1, p2, dims)
     p_res = collect(p2)

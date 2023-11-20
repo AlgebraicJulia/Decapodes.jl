@@ -1,12 +1,6 @@
 name = "Decapodes"
 uuid = "679ab3ea-c928-4fe6-8d59-fd451142d391"
-authors = [
-  "James Fairbanks",
-  "Andrew Baas",
-  "Evan Patterson",
-  "Luke Morris",
-  "George Rauta",
-]
+authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
 version = "0.4.0"
 
 [deps]
@@ -15,6 +9,7 @@ Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 CombinatorialSpaces = "b1c52339-7909-45ad-8b6a-6e388f7c67f2"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+DiagrammaticEquations = "b66562e1-fa90-4e8b-9505-c909188fab76"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"

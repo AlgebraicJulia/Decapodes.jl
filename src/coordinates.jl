@@ -1,5 +1,5 @@
 using GeometryBasics
-using LinearAlgebra
+# using LinearAlgebra
 
 """    CartesianPoint{T}(p)
 
