@@ -11,6 +11,13 @@ import Decapodes: dec_wedge_product, dec_differential, dec_boundary, dec_dual_de
 include("../examples/grid_meshes.jl")
 include("../examples/sw/spherical_meshes.jl")
 
+function generate_dual_mesh(s::HasDeltaSet1D)
+    orient!(s)
+    sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point2D}(s)
+    subdivide_duals!(sd, Barycenter())
+    sd
+end
+
 function generate_dual_mesh(s::HasDeltaSet2D)
     orient!(s)
     sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
@@ -18,67 +25,119 @@ function generate_dual_mesh(s::HasDeltaSet2D)
     sd
 end
 
-dual_meshes = [(generate_dual_mesh ∘ loadmesh ∘ Icosphere).(1:3)...,
+primal_line = EmbeddedDeltaSet1D{Bool,Point2D}()
+add_vertices!(primal_line, 3, point=[Point2D(1,0), Point2D(0,0), Point2D(0,2)])
+add_edges!(primal_line, [1,2], [2,3])
+line = generate_dual_mesh(primal_line)
+
+primal_cycle = EmbeddedDeltaSet1D{Bool,Point2D}()
+add_vertices!(primal_cycle, 3, point=[Point2D(1,0), Point2D(0,0), Point2D(0,1)])
+add_edges!(primal_cycle, [1,2,3], [2,3,1])
+cycle = generate_dual_mesh(primal_cycle)
+
+primal_plus = EmbeddedDeltaSet1D{Bool,Point2D}()
+add_vertices!(primal_plus, 5, point=[Point2D(0,0), Point2D(1,0), Point2D(-1,0), Point2D(0,1), Point2D(0, -1)])
+add_edges!(primal_plus, [1,1,3,5], [2,4,1,1])
+primal_plus[:edge_orientation] = true
+plus = generate_dual_mesh(primal_plus)
+
+
+dual_meshes_1D = [line, cycle, plus]
+
+dual_meshes_2D = [(generate_dual_mesh ∘ loadmesh ∘ Icosphere).(1:3)...,
                (generate_dual_mesh ∘ loadmesh)(Rectangle_30x10()),
                (generate_dual_mesh).([triangulated_grid(10,10,8,8,Point3D), makeSphere(5, 175, 5, 0, 360, 5, 6371+90)[1]])...,
                (loadmesh)(Torus_30x10())];
 
-@testset "In-House Exterior Derivative" begin
+@testset "Exterior Derivative" begin
+    for i in 0:0 
+        for sd in dual_meshes_1D
+            @test all(dec_differential(i, sd) .== d(i, sd))
+        end
+    end
+
     for i in 0:1 
-        for sd in dual_meshes
+        for sd in dual_meshes_2D
             @test all(dec_differential(i, sd) .== d(i, sd))
         end
     end
 end
 
-@testset "In-House Boundary" begin
+@testset "Boundary" begin
+    for i in 1:1 
+        for sd in dual_meshes_1D
+            @test all(dec_boundary(i, sd) .== ∂(i, sd))
+        end
+    end
+
     for i in 1:2
-        for sd in dual_meshes
+        for sd in dual_meshes_2D
             @test all(dec_boundary(i, sd) .== ∂(i, sd))
         end
     end
 end
 
-@testset "In-House Dual Derivative" begin
+@testset "Dual Derivative" begin
+    for i in 0:0 
+        for sd in dual_meshes_1D
+            @test all(dec_dual_derivative(i, sd) .== dual_derivative(i, sd))
+        end
+    end
+
     for i in 0:1
-        for sd in dual_meshes
+        for sd in dual_meshes_2D
             @test all(dec_dual_derivative(i, sd) .== dual_derivative(i, sd))
         end
     end
 end
 
-@testset "In-House Diagonal Hodge" begin
-    for i in [0,2]
-        for sd in dual_meshes
+#TODO: For hodge star 1, the values seems to be extremely close yet not quite equal
+@testset "Diagonal Hodge" begin
+    for i in 0:1
+        for sd in dual_meshes_1D
+            @test all(isapprox.(dec_hodge_star(Val{i}, sd, DiagonalHodge()), hodge_star(i, sd, DiagonalHodge()); rtol = 1e-15))
+        end
+    end
+
+    for i in 0:2
+        for sd in dual_meshes_2D
             @test all(isapprox.(dec_hodge_star(Val{i}, sd, DiagonalHodge()), hodge_star(i, sd, DiagonalHodge()); rtol = 1e-15))
         end
     end
 end
 
-#TODO: For hodge star 1, the values seems to be extremely close yet not quite equal
-@testset "In-House Diagonal Hodge" begin
-    for sd in dual_meshes
-        @test all(isapprox.(dec_hodge_star(Val{1}, sd, DiagonalHodge()), hodge_star(1, sd, DiagonalHodge()); rtol = 1e-15))
+#TODO: For inv hodge star 1, the values seems to be extremely close yet not quite equal
+@testset "Inverse Diagonal Hodge" begin
+    for i in 0:1
+        for sd in dual_meshes_1D
+            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, DiagonalHodge()), inv_hodge_star(i, sd, DiagonalHodge()); rtol = 1e-15))
+        end
     end
-end
 
-@testset "In-House Inverse Diagonal Hodge" begin
-    for i in [0,2]
-        for sd in dual_meshes
+    for i in 0:2
+        for sd in dual_meshes_2D
             @test all(isapprox.(dec_inv_hodge(Val{i}, sd, DiagonalHodge()), inv_hodge_star(i, sd, DiagonalHodge()); rtol = 1e-15))
         end
     end
 end
 
-#TODO: For inv hodge star 1, the values seems to be extremely close yet not quite equal
-@testset "In-House Inverse Diagonal Hodge" begin
-    for sd in dual_meshes
-        @test all(isapprox.(dec_inv_hodge(Val{1}, sd, DiagonalHodge()), inv_hodge_star(1, sd, DiagonalHodge()); rtol = 1e-15))
+@testset "Geometric Hodge" begin
+    for i in 1:1
+        for sd in dual_meshes_2D
+            @test all(isapprox.(dec_hodge_star(Val{i}, sd, GeometricHodge()), hodge_star(i, sd, GeometricHodge()); rtol = 1e-15))
+        end
     end
 end
 
-@testset "In-House Wedge" begin
-    for sd in dual_meshes
+@testset "Wedge Product" begin
+    for sd in dual_meshes_1D
+        V_1, V_2 = rand(nv(sd)), rand(nv(sd))
+        E_1 = rand(ne(sd))
+        @test all(dec_wedge_product(Tuple{0, 0}, sd)(V_1, V_2) .== ∧(Tuple{0, 0}, sd, V_1, V_2))
+        @test all(dec_wedge_product(Tuple{0, 1}, sd)(V_1, E_1) .== ∧(Tuple{0, 1}, sd, V_1, E_1))
+    end
+
+    for sd in dual_meshes_2D
         V_1, V_2 = rand(nv(sd)), rand(nv(sd))
         E_1, E_2 = rand(ne(sd)), rand(ne(sd))
         T_2 = rand(ntriangles(sd))
@@ -95,17 +154,6 @@ end
         @test all(dec_wedge_product(Tuple{1, 1}, sd)(E_1, E_2) / 2 .== ∧(Tuple{1, 1}, sd, E_1, E_2))
     end
 end
-
-#= @testset "In-House Laplace DeRham" begin
-    for sd in dual_meshes
-        @test dec_p_laplace_de_rham(0, sd) == Δ(0, sd)
-    end
-
-    #TODO: The laplace DeRham on Torus produces a non-singular matrix
-    for sd in dual_meshes[1:6]
-        @test dec_p_laplace_de_rham(1, sd) == Δ(1, sd)
-    end
-end =#
 
 function print_decapode_into_acset(d::SummationDecapode)
     println("@acset SummationDecapode{Any, Any, Symbol} begin")
@@ -233,6 +281,99 @@ end
     end
     @test lie_derivative_1 == test_lie_derivative_1
 
+    # Test for Codifferential (Primal1 -> Primal0)
+    codiff_1 = @decapode begin
+        A::Form1
+        B::Form0
+
+        B == δ₁(A)
+    end
+    open_operators!(codiff_1, dimension = 1)
+    infer_types!(codiff_1, op1_inf_rules_1D, op2_inf_rules_1D)
+    resolve_overloads!(codiff_1, op1_res_rules_1D, op2_res_rules_1D)
+
+    test_codiff_1 = @acset SummationDecapode{Any, Any, Symbol} begin
+        Var = 4
+        name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2]
+        type = [:Form1, :Form0, :DualForm0, :DualForm1]
+        Op1 = 3
+        src = [4, 1, 3]
+        tgt = [2, 3, 4]
+        op1 = [:⋆₀⁻¹, :⋆₁, :dual_d₀]
+        Op2 = 0
+        proj1 = Int64[]
+        proj2 = Int64[]
+        res = Int64[]
+        op2 = Any[]
+        Σ = 0
+        sum = Int64[]
+        Summand = 0
+        summand = Int64[]
+        summation = Int64[]
+    end
+    @test codiff_1 == test_codiff_1
+    
+    # Test for Laplace de Rham (Primal0 -> Primal0)
+    laplace_de_rham_0 = @decapode begin
+        (A, B)::Form0
+
+        B == Δ₀(A)
+    end
+    open_operators!(laplace_de_rham_0, dimension = 1)
+    infer_types!(laplace_de_rham_0, op1_inf_rules_1D, op2_inf_rules_1D)
+    resolve_overloads!(laplace_de_rham_0, op1_res_rules_1D, op2_res_rules_1D)
+
+    test_laplace_de_rham_0 = @acset SummationDecapode{Any, Any, Symbol} begin
+        Var = 5
+        name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]
+        type = [:Form0, :Form0, :Form1, :DualForm0, :DualForm1]        
+        Op1 = 4
+        src = [5, 1, 3, 4]
+        tgt = [2, 3, 4, 5]
+        op1 = [:⋆₀⁻¹, :d₀, :⋆₁, :dual_d₀]
+        Op2 = 0
+        proj1 = Int64[]
+        proj2 = Int64[]
+        res = Int64[]
+        op2 = Any[]
+        Σ = 0
+        sum = Int64[]
+        Summand = 0
+        summand = Int64[]
+        summation = Int64[]
+    end
+    @test laplace_de_rham_0 == test_laplace_de_rham_0
+
+    # Test for Laplace de Rham (Primal1 -> Primal1)
+    laplace_de_rham_1 = @decapode begin
+        (A, B)::Form1
+
+        B == Δ₁(A)
+    end
+    open_operators!(laplace_de_rham_1, dimension = 1)
+    infer_types!(laplace_de_rham_1, op1_inf_rules_1D, op2_inf_rules_1D)
+    resolve_overloads!(laplace_de_rham_1, op1_res_rules_1D, op2_res_rules_1D)
+
+    test_laplace_de_rham_1 = @acset SummationDecapode{Any, Any, Symbol} begin
+        Var = 5
+        name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]   
+        type = [:Form1, :Form1, :Form0, :DualForm0, :DualForm1]        
+        Op1 = 4
+        src = [3, 1, 4, 5]
+        tgt = [2, 4, 5, 3]
+        op1 = [:d₀, :⋆₁, :dual_d₀, :⋆₀⁻¹]
+        Op2 = 0
+        proj1 = Int64[]
+        proj2 = Int64[]
+        res = Int64[]
+        op2 = Any[]
+        Σ = 0
+        sum = Int64[]
+        Summand = 0
+        summand = Int64[]
+        summation = Int64[]
+    end    
+    @test laplace_de_rham_1 == test_laplace_de_rham_1
 end
 
 @testset "Opening 2D Operators" begin
@@ -335,6 +476,7 @@ end
     end
     @test lie_derivative_0 == test_lie_derivative_0
 
+    # Test for Lie Derivative (Primal1, Dual1 -> Dual1)
     lie_derivative_1 = @decapode begin
         A::DualForm1
         B::Form1
@@ -367,6 +509,7 @@ end
     end
     @test lie_derivative_1 == test_lie_derivative_1
 
+    # Test for Lie Derivative (Primal1, Dual2 -> Dual2)
     lie_derivative_2 = @decapode begin
         A::DualForm2
         B::Form1
@@ -399,4 +542,160 @@ end
     end
     @test lie_derivative_2 == test_lie_derivative_2
 
+    # Test for Codifferential (Primal1 -> Primal0)
+    codiff_1 = @decapode begin
+        A::Form1
+        B::Form0
+
+        B == δ₁(A)
+    end
+    open_operators!(codiff_1)
+    infer_types!(codiff_1)
+    resolve_overloads!(codiff_1)
+
+    test_codiff_1 = @acset SummationDecapode{Any, Any, Symbol} begin
+        Var = 4
+        name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2]
+        type = [:Form1, :Form0, :DualForm1, :DualForm2]
+        Op1 = 3
+        src = [4, 1, 3]
+        tgt = [2, 3, 4]
+        op1 = [:⋆₀⁻¹, :⋆₁, :dual_d₁]
+        Op2 = 0
+        proj1 = Int64[]
+        proj2 = Int64[]
+        res = Int64[]
+        op2 = Any[]
+        Σ = 0
+        sum = Int64[]
+        Summand = 0
+        summand = Int64[]
+        summation = Int64[]
+    end
+    @test codiff_1 == test_codiff_1
+
+    # Test for Codifferential (Primal2 -> Primal1)
+    codiff_2 = @decapode begin
+        A::Form2
+        B::Form1
+
+        B == δ₂(A)
+    end
+    open_operators!(codiff_2)
+    infer_types!(codiff_2)
+    resolve_overloads!(codiff_2)
+
+    test_codiff_2 = @acset SummationDecapode{Any, Any, Symbol} begin
+        Var = 4
+        name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2]
+        type = [:Form2, :Form1, :DualForm0, :DualForm1]
+        Op1 = 3
+        src = [4, 1, 3]
+        tgt = [2, 3, 4]
+        op1 = [:⋆₁⁻¹, :⋆₂, :dual_d₀]
+        Op2 = 0
+        proj1 = Int64[]
+        proj2 = Int64[]
+        res = Int64[]
+        op2 = Any[]
+        Σ = 0
+        sum = Int64[]
+        Summand = 0
+        summand = Int64[]
+        summation = Int64[]
+    end
+    @test codiff_2 == test_codiff_2
+
+    # Test for Laplace de Rham (Primal0 -> Primal0)
+    laplace_de_rham_0 = @decapode begin
+        (A, B)::Form0
+
+        B == Δ₀(A)
+    end
+    open_operators!(laplace_de_rham_0)
+    infer_types!(laplace_de_rham_0)
+    resolve_overloads!(laplace_de_rham_0)
+
+    test_laplace_de_rham_0 = @acset SummationDecapode{Any, Any, Symbol} begin
+        Var = 5
+        name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]   
+        type = [:Form0, :Form0, :Form1, :DualForm1, :DualForm2]        
+        Op1 = 4
+        src = [5, 1, 3, 4]
+        tgt = [2, 3, 4, 5]
+        op1 = [:⋆₀⁻¹, :d₀, :⋆₁, :dual_d₁]
+        Op2 = 0
+        proj1 = Int64[]
+        proj2 = Int64[]
+        res = Int64[]
+        op2 = Any[]
+        Σ = 0
+        sum = Int64[]
+        Summand = 0
+        summand = Int64[]
+        summation = Int64[]
+    end
+    @test laplace_de_rham_0 == test_laplace_de_rham_0
+
+    # Test for Laplace de Rham (Primal1 -> Primal1)
+    laplace_de_rham_1 = @decapode begin
+        (A, B)::Form1
+
+        B == Δ₁(A)
+    end
+    open_operators!(laplace_de_rham_1)
+    infer_types!(laplace_de_rham_1)
+    resolve_overloads!(laplace_de_rham_1)
+
+    test_laplace_de_rham_1 = @acset SummationDecapode{Any, Any, Symbol} begin
+        Var = 10
+        name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3, :Gensim_Var_4, :Gensim_Var_5, :Gensim_Var_6, :Gensim_Var_7, :Gensim_Var_8]
+        type = [:Form1, :Form1, :Form1, :Form2, :DualForm0, :DualForm1, :Form1, :Form0, :DualForm1, :DualForm2]
+        Op1 = 8
+        src = [8, 1, 4, 5, 6, 1, 9, 10]
+        tgt = [7, 4, 5, 6, 3, 9, 10, 8]
+        op1 = [:d₀, :d₁, :⋆₂, :dual_d₀, :⋆₁⁻¹, :⋆₁, :dual_d₁, :⋆₀⁻¹]   
+        Op2 = 0
+        proj1 = Int64[]
+        proj2 = Int64[]
+        res = Int64[]
+        op2 = Any[]
+        Σ = 1
+        sum = [2]
+        Summand = 2
+        summand = [3, 7]
+        summation = [1, 1]
+    end
+    @test laplace_de_rham_1 == test_laplace_de_rham_1
+
+    # Test for Laplace de Rham (Primal2 -> Primal2)
+    laplace_de_rham_2 = @decapode begin
+        (A, B)::Form2
+
+        B == Δ₂(A)
+    end
+    open_operators!(laplace_de_rham_2)
+    infer_types!(laplace_de_rham_2)
+    resolve_overloads!(laplace_de_rham_2)
+
+    test_laplace_de_rham_2 = @acset SummationDecapode{Any, Any, Symbol} begin
+        Var = 5
+        name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]   
+        type = [:Form2, :Form2, :Form1, :DualForm0, :DualForm1]        
+        Op1 = 4
+        src = [3, 1, 4, 5]
+        tgt = [2, 4, 5, 3]
+        op1 = [:d₁, :⋆₂, :dual_d₀, :⋆₁⁻¹]
+        Op2 = 0
+        proj1 = Int64[]
+        proj2 = Int64[]
+        res = Int64[]
+        op2 = Any[]
+        Σ = 0
+        sum = Int64[]
+        Summand = 0
+        summand = Int64[]
+        summation = Int64[]
+    end
+    @test laplace_de_rham_2 == test_laplace_de_rham_2
 end
