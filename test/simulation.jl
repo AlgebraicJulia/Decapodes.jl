@@ -478,3 +478,60 @@ end
   @test occursin("var\"__•1\" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))",
     repr(gensim(budyko_sellers, dimension=1)))
 end
+
+@testset "Gensim Transformations" begin
+
+  begin
+    primal_earth = loadmesh(Icosphere(1))
+    nploc = argmax(x -> x[3], primal_earth[:point])
+    primal_earth[:edge_orientation] = false
+    orient!(primal_earth)
+    earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
+    subdivide_duals!(earth, Circumcenter());
+  end
+
+  # Testing transforming negation into multiplication by -1
+  neg_transform = @decapode begin
+    (A,B)::Form0
+
+    B == ∂ₜ(A)
+
+    B == -(neg(-1.0 * A))
+  end
+
+  sim = eval(gensim(neg_transform))
+  f = sim(earth, default_dec_generate)
+  A = ones(nv(earth))
+  u = ComponentArray(A=A)
+  constants_and_parameters = ()
+  result = f(u, u, constants_and_parameters, 0)
+
+  @test result == -1 * ones(nv(earth))
+
+
+  # Testing simple contract operations
+  single_contract = @decapode begin
+    (A,C)::Form0
+    (D)::Form2
+
+    B == ∂ₜ(A)
+    D == ∂ₜ(C)
+
+    B == ⋆(⋆(A))
+    D == d(d(C))
+  end
+  gensim(single_contract)
+
+  sim = eval(gensim(single_contract))
+  f = sim(earth, default_dec_generate)
+  A = 2 * ones(nv(earth))
+  C = ones(nv(earth))
+  u = ComponentArray(A=A, C=C)
+  du = ComponentArray(A=zeros(nv(earth)), C=zeros(ntriangles(earth)))
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test du.A ≈ 2 * ones(nv(earth))
+  @test du.C == zeros(ntriangles(earth))
+
+end

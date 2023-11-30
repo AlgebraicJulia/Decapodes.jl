@@ -573,7 +573,7 @@ crossdot(v1, v2) = begin
     norm(v1v2) * (last(v1v2) == 0 ? 1.0 : sign(last(v1v2)))
 end
 
-function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge, ::Type{float_type} = Float64) where float_type
+function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge; float_type::DataType = Float64)
 
     I = Vector{Int32}()
     J = Vector{Int32}()
