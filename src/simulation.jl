@@ -8,6 +8,7 @@ using Catlab
 using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
 
+
 const gensim_in_place_stub = Symbol("GenSim-M")
 
 abstract type AbstractCall end
@@ -406,7 +407,6 @@ end
 function replace_negation_with_multiply!(d::SummationDecapode, input_vars)
     found_negation = false
     rem_negations = []
-
     neg1var = 0
 
     for (i, op) in enumerate(d[:op1])
@@ -426,9 +426,7 @@ end
 
 function replace_names_compiler!(d::SummationDecapode)
     dec_op1 = Pair{Symbol, Any}[]
-
     dec_op2 = Pair{Symbol, Symbol}[(:∧₀₀ => :.*)]
-
     replace_names!(d, dec_op1, dec_op2)
 end
 

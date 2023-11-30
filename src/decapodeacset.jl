@@ -328,18 +328,12 @@ op1_inf_rules_1D = [
   # Rules for ∂ₜ 
   (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ,:dt]),
   (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ,:dt]),
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ,:dt]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ,:dt]),
 
   # Rules for d
   (src_type = :Form0, tgt_type = :Form1, op_names = [:d, :d₀]),
   (src_type = :DualForm0, tgt_type = :DualForm1, op_names = [:d, :dual_d₀, :d̃₀]),
 
   # Rules for ⋆
-  (src_type = :Form0, tgt_type = :DualForm1, op_names = [:⋆, :⋆₀, :star]),
-  (src_type = :Form1, tgt_type = :DualForm0, op_names = [:⋆, :⋆₁, :star]),
-  (src_type = :DualForm1, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
-  (src_type = :DualForm0, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹, :star_inv]),
   (src_type = :Form0, tgt_type = :DualForm1, op_names = [:⋆, :⋆₀, :star]),
   (src_type = :Form1, tgt_type = :DualForm0, op_names = [:⋆, :⋆₁, :star]),
   (src_type = :DualForm1, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
@@ -351,7 +345,6 @@ op1_inf_rules_1D = [
 
   # Rules for δ
   (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
-  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
 
   # Rules for negation
   (src_type = :Form0, tgt_type = :Form0, op_names = [:neg, :(-)]),
@@ -359,9 +352,6 @@ op1_inf_rules_1D = [
 
 op2_inf_rules_1D = [
   # Rules for ∧₀₀, ∧₁₀, ∧₀₁
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:∧, :∧₀₀, :wedge]),
-  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, op_names = [:∧, :∧₁₀, :wedge]),
-  (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, op_names = [:∧, :∧₀₁, :wedge]),
   (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:∧, :∧₀₀, :wedge]),
   (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, op_names = [:∧, :∧₁₀, :wedge]),
   (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, op_names = [:∧, :∧₀₁, :wedge]),
@@ -416,9 +406,6 @@ op1_inf_rules_2D = [
   (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ, :dt]),
   (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ, :dt]),
   (src_type = :Form2, tgt_type = :Form2, op_names = [:∂ₜ, :dt]),
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ, :dt]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ, :dt]),
-  (src_type = :Form2, tgt_type = :Form2, op_names = [:∂ₜ, :dt]),
 
   # Rules for d
   (src_type = :Form0, tgt_type = :Form1, op_names = [:d, :d₀]),
@@ -430,13 +417,7 @@ op1_inf_rules_2D = [
   (src_type = :Form0, tgt_type = :DualForm2, op_names = [:⋆, :⋆₀, :star]),
   (src_type = :Form1, tgt_type = :DualForm1, op_names = [:⋆, :⋆₁, :star]),
   (src_type = :Form2, tgt_type = :DualForm0, op_names = [:⋆, :⋆₂, :star]),
-  (src_type = :Form0, tgt_type = :DualForm2, op_names = [:⋆, :⋆₀, :star]),
-  (src_type = :Form1, tgt_type = :DualForm1, op_names = [:⋆, :⋆₁, :star]),
-  (src_type = :Form2, tgt_type = :DualForm0, op_names = [:⋆, :⋆₂, :star]),
 
-  (src_type = :DualForm2, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
-  (src_type = :DualForm1, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹, :star_inv]),
-  (src_type = :DualForm0, tgt_type = :Form2, op_names = [:⋆, :⋆₂⁻¹, :star_inv]),
   (src_type = :DualForm2, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
   (src_type = :DualForm1, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹, :star_inv]),
   (src_type = :DualForm0, tgt_type = :Form2, op_names = [:⋆, :⋆₂⁻¹, :star_inv]),
@@ -445,13 +426,8 @@ op1_inf_rules_2D = [
   (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀, :lapl]),
   (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁, :lapl]),
   (src_type = :Form2, tgt_type = :Form2, op_names = [:Δ, :Δ₂, :lapl]),
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀, :lapl]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁, :lapl]),
-  (src_type = :Form2, tgt_type = :Form2, op_names = [:Δ, :Δ₂, :lapl]),
 
   # Rules for δ
-  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
-  (src_type = :Form2, tgt_type = :Form1, op_names = [:δ, :δ₂, :codif]),
   (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
   (src_type = :Form2, tgt_type = :Form1, op_names = [:δ, :δ₂, :codif]),
 
