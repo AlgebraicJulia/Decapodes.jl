@@ -481,6 +481,16 @@ end
 
 @testset "Gensim Transformations" begin
 
+  function checkForContractionInGensim(d::SummationDecapode)
+    results = []
+    block = gensim(d).args[2].args[2].args[5]
+    for line in 2:length(block.args)
+      push!(results, block.args[line].args[1])
+    end
+
+    return results
+  end
+
   begin
     primal_earth = loadmesh(Icosphere(1))
     nploc = argmax(x -> x[3], primal_earth[:point])
@@ -520,7 +530,7 @@ end
     B == ⋆(⋆(A))
     D == d(d(C))
   end
-  gensim(single_contract)
+  @test 4 == length(checkForContractionInGensim(single_contract))
 
   sim = eval(gensim(single_contract))
   f = sim(earth, default_dec_generate)
@@ -533,5 +543,130 @@ end
 
   @test du.A ≈ 2 * ones(nv(earth))
   @test du.C == zeros(ntriangles(earth))
+
+  # Testing contraction interrupted by summation
+  contract_with_summation = @decapode begin
+    (A)::Form0
+    (D)::Form2
+
+    C == ∂ₜ(E)
+    D == ∂ₜ(A)
+
+    B == ⋆(⋆(A))
+    C == B + B
+
+    D == d(d(C))
+  end
+  @test 4 == length(checkForContractionInGensim(single_contract))
+  
+  sim = eval(gensim(contract_with_summation))
+  f = sim(earth, default_dec_generate)
+  A = 2 * ones(nv(earth))
+  E_dec = ones(nv(earth))
+  u = ComponentArray(A=A, E=E_dec)
+  du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test du.A == zeros(ntriangles(earth))
+  @test du.E ≈ 4 * ones(nv(earth))
+
+  # Testing contraction interrupted by op2
+  contract_with_op2 = @decapode begin
+    (A)::Form0
+    (D)::Form2
+
+    C == ∂ₜ(E)
+    D == ∂ₜ(A)
+
+    B == ⋆(⋆(A))
+    C == B * B
+
+    D == d(d(C))
+  end
+  @test 4 == length(checkForContractionInGensim(single_contract))
+  
+  sim = eval(gensim(contract_with_op2))
+  f = sim(earth, default_dec_generate)
+  A = 3 * ones(nv(earth))
+  E_dec = ones(nv(earth))
+  u = ComponentArray(A=A, E=E_dec)
+  du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test du.A == zeros(ntriangles(earth))
+  @test du.E ≈ 9 * ones(nv(earth))
+
+  # Testing contract lines beyond the initial value
+  later_contraction = @decapode begin
+    (A)::Form0
+
+    D == ∂ₜ(A)
+
+    B == A * A
+    D == ⋆(⋆(B))
+  end
+  @test 4 == length(checkForContractionInGensim(single_contract))
+  
+  sim = eval(gensim(later_contraction))
+  f = sim(earth, default_dec_generate)
+  A = 4 * ones(nv(earth))
+  u = ComponentArray(A=A)
+  du = ComponentArray(A=zeros(nv(earth)))
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test du.A ≈ 16 * ones(nv(earth))
+
+  # Testing no contraction of single operators
+  no_contraction = @decapode begin
+    (A)::Form0
+    (D)::Form1
+
+    D == ∂ₜ(A)
+    D == d(A)
+  end
+  @test 0 == length(checkForContractionInGensim(no_contraction))
+  
+  sim = eval(gensim(no_contraction))
+  f = sim(earth, default_dec_generate)
+  A = [i for i in 1:nv(earth)]
+  u = ComponentArray(A=A)
+  du = ComponentArray(A=zeros(ne(earth)))
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test du.A == d(0, earth) * A
+
+  # Testing no contraction of unallowed operators
+  no_unallowed = @decapode begin
+    (A)::Form0
+    (D)::Form1
+
+    D == ∂ₜ(A)
+    D == d(k(A))
+  end
+  @test 0 == length(checkForContractionInGensim(no_unallowed))
+  
+  sim = eval(gensim(no_unallowed))
+
+  function generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :k => (x -> 20 * x)
+    end
+    op
+  end
+
+  f = sim(earth, generate)
+  A = [i for i in 1:nv(earth)]
+  u = ComponentArray(A=A)
+  du = ComponentArray(A=zeros(ne(earth)))
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test du.A == d(0, earth) * 20 * A
+  
+
 
 end

@@ -200,7 +200,7 @@ function dec_c_wedge_product!(::Type{Tuple{0,2}}, wedge_terms, f, α, val_pack)
     return wedge_terms
 end
 
-function dec_p_wedge_product(::Type{Tuple{0,k}}, sd; float_type=Float64) where {k}
+#= function dec_p_wedge_product(::Type{Tuple{0,k}}, sd; float_type=Float64) where {k}
 
     # Gets a list of all of the 0 -> vertices, 1 -> edges, 2 -> triangles on mesh
     simples = simplices(k, sd)
@@ -240,11 +240,11 @@ function dec_c_wedge_product!(::Type{Tuple{0,k}}, wedge_terms, f, α, val_pack) 
     end
 
     return wedge_terms
-end
+end =#
 
 # This is adapted almost directly from the CombinatorialSpaces package
 # Use this if some assumptions in the embedded delta sets changes
-function dec_p_wedge_product_safe(::Type{Tuple{1,1}}, sd; float_type=Float64)
+#= function dec_p_wedge_product_safe(::Type{Tuple{1,1}}, sd; float_type=Float64)
     simples = simplices(2, sd)
 
     coeffs = map(simples) do x
@@ -276,7 +276,7 @@ function dec_c_wedge_product_safe!(::Type{Tuple{1,1}}, wedge_terms, α, β, val_
     end
 
     return wedge_terms
-end
+end =#
 
 # TODO: This relies on a well established ordering for 
 # the dual space simplices. If changed, use dec_p_wedge_product_ones_safe
@@ -680,7 +680,7 @@ dec_inv_hodge(::Type{Val{0}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge; 
     dec_inv_hodge(Val{0}, sd, DiagonalHodge(), float_type=float_type)
 
 function dec_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge; float_type=Float64)
-    hdg_lu = LinearAlgebra.factorize(dec_hodge_star(1, sd, GeometricHodge(), float_type=float_type))
+    hdg_lu = LinearAlgebra.factorize(-1 * dec_hodge_star(1, sd, GeometricHodge(), float_type=float_type))
     x -> hdg_lu \ x
 end
 

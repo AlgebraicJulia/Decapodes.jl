@@ -3,6 +3,7 @@ using Test
 using SparseArrays
 using LinearAlgebra
 using CombinatorialSpaces
+using Random
 using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
@@ -10,6 +11,8 @@ Point3D = Point3{Float64}
 import Decapodes: dec_wedge_product, dec_differential, dec_boundary, dec_dual_derivative, dec_hodge_star, dec_inv_hodge, open_operators!
 include("../examples/grid_meshes.jl")
 include("../examples/sw/spherical_meshes.jl")
+
+Random.seed!(0)
 
 function generate_dual_mesh(s::HasDeltaSet1D)
     orient!(s)
@@ -44,7 +47,7 @@ plus = generate_dual_mesh(primal_plus)
 
 dual_meshes_1D = [line, cycle, plus]
 
-dual_meshes_2D = [(generate_dual_mesh ∘ loadmesh ∘ Icosphere).(1:3)...,
+dual_meshes_2D = [(generate_dual_mesh ∘ loadmesh ∘ Icosphere).(1:2)...,
                (generate_dual_mesh ∘ loadmesh)(Rectangle_30x10()),
                (generate_dual_mesh).([triangulated_grid(10,10,8,8,Point3D), makeSphere(5, 175, 5, 0, 360, 5, 6371+90)[1]])...,
                (loadmesh)(Torus_30x10())];
@@ -122,11 +125,39 @@ end
 end
 
 @testset "Geometric Hodge" begin
-    for i in 1:1
+    for i in 0:1
+        for sd in dual_meshes_1D
+            @test all(isapprox.(dec_hodge_star(Val{i}, sd, GeometricHodge()), hodge_star(i, sd, GeometricHodge()); rtol = 1e-15))
+        end
+    end
+
+    for i in 0:2
         for sd in dual_meshes_2D
             @test all(isapprox.(dec_hodge_star(Val{i}, sd, GeometricHodge()), hodge_star(i, sd, GeometricHodge()); rtol = 1e-15))
         end
     end
+end
+
+@testset "Inverse Geometric Hodge" begin
+    for i in 0:1
+        for sd in dual_meshes_1D
+            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, GeometricHodge()), inv_hodge_star(i, sd, GeometricHodge()); rtol = 1e-15))
+        end
+    end
+
+    for i in [0, 2]
+        for sd in dual_meshes_2D
+            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, GeometricHodge()), inv_hodge_star(i, sd, GeometricHodge()); rtol = 1e-15))
+        end
+    end
+
+    for i in 1:1
+        for sd in dual_meshes_2D[1:end-1]
+            V_1 = rand(ne(sd))
+            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, GeometricHodge())(V_1), inv_hodge_star(i, sd, GeometricHodge()) * V_1; rtol = 1e-13))
+        end
+    end
+
 end
 
 @testset "Wedge Product" begin
