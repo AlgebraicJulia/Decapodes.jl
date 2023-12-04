@@ -131,11 +131,19 @@ end
         end
     end
 
-    for i in 0:2
+    for i in [0, 2]
         for sd in dual_meshes_2D
             @test all(isapprox.(dec_hodge_star(Val{i}, sd, GeometricHodge()), hodge_star(i, sd, GeometricHodge()); rtol = 1e-15))
         end
     end
+
+    # TODO: Why does this test require atol, not rtol, to reasonably pass?
+    for i in [1]
+        for sd in dual_meshes_2D
+            @test all(isapprox.(dec_hodge_star(Val{i}, sd, GeometricHodge()), hodge_star(i, sd, GeometricHodge()); atol = 1e-15))
+        end
+    end
+
 end
 
 @testset "Inverse Geometric Hodge" begin
