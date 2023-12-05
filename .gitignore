@@ -4,7 +4,3 @@
 /dev/
 *.mem
 .vscode
-*.gif
-*.obj
-/Project.toml
-/examples/*
