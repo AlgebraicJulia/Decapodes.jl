@@ -666,7 +666,131 @@ end
   f(du, u, constants_and_parameters, 0)
 
   @test du.A == d(0, earth) * 20 * A
+
+  # Testing wedge 01 operators function
+  wedges01 = @decapode begin
+    (A, B)::Form0
+    (C, D, E)::Form1
+
+    D == ∂ₜ(A)
+    E == ∂ₜ(B)
+    F == ∂ₜ(C)
+
+
+    D == (A ∧ B) ∧ C
+    E == A ∧ (B ∧ C)
+
+    F == A ∧ (C ∧ B)
+  end
   
+  sim = eval(gensim(wedges01))
 
+  f = sim(earth, default_dec_generate)
+  A = ones(nv(earth))
+  B = 2 * ones(nv(earth))
+  C = 3 * ones(ne(earth))
+  u = ComponentArray(A=A, B=B, C=C)
+  du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
 
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test du.A == du.B == du.C
+  
+  # Testing wedge 11 operators function
+  wedges11 = @decapode begin
+    (A, B)::Form1
+    (D, E)::Form2
+
+    D == ∂ₜ(A)
+    E == ∂ₜ(B)  
+
+    D == A ∧ B
+    E == B ∧ A
+  end
+  
+  sim = eval(gensim(wedges11))
+
+  f = sim(earth, default_dec_generate)
+  A = ones(ne(earth))
+  B = ones(ne(earth))
+  u = ComponentArray(A=A, B=B)
+  du = ComponentArray(A=zeros(ntriangles(earth)), B=zeros(ntriangles(earth)))
+
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test all(isapprox.(du.A, zeros(ntriangles(earth)); atol = 1e-300))
+  @test all(isapprox.(du.B, zeros(ntriangles(earth)); atol = 1e-300))
+  @test all(isapprox.(du.A, du.B; atol = 1e-300))
+
+  # Testing wedge 02 operators function
+  wedges02 = @decapode begin
+    A::Form0
+    B::Form2
+    (D, E)::Form2
+
+    D == ∂ₜ(A)
+    E == ∂ₜ(B)  
+
+    D == A ∧ B
+    E == B ∧ A
+  end
+  
+  sim = eval(gensim(wedges02))
+
+  f = sim(earth, default_dec_generate)
+  A = ones(nv(earth))
+  B = ones(ntriangles(earth))
+  u = ComponentArray(A=A, B=B)
+  du = ComponentArray(A=zeros(ntriangles(earth)), B=zeros(ntriangles(earth)))
+
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test all(isapprox.(du.A, ones(ntriangles(earth))))
+  @test all(isapprox.(du.B, ones(ntriangles(earth))))
+  @test all(isapprox.(du.A, du.B))
+
+  # Testing Geo inverse hodge 1
+  GeoInvHodge1 = @decapode begin
+    A::DualForm1
+
+    B == ∂ₜ(A)
+    B == ⋆(⋆(A))
+  end
+  
+  sim = eval(gensim(GeoInvHodge1))
+
+  f = sim(earth, default_dec_generate)
+  A = ones(ne(earth))
+  u = ComponentArray(A=A)
+  du = ComponentArray(A=zeros(ne(earth)))
+
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test all(isapprox.(du.A, -1 * ones(ne(earth))))  
+
+  # Testing Diagonal inverse hodge 1
+  DiagonalInvHodge1 = @decapode begin
+    A::DualForm1
+
+    B == ∂ₜ(A)
+    B == ⋆(⋆(A))
+  end
+  
+  sim = eval(gensim(DiagonalInvHodge1))
+
+  f = sim(earth, default_dec_generate, DiagonalHodge())
+  A = ones(ne(earth))
+  u = ComponentArray(A=A)
+  du = ComponentArray(A=zeros(ne(earth)))
+
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test all(isapprox.(du.A, -1 * ones(ne(earth))))  
+  
+  
 end

@@ -59,7 +59,7 @@ end
 
 # Special case for inverse hodge for DualForm1 to Form1
 function dec_pair_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge, float_type)
-    inv_hdg = LinearAlgebra.factorize(dec_hodge_star(1, sd, GeometricHodge(), float_type=float_type))
+    inv_hdg = LinearAlgebra.factorize(-1 * dec_hodge_star(1, sd, GeometricHodge(), float_type=float_type))
     ((y, x) -> ldiv!(y, inv_hdg, x), x -> inv_hdg \ x)
 end
 
@@ -76,21 +76,6 @@ end
 function dec_mat_dual_differential(k::Int, sd::HasDeltaSet)
     dualdiff = dec_dual_derivative(k, sd)
     return (dualdiff, x -> dualdiff * x)
-end
-
-function dec_mat_codifferential(k::Int, sd::HasDeltaSet, hodge)
-    codiff = δ(k, sd; hodge=hodge)
-    return (codiff, x -> codiff * x)
-end
-
-function dec_mat_laplace_de_rham(k::Int, sd::HasDeltaSet, hodge)
-    lpdr = dec_p_laplace_de_rham(k, sd, hodge)
-    return (lpdr, x -> lpdr * x)
-end
-
-function dec_mat_laplace_beltrami(k::Int, sd::HasDeltaSet)
-    lpbt = ∇²(k, sd)
-    return (lpbt, x -> lpbt * x)
 end
 
 function dec_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet; float_type=Float64) where {k}
@@ -114,11 +99,9 @@ end
 function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
 
     op = @match my_symbol begin
-
+        
         :plus => (+)
         :(-) || :neg => x -> -1 .* x
-        :.* => (x, y) -> x .* y
-        :./ => (x, y) -> x ./ y
 
         _ => error("Unmatched operator $my_symbol")
     end
