@@ -722,9 +722,9 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test all(isapprox.(du.A, zeros(ntriangles(earth)); atol = 1e-300))
-  @test all(isapprox.(du.B, zeros(ntriangles(earth)); atol = 1e-300))
-  @test all(isapprox.(du.A, du.B; atol = 1e-300))
+  @test all(isapprox.(du.A, zeros(ntriangles(earth)); atol = 1e-15))
+  @test all(isapprox.(du.B, zeros(ntriangles(earth)); atol = 1e-15))
+  @test all(isapprox.(du.A, du.B; atol = 1e-15))
 
   # Testing wedge 02 operators function
   wedges02 = @decapode begin

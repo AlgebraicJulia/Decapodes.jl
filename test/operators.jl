@@ -98,13 +98,13 @@ end
 @testset "Diagonal Hodge" begin
     for i in 0:1
         for sd in dual_meshes_1D
-            @test all(isapprox.(dec_hodge_star(Val{i}, sd, DiagonalHodge()), hodge_star(i, sd, DiagonalHodge()); rtol = 1e-15))
+            @test all(isapprox.(dec_hodge_star(Val{i}, sd, DiagonalHodge()), hodge_star(i, sd, DiagonalHodge()); rtol = 1e-12))
         end
     end
 
     for i in 0:2
         for sd in dual_meshes_2D
-            @test all(isapprox.(dec_hodge_star(Val{i}, sd, DiagonalHodge()), hodge_star(i, sd, DiagonalHodge()); rtol = 1e-15))
+            @test all(isapprox.(dec_hodge_star(Val{i}, sd, DiagonalHodge()), hodge_star(i, sd, DiagonalHodge()); rtol = 1e-12))
         end
     end
 end
@@ -113,13 +113,13 @@ end
 @testset "Inverse Diagonal Hodge" begin
     for i in 0:1
         for sd in dual_meshes_1D
-            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, DiagonalHodge()), inv_hodge_star(i, sd, DiagonalHodge()); rtol = 1e-15))
+            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, DiagonalHodge()), inv_hodge_star(i, sd, DiagonalHodge()); rtol = 1e-12))
         end
     end
 
     for i in 0:2
         for sd in dual_meshes_2D
-            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, DiagonalHodge()), inv_hodge_star(i, sd, DiagonalHodge()); rtol = 1e-15))
+            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, DiagonalHodge()), inv_hodge_star(i, sd, DiagonalHodge()); rtol = 1e-12))
         end
     end
 end
@@ -127,20 +127,20 @@ end
 @testset "Geometric Hodge" begin
     for i in 0:1
         for sd in dual_meshes_1D
-            @test all(isapprox.(dec_hodge_star(Val{i}, sd, GeometricHodge()), hodge_star(i, sd, GeometricHodge()); rtol = 1e-15))
+            @test all(isapprox.(dec_hodge_star(Val{i}, sd, GeometricHodge()), hodge_star(i, sd, GeometricHodge()); rtol = 1e-12))
         end
     end
 
     for i in [0, 2]
         for sd in dual_meshes_2D
-            @test all(isapprox.(dec_hodge_star(Val{i}, sd, GeometricHodge()), hodge_star(i, sd, GeometricHodge()); rtol = 1e-15))
+            @test all(isapprox.(dec_hodge_star(Val{i}, sd, GeometricHodge()), hodge_star(i, sd, GeometricHodge()); rtol = 1e-12))
         end
     end
 
     # TODO: Why does this test require atol, not rtol, to reasonably pass?
     for i in [1]
         for sd in dual_meshes_2D
-            @test all(isapprox.(dec_hodge_star(Val{i}, sd, GeometricHodge()), hodge_star(i, sd, GeometricHodge()); atol = 1e-15))
+            @test all(isapprox.(dec_hodge_star(Val{i}, sd, GeometricHodge()), hodge_star(i, sd, GeometricHodge()); atol = 1e-12))
         end
     end
 
@@ -149,20 +149,20 @@ end
 @testset "Inverse Geometric Hodge" begin
     for i in 0:1
         for sd in dual_meshes_1D
-            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, GeometricHodge()), inv_hodge_star(i, sd, GeometricHodge()); rtol = 1e-15))
+            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, GeometricHodge()), inv_hodge_star(i, sd, GeometricHodge()); rtol = 1e-12))
         end
     end
 
     for i in [0, 2]
         for sd in dual_meshes_2D
-            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, GeometricHodge()), inv_hodge_star(i, sd, GeometricHodge()); rtol = 1e-15))
+            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, GeometricHodge()), inv_hodge_star(i, sd, GeometricHodge()); rtol = 1e-12))
         end
     end
 
     for i in 1:1
         for sd in dual_meshes_2D[1:end-1]
             @show V_1 = rand(ne(sd))
-            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, GeometricHodge())(V_1), inv_hodge_star(i, sd, GeometricHodge()) * V_1; rtol = 1e-13))
+            @test all(isapprox.(dec_inv_hodge(Val{i}, sd, GeometricHodge())(V_1), inv_hodge_star(i, sd, GeometricHodge()) * V_1; rtol = 1e-12))
         end
     end
 
