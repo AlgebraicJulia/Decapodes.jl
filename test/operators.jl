@@ -8,7 +8,7 @@ using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 
-import Decapodes: dec_wedge_product, dec_differential, dec_boundary, dec_dual_derivative, dec_hodge_star, dec_inv_hodge, open_operators!
+import Decapodes: dec_wedge_product, dec_differential, dec_boundary, dec_dual_derivative, dec_hodge_star, dec_inv_hodge, open_operators!, open_operators
 include("../examples/grid_meshes.jl")
 include("../examples/sw/spherical_meshes.jl")
 
@@ -161,7 +161,7 @@ end
 
     for i in 1:1
         for sd in dual_meshes_2D[1:end-1]
-            V_1 = rand(ne(sd))
+            @show V_1 = rand(ne(sd))
             @test all(isapprox.(dec_inv_hodge(Val{i}, sd, GeometricHodge())(V_1), inv_hodge_star(i, sd, GeometricHodge()) * V_1; rtol = 1e-13))
         end
     end
@@ -218,6 +218,26 @@ function print_decapode_into_acset(d::SummationDecapode)
     println("   summand = ", d[:summand])
     println("   summation = ", d[:summation])
     println("end")
+end
+
+@testset "Open Operators" begin
+    laplace_de_rham_0 = @decapode begin
+        (A, B)::Form0
+
+        B == Δ₀(A)
+    end
+    test_compare = open_operators(laplace_de_rham_0)
+    infer_types!(test_compare)
+    resolve_overloads!(test_compare)
+
+    open_operators!(laplace_de_rham_0)
+    infer_types!(laplace_de_rham_0)
+    resolve_overloads!(laplace_de_rham_0)
+
+
+    @test test_compare == laplace_de_rham_0
+    @test test_compare !== laplace_de_rham_0
+
 end
 
 @testset "Opening 1D Operators" begin

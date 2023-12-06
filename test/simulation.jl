@@ -500,6 +500,8 @@ end
     subdivide_duals!(earth, Circumcenter());
   end
 
+  @test_throws "Unmatched operator Test" default_dec_generate(earth, Symbol("Test"))
+
   # Testing transforming negation into multiplication by -1
   neg_transform = @decapode begin
     (A,B)::Form0
@@ -651,14 +653,14 @@ end
   
   sim = eval(gensim(no_unallowed))
 
-  function generate(sd, my_symbol; hodge=GeometricHodge())
+  function generate_no_unallowed(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
       :k => (x -> 20 * x)
     end
     op
   end
 
-  f = sim(earth, generate)
+  f = sim(earth, generate_no_unallowed)
   A = [i for i in 1:nv(earth)]
   u = ComponentArray(A=A)
   du = ComponentArray(A=zeros(ne(earth)))
