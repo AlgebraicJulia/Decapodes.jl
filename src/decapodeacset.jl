@@ -623,7 +623,10 @@ op1_res_rules_1D = [
   (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
   # Rules for δ.
   (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ),
-  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif)]
+  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif),
+   # Rules for Δ
+  (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :Δ),
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :Δ)]
 
 # We merge 1D and 2D rules since it seems op2 rules are metric-free. If
 # this assumption is false, this needs to change.

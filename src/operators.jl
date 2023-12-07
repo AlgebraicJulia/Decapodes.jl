@@ -569,8 +569,8 @@ function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Geomet
     # dual_points::Vector{Point3{Float64}} = sd[:dual_point]
 
     #TODO: Figure out how to type these since both Point2D and Point3D can be used
-    points::Vector{AbstractVector{float_type}} = sd[:point]
-    dual_points::Vector{AbstractVector{float_type}} = sd[:dual_point]
+    points = sd[:point]
+    dual_points = sd[:dual_point]
 
     tgts = @view sd[:∂v0]
     srcs = @view sd[:∂v1]
@@ -583,35 +583,35 @@ function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Geomet
     tri_edges[2, :] = sd[:∂e1]
     tri_edges[3, :] = sd[:∂e0]
 
-    evt::Matrix{AbstractVector{float_type}} = points[tgts[tri_edges]] .- points[srcs[tri_edges]]
-    tct::Vector{AbstractVector{float_type}} = dual_points[tri_centers]
-    dvt::Matrix{AbstractVector{float_type}} = dual_points[edge_centers[tri_edges]]
+    evt = points[tgts[tri_edges]] .- points[srcs[tri_edges]]
+    tct = dual_points[tri_centers]
+    dvt = dual_points[edge_centers[tri_edges]]
     for i in 1:3
         dvt[i, :] .= tct .- dvt[i, :]
     end
     dvt[2, :] .= dvt[2, :] .* -1
 
     for t in triangles(sd)
-        e::Vector{Int32} = tri_edges[:, t]
+        e = tri_edges[:, t]
         # ev = points[tgts[e]] .- points[srcs[e]]
-        ev::Vector{AbstractVector{float_type}} = evt[:, t]
+        ev = evt[:, t]
         # tc = dual_points[tri_centers[t]]
         # tc = tct[t]
         
         #= dv = map(enumerate(dual_points[edge_centers[e]])) do (i, v)
             (tc - v) * (i == 2 ? -1 : 1)
         end =#
-        dv::Vector{AbstractVector{float_type}} = dvt[:, t]
+        dv = dvt[:, t]
 
-        diag_dot::Vector{float_type} = map(1:3) do i
+        diag_dot = map(1:3) do i
             dot(ev[i], dv[i]) / dot(ev[i], ev[i])
         end
 
         # This relative orientation needs to be redefined for each triangle in the
         # case that the mesh has multiple independent connected components
-        rel_orient::float_type = 0.0
+        rel_orient = 0.0
         for i in 1:3
-            diag_cross::float_type = tri_signs[t] * crossdot(ev[i], dv[i]) /
+            diag_cross = tri_signs[t] * crossdot(ev[i], dv[i]) /
                          dot(ev[i], ev[i])
             if diag_cross != 0.0
                 # Decide the orientation of the mesh relative to z-axis (see crossdot)
@@ -628,7 +628,7 @@ function dec_hodge_star(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Geomet
 
         for p ∈ ((1, 2, 3), (1, 3, 2), (2, 1, 3),
             (2, 3, 1), (3, 1, 2), (3, 2, 1))
-            val::float_type = rel_orient * tri_signs[t] * diag_dot[p[1]] *
+            val = rel_orient * tri_signs[t] * diag_dot[p[1]] *
                   dot(ev[p[1]], ev[p[3]]) / crossdot(ev[p[2]], ev[p[3]])
             if val != 0.0
                 push!(I, e[p[1]])
