@@ -12,14 +12,17 @@ Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 
 begin 
-    primal_earth = EmbeddedDeltaSet2D("Ico7.obj");
+    # TODO: Support larger meshes like Ico7
+    # primal_earth = EmbeddedDeltaSet2D("Ico7.obj");
+    mesh_size = 5
+    primal_earth = loadmesh(Icosphere(mesh_size))
     orient!(primal_earth);
     earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth);
     subdivide_duals!(earth, Barycenter());
 end
 
 begin 
-    println("Mesh: " * "Blender Ico Sphere, 7 Subdivisions")
+    println("Mesh: " * "Blender Ico Sphere, $(mesh_size) Subdivisions")
     println("")
 
     println("Number of primal vertices: ", nv(earth))
