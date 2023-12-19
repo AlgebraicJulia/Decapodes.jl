@@ -12,6 +12,7 @@ using MLStyle
 using Base.Iterators
 
 using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 
 export
 findname, flat_op,
