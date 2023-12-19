@@ -12,11 +12,11 @@ using CombinatorialSpaces.ExteriorCalculus
 using LinearAlgebra
 using MLStyle
 using Base.Iterators
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 import Decapodes: DecaExpr
 
-using DiagrammaticEquations
-using DiagrammaticEquations.Deca
 
 @testset "Parsing" begin
 

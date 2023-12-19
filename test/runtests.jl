@@ -12,10 +12,6 @@ end
   include("composition.jl")
 end
 
-@testset "Collages" begin
-  include("migrate/collages.jl")
-end
-
 @testset "Coordinates" begin
   include("coordinates.jl")
 end
@@ -28,15 +24,8 @@ end
   include("multiscalearrays.jl")
 end
 
-@testset "Average Rewriting" begin
-  include("migrate/rewrite.jl")
-end
-
 @testset "Simulation" begin
   include("simulation.jl")
 end
 
-@testset "Visualization" begin
-  include("migrate/visualization.jl")
-end
 
