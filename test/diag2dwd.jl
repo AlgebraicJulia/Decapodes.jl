@@ -1,7 +1,7 @@
 using Test
 using Catlab
 using Catlab.Theories
-import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
+# import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
