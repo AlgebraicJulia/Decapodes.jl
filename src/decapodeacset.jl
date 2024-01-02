@@ -271,6 +271,39 @@ function find_chains(d::SummationDecapode)
   return chains
 end
 
+#""" function get_valid_op1s(deca_source::SummationDecapode, varID)
+#Searches SummationDecapode, deca_source, at the request varID
+#and returns all op1s which are allowed to be averaged. Returns
+#an array of indices of valid op1 sources.
+#
+#Namely this is meant to exclude ∂ₜ from being included in an average.
+#"""
+function get_valid_op1s(deca_source::SummationDecapode, varID)
+    # skip_ops = Set([:∂ₜ])
+    indices = incident(deca_source, varID, :tgt)
+    return filter!(x -> deca_source[x, :op1] != :∂ₜ, indices)
+end
+
+#""" function is_tgt_of_many_ops(d::SummationDecapode, var)
+#Return true if there are two or more distinct operations leading
+#into Var var (not counting ∂ₜ).
+#"""
+function is_tgt_of_many_ops(d::SummationDecapode, var)
+  op1Count = length(get_valid_op1s(d, var))
+  op2Count = length(incident(d, var, :res))
+  sumCount = length(incident(d, var, :sum))
+
+  op1Count + op2Count + sumCount >= 2
+end
+
+#""" function find_tgts_of_many_ops(d::SummationDecapode)
+#Searches SummationDecapode, d, for all Vars which have two or
+#more distinct operations leading into the same variable.
+#"""
+function find_tgts_of_many_ops(d::SummationDecapode)
+  filter(var -> is_tgt_of_many_ops(d, var), parts(d, :Var))
+end
+
 function add_constant!(d::AbstractNamedDecapode, k::Symbol)
     return add_part!(d, :Var, type=:Constant, name=k)
 end

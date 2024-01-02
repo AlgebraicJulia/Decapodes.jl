@@ -93,12 +93,12 @@ sd
 Then we solve the equations.
 
 ```@example Poiseuille
-using MultiScaleArrays
+using ComponentArrays
 sim = eval(gensim(Poise, dimension=1))
 fₘ = sim(sd, generate)
 q = [2.0]
 P = [10.0, 5.0]
-u = construct(PhysicsState, [VectorForm(q), VectorForm(P)], Float64[], [:q, :P])
+u = ComponentArray(q=q,P=P)
 params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
@@ -131,7 +131,7 @@ Note that we do not generate new simulation code for Poiseuille flow with `gensi
 fₘ = sim(sd, generate)
 P = [9,8,7,6,5,4,3,2,1,0]
 q = [5,3,4,2,5,2,8,4,3]
-u = construct(PhysicsState, [VectorForm(q), VectorForm(P)], Float64[], [:q, :P])
+u = ComponentArray(q=q,P=P)
 params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5());
@@ -170,7 +170,7 @@ Then we solve the equations.
 fₘ = sim(sd, generate)
 P = collect(1.0:nv(sd))
 q = fill(5.0, ne(sd))
-u = construct(PhysicsState, [VectorForm(q), VectorForm(P)], Float64[], [:q, :P])
+u = ComponentArray(q=q,P=P)
 params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
 sol = solve(prob, Tsit5())
@@ -225,7 +225,7 @@ func = sim(sd, generate)
 
 q = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5]
 ρ = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5,5]
-u = construct(PhysicsState, [VectorForm(q), VectorForm(ρ)], Float64[], [:q, :ρ])
+u = ComponentArray(q=q,ρ=ρ)
 params = (k = -0.01, μ̃ = 0.5, R=0.005)
 
 prob = ODEProblem(func, u, (0.0, 10000.0), params)

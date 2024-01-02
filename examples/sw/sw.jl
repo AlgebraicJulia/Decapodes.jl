@@ -2,11 +2,11 @@ using Catlab
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
 using Decapodes
-using MultiScaleArrays
 using OrdinaryDiffEq
 using MLStyle
 using Distributions
 using LinearAlgebra
+using ComponentArrays
 using GeometryBasics: Point3
 
 Point3D = Point3{Float64}
@@ -86,7 +86,7 @@ fₘ = f(earth, generate)
 c_dist = MvNormal(nploc[[1,2]], 100[1, 1])
 c = [pdf(c_dist, [p[1], p[2]]./√RADIUS) for p in earth[:point]]
 
-u₀ = construct(PhysicsState, [VectorForm(c)],Float64[], [:C])
+u₀ = ComponentArrays(C=c)
 tₑ = 10
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
@@ -94,9 +94,9 @@ soln = solve(prob, Tsit5())
 #using CairoMakie 
 using GLMakie
 
-#mesh(primal_earth, color=findnode(soln(0), :C), colormap=:plasma)
-#mesh(primal_earth, color=findnode(soln(tₑ), :C), colormap=:plasma)
-#mesh(primal_earth, color=findnode(soln(tₑ)-soln(0), :C), colormap=:plasma)
+#mesh(primal_earth, color=soln(0).C, colormap=:plasma)
+#mesh(primal_earth, color=soln(tₑ).C, colormap=:plasma)
+#mesh(primal_earth, color=soln(tₑ)-soln(0).C, colormap=:plasma)
 
 begin
 AdvDiff = quote
@@ -162,36 +162,35 @@ c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 
 c = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
 
-
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(collect(v))],Float64[], [:C, :V])
-#mesh(primal_earth, color=findnode(u₀, :C), colormap=:plasma)
+u₀ = ComponentArrays(C=c,V=collect(v))
+#mesh(primal_earth, color=u₀.C, colormap=:plasma)
 tₑ = 30.0
 
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 end
 begin
-mass(soln, t, mesh, concentration=:C) = sum(⋆(0, mesh)*findnode(soln(t), concentration))
+mass(soln, t, mesh, concentration=:C) = sum(⋆(0, mesh)*soln(t).concentration)
 @show extrema(mass(soln, t, earth, :C) for t in 0:tₑ/150:tₑ)
 end
-#mesh(primal_earth, color=findnode(soln(0), :C), colormap=:jet)
-#mesh(primal_earth, color=findnode(soln(0) - soln(tₑ), :C), colormap=:jet)
+#mesh(primal_earth, color=soln(0).C, colormap=:jet)
+#mesh(primal_earth, color=soln(0) - soln(tₑ).C, colormap=:jet)
 begin
 
 #function interactive_sim_view(my_mesh::EmbeddedDeltaSet2D, tₑ, soln; loop_times = 1)
 #  times = range(0.0, tₑ, length = 150)
-#  colors = [findnode(soln(t), :C) for t in times]
+#  colors = [soln(t).C for t in times]
 #  fig, ax, ob = mesh(my_mesh, color=colors[1],
 #    colorrange = extrema(vcat(colors...)), colormap=:jet)
 #  display(fig)
 #  loop = range(0.0, tₑ; length=150)
 #  for _ in 1:loop_times
 #    for t in loop
-#      ob.color = findnode(soln(t), :C)
+#      ob.color = soln(t).C
 #      sleep(0.05)
 #    end
 #    for t in reverse(loop)
-#      ob.color = findnode(soln(t), :C)
+#      ob.color = soln(t).C
 #      sleep(0.05)
 #    end
 #  end
@@ -201,7 +200,7 @@ begin
 
 # Plot the result
 times = range(0.0, tₑ, length=150)
-colors = [findnode(soln(t), :C) for t in times]
+colors = [soln(t).C for t in times]
 
 # Initial frame
 # fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = extrema(vcat(colors...)), colormap=:jet)
@@ -211,6 +210,6 @@ framerate = 5
 
 # Animation
 record(fig, "diff_adv.gif", range(0.0, tₑ; length=150); framerate = 30) do t
-    ob.color = findnode(soln(t), :C)
+    ob.color = soln(t).C
 end
 end

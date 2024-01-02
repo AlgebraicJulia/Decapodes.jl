@@ -1,5 +1,7 @@
 using Test
 
+include("pretty.jl")
+
 @testset "Construction" begin
   include("diag2dwd.jl")
 end
@@ -24,13 +26,13 @@ end
   include("meshes.jl")
 end
 
-@testset "MultiScaleArrays.jl Integration" begin
-  include("multiscalearrays.jl")
+@testset "ComponentArrays.jl Integration" begin
+  include("componentarrays.jl")
 end
 
-@testset "Average Rewriting" begin
-  include("rewrite.jl")
-end
+#@testset "Average Rewriting" begin
+#  include("rewrite.jl")
+#end
 
 @testset "Simulation" begin
   include("simulation.jl")
@@ -40,3 +42,6 @@ end
   include("visualization.jl")
 end
 
+@testset "SummationDecapode Deconstruction" begin
+  include("colanguage.jl")
+end

@@ -3,7 +3,6 @@ using Catlab.Graphics
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
 using Decapodes
-using MultiScaleArrays
 using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
@@ -11,6 +10,7 @@ using GLMakie
 using Logging
 using JLD2
 using Printf
+using ComponentArrays
 
 using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
@@ -111,16 +111,14 @@ fₘ = sim(sd, generate)
 
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
-u₀ = construct(PhysicsState,
-  [VectorForm(U), VectorForm(V), VectorForm(One)], Float64[],
-  [:U, :V, :One])
+u₀ = ComponentArrays(U=U, V=V, One=One)
 
 # Visualize the initial conditions.
 # If GLMakie throws errors, then update your graphics drivers,
 # or use an alternative Makie backend like CairoMakie.
 fig_ic = GLMakie.Figure()
-p1 = GLMakie.mesh(fig_ic[1,2], s, color=findnode(u₀, :U), colormap=:jet)
-p2 = GLMakie.mesh(fig_ic[1,3], s, color=findnode(u₀, :V), colormap=:jet)
+p1 = GLMakie.mesh(fig_ic[1,2], s, color=u₀.U, colormap=:jet)
+p2 = GLMakie.mesh(fig_ic[1,3], s, color=u₀.V, colormap=:jet)
 
 tₑ = 11.5
 
@@ -136,14 +134,14 @@ soln = solve(prob, Tsit5())
 @save "brusselator.jld2" soln
 
 # Visualize the final conditions.
-GLMakie.mesh(s, color=findnode(soln(tₑ), :U), colormap=:jet)
+GLMakie.mesh(s, color=soln(tₑ).U, colormap=:jet)
 
 begin # BEGIN Gif creation
 frames = 100
 # Initial frame
 fig = GLMakie.Figure(resolution = (1200, 800))
-p1 = GLMakie.mesh(fig[1,2], s, color=findnode(soln(0), :U), colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
-p2 = GLMakie.mesh(fig[1,4], s, color=findnode(soln(0), :V), colormap=:jet, colorrange=extrema(findnode(soln(0), :V)))
+p1 = GLMakie.mesh(fig[1,2], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
+p2 = GLMakie.mesh(fig[1,4], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
 ax1 = Axis(fig[1,2], width = 400, height = 400)
 ax2 = Axis(fig[1,4], width = 400, height = 400)
 hidedecorations!(ax1)
@@ -158,8 +156,8 @@ lab1 = Label(fig[1,3], "")
 
 # Animation
 record(fig, "brusselator.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    p1.plot.color = findnode(soln(t), :U)
-    p2.plot.color = findnode(soln(t), :V)
+    p1.plot.color = soln(t).U
+    p2.plot.color = soln(t).V
     lab1.text = @sprintf("%.2f",t)
 end
 
@@ -221,14 +219,14 @@ fₘ = sim(sd, generate)
 
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
-u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V), VectorForm(One)], Float64[], [:U, :V, :One])
+u₀ = ComponentArrays(U=U, V=V, One=One)
 
 # Visualize the initial conditions.
 # If GLMakie throws errors, then update your graphics drivers,
 # or use an alternative Makie backend like CairoMakie.
 fig_ic = GLMakie.Figure()
-p1 = GLMakie.mesh(fig_ic[1,2], s, color=findnode(u₀, :U), colormap=:jet)
-p2 = GLMakie.mesh(fig_ic[1,3], s, color=findnode(u₀, :V), colormap=:jet)
+p1 = GLMakie.mesh(fig_ic[1,2], s, color=u₀.U, colormap=:jet)
+p2 = GLMakie.mesh(fig_ic[1,3], s, color=u₀.V, colormap=:jet)
 display(fig_ic)
 
 tₑ = 11.5
@@ -245,21 +243,21 @@ soln = solve(prob, Tsit5())
 @save "brusselator_sphere.jld2" soln
 
 # Visualize the final conditions.
-GLMakie.mesh(s, color=findnode(soln(tₑ), :U), colormap=:jet)
+GLMakie.mesh(s, color=soln(tₑ).U, colormap=:jet)
 
 begin # BEGIN Gif creation
 frames = 800
 # Initial frame
 fig = GLMakie.Figure(resolution = (1200, 1200))
-p1 = GLMakie.mesh(fig[1,1], s, color=findnode(soln(0), :U), colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
-p2 = GLMakie.mesh(fig[2,1], s, color=findnode(soln(0), :V), colormap=:jet, colorrange=extrema(findnode(soln(0), :V)))
+p1 = GLMakie.mesh(fig[1,1], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
+p2 = GLMakie.mesh(fig[2,1], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
 Colorbar(fig[1,2])
 Colorbar(fig[2,2])
 
 # Animation
 record(fig, "brusselator_sphere.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
-    p1.plot.color = findnode(soln(t), :U)
-    p2.plot.color = findnode(soln(t), :V)
+    p1.plot.color = soln(t).U
+    p2.plot.color = soln(t).V
 end
 
 end # END Gif creation

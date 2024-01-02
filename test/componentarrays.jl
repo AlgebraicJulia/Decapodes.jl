@@ -1,4 +1,4 @@
-using MultiScaleArrays
+using ComponentArrays
 using OrdinaryDiffEq
 using GeometryBasics
 using JSON
@@ -14,15 +14,13 @@ using Test
 using MLStyle
 using LinearAlgebra
 
-C = VectorForm(ones(Float64, 10))
-V = VectorForm(ones(Float64, 100))
+C = ones(Float64, 10)
+V = ones(Float64, 100)
 
-u₀ = construct(PhysicsState, [C,V], Float64[], [:C, :V])
-@test length(findnode(u₀, :C)) == 10
-@test length(findnode(u₀, :V)) == 100
+u₀ = ComponentArray(C=C,V=V)
 
 dynamics(du, u, p, t) = begin
-    findnode(du, :C).values .= 0.1 * findnode(u, :C).values
+    du.C .= 0.1 * u.C
     return du
 end
 prob = ODEProblem(dynamics,u₀,(0,1))
@@ -69,7 +67,7 @@ fₘ = f(periodic_mesh, generate)
 c_dist = MvNormal([5, 5], LinearAlgebra.Diagonal(map(abs2, [1.5, 1.5])))
 c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
 
-u₀ = construct(PhysicsState, [VectorForm(c)],Float64[], [:C])
+u₀ = ComponentArray(C=c)
 tₑ = 10
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
@@ -118,13 +116,13 @@ v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_cent
 c_dist = MvNormal([7, 5], LinearAlgebra.Diagonal(map(abs2, [1.5, 1.5])))
 c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
 
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(v)],Float64[], [:C, :V])
+u₀ = ComponentArray(C=c,V=v)
 tₑ = 24
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
-@test norm(findnode(soln.u[end], :C) - findnode(soln.u[1], :C)) >= 1e-4
-@test norm(findnode(soln.u[end], :V) - findnode(soln.u[1], :V)) <= 1e-8
+@test norm(soln.u[end].C - soln.u[1].C) >= 1e-4
+@test norm(soln.u[end].V - soln.u[1].V) <= 1e-8
 
 # Plot the result
 # times = range(0.0, tₑ, length=150)

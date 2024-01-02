@@ -2,11 +2,11 @@ using Catlab
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
 using Decapodes
-using MultiScaleArrays
 using OrdinaryDiffEq
 using MLStyle
 using Distributions
 using LinearAlgebra
+using ComponentArrays
 using GeometryBasics: Point3
 
 Point3D = Point3{Float64}
@@ -94,14 +94,14 @@ v = ones(Float64, ne(earth))
 
 wedge_product(Tuple{0,1}, earth, c, v)
 
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(v)],Float64[], [:C, :V])
+u₀ = ComponentArrays(C=c, V=v)
 tₑ = 1000
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
 using GLMakie
 
-mesh(primal_earth, color=findnode(soln(0), :C), colormap=:plasma)
-mesh(primal_earth, color=findnode(soln(tₑ), :C), colormap=:plasma)
-mesh(primal_earth, color=findnode(soln(tₑ)-soln(0), :C), colormap=:plasma)
+mesh(primal_earth, color=soln(0).C, colormap=:plasma)
+mesh(primal_earth, color=soln(tₑ).C, colormap=:plasma)
+mesh(primal_earth, color=soln(tₑ)-soln(0).C, colormap=:plasma)
 

@@ -126,7 +126,7 @@ modified initial condition is shown below:
 
 ```@example Debug
 using LinearAlgebra
-using MultiScaleArrays
+using ComponentArrays
 using MLStyle
 using CombinatorialSpaces.DiscreteExteriorCalculus: ∧
 include("../../examples/boundary_helpers.jl")
@@ -167,7 +167,7 @@ fₘ = sim(plot_mesh_dual, generate)
 velocity(p) = [-0.5, 0.0, 0.0]
 v = ♭(plot_mesh_dual, DualVectorField(velocity.(plot_mesh_dual[triangle_center(plot_mesh_dual),:dual_point]))).data
 
-u₀ = construct(PhysicsState, [VectorForm(c)], Float64[], [:C])
+u₀ = ComponentArray(C=c)
 params = (V = v,)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0), params)
@@ -175,8 +175,8 @@ sol = solve(prob, Tsit5());
 
 # Plot the result
 times = range(0.0, 100.0, length=150)
-colors = [findnode(sol(t), :C) for t in times]
-
+colors = [sol(t).C for t in times]
+extrema
 # Initial frame
 fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
 ax.aspect = AxisAspect(3.0)
@@ -185,7 +185,7 @@ framerate = 30
 
 # Animation
 record(fig, "diff_adv_right.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-  ob.color = findnode(sol(t), :C)
+  ob.color = sol(t).C
 end
 ```
 

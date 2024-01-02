@@ -13,7 +13,7 @@ using Distributions
 using GLMakie
 using LinearAlgebra
 using MLStyle
-using MultiScaleArrays
+using ComponentArrays
 using OrdinaryDiffEq
 
 # Represent component Decapodes.
@@ -88,7 +88,7 @@ c_dist = MvNormal([500, 5], [10.5, 10.5])
 c = [pdf(c_dist, [p[1], p[2]]) for p in point(sd)]
 dX = ones(ne(sd))
 
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(dX)], Float64[], [:C, :lie_dX])
+u₀ = ComponentArrays(C=c, lie_dX=dX)
 
 cs_ps = (diffusion_ν = 0.0005,)
 
@@ -115,21 +115,21 @@ prob = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
 sol = solve(prob, Tsit5(), progress=true, progress_steps=1)
 
 # Visualize initial and final conditions.
-lines(map(x -> x[1], point(sd)), findnode(sol(0.0), :C))
-lines!(map(x -> x[1], point(sd)), findnode(sol(tₑ), :C))
+lines(map(x -> x[1], point(sd)), sol(0.0).C)
+lines!(map(x -> x[1], point(sd)), sol(tₑ).C)
 
 # Animate the dynamics.
 times = range(0.0, tₑ, length=150)
-colors = [findnode(sol(t), :C) for t in times]
+colors = [sol(t).C for t in times]
 
 frames = 100
 fig = Figure(resolution = (800, 800))
 ax1 = Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(sd))))
-ylims!(ax1, extrema(findnode(sol(0.0), :C)))
+ylims!(ax1, extrema(sol(0.0).C))
 Label(fig[1,1,Top()], "Speed C")
 Label(fig[2,1,Top()], "Line plot of speed of fluid along the linear domain, every $(tₑ/frames) time units")
 
 record(fig, "burger_low_diff.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-  lines!(fig[1,1], map(x -> x[1], point(sd)), findnode(sol(t), :C))
+  lines!(fig[1,1], map(x -> x[1], point(sd)), sol(t).C)
 end
