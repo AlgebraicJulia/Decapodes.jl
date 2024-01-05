@@ -1,8 +1,6 @@
 using Test
 
-@testset "Construction" begin
-  include("diag2dwd.jl")
-end
+include("pretty.jl")
 
 @testset "SummationDecapode Construction" begin
   include("summation.jl")
@@ -20,8 +18,8 @@ end
   include("meshes.jl")
 end
 
-@testset "MultiScaleArrays.jl Integration" begin
-  include("multiscalearrays.jl")
+@testset "ComponentArrays.jl Integration" begin
+  include("componentarrays.jl")
 end
 
 @testset "Simulation" begin
@@ -29,3 +27,6 @@ end
 end
 
 
+@testset "SummationDecapode Deconstruction" begin
+  include("colanguage.jl")
+end

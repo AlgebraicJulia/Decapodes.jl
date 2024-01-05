@@ -2,7 +2,6 @@ using Catlab
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
 using Decapodes
-using MultiScaleArrays
 using OrdinaryDiffEq
 using MLStyle
 using Distributions
@@ -10,6 +9,7 @@ using LinearAlgebra
 using Catlab.ACSetInterface
 using GLMakie
 using Logging
+using ComponentArrays
 # using CairoMakie 
 
 using GeometryBasics: Point3
@@ -150,9 +150,8 @@ c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 
 c = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
 
-
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(collect(v))],Float64[], [:P, :V])
-mesh(primal_earth, color=findnode(u₀, :P), colormap=:plasma)
+u₀ = ComponentArrays(P = c, V=collect(v))
+mesh(primal_earth, color=u₀.P, colormap=:plasma)
 tₑ = 30.0
 
 @info("Precompiling Solver")
@@ -166,16 +165,16 @@ soln = solve(prob, Tsit5())
 end
 
 begin
-mass(soln, t, mesh, concentration=:P) = sum(⋆(0, mesh)*findnode(soln(t), concentration))
+mass(soln, t, mesh, concentration=:P) = sum(⋆(0, mesh)*soln(t).concentration)
 
 @show extrema(mass(soln, t, earth, :P) for t in 0:tₑ/150:tₑ)
 end
-mesh(primal_earth, color=findnode(soln(0), :P), colormap=:jet)
-mesh(primal_earth, color=findnode(soln(0) - soln(tₑ), :P), colormap=:jet)
+mesh(primal_earth, color=soln(0).P, colormap=:jet)
+mesh(primal_earth, color=soln(0) - soln(tₑ).P, colormap=:jet)
 begin
 # Plot the result
 times = range(0.0, tₑ, length=150)
-colors = [findnode(soln(t), :P) for t in times]
+colors = [soln(t).P for t in times]
 
 # Initial frame
 # fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = extrema(vcat(colors...)), colormap=:jet)
@@ -185,7 +184,7 @@ framerate = 5
 
 # Animation
 record(fig, "weather.gif", range(0.0, tₑ; length=150); framerate = 30) do t
-    ob.color = findnode(soln(t), :P)
+    ob.color = soln(t).P
 end
 end
 

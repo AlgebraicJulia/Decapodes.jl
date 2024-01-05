@@ -160,17 +160,17 @@ Finally, we solve this PDE problem using the `Tsit5()` solver and generate an an
 
 ```@example DEC
 using LinearAlgebra
-using MultiScaleArrays
+using ComponentArrays
 using OrdinaryDiffEq
 
-u₀ = construct(PhysicsState, [VectorForm(c)], Float64[], [:C])
+u₀ = ComponentArray(C=c)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
 sol = solve(prob, Tsit5());
 
 # Plot the result
 times = range(0.0, 100.0, length=150)
-colors = [findnode(sol(t), :C)[point_map] for t in times]
+colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
 fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
@@ -180,7 +180,7 @@ framerate = 30
 
 # Animation
 record(fig, "diffusion.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-ob.color = findnode(sol(t), :C)[point_map]
+ob.color = sol(t).C[point_map]
 end
 ```
 
@@ -325,14 +325,14 @@ fₘ = sim(periodic_mesh, generate, DiagonalHodge())
 velocity(p) = [-0.5, -0.5, 0.0]
 v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
 
-u₀ = construct(PhysicsState, [VectorForm(c), VectorForm(v)], Float64[], [:C, :V])
+u₀ = ComponentArray(C=c,V=v)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
 sol = solve(prob, Tsit5());
 
 # Plot the result
 times = range(0.0, 100.0, length=150)
-colors = [findnode(sol(t), :C)[point_map] for t in times]
+colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
 fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
@@ -342,7 +342,7 @@ framerate = 30
 
 # Animation
 record(fig, "diff_adv.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-ob.color = findnode(sol(t), :C)[point_map]
+ob.color = sol(t).C[point_map]
 end
 ```
 
