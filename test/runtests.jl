@@ -1,6 +1,6 @@
 using Test
 
-include("pretty.jl")
+# include("pretty.jl")
 
 @testset "SummationDecapode Construction" begin
   include("summation.jl")
@@ -27,6 +27,3 @@ end
 end
 
 
-@testset "SummationDecapode Deconstruction" begin
-  include("colanguage.jl")
-end

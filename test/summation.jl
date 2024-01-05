@@ -2,6 +2,8 @@ using Test
 using Catlab
 using Catlab.Theories
 using Catlab.CategoricalAlgebra
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 
 using Decapodes
 import Decapodes: DecaExpr, eval_eq!
