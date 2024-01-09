@@ -1,11 +1,13 @@
 using Test
+using DiagrammaticEquations
 using Decapodes
 using Catlab
 using Catlab.WiringDiagrams
 using Catlab.Programs
 using Catlab.CategoricalAlgebra
 
-import DiagrammaticEquations: OpenSummationDecapode, Open, oapply, oapply_rename
+# import DiagrammaticEquations: OpenSummationDecapode, Open, oapply, oapply_rename
+
 # @testset "Composition" begin
 # Simplest possible decapode relation.
 Trivial = @decapode begin 

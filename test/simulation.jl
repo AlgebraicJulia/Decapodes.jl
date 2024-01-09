@@ -1,6 +1,5 @@
 using Decapodes
 import Decapodes: compile, gensim
-# , infer_states, infer_state_names
 
 using Catlab
 using Catlab.CategoricalAlgebra

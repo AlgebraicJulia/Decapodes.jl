@@ -5,6 +5,7 @@ using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
+using ComponentArrays
 using Decapodes
 using MultiScaleArrays
 using MLStyle
@@ -135,9 +136,7 @@ fₘ = sim(sd, generate)
 
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
-u₀ = construct(PhysicsState,
-  [VectorForm(U), VectorForm(V), VectorForm(One)], Float64[],
-  [:U, :V, :One])
+u₀ = ComponentArrays(U=U, V=V, One=One)
 
 # Visualize the initial conditions.
 # If GLMakie throws errors, then update your graphics drivers,

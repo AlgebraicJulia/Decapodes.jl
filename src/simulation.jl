@@ -126,18 +126,6 @@ is_infer(d::SummationDecapode, var_name::Symbol) = is_infer(d, first(incident(d,
 
 add_stub(stub_name::Symbol, var_name::Symbol) = return Symbol("$(stub_name)_$(var_name)")
 
-# TODO: Matt - Delete
-# function infer_states(d::SummationDecapode)
-#     filter(parts(d, :Var)) do v
-#         length(incident(d, v, :tgt)) == 0 &&
-#         length(incident(d, v, :res)) == 0 &&
-#         length(incident(d, v, :sum)) == 0 &&
-#         d[v, :type] != :Literal
-#     end
-# end
-
-# infer_state_names(d) = d[infer_states(d), :name]
-
 # This will be the function and matrix generation
 function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol})
     assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./])
