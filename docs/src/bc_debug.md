@@ -15,6 +15,8 @@ mesh boundary.
 ```@example Debug
 using Catlab
 using Catlab.Graphics
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 
 Diffusion = @decapode begin

@@ -11,6 +11,8 @@ For the parameters to Glen's law, we will use those used in the [Community Ice S
 using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 
 # External Dependencies
