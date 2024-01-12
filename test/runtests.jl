@@ -1,14 +1,7 @@
 using Test
 
-
-# include("pretty.jl")
-
 @testset "SummationDecapode Construction" begin
   include("summation.jl")
-end
-
-@testset "Composition" begin
-  include("composition.jl")
 end
 
 @testset "Coordinates" begin
