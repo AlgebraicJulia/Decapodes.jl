@@ -3,6 +3,8 @@
 using Catlab.Graphics
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes</code></pre><p>The harmonic oscillator can be written in Decapodes in at least three different ways.</p><pre><code class="language-julia hljs">oscillator = @decapode begin
   X::Form0
   V::Form0
@@ -10,7 +12,7 @@ using Decapodes</code></pre><p>The harmonic oscillator can be written in Decapod
   ∂ₜ(X) == V
   ∂ₜ(V) == -k(X)
 end</code></pre><div class="c-set">
-<span class="c-set-summary">SummationDecapode{Any, Any, Symbol} {Var:4, TVar:2, Op1:4, Op2:0, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<span class="c-set-summary">DiagrammaticEquations.SummationDecapode{Any, Any, Symbol} {Var:4, TVar:2, Op1:4, Op2:0, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -197,7 +199,7 @@ end</code></pre><div class="c-set">
   ∂ₜ(X) == V
   ∂ₜ(V) == -k*(X)
 end</code></pre><div class="c-set">
-<span class="c-set-summary">SummationDecapode{Any, Any, Symbol} {Var:5, TVar:2, Op1:3, Op2:1, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<span class="c-set-summary">DiagrammaticEquations.SummationDecapode{Any, Any, Symbol} {Var:5, TVar:2, Op1:3, Op2:1, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -435,7 +437,7 @@ end</code></pre><div class="c-set">
   ∂ₜ(X) == V
   ∂ₜ(V) == -1*k*(X)
 end</code></pre><div class="c-set">
-<span class="c-set-summary">SummationDecapode{Any, Any, Symbol} {Var:6, TVar:2, Op1:2, Op2:2, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<span class="c-set-summary">DiagrammaticEquations.SummationDecapode{Any, Any, Symbol} {Var:6, TVar:2, Op1:2, Op2:2, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -706,7 +708,7 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
   ∂ₜ(X) == V
   ∂ₜ(V) == -1*k*(X)
 end</code></pre><div class="c-set">
-<span class="c-set-summary">SummationDecapode{Any, Any, Symbol} {Var:6, TVar:2, Op1:2, Op2:2, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<span class="c-set-summary">DiagrammaticEquations.SummationDecapode{Any, Any, Symbol} {Var:6, TVar:2, Op1:2, Op2:2, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -968,4 +970,4 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 </g>
 </g>
 </svg>
-'/><p>Often you will have a linear material where you are scaling by a constant, and a nonlinear version of that material where that scaling is replaced by a generic nonlinear function. This is why we allow Decapodes to represent both of these types of equations.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overview/">« Overview</a><a class="docs-footer-nextpage" href="../ascii/">ASCII Operators »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Thursday 9 November 2023 14:41">Thursday 9 November 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+'/><p>Often you will have a linear material where you are scaling by a constant, and a nonlinear version of that material where that scaling is replaced by a generic nonlinear function. This is why we allow Decapodes to represent both of these types of equations.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overview/">« Overview</a><a class="docs-footer-nextpage" href="../ascii/">ASCII Operators »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Friday 12 January 2024 18:16">Friday 12 January 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
