@@ -7,6 +7,8 @@ Let's model glacial flow using a model of how ice height of a glacial sheet chan
 using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 
 # External Dependencies

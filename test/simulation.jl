@@ -1,5 +1,5 @@
 using Decapodes
-import Decapodes: compile, gensim, infer_states, infer_state_names
+import Decapodes: compile, gensim
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -13,6 +13,8 @@ using LinearAlgebra
 using Distributions
 using ComponentArrays
 using OrdinaryDiffEq
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
   hodge = ⋆(k,sd,hodge=hodge)

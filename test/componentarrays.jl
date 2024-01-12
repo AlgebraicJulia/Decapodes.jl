@@ -9,6 +9,9 @@ using Artifacts
 using Catlab
 using Catlab.CategoricalAlgebra
 using CombinatorialSpaces
+
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using Test
 using MLStyle
