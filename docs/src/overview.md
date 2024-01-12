@@ -23,6 +23,8 @@ single variable `C`.
 and define a convenience function for visualization in later examples.
 
 ```@example DEC
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using Catlab, Catlab.Graphics
 

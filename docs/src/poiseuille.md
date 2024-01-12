@@ -7,6 +7,8 @@ using Catlab
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
 using CombinatorialSpaces.DiscreteExteriorCalculus: ∧
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 
 # Julia community libraries
