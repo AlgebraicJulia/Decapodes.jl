@@ -1,5 +1,7 @@
 pwd; hostname; date
 
+echo "Hello!"
+
 module load julia
 
 echo "Running Tests..."
