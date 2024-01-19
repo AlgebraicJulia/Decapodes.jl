@@ -288,7 +288,7 @@ mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D.gif&quot;</code></pre><p><img src="../ice_dynamics2D.gif" alt="IceDynamics2D"/></p><h1 id="2-Manifold-in-3D"><a class="docs-heading-anchor" href="#2-Manifold-in-3D">2-Manifold in 3D</a><a id="2-Manifold-in-3D-1"></a><a class="docs-heading-anchor-permalink" href="#2-Manifold-in-3D" title="Permalink"></a></h1><p>We note that just because our physics is happening on a 2-manifold, (a surface), this doesn&#39;t restrict us to the 2D plane. In fact, we can &quot;embed&quot; our 2-manifold in 3D space to simulate a glacial sheets spread across the globe.</p><pre><code class="language-julia hljs">s′ = loadmesh(Icosphere(3, 10_000))
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
-wireframe(s)</code></pre><img src="ec886b80.png" alt="Example block output"/><pre><code class="language-julia hljs">n = 3
+wireframe(s)</code></pre><img src="ab0c60f7.png" alt="Example block output"/><pre><code class="language-julia hljs">n = 3
 ρ = 910
 g = 9.8
 A = 1e-16
@@ -300,7 +300,7 @@ end
 
 # Visualize initial condition for ice sheet height.
 # There is lots of ice at the poles, and no ice at the equator.
-mesh(s′, color=h₀, colormap=:jet)</code></pre><img src="a417ef58.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
+mesh(s′, color=h₀, colormap=:jet)</code></pre><img src="72f5cb52.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
 
 constants_and_parameters = (
   n = n,
@@ -318,7 +318,7 @@ soln = solve(prob, Tsit5())
 @info(&quot;Done&quot;)
 
 # Compare the extrema of the initial and final conditions of ice height.
-extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((0.0, 1.0), (0.32274077430851417, 0.34349584820126233))</code></pre><pre><code class="language-julia hljs">mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))</code></pre><img src="f0b7cf8a.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
+extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((0.0, 1.0), (0.32274077430851417, 0.34349584820126233))</code></pre><pre><code class="language-julia hljs">mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))</code></pre><img src="e0415bdf.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
   frames = 200
   fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 
@@ -328,4 +328,4 @@ extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)</code></pre><pre cla
   record(fig, &quot;ice_dynamics2D_sphere.gif&quot;, range(0.0, tₑ/64; length=frames); framerate = 20) do t
     ob.color = soln(t).dynamics_h
   end
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D_sphere.gif&quot;</code></pre><p><img src="../ice_dynamics2D_sphere.gif" alt="IceDynamics2DSphere"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../poiseuille/">« Pipe Flow</a><a class="docs-footer-nextpage" href="../grigoriev/">Grigoriev Ice Cap »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Friday 12 January 2024 18:16">Friday 12 January 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D_sphere.gif&quot;</code></pre><p><img src="../ice_dynamics2D_sphere.gif" alt="IceDynamics2DSphere"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../poiseuille/">« Pipe Flow</a><a class="docs-footer-nextpage" href="../grigoriev/">Grigoriev Ice Cap »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Friday 19 January 2024 19:41">Friday 19 January 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
