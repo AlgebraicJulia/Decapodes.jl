@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Klausmeier · Decapodes.jl</title><meta name="title" content="Klausmeier · Decapodes.jl"/><meta property="og:title" content="Klausmeier · Decapodes.jl"/><meta property="twitter:title" content="Klausmeier · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><script src="../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Decapodes.jl</a></li><li><a class="tocitem" href="../overview/">Overview</a></li><li class="is-active"><a class="tocitem" href>Klausmeier</a><ul class="internal"><li><a class="tocitem" href="#Background"><span>Background</span></a></li><li><a class="tocitem" href="#using-Decapodes"><span>using Decapodes</span></a></li><li><a class="tocitem" href="#Model-Representation"><span>Model Representation</span></a></li><li><a class="tocitem" href="#Animation"><span>Animation</span></a></li><li><a class="tocitem" href="#Conclusion"><span>Conclusion</span></a></li><li><a class="tocitem" href="#References"><span>References</span></a></li></ul></li><li><a class="tocitem" href="../equations/">Equations</a></li><li><a class="tocitem" href="../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Klausmeier</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Klausmeier</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/klausmeier.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Klausmeier"><a class="docs-heading-anchor" href="#Klausmeier">Klausmeier</a><a id="Klausmeier-1"></a><a class="docs-heading-anchor-permalink" href="#Klausmeier" title="Permalink"></a></h1><figure>
+    <img src="https://www.cise.ufl.edu/~luke.morris/imgs/somaliland_vegetation.png"
+         alt="Somaliland Vegetation">
+    <figcaption>One of the first aerial photographs of British Somaliland (now Somaliland) investigated by W.A. Macfadyen in his 1950 "Vegetation Patterns in the Semi-Desert Plains of British Somaliland"\[1\]. From this point of view, Macfadyen's "vegetation arcs" are plainly visible.</figcaption>
+</figure><h2 id="Background"><a class="docs-heading-anchor" href="#Background">Background</a><a id="Background-1"></a><a class="docs-heading-anchor-permalink" href="#Background" title="Permalink"></a></h2><p>From aerial photographs in the late 1940s, British ecologist W.A. Macfadyen discovered that vegetation in semi-arid environments often grows in striping patterns, but was unaware of the exact mechanism that causes them. What is especially striking about these &quot;vegetation arcs&quot; is that these stripes appear to climb uphill, with denser plant growth at the leading edge of these traveling waves. Much like how the Mandelbrot set and other interesting fractal patterns can arise from simple sets of rules, these vegetation dynamics can be explained by simple sets of partial differential equations.</p><p>The Klausmeier model, given by Christopher Klausmeier in his 1999 paper &quot;Regular and Irregular Patterns in Semiarid Vegetation&quot;[2], models such dynamics. Although Macfadyen had discovered these vegetation patterns 50s years prior[1,3], defining these dynamics through accessible and physically-meaningful PDEs proved a catalyst for further research. At the time of writing, Klausmeier&#39;s paper has been cited 594 times.</p><p>In this document, we will use Decapodes to formally represent these equations. Moreover, we will demonstrate how one can automatically generate simulation that reproduces the dynamics given by a scientist, simply by reading in the equations given in their original publication.</p><p>The lofty goal of this document, and of Decapodes itself, is that through both explicitly representing a model - such as Klausmeier&#39;s - and handling the generation of simulation code, we can amplify its accessibility and composability, and ultimately spur further research. Lets start by <code>using Decapodes</code>.</p><p><img src="../klausmeier.gif" alt="Klausmeier GIF"/></p><h2 id="using-Decapodes"><a class="docs-heading-anchor" href="#using-Decapodes">using Decapodes</a><a id="using-Decapodes-1"></a><a class="docs-heading-anchor-permalink" href="#using-Decapodes" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Load Dependencies
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
+using Decapodes
+using Catlab
+using CombinatorialSpaces
+
+using Distributions
+using CairoMakie
+using JLD2
+using LinearAlgebra
+using MLStyle
+using ComponentArrays
+using OrdinaryDiffEq
+using GeometryBasics: Point2
+Point2D = Point2{Float64}</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Point2{Float64}<span class="sgr90"> (alias for Point{2, Float64})</span></code></pre><h2 id="Model-Representation"><a class="docs-heading-anchor" href="#Model-Representation">Model Representation</a><a id="Model-Representation-1"></a><a class="docs-heading-anchor-permalink" href="#Model-Representation" title="Permalink"></a></h2><p>The Klausmeier model consists of two parts: one governing plant growth (phytodynamics), and one governing hydrodynamics. The differential operator Δ represents the diffusion of vegetation, and the &quot;Lie derivative&quot; operator ℒ represents the change of water in a direction. In this case, the flow of water downhill, &quot;dX&quot;.</p><p>Decapodes are written in the language of the Exterior Calculus, which generalizes Vector Calculus. For us, that means that we get to specify whether a physical quantity should valued at points in our domain (i.e. primal and dual Form0s), or whether they are more vector-like quantities, that should be valued along edges in our domain (i.e. primal and dual Form1s). In this case, water density <code>w</code> and vegetation density <code>n</code> are both Form0s, while <code>dX</code>, the gradient of our hill, is a Form1.</p><pre><code class="language-julia hljs"># See Klausmeier Equation 2.a
+Hydrodynamics = @decapode begin
+  (n,w)::DualForm0
+  dX::Form1
+  (a,ν)::Constant
+
+  ∂ₜ(w) == a - w - w * n^2 + ν * ℒ(dX, w)
+end
+
+# See Klausmeier Equation 2.b
+Phytodynamics = @decapode begin
+  (n,w)::DualForm0
+  m::Constant
+
+  ∂ₜ(n) == w * n^2 - m*n + Δ(n)</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.SummationDecapode{Any, Any, Symbol} {Var:10, TVar:1, Op1:2, Op2:4, Σ:1, Summand:2, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">n</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">w</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">m</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">ṅ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•6</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">Δ</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">^</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Σ</th>
+      <th style = "text-align: right;">sum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Summand</th>
+      <th style = "text-align: right;">summand</th>
+      <th style = "text-align: right;">summation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Now that we have our two component models, we can specify a means of composing them via a composition pattern.</p><pre><code class="language-julia hljs"># Specify Composition
+compose_klausmeier = @relation () begin
+  phyto(N, W)
+  hydro(N, W)
+end
+
+to_graphviz(compose_klausmeier, box_labels=:name, junction_labels=:variable, prog=&quot;circo&quot;)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="193pt" height="211pt"
+ viewBox="0.00 0.00 192.62 210.62" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 206.62)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-206.62 188.62,-206.62 188.62,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="98.81" cy="-18" rx="28.69" ry="18"/>
+<text text-anchor="middle" x="98.81" y="-14.3" font-family="Serif" font-size="14.00">phyto</text>
+</g>
+<!-- n3 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n3</title>
+<ellipse fill="black" stroke="black" cx="15.5" cy="-101.31" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="6.5" y="-107.61" font-family="Serif" font-size="14.00">N</text>
+</g>
+<!-- n1&%2345;&%2345;n3 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n3</title>
+<path fill="none" stroke="black" d="M83.53,-33.28C62.49,-54.33 26.18,-90.63 17.44,-99.38"/>
+</g>
+<!-- n4 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n4</title>
+<ellipse fill="black" stroke="black" cx="182.12" cy="-101.31" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="172.12" y="-107.61" font-family="Serif" font-size="14.00">W</text>
+</g>
+<!-- n1&%2345;&%2345;n4 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&%2345;n4</title>
+<path fill="none" stroke="black" d="M114.09,-33.28C135.14,-54.33 171.44,-90.63 180.19,-99.38"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="98.81" cy="-184.62" rx="29.37" ry="18"/>
+<text text-anchor="middle" x="98.81" y="-180.92" font-family="Serif" font-size="14.00">hydro</text>
+</g>
+<!-- n2&%2345;&%2345;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&%2345;n3</title>
+<path fill="none" stroke="black" d="M83.14,-168.95C62.02,-147.84 26.07,-111.89 17.42,-103.23"/>
+</g>
+<!-- n2&%2345;&%2345;n4 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&%2345;n4</title>
+<path fill="none" stroke="black" d="M114.48,-168.95C135.6,-147.84 171.55,-111.89 180.21,-103.23"/>
+</g>
+</g>
+</svg>
+'/><p>We apply our composition pattern by plugging in component Decapodes, and specifying which internal quantities to share along edges. Decapodes are formalized via the field of Applied Category Theory. A practical consequence here is that we can view a Decapode as a sort of computation graph.</p><pre><code class="language-julia hljs"># Apply Composition
+klausmeier_cospan = oapply(compose_klausmeier,
+                           [Open(Phytodynamics, [:n, :w]),
+                            Open(Hydrodynamics, [:n, :w])])
+Klausmeier = apex(klausmeier_cospan)
+to_graphviz(Klausmeier)</code></pre><img src="65ccaf26.svg" alt="Example block output"/><p>With our model now explicitly represented, we have everything we need to automatically generate simulation code. We could write this to an intermediate file and use it later, or we can go ahead and <code>eval</code>uate the code in this session.</p><pre><code class="language-julia hljs">sim = eval(gensim(Klausmeier, dimension=1))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">simulate (generic function with 2 methods)</code></pre><p>We discretize our differential operators using the Discrete Exterior Calculus. The DEC is an elegant way of building up more complex differential operators from simpler ones. To demonstrate, we will define the Δ operator by building it up with matrix multiplication of simpler operators. Since most operators in the DEC are matrices, most simulations consist mainly of matrix-vector multiplications, and are thus very fast. We can also cache these </p><p>If this code seems too low level, do not worry. Decapodes defines and caches for you many differential operators behind the scenes, so you do not have to worry about defining your own.</p><pre><code class="language-julia hljs">function generate(sd, my_symbol; hodge=DiagonalHodge())
+  lap_mat = hodge_star(1,sd) * d(0,sd) * inv_hodge_star(0,sd) * dual_derivative(0,sd)
+  dd_mat = dual_derivative(0,sd)
+  ih_mat = inv_hodge_star(0,sd)
+  h_mat = hodge_star(1,sd)
+  ih_dd_mat = ih_mat * dd_mat
+  op = @match my_symbol begin
+    :Δ =&gt; x -&gt; begin
+      lap_mat * x
+    end
+    :ℒ =&gt; (x,y) -&gt; begin
+      h_mat * ∧(0,1,sd, ih_dd_mat * y, x)
+    end
+    :^ =&gt; (x,y) -&gt; begin
+      x .^ y
+    end
+  end
+  return (args...) -&gt; op(args...)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><p>We now need a mesh to define our domain. In the 2D case, our CombinatorialSpaces library can read in arbitrary .OBJ files. In 1D, it is often simpler to just generate a mesh on the fly. Since we are running our physics on a circle - i.e periodic boundaries - we will use a simple function that generates it.</p><p>We will visualize the mesh embedded in two dimensions here, but in later visualizations, we can represent it as a periodic line.</p><pre><code class="language-julia hljs"># Define Mesh
+function circle(n, c)
+  s = EmbeddedDeltaSet1D{Bool, Point2D}()
+  map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
+    add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+  end
+  add_edges!(s, 1:(nv(s)-1), 2:nv(s))
+  add_edge!(s, nv(s), 1)
+  sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+  subdivide_duals!(sd, Circumcenter())
+  s,sd
+end
+s,sd = circle(7, 500)
+
+scatter(sd[:point])</code></pre><img src="5a006872.png" alt="Example block output"/><p>Let&#39;s pass our mesh and methods of generating operators to our simulation code.</p><pre><code class="language-julia hljs"># Instantiate Simulation
+fₘ = sim(sd, generate, DiagonalHodge())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#1&quot;{Main.var&quot;#6#10&quot;{Main.var&quot;#4#8&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, Point2{Float64}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, LinearAlgebra.Diagonal{Float64, Vector{Float64}}}}, Main.var&quot;#6#10&quot;{Main.var&quot;#5#9&quot;}, Main.var&quot;#6#10&quot;{Main.var&quot;#3#7&quot;{SparseArrays.SparseMatrixCSC{Float64, Int64}}}}) (generic function with 1 method)</code></pre><p>With our simulation now ready, let&#39;s specify initial data to pass to it. We&#39;ll define them with plain Julia code.</p><p>The most interesting parameter here is our &quot;downhill gradient&quot; <code>dX</code>. This parameter defines how steep our slope is. Since our mesh is a circle, and we are setting <code>dX</code> to a constant value, this means that &quot;downhill&quot; always points counter-clockwise. Essentially, this is an elegant way of encoding an infinite hill.</p><pre><code class="language-julia hljs"># Define Initial Conditions
+n_dist = Normal(pi)
+n = [pdf(n_dist, t)*(√(2pi))*7.2 + 0.08 - 5e-2 for t in range(0,2pi; length=ne(sd))]
+
+w_dist = Normal(pi, 20)
+w = [pdf(w_dist, t) for t in range(0,2pi; length=ne(sd))]
+
+dX = sd[:length]
+
+u₀ = ComponentArray(N = n, W = w, hydro_dX = dX)
+
+cs_ps = (phyto_m = 0.45,
+         hydro_a = 0.94,
+         hydro_ν = 182.5)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(phyto_m = 0.45, hydro_a = 0.94, hydro_ν = 182.5)</code></pre><p>Let&#39;s execute our simulation.</p><pre><code class="language-julia hljs"># Run Simulation
+tₑ = 600.0
+prob = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
+sol = solve(prob, Tsit5())
+sol.retcode</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ReturnCode.Success = 1</code></pre><h2 id="Animation"><a class="docs-heading-anchor" href="#Animation">Animation</a><a id="Animation-1"></a><a class="docs-heading-anchor-permalink" href="#Animation" title="Permalink"></a></h2><p>Let&#39;s perform some basic visualization and analysis of our results to verify our dynamics.</p><pre><code class="language-julia hljs">n = sol(0).N
+nₑ = sol(tₑ).N
+w = sol(0).W</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">128-element view(::Vector{Float64}, 129:256) with eltype Float64:
+  0.02378307447512045
+  0.8795933653376428
+  0.4362570023577117
+  0.930489338516365
+  0.3698694851480921
+  0.9645169638789393
+  0.31812820431091704
+  0.9837846683242236
+  0.27865296416165386
+  0.9907951156214047
+  ⋮
+  0.27303368741226103
+ -0.04560167016982
+  0.22531638056409947
+ -0.06252647972324771
+  0.16949227196915437
+ -0.05757222734142635
+  0.06218579533710285
+ -0.003151464590984988
+  0.004343141829423863</code></pre><pre><code class="language-julia hljs"># Animate dynamics
+function save_dynamics(form_name, framerate, filename)
+  time = Observable(0.0)
+  ys = @lift(getproperty(sol($time), form_name))
+  xcoords = [0, accumulate(+, sd[:length])[1:end-1]...]
+  fig = lines(xcoords, ys, color=:green, linewidth=4.0,
+    colorrange=extrema(getproperty(sol(0), form_name));
+    axis = (; title = @lift(&quot;Klausmeier $(String(form_name)) at $($time)&quot;)))
+  timestamps = range(0, tₑ, step=1)
+  record(fig, filename, timestamps; framerate=framerate) do t
+    time[] = t
+  end
+end
+save_dynamics(:N, 20, &quot;klausmeier.gif&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;klausmeier.gif&quot;</code></pre><p><img src="../klausmeier.gif" alt="Klausmeier"/></p><p>We can observe a few interesting phenomena that we wanted to capture:</p><ul><li>The vegetation density bands move uphill in traveling waves.</li><li>The leading edge of the waves is denser than the rest of the band.</li><li>Over time, the periodicity of the vegetation bands stabilizes.</li><li>The distribution naturally emerges, despite the initial distribution is a simple normal distribution.<ul><li>This is evidence against the real-world theory that these vegetation contours are the result of an initial (man-made) distribution.</li></ul></li></ul><h2 id="Conclusion"><a class="docs-heading-anchor" href="#Conclusion">Conclusion</a><a id="Conclusion-1"></a><a class="docs-heading-anchor-permalink" href="#Conclusion" title="Permalink"></a></h2><p>Due to the ease of composition of Decapodes, representing the Klausmeier model opens up many areas for future work. For example, we can now compose these dynamics with a model of temperature dynamics informed by the Budyko-Sellers model. We can take advantage of the fact that the Lie derivative generalizes partial derivatives, and model the flow of water according to any vector field. Or, we can extend this model by composing it with a model that can recreate the so-called &quot;leopard pattern&quot; of vegetation, such as an &quot;Interaction-Dispersion&quot; model of vegetation dynamics given by Lejeune et al[4].</p><h2 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h2><p>[1] W. A. Macfadyen, “Vegetation Patterns in the Semi-Desert Plains of British Somaliland,” The Geographical Journal, vol. 116, no. 4/6, p. 199, Oct. 1950, doi: 10.2307/1789384.</p><p>[2] C. A. Klausmeier, “Regular and Irregular Patterns in Semiarid Vegetation,” Science, vol. 284, no. 5421, pp. 1826–1828, Jun. 1999, doi: 10.1126/science.284.5421.1826.</p><p>[3] W. A. Macfadyen, “Soil and Vegetation in British Somaliland,” Nature, vol. 165, no. 4186, Art. no. 4186, Jan. 1950, doi: 10.1038/165121a0.</p><p>[4] O. Lejeune and M. Tlidi, “A Model for the Explanation of Vegetation Stripes (Tiger Bush),” Journal of Vegetation Science, vol. 10, no. 2, pp. 201–208, 1999, doi: 10.2307/3237141.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overview/">« Overview</a><a class="docs-footer-nextpage" href="../equations/">Equations »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Friday 19 January 2024 20:35">Friday 19 January 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
