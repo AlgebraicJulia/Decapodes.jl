@@ -23,6 +23,8 @@ The lofty goal of this document, and of Decapodes itself, is that through both e
 ## using Decapodes
 ```@example DEC
 # Load Dependencies
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using Catlab
 using CombinatorialSpaces
@@ -32,7 +34,7 @@ using CairoMakie
 using JLD2
 using LinearAlgebra
 using MLStyle
-using MultiScaleArrays
+using ComponentArrays
 using OrdinaryDiffEq
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
@@ -156,7 +158,7 @@ w = [pdf(w_dist, t) for t in range(0,2pi; length=ne(sd))]
 
 dX = sd[:length]
 
-u₀ = construct(PhysicsState, [VectorForm(n), VectorForm(w), VectorForm(dX)], Float64[], [:N, :W, :hydro_dX])
+u₀ = ComponentArray(N = n, W = w, hydro_dX = dX)
 
 cs_ps = (phyto_m = 0.45,
          hydro_a = 0.94,
@@ -177,20 +179,20 @@ sol.retcode
 Let's perform some basic visualization and analysis of our results to verify our dynamics.
 
 ```@example DEC
-n = findnode(sol(0), :N)
-nₑ = findnode(sol(tₑ), :N)
-w = findnode(sol(0), :W)
-wₑ = findnode(sol(tₑ), :W) # hide
+n = sol(0).N
+nₑ = sol(tₑ).N
+w = sol(0).W
+wₑ = sol(tₑ).W # hide
 ```
 
 ```@example DEC
 # Animate dynamics
 function save_dynamics(form_name, framerate, filename)
   time = Observable(0.0)
-  ys = @lift(findnode(sol($time), form_name))
+  ys = @lift(sol($time).form_name)
   xcoords = [0, accumulate(+, sd[:length])[1:end-1]...]
   fig = lines(xcoords, ys, color=:green, linewidth=4.0,
-    colorrange=extrema(findnode(sol(0), form_name));
+    colorrange=extrema(sol(0).form_name);
     axis = (; title = @lift("Klausmeier $(String(form_name)) at $($time)")))
   timestamps = range(0, tₑ, step=1)
   record(fig, filename, timestamps; framerate=framerate) do t
