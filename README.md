@@ -1,6 +1,5 @@
 # Decapodes.jl
 
-[![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://AlgebraicJulia.github.io/Decapodes.jl/stable)
 [![Development Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://AlgebraicJulia.github.io/Decapodes.jl/dev)
 [![Code Coverage](https://codecov.io/gh/AlgebraicJulia/Decapodes.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/AlgebraicJulia/Decapodes.jl)
 [![CI/CD](https://github.com/AlgebraicJulia/Decapodes.jl/actions/workflows/julia_ci.yml/badge.svg)](https://github.com/AlgebraicJulia/Decapodes.jl/actions/workflows/julia_ci.yml)
