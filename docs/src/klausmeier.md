@@ -189,10 +189,10 @@ wₑ = sol(tₑ).W # hide
 # Animate dynamics
 function save_dynamics(form_name, framerate, filename)
   time = Observable(0.0)
-  ys = @lift(sol($time).form_name)
+  ys = @lift(getproperty(sol($time), form_name))
   xcoords = [0, accumulate(+, sd[:length])[1:end-1]...]
   fig = lines(xcoords, ys, color=:green, linewidth=4.0,
-    colorrange=extrema(sol(0).form_name);
+    colorrange=extrema(getproperty(sol(0), form_name));
     axis = (; title = @lift("Klausmeier $(String(form_name)) at $($time)")))
   timestamps = range(0, tₑ, step=1)
   record(fig, filename, timestamps; framerate=framerate) do t
