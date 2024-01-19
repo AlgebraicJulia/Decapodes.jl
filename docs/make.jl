@@ -1,5 +1,7 @@
 using Documenter
 using Literate
+using Distributed
+
 
 @info "Loading Decapodes"
 using Decapodes
@@ -20,7 +22,7 @@ const generated_dir = joinpath(@__DIR__, "src", "examples")
 
 for (root, dirs, files) in walkdir(literate_dir)
   out_dir = joinpath(generated_dir, relpath(root, literate_dir))
-  for file in files
+  pmap(files) do file
     f,l = splitext(file)
     if l == ".jl" && !startswith(f, "_")
       Literate.markdown(joinpath(root, file), out_dir;
