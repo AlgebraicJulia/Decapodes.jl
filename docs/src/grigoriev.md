@@ -62,8 +62,8 @@ Let's generate a triangulated grid located at the appropriate coordinates:
 ``` @example DEC
 include("../../examples/grid_meshes.jl")
 # Specify a resolution:
-RES_X = (MAX_X-MIN_X)/30.0
-RES_Y = RES_X
+RES_Y = (MAX_Y-MIN_Y)/30.0
+RES_X = RES_Y
 # Generate the mesh with appropriate dimensions and resolution:
 s′ = triangulated_grid(
                        MAX_X-MIN_X, MAX_Y-MIN_Y,
