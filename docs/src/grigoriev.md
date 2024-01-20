@@ -44,10 +44,10 @@ We use the `Interpolations.jl` library to interpolate this dataset:
 
 ``` @example DEC
 # Taking the coordinates to be from the extrema of the measured points:
-const MIN_X = 243504.5
-const MAX_X = 245599.8
-const MIN_Y = 4648894.5
-const MAX_Y = 4652179.7
+const MIN_X = 4648894.5
+const MAX_X = 4652179.7
+const MIN_Y = 243504.5
+const MAX_Y = 245599.8
 ice_coords = (range(MIN_X, MAX_X, length=size(ice_thickness_tif,1)),
               range(MIN_Y, MAX_Y, length=size(ice_thickness_tif,2)))
 # Note that the tif is set to -floatmax(Float32) where there is no ice.
