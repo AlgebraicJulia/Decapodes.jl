@@ -26,4 +26,6 @@ include("coordinates.jl")
 include("operators.jl")
 include("simulation.jl")
 
+include("canon/canon.jl")
+
 end

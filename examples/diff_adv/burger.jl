@@ -1,4 +1,6 @@
 # AlgebraicJulia Dependencies
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using Catlab
 using CombinatorialSpaces
@@ -10,7 +12,7 @@ global_logger(TerminalLogger())
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 using Distributions
-using GLMakie
+using CairoMakie
 using LinearAlgebra
 using MLStyle
 using ComponentArrays

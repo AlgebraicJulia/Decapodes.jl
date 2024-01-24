@@ -7,11 +7,13 @@
 # AlgebraicJulia Dependencies
 using Catlab
 using CombinatorialSpaces
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 
 # External Dependencies
 using GeometryBasics: Point3
-using GLMakie
+using CairoMakie
 using JLD2
 using LinearAlgebra
 using OrdinaryDiffEq
