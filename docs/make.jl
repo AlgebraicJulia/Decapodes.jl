@@ -49,6 +49,7 @@ makedocs(
     "Decapodes.jl" => "index.md",
     "Overview" => "overview/overview.md",
     "Equations" => "equations/equations.md",
+    "Meshes" => "meshes/meshes.md",
     "Vortices" => "navier_stokes/ns.md",
     "Harmonics" => "harmonics/harmonics.md",
     "Cahn-Hilliard" => "ch/cahn-hilliard.md",
