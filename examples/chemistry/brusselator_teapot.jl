@@ -3,6 +3,8 @@ using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using MLStyle
 using OrdinaryDiffEq

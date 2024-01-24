@@ -4,7 +4,8 @@ This file contains the code for the example presented in the Overview section
 of the Decapodes.jl documentation. Comments have been removed, but description
 of code is present in the Overview section.
 """
-
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes, Decapodes.Diagrams
 using Catlab.Present, Catlab.Graphics
 

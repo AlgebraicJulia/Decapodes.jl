@@ -6,6 +6,8 @@
 using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using Decapodes: SchSummationDecapode
 
@@ -14,7 +16,7 @@ using MLStyle
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
-using GLMakie
+using CairoMakie
 using GeometryBasics: Point2
 using ComponentArray
 Point2D = Point2{Float64}

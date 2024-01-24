@@ -2,11 +2,13 @@ using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
-using GLMakie
+using CairoMakie
 using Logging
 using JLD2
 using Printf
@@ -50,7 +52,7 @@ s[:point] = map(x -> scaling_mat*x, s[:point])
 s[:edge_orientation] = false
 orient!(s)
 # Visualize the mesh.
-GLMakie.wireframe(s)
+CairoMakie.wireframe(s)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
 subdivide_duals!(sd, Circumcenter())
 
@@ -88,9 +90,9 @@ u₀ = ComponentArray(U=U,V=V)
 # Visualize the initial conditions.
 # If GLMakie throws errors, then update your graphics drivers,
 # or use an alternative Makie backend like CairoMakie.
-fig_ic = GLMakie.Figure()
-p1 = GLMakie.mesh(fig_ic[1,2], s, color=u₀.U, colormap=:jet)
-p2 = GLMakie.mesh(fig_ic[1,3], s, color=u₀.V, colormap=:jet)
+fig_ic = CairoMakie.Figure()
+p1 = CairoMakie.mesh(fig_ic[1,2], s, color=u₀.U, colormap=:jet)
+p2 = CairoMakie.mesh(fig_ic[1,3], s, color=u₀.V, colormap=:jet)
 display(fig_ic)
 
 tₑ = 11.5
@@ -107,14 +109,14 @@ soln = solve(prob, Tsit5())
 @save "gray_scott.jld2" soln
 
 # Visualize the final conditions.
-GLMakie.mesh(s, color=soln(tₑ).U, colormap=:jet)
+CairoMakie.mesh(s, color=soln(tₑ).U, colormap=:jet)
 
 begin # BEGIN Gif creation
 frames = 100
 # Initial frame
-fig = GLMakie.Figure(resolution = (1200, 800))
-p1 = GLMakie.mesh(fig[1,2], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
-p2 = GLMakie.mesh(fig[1,4], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
+fig = CairoMakie.Figure(resolution = (1200, 800))
+p1 = CairoMakie.mesh(fig[1,2], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
+p2 = CairoMakie.mesh(fig[1,4], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
 ax1 = Axis(fig[1,2], width = 400, height = 400)
 ax2 = Axis(fig[1,4], width = 400, height = 400)
 hidedecorations!(ax1)
@@ -141,7 +143,7 @@ end # END Gif creation
 s = loadmesh(Icosphere(5))
 orient!(s)
 # Visualize the mesh.
-GLMakie.wireframe(s)
+CairoMakie.wireframe(s)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Circumcenter())
 
@@ -173,9 +175,9 @@ u₀ = ComponentArray(U=U,V=V)
 # Visualize the initial conditions.
 # If GLMakie throws errors, then update your graphics drivers,
 # or use an alternative Makie backend like CairoMakie.
-fig_ic = GLMakie.Figure()
-p1 = GLMakie.mesh(fig_ic[1,2], s, color=u₀.U, colormap=:jet)
-p2 = GLMakie.mesh(fig_ic[1,3], s, color=u₀.V, colormap=:jet)
+fig_ic = CairoMakie.Figure()
+p1 = CairoMakie.mesh(fig_ic[1,2], s, color=u₀.U, colormap=:jet)
+p2 = CairoMakie.mesh(fig_ic[1,3], s, color=u₀.V, colormap=:jet)
 display(fig_ic)
 
 tₑ = 11.5
@@ -192,14 +194,14 @@ soln = solve(prob, Tsit5())
 @save "gray_scott_sphere.jld2" soln
 
 # Visualize the final conditions.
-GLMakie.mesh(s, color=soln(tₑ).U, colormap=:jet)
+CairoMakie.mesh(s, color=soln(tₑ).U, colormap=:jet)
 
 begin # BEGIN Gif creation
 frames = 800
 # Initial frame
-fig = GLMakie.Figure(resolution = (1200, 1200))
-p1 = GLMakie.mesh(fig[1,1], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
-p2 = GLMakie.mesh(fig[2,1], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
+fig = CairoMakie.Figure(resolution = (1200, 1200))
+p1 = CairoMakie.mesh(fig[1,1], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
+p2 = CairoMakie.mesh(fig[2,1], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
 Colorbar(fig[1,2], colormap=:jet, colorrange=extrema(soln(0).U))
 Colorbar(fig[2,2], colormap=:jet, colorrange=extrema(soln(0).V))
 
