@@ -1,4 +1,8 @@
 module Canon
+"""    Brusselator
+
+The model of reaction diffusion for an oscillatory chemical system.
+"""
 Brusselator = @decapode begin
   # Values living on vertices.
   (U, V)::Form0{X} # State variables.

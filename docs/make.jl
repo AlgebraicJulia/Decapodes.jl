@@ -53,7 +53,8 @@ makedocs(
 #    "Examples" => Any[
 #      "examples/cfd_example.md"
 #    ],
-    "Library Reference" => "api.md"
+    "Library Reference" => "api.md",
+    "Canonical Models" => "canon.md"
   ]
 )
 
