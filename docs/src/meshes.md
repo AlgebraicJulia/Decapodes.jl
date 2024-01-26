@@ -1,6 +1,6 @@
 # Mesh Generation
 
-For information on how to generate meshes. Please see the following examples:
+For information on how to generate meshes, please consult the [Meshes page](https://algebraicjulia.github.io/CombinatorialSpaces.jl/dev/meshes/) of the CombinatorialSpaces.jl docs, and see the following examples:
 
 - [Imperative Grids](https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/examples/grid_meshes.jl)
 - [Imperative Spherical Meshes](https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/examples/sw/spherical_meshes.jl)
