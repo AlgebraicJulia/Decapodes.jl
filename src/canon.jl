@@ -1,9 +1,6 @@
 module Canon
-"""    Brusselator
 
-The model of reaction diffusion for an oscillatory chemical system.
-"""
-Brusselator = @decapode begin
+Brusselator_expr = quote
   # Values living on vertices.
   (U, V)::Form0{X} # State variables.
   (U2V, One)::Form0{X} # Named intermediate variables.
@@ -20,6 +17,18 @@ Brusselator = @decapode begin
   ∂ₜ(U) == U̇
   ∂ₜ(V) == V̇
 end
+
+"""    Brusselator
+
+The model of reaction diffusion for an oscillatory chemical system.
+
+[Source](https://en.wikipedia.org/wiki/Brusselator)
+
+Model:
+
+$(Brusselator_expr)
+"""
+Brusselator = parse_decapode(Brusselator_expr)
 
 GrayScott = @decapode begin
   (U, V)::Form0
