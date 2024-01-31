@@ -1,8 +1,0 @@
-[deps]
-CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
-Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
-CombinatorialSpaces = "b1c52339-7909-45ad-8b6a-6e388f7c67f2"
-Decapodes = "679ab3ea-c928-4fe6-8d59-fd451142d391"
-DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
-MeshIO = "7269a6da-0436-5bbc-96c2-40638cbb6118"
-TerminalLoggers = "5d786b92-1e48-4d6f-9151-6b4477ca9bed"
