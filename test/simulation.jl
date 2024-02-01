@@ -154,7 +154,7 @@ ddp = SummationDecapode(diffExpr)
 # TODO: Fix proper Expr equality, the Float64 does not equate here
 # @test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2] == :(var"3"::Float64 = 3.0)
 @test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[1] == :(var"3")
-@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[2].args[3] == :(3.0)
+@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[2] == 3.0
 
 
 f = eval(gensim(expand_operators(ddp)))
@@ -180,7 +180,7 @@ ddp = SummationDecapode(diffExpr)
 # TODO: Fix proper Expr equality, the Float64 does not equate here
 # @test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2] == :(var"3"::Float64 = 3.0)
 @test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[1] == :(var"3")
-@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[2].args[3] == :(3.0)
+@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[2] == 3.0
 
 f = eval(gensim(expand_operators(ddp)))
 fₘₚ = f(torus, generate)

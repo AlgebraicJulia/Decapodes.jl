@@ -43,7 +43,7 @@ function dec_mat_hodge(k, sd::HasDeltaSet, hodge)
 end
 
 function dec_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge)
-    invhodge = dec_inv_hodge(k, sd, hodge=hodge)
+    invhodge = dec_inv_hodge_star(k, sd, hodge=hodge)
     return (invhodge, x -> invhodge * x)
 end
 
@@ -54,7 +54,7 @@ function dec_pair_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Ge
 end
 
 function dec_pair_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::DiagonalHodge)
-    inv_hdg = dec_inv_hodge(1, sd, DiagonalHodge())
+    inv_hdg = dec_inv_hodge_star(1, sd, DiagonalHodge())
     ((y, x) -> mul!(y, inv_hdg, x), x -> inv_hdg * x)
 end
 
@@ -75,7 +75,7 @@ function dec_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where {k}
 end
 
 function dec_pair_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where {k}
-    val_pack = dec_p_wedge_product(Tuple{0,k}, sd, float_type=float_type)
+    val_pack = dec_p_wedge_product(Tuple{0,k}, sd)
     ((y, f, β) -> dec_c_wedge_product!(Tuple{0,k}, y, f, β, val_pack),
         (f, β) -> dec_c_wedge_product(Tuple{0,k}, f, β, val_pack))
 end
