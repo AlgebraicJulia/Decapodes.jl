@@ -1,10 +1,9 @@
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 
-
 @docapode(Brusselator
-  ,"link"
-  ,"The model of reaction-diffusion for an oscillatory chemical system."
+  ,"https://en.wikipedia.org/wiki/brusselator"
+  ,"A model of reaction-diffusion for an oscillatory chemical system."
   ,brusselator
   ,begin
     # Values living on vertices.
@@ -25,8 +24,8 @@ using DiagrammaticEquations.Deca
 end)
 
 @docapode(Gray-Scott
-  ,"link"
-  ,"desc"
+  ,"https://www.google.com"
+  ,"A model of reaction-diffusion"
   ,GrayScott
   ,begin
     (U, V)::Form0

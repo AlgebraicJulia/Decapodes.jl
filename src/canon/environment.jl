@@ -2,8 +2,8 @@ using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 
 @docapode(GlensLaw
-  ,"link"
-  ,"desc"
+  ,"https://www.google.com"
+  ,""
   ,glen
   ,begin 
     Γ::Form1
@@ -14,8 +14,8 @@ using DiagrammaticEquations.Deca
 )
 
 @docapode(halfar_eq2
-  ,"link"
-  ,"desc"
+  ,"https://www.google.com"
+  ,"Klausmeier, CA. “Regular and irregular patterns in semiarid vegetation.” Science (New York, N.Y.) vol. 284,5421 (1999): 1826-8. doi:10.1126/science.284.5421.1826"
   ,halfar_eq2
   ,begin
     h::Form0
@@ -27,8 +27,8 @@ using DiagrammaticEquations.Deca
 )
 
 @docapode(KlausmeierEq2a
-  ,"link"
-  ,"desc"
+  ,"https://www.google.com"
+  ,"Klausmeier, CA. “Regular and irregular patterns in semiarid vegetation.” Science (New York, N.Y.) vol. 284,5421 (1999): 1826-8. doi:10.1126/science.284.5421.1826"
   ,klausmeier_2a
   ,begin
     (n,w)::DualForm0
@@ -39,8 +39,10 @@ using DiagrammaticEquations.Deca
 )
 
 @docapode(KlausmeierEq2b
-  ,"link"
-  ,"desc"
+  ,"https://www.google.com"
+  ,"...
+
+  Klausmeier, CA. “Regular and irregular patterns in semiarid vegetation.” Science (New York, N.Y.) vol. 284,5421 (1999): 1826-8. doi:10.1126/science.284.5421.1826"
   ,klausmeier_2b
   ,begin
     (n,w)::DualForm0
@@ -49,7 +51,7 @@ using DiagrammaticEquations.Deca
   end)
 
 @docapode(Lejeune
-  ,"link"
+  ,"https://www.google.com"
   ,"desc"
   ,lejeune
   ,begin

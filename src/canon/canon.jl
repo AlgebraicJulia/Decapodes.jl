@@ -5,28 +5,27 @@ using DiagrammaticEquations.Deca
 using ..Decapodes
 
 function create_pode_expr(t) 
-  modelname, link, desc, variable, pode = t
+  modelname, source, desc, variable, pode = t
   variable = Symbol(variable)
   Base.remove_linenums!(pode)
 
   export_stmt = :(export $variable)
   modeldef = sprint.(Base.show_unquoted,pode.args)
-  modeldef = join(map(modeldef) do line; "- $line" end, "\n")
+  modeldef = join(map(modeldef) do line; "$line
+                  " end, "\n")
 
   docstring = "
   ## $modelname
 
-  ### Source
-  [Source]($link)
+  [Source]($source)
 
   $desc
 
   ### Model
 
-  $modeldef
+  $modeldef 
 
   "
-  # assignment = :($variable = parse_decapode($pode))
   assignment = :($variable = @decapode $pode)
   y = quote 
     $export_stmt
@@ -35,11 +34,11 @@ function create_pode_expr(t)
   end
 end
 
-macro docapode(name, link, description, variable, pode)
-  eval(create_pode_expr((name, link, description, variable, pode)))
+macro docapode(name, source, description, variable, pode)
+  eval(create_pode_expr((name, source, description, variable, pode)))
 end
 
-# @docapode(energy_balance, link, "energy balance equation from Budyko Sellers", energy_balance, 
+# @docapode(energy_balance, source, "energy balance equation from Budyko Sellers", energy_balance, 
 # begin
 #   (Tₛ, ASR, OLR, HT)::Form0
 #   (C)::Constant
@@ -92,25 +91,12 @@ boundary_conditions = @decapode begin
   v̇ == ∂_noslip(v_up)
 end
 
-
-
-
-
-
-
-
-
-
-
-
 # Kealy = @decapode begin
 # grep  (n,w)::DualForm0
 #   dX::Form1
 #   (a,ν)::Constant
 #   ∂ₜ(w) == a - w - w * n^2 + ν * Δ(w)
 # end
-
-
 
 Turing_Continuous_Ring = @decapode begin
   (X, Y)::Form0

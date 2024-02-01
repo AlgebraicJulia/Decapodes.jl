@@ -2,7 +2,7 @@ using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 
 @docapode(Momentum
-  ,"link"
+  ,"https://www.google.com"
   ,"desc"
   ,momentum
   ,begin
@@ -22,8 +22,8 @@ using DiagrammaticEquations.Deca
 )
 
 @docapode(FicksLaw
-  ,"link"
-  ,"desc"
+  ,"https://en.wikipedia.org/wiki/Fick%27s_laws_of_diffusion"
+  ,"Equation for diffusion first stated by Adolf Fick. The diffusion flux is proportional to the concentration gradient."
   ,ficks_law
   ,begin
     C::Form0
@@ -35,8 +35,8 @@ using DiagrammaticEquations.Deca
 ) 
 
 @docapode(Advection
-  ,"link"
-  ,"desc"
+  ,"https://en.wikipedia.org/wiki/Advection"
+  ,"Advection refers to the transport of a bulk along a vector field."
   ,advection,
   begin
     C::Form0
@@ -47,8 +47,8 @@ using DiagrammaticEquations.Deca
 )
 
 @docapode(AbsorbedShortwaveRadiation
-  ,"link"
-  ,"desc"
+  ,"https://www.google.com"
+  ,"The proportion of light reflected by a surface is the **albedo**. The absorbed shortwave radiation is the complement of this quantity."
   ,absorbed_shortwave_radiation
   ,begin
     (Q, ASR)::Form0
@@ -59,7 +59,7 @@ using DiagrammaticEquations.Deca
  )
 
 # @docapode(:OutgoingLongwaveRadiation
-#   ,"link"
+#   ,"https://www.google.com"
 #   ,"desc"
 #   ,:outgoing_longwave_radiation
 #   ,begin
@@ -71,7 +71,7 @@ using DiagrammaticEquations.Deca
 # )
 
 # @docapode("Heat Transfer"
-#   ,"link"
+#   ,"https://www.google.com"
 #   ,"desc"
 #   ,"heat_transfer"
 #   ,begin
@@ -83,8 +83,8 @@ using DiagrammaticEquations.Deca
 # )
 
 @docapode(Schoedinger
-  ,"link"
-  ,"desc"
+  ,"https://en.wikipedia.org/wiki/Schrodinger_equation"
+  ,"The evolution of the wave functioin over time."
   ,schroedinger
   ,begin
     (i,h,m)::Constant
@@ -96,8 +96,8 @@ using DiagrammaticEquations.Deca
 )
 
 @docapode(NavierStokes
-  ,"link"
-  ,"desc"
+  ,"https://en.wikipedia.org/wiki/Navier_Stokes_equation"
+  ,"Partial differential equations which describe the motion of viscous fluid surfaces."
   ,navier_stokes
   ,begin
     (V, V̇, G)::Form1{X}
@@ -117,7 +117,7 @@ using DiagrammaticEquations.Deca
 ),
 
 @docapode(Poiseuille
-  ,"link"
+  ,"https://www.google.com"
   ,"desc"
   ,poiseuille
   ,begin
@@ -139,7 +139,7 @@ using DiagrammaticEquations.Deca
 )
 
 @docapode(PoiseuilleDensity
-  ,"link"
+  ,"https://en.wikipedia.org/wiki/hagen-poiseuille_density"
   ,"desc"
   ,poiseuille_density
   ,begin
@@ -163,7 +163,7 @@ using DiagrammaticEquations.Deca
 )
 
 @docapode(JordanKinderlehrerOtto
-  ,"link"
+  ,"https://www.google.com"
   ,"desc"
   ,jko_scheme
   ,begin
@@ -174,8 +174,8 @@ using DiagrammaticEquations.Deca
 )
 
 @docapode(Oscillator
-  ,"link"
-  ,"desc"
+  ,"https://en.wikipedia.org/wiki/Harmonic_oscillator"
+  ,"Equation governing the motion of an object whose acceleration is negatively-proportional to its position."
   ,oscillator
   ,begin
     X::Form0
@@ -187,9 +187,10 @@ using DiagrammaticEquations.Deca
   end
 )
 
+# TODO
 @docapode(Lie
-  ,"link"
-  ,"desc"
+  ,"https://en.wikipedia.org/wiki/lie_derivative"
+  ,"..."
   ,lie
   ,begin
     C::Form0
@@ -201,7 +202,7 @@ using DiagrammaticEquations.Deca
 )
 
 @docapode(Superposition
-  ,"link"
+  ,"https://en.wikipedia.org/wiki/superposition"
   ,"desc"
   ,superposition
   ,begin
