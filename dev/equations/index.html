@@ -12,7 +12,7 @@ using Decapodes</code></pre><p>The harmonic oscillator can be written in Decapod
   ∂ₜ(X) == V
   ∂ₜ(V) == -k(X)
 end</code></pre><div class="c-set">
-<span class="c-set-summary">DiagrammaticEquations.SummationDecapode{Any, Any, Symbol} {Var:4, TVar:2, Op1:4, Op2:0, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:4, TVar:2, Op1:4, Op2:0, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -199,7 +199,7 @@ end</code></pre><div class="c-set">
   ∂ₜ(X) == V
   ∂ₜ(V) == -k*(X)
 end</code></pre><div class="c-set">
-<span class="c-set-summary">DiagrammaticEquations.SummationDecapode{Any, Any, Symbol} {Var:5, TVar:2, Op1:3, Op2:1, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:5, TVar:2, Op1:3, Op2:1, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -437,7 +437,7 @@ end</code></pre><div class="c-set">
   ∂ₜ(X) == V
   ∂ₜ(V) == -1*k*(X)
 end</code></pre><div class="c-set">
-<span class="c-set-summary">DiagrammaticEquations.SummationDecapode{Any, Any, Symbol} {Var:6, TVar:2, Op1:2, Op2:2, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:6, TVar:2, Op1:2, Op2:2, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -583,28 +583,28 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 <!-- n10 -->
 <g id="node10" class="node">
 <title>n10</title>
-<polygon fill="none" stroke="black" points="112.42,-131.32 63.42,-131.32 63.42,-116.32 112.42,-116.32 112.42,-131.32"/>
-<text text-anchor="middle" x="87.92" y="-120.12" font-family="Times,serif" font-size="14.00">ΩL×Ω₀</text>
+<polygon fill="none" stroke="black" points="109.92,-131.32 63.92,-131.32 63.92,-116.32 109.92,-116.32 109.92,-131.32"/>
+<text text-anchor="middle" x="86.92" y="-120.12" font-family="Times,serif" font-size="14.00">Ω₀×Ω₀</text>
 </g>
 <!-- n1&%2345;&gt;n10 -->
 <g id="edge11" class="edge">
 <title>n1&%2345;&gt;n10</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M30.28,-186.14C42.48,-173.17 65.11,-149.09 78.09,-135.28"/>
-<polygon fill="black" stroke="black" points="79.63,-136.19 81.78,-131.35 77.08,-133.79 79.63,-136.19"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M30.15,-186.14C42.16,-173.17 64.45,-149.09 77.24,-135.28"/>
+<polygon fill="black" stroke="black" points="78.76,-136.21 80.88,-131.35 76.2,-133.83 78.76,-136.21"/>
 <text text-anchor="middle" x="68.42" y="-156.23" font-family="Times,serif" font-size="14.00">π₂</text>
 </g>
 <!-- n5 -->
 <g id="node5" class="node">
 <title>n5</title>
-<ellipse fill="none" stroke="black" cx="69.92" cy="-51.61" rx="21.84" ry="10.71"/>
-<text text-anchor="middle" x="69.92" y="-47.91" font-family="Times,serif" font-size="14.00">V̇:Ω₀</text>
+<ellipse fill="none" stroke="black" cx="68.92" cy="-51.61" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="68.92" y="-47.91" font-family="Times,serif" font-size="14.00">V̇:Ω₀</text>
 </g>
 <!-- n2&%2345;&gt;n5 -->
 <g id="edge6" class="edge">
 <title>n2&%2345;&gt;n5</title>
-<path fill="none" stroke="black" d="M28.2,-113.64C36.41,-101.62 50.9,-80.43 60.46,-66.45"/>
-<polygon fill="black" stroke="black" points="62.11,-67.13 63.49,-62.01 59.22,-65.15 62.11,-67.13"/>
-<text text-anchor="middle" x="56.92" y="-84.01" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+<path fill="none" stroke="black" d="M28.26,-113.35C36.36,-101.24 50.45,-80.19 59.73,-66.33"/>
+<polygon fill="black" stroke="black" points="61.35,-67.05 62.68,-61.93 58.45,-65.11 61.35,-67.05"/>
+<text text-anchor="middle" x="55.92" y="-84.01" font-family="Times,serif" font-size="14.00">∂ₜ</text>
 </g>
 <!-- n8 -->
 <g id="node8" class="node">
@@ -613,8 +613,8 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 <!-- n2&%2345;&gt;n8 -->
 <g id="edge3" class="edge">
 <title>n2&%2345;&gt;n8</title>
-<path fill="none" stroke="black" d="M22.74,-113.01C24.72,-89.22 29.76,-28.91 31.4,-9.28"/>
-<polygon fill="black" stroke="black" points="33.15,-9.29 31.82,-4.16 29.66,-9 33.15,-9.29"/>
+<path fill="none" stroke="black" d="M22.66,-113.01C24.44,-89.22 28.97,-28.91 30.45,-9.28"/>
+<polygon fill="black" stroke="black" points="32.2,-9.28 30.83,-4.16 28.71,-9.02 32.2,-9.28"/>
 </g>
 <!-- n3 -->
 <g id="node3" class="node">
@@ -625,34 +625,34 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 <!-- n9 -->
 <g id="node9" class="node">
 <title>n9</title>
-<polygon fill="none" stroke="black" points="141.42,-272.64 86.42,-272.64 86.42,-257.64 141.42,-257.64 141.42,-272.64"/>
-<text text-anchor="middle" x="113.92" y="-261.44" font-family="Times,serif" font-size="14.00">ΩL×ΩC</text>
+<polygon fill="none" stroke="black" points="138.42,-272.64 83.42,-272.64 83.42,-257.64 138.42,-257.64 138.42,-272.64"/>
+<text text-anchor="middle" x="110.92" y="-261.44" font-family="Times,serif" font-size="14.00">ΩL×ΩC</text>
 </g>
 <!-- n3&%2345;&gt;n9 -->
 <g id="edge8" class="edge">
 <title>n3&%2345;&gt;n9</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M80.51,-323.63C87.64,-311.37 99.94,-290.2 107.46,-277.25"/>
-<polygon fill="black" stroke="black" points="109,-278.09 110,-272.89 105.97,-276.33 109,-278.09"/>
-<text text-anchor="middle" x="107.42" y="-294.44" font-family="Times,serif" font-size="14.00">π₂</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M80.08,-323.63C86.6,-311.47 97.82,-290.57 104.78,-277.59"/>
+<polygon fill="black" stroke="black" points="106.48,-278.12 107.3,-272.89 103.39,-276.47 106.48,-278.12"/>
+<text text-anchor="middle" x="105.42" y="-294.44" font-family="Times,serif" font-size="14.00">π₂</text>
 </g>
 <!-- n4 -->
 <g id="node4" class="node">
 <title>n4</title>
-<ellipse fill="none" stroke="black" cx="113.92" cy="-196.03" rx="52.15" ry="10.71"/>
-<text text-anchor="middle" x="113.92" y="-192.33" font-family="Times,serif" font-size="14.00">mult_1:ΩL</text>
+<ellipse fill="none" stroke="black" cx="110.92" cy="-196.03" rx="49.49" ry="10.71"/>
+<text text-anchor="middle" x="110.92" y="-192.33" font-family="Times,serif" font-size="14.00">mult_1:Ω₀</text>
 </g>
 <!-- n4&%2345;&gt;n10 -->
 <g id="edge10" class="edge">
 <title>n4&%2345;&gt;n10</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M110.31,-185.27C105.57,-172.5 97.3,-150.14 92.24,-136.49"/>
-<polygon fill="black" stroke="black" points="93.79,-135.63 90.41,-131.55 90.51,-136.85 93.79,-135.63"/>
-<text text-anchor="middle" x="111.42" y="-156.23" font-family="Times,serif" font-size="14.00">π₁</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M107.58,-185.27C103.22,-172.5 95.57,-150.14 90.91,-136.49"/>
+<polygon fill="black" stroke="black" points="92.49,-135.72 89.22,-131.55 89.18,-136.85 92.49,-135.72"/>
+<text text-anchor="middle" x="109.42" y="-156.23" font-family="Times,serif" font-size="14.00">π₁</text>
 </g>
 <!-- n5&%2345;&gt;n8 -->
 <g id="edge4" class="edge">
 <title>n5&%2345;&gt;n8</title>
-<path fill="none" stroke="black" d="M62.59,-41.43C54.74,-31.59 42.55,-16.32 36.16,-8.31"/>
-<polygon fill="black" stroke="black" points="37.27,-6.9 32.79,-4.08 34.54,-9.08 37.27,-6.9"/>
+<path fill="none" stroke="black" d="M61.59,-41.43C53.74,-31.59 41.55,-16.32 35.16,-8.31"/>
+<polygon fill="black" stroke="black" points="36.27,-6.9 31.79,-4.08 33.54,-9.08 36.27,-6.9"/>
 </g>
 <!-- n6 -->
 <g id="node6" class="node">
@@ -663,9 +663,9 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 <!-- n6&%2345;&gt;n9 -->
 <g id="edge7" class="edge">
 <title>n6&%2345;&gt;n9</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M140.48,-323.63C134.86,-311.47 125.2,-290.57 119.21,-277.59"/>
-<polygon fill="black" stroke="black" points="120.72,-276.69 117.04,-272.89 117.55,-278.16 120.72,-276.69"/>
-<text text-anchor="middle" x="138.42" y="-294.44" font-family="Times,serif" font-size="14.00">π₁</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M140.05,-323.63C133.89,-311.47 123.3,-290.57 116.72,-277.59"/>
+<polygon fill="black" stroke="black" points="118.16,-276.56 114.34,-272.89 115.04,-278.14 118.16,-276.56"/>
+<text text-anchor="middle" x="137.42" y="-294.44" font-family="Times,serif" font-size="14.00">π₁</text>
 </g>
 <!-- n7 -->
 <g id="node7" class="node">
@@ -686,16 +686,16 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 <!-- n9&%2345;&gt;n4 -->
 <g id="edge9" class="edge">
 <title>n9&%2345;&gt;n4</title>
-<path fill="none" stroke="black" d="M113.92,-257.46C113.92,-246.92 113.92,-226.19 113.92,-211.97"/>
-<polygon fill="black" stroke="black" points="115.67,-211.69 113.92,-206.69 112.17,-211.69 115.67,-211.69"/>
-<text text-anchor="middle" x="117.42" y="-228.44" font-family="Times,serif" font-size="14.00">*</text>
+<path fill="none" stroke="black" d="M110.92,-257.46C110.92,-246.92 110.92,-226.19 110.92,-211.97"/>
+<polygon fill="black" stroke="black" points="112.67,-211.69 110.92,-206.69 109.17,-211.69 112.67,-211.69"/>
+<text text-anchor="middle" x="114.42" y="-228.44" font-family="Times,serif" font-size="14.00">*</text>
 </g>
 <!-- n10&%2345;&gt;n5 -->
 <g id="edge12" class="edge">
 <title>n10&%2345;&gt;n5</title>
-<path fill="none" stroke="black" d="M86.19,-116.09C83.34,-104.96 77.58,-82.47 73.73,-67.47"/>
-<polygon fill="black" stroke="black" points="75.35,-66.73 72.41,-62.32 71.96,-67.6 75.35,-66.73"/>
-<text text-anchor="middle" x="84.42" y="-84.01" font-family="Times,serif" font-size="14.00">*</text>
+<path fill="none" stroke="black" d="M85.19,-116.09C82.34,-104.96 76.58,-82.47 72.73,-67.47"/>
+<polygon fill="black" stroke="black" points="74.35,-66.73 71.41,-62.32 70.96,-67.6 74.35,-66.73"/>
+<text text-anchor="middle" x="83.42" y="-84.01" font-family="Times,serif" font-size="14.00">*</text>
 </g>
 </g>
 </svg>
@@ -708,7 +708,7 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
   ∂ₜ(X) == V
   ∂ₜ(V) == -1*k*(X)
 end</code></pre><div class="c-set">
-<span class="c-set-summary">DiagrammaticEquations.SummationDecapode{Any, Any, Symbol} {Var:6, TVar:2, Op1:2, Op2:2, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:6, TVar:2, Op1:2, Op2:2, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -854,28 +854,28 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 <!-- n10 -->
 <g id="node10" class="node">
 <title>n10</title>
-<polygon fill="none" stroke="black" points="112.42,-131.32 63.42,-131.32 63.42,-116.32 112.42,-116.32 112.42,-131.32"/>
-<text text-anchor="middle" x="87.92" y="-120.12" font-family="Times,serif" font-size="14.00">ΩL×Ω₀</text>
+<polygon fill="none" stroke="black" points="109.92,-131.32 63.92,-131.32 63.92,-116.32 109.92,-116.32 109.92,-131.32"/>
+<text text-anchor="middle" x="86.92" y="-120.12" font-family="Times,serif" font-size="14.00">Ω₀×Ω₀</text>
 </g>
 <!-- n1&%2345;&gt;n10 -->
 <g id="edge11" class="edge">
 <title>n1&%2345;&gt;n10</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M30.28,-186.14C42.48,-173.17 65.11,-149.09 78.09,-135.28"/>
-<polygon fill="black" stroke="black" points="79.63,-136.19 81.78,-131.35 77.08,-133.79 79.63,-136.19"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M30.15,-186.14C42.16,-173.17 64.45,-149.09 77.24,-135.28"/>
+<polygon fill="black" stroke="black" points="78.76,-136.21 80.88,-131.35 76.2,-133.83 78.76,-136.21"/>
 <text text-anchor="middle" x="68.42" y="-156.23" font-family="Times,serif" font-size="14.00">π₂</text>
 </g>
 <!-- n5 -->
 <g id="node5" class="node">
 <title>n5</title>
-<ellipse fill="none" stroke="black" cx="69.92" cy="-51.61" rx="21.84" ry="10.71"/>
-<text text-anchor="middle" x="69.92" y="-47.91" font-family="Times,serif" font-size="14.00">V̇:Ω₀</text>
+<ellipse fill="none" stroke="black" cx="68.92" cy="-51.61" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="68.92" y="-47.91" font-family="Times,serif" font-size="14.00">V̇:Ω₀</text>
 </g>
 <!-- n2&%2345;&gt;n5 -->
 <g id="edge6" class="edge">
 <title>n2&%2345;&gt;n5</title>
-<path fill="none" stroke="black" d="M28.2,-113.64C36.41,-101.62 50.9,-80.43 60.46,-66.45"/>
-<polygon fill="black" stroke="black" points="62.11,-67.13 63.49,-62.01 59.22,-65.15 62.11,-67.13"/>
-<text text-anchor="middle" x="56.92" y="-84.01" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+<path fill="none" stroke="black" d="M28.26,-113.35C36.36,-101.24 50.45,-80.19 59.73,-66.33"/>
+<polygon fill="black" stroke="black" points="61.35,-67.05 62.68,-61.93 58.45,-65.11 61.35,-67.05"/>
+<text text-anchor="middle" x="55.92" y="-84.01" font-family="Times,serif" font-size="14.00">∂ₜ</text>
 </g>
 <!-- n8 -->
 <g id="node8" class="node">
@@ -884,8 +884,8 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 <!-- n2&%2345;&gt;n8 -->
 <g id="edge3" class="edge">
 <title>n2&%2345;&gt;n8</title>
-<path fill="none" stroke="black" d="M22.74,-113.01C24.72,-89.22 29.76,-28.91 31.4,-9.28"/>
-<polygon fill="black" stroke="black" points="33.15,-9.29 31.82,-4.16 29.66,-9 33.15,-9.29"/>
+<path fill="none" stroke="black" d="M22.66,-113.01C24.44,-89.22 28.97,-28.91 30.45,-9.28"/>
+<polygon fill="black" stroke="black" points="32.2,-9.28 30.83,-4.16 28.71,-9.02 32.2,-9.28"/>
 </g>
 <!-- n3 -->
 <g id="node3" class="node">
@@ -896,34 +896,34 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 <!-- n9 -->
 <g id="node9" class="node">
 <title>n9</title>
-<polygon fill="none" stroke="black" points="140.92,-272.64 86.92,-272.64 86.92,-257.64 140.92,-257.64 140.92,-272.64"/>
-<text text-anchor="middle" x="113.92" y="-261.44" font-family="Times,serif" font-size="14.00">ΩL×ΩP</text>
+<polygon fill="none" stroke="black" points="137.92,-272.64 83.92,-272.64 83.92,-257.64 137.92,-257.64 137.92,-272.64"/>
+<text text-anchor="middle" x="110.92" y="-261.44" font-family="Times,serif" font-size="14.00">ΩL×ΩP</text>
 </g>
 <!-- n3&%2345;&gt;n9 -->
 <g id="edge8" class="edge">
 <title>n3&%2345;&gt;n9</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M79.48,-323.92C86.75,-311.73 99.45,-290.41 107.24,-277.35"/>
-<polygon fill="black" stroke="black" points="108.8,-278.14 109.86,-272.95 105.8,-276.35 108.8,-278.14"/>
-<text text-anchor="middle" x="106.42" y="-294.44" font-family="Times,serif" font-size="14.00">π₂</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M79.22,-323.63C85.92,-311.47 97.45,-290.57 104.6,-277.59"/>
+<polygon fill="black" stroke="black" points="106.32,-278.11 107.2,-272.89 103.25,-276.42 106.32,-278.11"/>
+<text text-anchor="middle" x="104.42" y="-294.44" font-family="Times,serif" font-size="14.00">π₂</text>
 </g>
 <!-- n4 -->
 <g id="node4" class="node">
 <title>n4</title>
-<ellipse fill="none" stroke="black" cx="113.92" cy="-196.03" rx="52.15" ry="10.71"/>
-<text text-anchor="middle" x="113.92" y="-192.33" font-family="Times,serif" font-size="14.00">mult_1:ΩL</text>
+<ellipse fill="none" stroke="black" cx="110.92" cy="-196.03" rx="49.49" ry="10.71"/>
+<text text-anchor="middle" x="110.92" y="-192.33" font-family="Times,serif" font-size="14.00">mult_1:Ω₀</text>
 </g>
 <!-- n4&%2345;&gt;n10 -->
 <g id="edge10" class="edge">
 <title>n4&%2345;&gt;n10</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M110.31,-185.27C105.57,-172.5 97.3,-150.14 92.24,-136.49"/>
-<polygon fill="black" stroke="black" points="93.79,-135.63 90.41,-131.55 90.51,-136.85 93.79,-135.63"/>
-<text text-anchor="middle" x="111.42" y="-156.23" font-family="Times,serif" font-size="14.00">π₁</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M107.58,-185.27C103.22,-172.5 95.57,-150.14 90.91,-136.49"/>
+<polygon fill="black" stroke="black" points="92.49,-135.72 89.22,-131.55 89.18,-136.85 92.49,-135.72"/>
+<text text-anchor="middle" x="109.42" y="-156.23" font-family="Times,serif" font-size="14.00">π₁</text>
 </g>
 <!-- n5&%2345;&gt;n8 -->
 <g id="edge4" class="edge">
 <title>n5&%2345;&gt;n8</title>
-<path fill="none" stroke="black" d="M62.59,-41.43C54.74,-31.59 42.55,-16.32 36.16,-8.31"/>
-<polygon fill="black" stroke="black" points="37.27,-6.9 32.79,-4.08 34.54,-9.08 37.27,-6.9"/>
+<path fill="none" stroke="black" d="M61.59,-41.43C53.74,-31.59 41.55,-16.32 35.16,-8.31"/>
+<polygon fill="black" stroke="black" points="36.27,-6.9 31.79,-4.08 33.54,-9.08 36.27,-6.9"/>
 </g>
 <!-- n6 -->
 <g id="node6" class="node">
@@ -934,9 +934,9 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 <!-- n6&%2345;&gt;n9 -->
 <g id="edge7" class="edge">
 <title>n6&%2345;&gt;n9</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M139.62,-323.63C134.19,-311.47 124.84,-290.57 119.04,-277.59"/>
-<polygon fill="black" stroke="black" points="120.58,-276.74 116.94,-272.89 117.38,-278.17 120.58,-276.74"/>
-<text text-anchor="middle" x="137.42" y="-294.44" font-family="Times,serif" font-size="14.00">π₁</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M139.19,-323.63C133.21,-311.47 122.93,-290.57 116.55,-277.59"/>
+<polygon fill="black" stroke="black" points="118.02,-276.6 114.24,-272.89 114.87,-278.15 118.02,-276.6"/>
+<text text-anchor="middle" x="136.42" y="-294.44" font-family="Times,serif" font-size="14.00">π₁</text>
 </g>
 <!-- n7 -->
 <g id="node7" class="node">
@@ -957,17 +957,17 @@ to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 <!-- n9&%2345;&gt;n4 -->
 <g id="edge9" class="edge">
 <title>n9&%2345;&gt;n4</title>
-<path fill="none" stroke="black" d="M113.92,-257.46C113.92,-246.92 113.92,-226.19 113.92,-211.97"/>
-<polygon fill="black" stroke="black" points="115.67,-211.69 113.92,-206.69 112.17,-211.69 115.67,-211.69"/>
-<text text-anchor="middle" x="117.42" y="-228.44" font-family="Times,serif" font-size="14.00">*</text>
+<path fill="none" stroke="black" d="M110.92,-257.46C110.92,-246.92 110.92,-226.19 110.92,-211.97"/>
+<polygon fill="black" stroke="black" points="112.67,-211.69 110.92,-206.69 109.17,-211.69 112.67,-211.69"/>
+<text text-anchor="middle" x="114.42" y="-228.44" font-family="Times,serif" font-size="14.00">*</text>
 </g>
 <!-- n10&%2345;&gt;n5 -->
 <g id="edge12" class="edge">
 <title>n10&%2345;&gt;n5</title>
-<path fill="none" stroke="black" d="M86.19,-116.09C83.34,-104.96 77.58,-82.47 73.73,-67.47"/>
-<polygon fill="black" stroke="black" points="75.35,-66.73 72.41,-62.32 71.96,-67.6 75.35,-66.73"/>
-<text text-anchor="middle" x="84.42" y="-84.01" font-family="Times,serif" font-size="14.00">*</text>
+<path fill="none" stroke="black" d="M85.19,-116.09C82.34,-104.96 76.58,-82.47 72.73,-67.47"/>
+<polygon fill="black" stroke="black" points="74.35,-66.73 71.41,-62.32 70.96,-67.6 74.35,-66.73"/>
+<text text-anchor="middle" x="83.42" y="-84.01" font-family="Times,serif" font-size="14.00">*</text>
 </g>
 </g>
 </svg>
-'/><p>Often you will have a linear material where you are scaling by a constant, and a nonlinear version of that material where that scaling is replaced by a generic nonlinear function. This is why we allow Decapodes to represent both of these types of equations.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../klausmeier/">« Klausmeier</a><a class="docs-footer-nextpage" href="../ascii/">ASCII Operators »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Wednesday 24 January 2024 19:19">Wednesday 24 January 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+'/><p>Often you will have a linear material where you are scaling by a constant, and a nonlinear version of that material where that scaling is replaced by a generic nonlinear function. This is why we allow Decapodes to represent both of these types of equations.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../klausmeier/">« Klausmeier</a><a class="docs-footer-nextpage" href="../ascii/">ASCII Operators »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Friday 2 February 2024 21:35">Friday 2 February 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
