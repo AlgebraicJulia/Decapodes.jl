@@ -21,6 +21,8 @@ MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 PreallocationTools = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [compat]
@@ -41,6 +43,8 @@ MLStyle = "0.4.17"
 OrdinaryDiffEq = "6.47"
 PreallocationTools = "0.4"
 Requires = "1.3"
+SparseArrays = "1.9"
+StaticArrays = "1.7"
 Unicode = "1.9"
 julia = "1.9"
 
