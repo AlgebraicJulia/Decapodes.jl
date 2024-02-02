@@ -14,8 +14,8 @@ using ComponentArrays
 # Uncomment to load GLMakie if your system supports it.
 # Otherwise, do using CairoMakie
 #using GLMakie
-using GeometryBasics: Point2
-Point2D = Point2{Float64}
+using GeometryBasics: Point3
+Point3D = Point3{Float64}
 
 ####################
 # Define the model #
