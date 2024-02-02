@@ -1,4 +1,5 @@
 using GeometryBasics
+using CombinatorialSpaces.MeshInterop
 # using LinearAlgebra
 
 """    CartesianPoint{T}(p)

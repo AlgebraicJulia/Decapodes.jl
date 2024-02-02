@@ -97,7 +97,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
 end
 
 #include("coordinates.jl")
-#include("spherical_meshes.jl")
 
 radius = 6371+90
 
