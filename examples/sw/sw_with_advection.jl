@@ -77,7 +77,6 @@ ddp = SummationDecapode(diffExpr)
 gensim(expand_operators(ddp), [:C, :V])
 f = eval(gensim(expand_operators(ddp), [:C, :V]))
 
-#include("spherical_meshes.jl")
 radius = 6371+90
 #primal_earth, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, radius);
 #nploc = primal_earth[npi, :point]

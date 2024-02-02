@@ -60,7 +60,6 @@ To use this interpolating object `ice_interp`, we can simply query it for the va
 Let's generate a triangulated grid located at the appropriate coordinates:
 
 ``` @example DEC
-include("../../examples/grid_meshes.jl")
 # Specify a resolution:
 RES_Y = (MAX_Y-MIN_Y)/30.0
 RES_X = RES_Y

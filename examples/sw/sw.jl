@@ -68,7 +68,6 @@ gensim(expand_operators(ddp), [:C])
 f = eval(gensim(expand_operators(ddp), [:C]))
 
 #include("coordinates.jl")
-#include("spherical_meshes.jl")
 
 const RADIUS = 6371+90
 #primal_earth, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, RADIUS);

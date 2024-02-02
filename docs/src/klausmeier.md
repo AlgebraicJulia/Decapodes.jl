@@ -36,8 +36,9 @@ using LinearAlgebra
 using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
-using GeometryBasics: Point2
+using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
+Point3D = Point3{Float64}
 ```
 
 ## Model Representation
