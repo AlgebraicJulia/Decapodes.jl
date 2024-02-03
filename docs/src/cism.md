@@ -15,6 +15,8 @@ using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
 using Decapodes
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 
 # External Dependencies
 using ComponentArrays
@@ -26,8 +28,9 @@ using SparseArrays
 using Statistics
 using CairoMakie
 using BenchmarkTools
-using GeometryBasics: Point2
-Point2D = Point2{Float64}; # hide
+using GeometryBasics: Point2, Point3
+Point2D = Point2{Float64}
+Point3D = Point3{Float64}; # hide
 ```
 
 ## Specifying and Composing Physics
@@ -215,6 +218,9 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :mag => x -> begin
       norm.(x)
     end
+    :^ => (x,y) -> begin
+      x .^ y
+    end
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
@@ -354,7 +360,7 @@ h_diff = soln(tₑ).dynamics_h - hₐ
 maximum(abs.(h_diff))
 ```
 
-We compute root meand square error (RMSE) as well, both over the entire domain, and *excluding where the ice distribution is 0 in the analytic solution.* (Considering the entire domain decreases the RMSE, while not telling you much abouat the dynamics in the area of interest.) Note that the official CISM benchmark reports 6.43 and 9.06 RMSE for their two solver implementations.
+We compute root meand square error (RMSE) as well, both over the entire domain, and *excluding where the ice distribution is 0 in the analytic solution.* (Considering the entire domain decreases the RMSE, while not telling you much about the dynamics in the area of interest.) Note that the official CISM benchmark reports 6.43 and 9.06 RMSE for their two solver implementations.
 
 ```@example DEC
 # Compute RMSE not considering the "outside".
@@ -388,7 +394,6 @@ end
   <img src="ice_dynamics_cism.gif" alt="Ice Dynamics" style="width:800px">
 </figure>
 ```
-
 
 For comparison's sake, we paste the results produced by CISM below. We observe that the error likewise accumulates around the edge of the dome, with more accurate predictions on the interior. We note that our simulation produces slight over-estimates on the interior, but there are further strategies that one can employ to increase accuracy, such as tweaking the error tolerance of the solver, and so on.
 
