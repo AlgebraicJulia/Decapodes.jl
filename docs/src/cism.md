@@ -252,7 +252,7 @@ We can benchmark the compiled simulation with `@benchmarkable`. This macro runs 
 ```@example DEC
 # Time the simulation
 
-@benchmarkable b = solve(prob, Tsit5())
+b = @benchmarkable solve(prob, Tsit5())
 c = run(b)
 ```
 
