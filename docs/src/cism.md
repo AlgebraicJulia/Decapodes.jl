@@ -35,11 +35,7 @@ Point3D = Point3{Float64}; # hide
 
 ## Specifying and Composing Physics
 
-```@raw html
-<figure>
-  <img src="https://cise.ufl.edu/~luke.morris/halfar_eq2.jpg" alt="Halfar Equation 2" style="width:800px">
-</figure>
-```
+!["Halfar Equation 2"](https://cise.ufl.edu/~luke.morris/halfar_eq2.jpg)
 
 We will translate Halfar's equation into the DEC below. Although the equation given by Halfar is dense, this notation does not allow you to see which operators represent divergence, which components represent diffusivity constants, and so on. In the DEC, there is a small pool of operators, ⋆, d, ∧, ♯, and ♭, which combine according to set rules to encode all of these notions.
 
@@ -64,11 +60,7 @@ end
 to_graphviz(halfar_eq2)
 ```
 
-```@raw html
-<figure>
-  <img src="https://cise.ufl.edu/~luke.morris/glen_law1.jpg" alt="Glen's Law" style="width:800px">
-</figure>
-```
+!["Glen's Law"](https://cise.ufl.edu/~luke.morris/glen_law1.jpg)
 
 Here, we recognize that Gamma is in fact what glaciologists call "Glen's Flow Law." It states that the strain rate of a sheet of ice can be related to applied stress via a power law. Below, we encode the formulation as it is usually given in the literature, depending explicitly on the gravitational constant, g.
 
@@ -138,11 +130,7 @@ wf = wireframe(s)
 save("ice_mesh.png", wf)
 ```
 
-```@raw html
-<figure>
-  <img src="ice_mesh.png" alt="Wireframe of the Domain" style="width:800px">
-</figure>
-```
+!["Wireframe of the Domain"](ice_mesh.png)
 
 ## Defining input data
 
@@ -183,11 +171,7 @@ fig = mesh(s′, color=h₀, colormap=:jet)
 save("ice_initial_conditions.png", fig)
 ```
 
-```@raw html
-<figure>
-  <img src="ice_initial_conditions.png" alt="Initial Conditions" style="width:800px">
-</figure>
-```
+!["Initial Conditions"](ice_initial_conditions.png)
 
 ```@example DEC
 # Store these values to be passed to the solver.
@@ -278,11 +262,7 @@ We can benchmark the compiled simulation with `@btime`. This macro runs many sam
 
 We recall that these dynamics are of the "shallow slope" and "shallow ice" approximations. So, at the edge of our parabolic dome of ice, we expect increased error as the slope increases. On the interior of the dome, we expect the dynamics to match more closely that given by the analytic model. We will see that the CISM results likewise accumulate error in the same neighborhood.
 
-```@raw html
-<figure>
-  <img src="https://cise.ufl.edu/~luke.morris/halfar_small_grad_approximation.jpg" alt="Halfar Small Ice Approximation Quote" style="width:800px">
-</figure>
-```
+!["Halfar Small Ice Approximation Quote"](https://cise.ufl.edu/~luke.morris/halfar_small_grad_approximation.jpg)
 
 ```@example DEC
 # Plot the final conditions
@@ -299,11 +279,7 @@ fig = plot_final_conditions()
 save("ice_numeric_solution.png", fig)
 ```
 
-```@raw html
-<figure>
-  <img src="ice_numeric_solution.png" alt="Numerical Solution" style="width:800px">
-</figure>
-```
+!["Numerical Solution"]("ice_numeric_solution.png")
 
 ```@example DEC
 # Plot the final conditions according to the analytic solution.
@@ -321,11 +297,7 @@ fig = plot_analytic()
 save("ice_analytic_solution.png", fig)
 ```
 
-```@raw html
-<figure>
-  <img src="ice_analytic_solution.png" alt="Analytic Solution" style="width:800px">
-</figure>
-```
+!["Analytic Solution](ice_analytic_solution.png)
 
 ```@example DEC
 # Plot the error.
@@ -345,11 +317,7 @@ fig = plot_error()
 save("ice_error.png", fig)
 ```
 
-```@raw html
-<figure>
-  <img src="ice_error.png" alt="Numeric Solution - Analytic Solution" style="width:800px">
-</figure>
-```
+!["Numeric Solution - Analytic Solution"](ice_error.png)
 
 We compute below that the maximum absolute error is approximately 89 meters. We observe that this error occurs exactly on the edge of the dome, which we expect given that this is where the "shallow slope approximation" breaks down, and the updates to our physical quantities should become more unstable. This pattern likewise occurs in the CISM benchmarks.
 
@@ -389,21 +357,13 @@ begin
 end
 ```
 
-```@raw html
-<figure>
-  <img src="ice_dynamics_cism.gif" alt="Ice Dynamics" style="width:800px">
-</figure>
-```
+!["Ice Dynamics](ice_dynamics_cism.gif)
 
 For comparison's sake, we paste the results produced by CISM below. We observe that the error likewise accumulates around the edge of the dome, with more accurate predictions on the interior. We note that our simulation produces slight over-estimates on the interior, but there are further strategies that one can employ to increase accuracy, such as tweaking the error tolerance of the solver, and so on.
 
 Not that since the DEC is based on triangulated meshes, the "resolution" of the CISM benchmark and the Decapodes implementation cannot be directly compared. An advantage of the DEC is that we do not need to operate on uniform grids. For example, you could construct a mesh that is finer along the dome edge, where you need more resolution, and coarser as you are farther away from the reach of the ice.
 
-```@raw html
-<figure>
-  <img src="https://cise.ufl.edu/~luke.morris/cism_results.png" alt="CISM Results" style="width:800px">
-</figure>
-```
+![CISM Results](https://cise.ufl.edu/~luke.morris/cism_results.png)
 
 We saw in this document how to create performant and accurate simulations in the Decapodes framework, and compared against the CISM library . Although we do not expect to be both more performant and accurate compared to every hand-crafted simulation, Decapodes makes up for this difference in terms of development time, flexibility, and composition. For example, the original implementation of the Decapodes shallow ice model took place over a couple of afternoons during a hackathon.
 
