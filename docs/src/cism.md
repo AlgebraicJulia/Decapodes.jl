@@ -247,12 +247,13 @@ soln = solve(prob, Tsit5())
 @info("Done")
 ```
 
-We can benchmark the compiled simulation with `@btime`. This macro runs many samples of the simulation function so we get an accurate estimate of the simulation time. The simulation time is quite fast compared to the CISM benchmarks. These results are run automatically via GitHub Actions as part of our docs build, which is not optimized for numerical simulations.
+We can benchmark the compiled simulation with `@benchmarkable`. This macro runs many samples of the simulation function so we get an accurate estimate of the simulation time. The simulation time is quite fast compared to the CISM benchmarks. These results are run automatically via GitHub Actions as part of our docs build, which is not optimized for numerical simulations.
 
 ```@example DEC
 # Time the simulation
 
-@btime soln = solve(prob, Tsit5())
+@benchmarkable b = solve(prob, Tsit5())
+c = run(b)
 ```
 
 ```@example DEC
