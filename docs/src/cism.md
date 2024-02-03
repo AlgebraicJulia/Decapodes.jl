@@ -279,7 +279,7 @@ fig = plot_final_conditions()
 save("ice_numeric_solution.png", fig)
 ```
 
-!["Numerical Solution"]("ice_numeric_solution.png")
+!["Numerical Solution"](ice_numeric_solution.png)
 
 ```@example DEC
 # Plot the final conditions according to the analytic solution.
