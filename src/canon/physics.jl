@@ -164,7 +164,7 @@ using DiagrammaticEquations.Deca
 
 @docapode(JordanKinderlehrerOtto
   ,"https://www.google.com"
-  ,"desc"
+  ,"Jordan, R., Kinderlehrer, D., & Otto, F. (1998). The Variational Formulation of the Fokker--Planck Equation. In SIAM Journal on Mathematical Analysis (Vol. 29, Issue 1, pp. 1–17). Society for Industrial & Applied Mathematics (SIAM). https://doi.org/10.1137/s0036141096303359"
   ,jko_scheme
   ,begin
     (ρ,Ψ)::Form0
