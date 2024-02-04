@@ -14,7 +14,7 @@ using MLStyle
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
-using GLMakie
+using WGLMakie
 using GeometryBasics: Point2
 using ComponentArray
 Point2D = Point2{Float64}

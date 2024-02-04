@@ -91,7 +91,7 @@ prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
 #using CairoMakie 
-using GLMakie
+using WGLMakie
 
 #mesh(primal_earth, color=soln(0).C, colormap=:plasma)
 #mesh(primal_earth, color=soln(tₑ).C, colormap=:plasma)
@@ -136,7 +136,7 @@ begin
   ps = earth[:point]
   ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
 
-  GLMakie.arrows(
+  WGLMakie.arrows(
       ps, ns, fxaa=true, # turn on anti-aliasing
       linecolor = :gray, arrowcolor = :gray,
       linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),

@@ -19,7 +19,7 @@ using OrdinaryDiffEq
 using JLD2
 using SparseArrays
 using Statistics
-using CairoMakie
+using WGLMakie
 using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64};
 Point3D = Point3{Float64};
@@ -414,7 +414,7 @@ mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0
 ``` @example DEC
 begin
   frames = 100
-  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+  fig, ax, ob = WGLMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
   Colorbar(fig[1,2], ob)
   record(fig, "ice_dynamics2D.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
     ob.color = soln(t).dynamics_h
@@ -489,7 +489,7 @@ mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0
 ``` @example DEC
 begin
   frames = 200
-  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+  fig, ax, ob = WGLMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 
   Colorbar(fig[1,2], ob)
   # These particular initial conditions diffuse quite quickly, so let's just look at

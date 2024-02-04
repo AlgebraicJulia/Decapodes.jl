@@ -12,7 +12,7 @@ using DiagrammaticEquations.Deca
 using Decapodes
 
 # Julia community libraries
-using CairoMakie
+using WGLMakie
 using GeometryBasics
 using LinearAlgebra
 using OrdinaryDiffEq

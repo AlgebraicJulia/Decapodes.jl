@@ -30,7 +30,7 @@ using Catlab
 using CombinatorialSpaces
 
 using Distributions
-using CairoMakie
+using WGLMakie
 using JLD2
 using LinearAlgebra
 using MLStyle

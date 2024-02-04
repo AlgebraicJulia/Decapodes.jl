@@ -107,7 +107,7 @@ See CombinatorialSpaces.jl for mesh construction and importing utilities.
 ```@example DEC
 using Catlab.CategoricalAlgebra
 using CombinatorialSpaces, CombinatorialSpaces.DiscreteExteriorCalculus
-using CairoMakie
+using WGLMakie
 
 plot_mesh = loadmesh(Rectangle_30x10())
 periodic_mesh = loadmesh(Torus_30x10())

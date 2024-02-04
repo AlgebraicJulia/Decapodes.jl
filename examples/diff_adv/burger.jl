@@ -10,7 +10,7 @@ global_logger(TerminalLogger())
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 using Distributions
-using GLMakie
+using WGLMakie
 using LinearAlgebra
 using MLStyle
 using ComponentArrays

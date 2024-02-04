@@ -11,9 +11,9 @@ using OrdinaryDiffEq
 using JLD2
 using SparseArrays
 using ComponentArrays
-# Uncomment to load GLMakie if your system supports it.
+# Uncomment to load WGLMakie if your system supports it.
 # Otherwise, do using CairoMakie
-#using GLMakie
+#using WGLMakie
 using GeometryBasics: Point3
 Point3D = Point3{Float64}
 
@@ -187,7 +187,7 @@ mesh(s′, color=soln(tₑ).h, colormap=:jet)
 # Create a gif
 begin
   frames = 100
-  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).h, colormap=:jet, colorrange=extrema(soln(tₑ).h))
+  fig, ax, ob = WGLMakie.mesh(s′, color=soln(0).h, colormap=:jet, colorrange=extrema(soln(tₑ).h))
   Colorbar(fig[1,2], ob)
   record(fig, "ice_dynamics.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
     ob.color = soln(t).h

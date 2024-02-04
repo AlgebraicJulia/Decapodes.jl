@@ -11,7 +11,7 @@ using Decapodes
 
 # External Dependencies
 using GeometryBasics: Point3
-using GLMakie
+using WGLMakie
 using JLD2
 using LinearAlgebra
 using OrdinaryDiffEq
@@ -217,8 +217,8 @@ extrema(soln(1.5).T)
 # Create a gif
 begin
   frames = 100
-  #fig, ax, ob = GLMakie.mesh(s′, color=soln(0).T, colormap=:jet, colorrange=extrema(soln(tₑ).h))
-  fig, ax, ob = GLMakie.mesh(s′, color=soln(0).T, colormap=:jet, colorrange=extrema(soln(1.5).T))
+  #fig, ax, ob = WGLMakie.mesh(s′, color=soln(0).T, colormap=:jet, colorrange=extrema(soln(tₑ).h))
+  fig, ax, ob = WGLMakie.mesh(s′, color=soln(0).T, colormap=:jet, colorrange=extrema(soln(1.5).T))
   Colorbar(fig[1,2], ob)
   #record(fig, "oceananigans.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
   record(fig, "oceananigans.gif", range(0.0, 1.5; length=frames); framerate = 30) do t

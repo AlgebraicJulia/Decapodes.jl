@@ -24,7 +24,7 @@ using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
 using SparseArrays
-using CairoMakie
+using WGLMakie
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}; # hide
@@ -195,7 +195,7 @@ soln = solve(prob, Tsit5())
 # Visualize the initial conditions.
 function plot_ic()
   f = Figure()
-  ax = CairoMakie.Axis(f[1,1],
+  ax = WGLMakie.Axis(f[1,1],
             title="Grigoriev Ice Cap Initial Thickness [m]",
             xticks = range(MIN_X, MAX_X; length=5),
             yticks = range(MIN_Y, MAX_Y; length=5))
@@ -209,7 +209,7 @@ save("grigoriev_ic.png", f)
 # Visualize the final conditions.
 function plot_fc()
   f = Figure()
-  ax = CairoMakie.Axis(f[1,1],
+  ax = WGLMakie.Axis(f[1,1],
             title="Grigoriev Ice Cap Final Thickness [m]",
             xticks = range(MIN_X, MAX_X; length=5),
             yticks = range(MIN_Y, MAX_Y; length=5))

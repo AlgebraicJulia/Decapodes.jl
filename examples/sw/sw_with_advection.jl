@@ -98,7 +98,7 @@ tₑ = 1000
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
-using GLMakie
+using WGLMakie
 
 mesh(primal_earth, color=soln(0).C, colormap=:plasma)
 mesh(primal_earth, color=soln(tₑ).C, colormap=:plasma)

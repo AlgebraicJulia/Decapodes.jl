@@ -11,7 +11,7 @@ using MultiScaleArrays
 using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
-using GLMakie
+using WGLMakie
 using Logging
 using JLD2
 using Printf
@@ -73,7 +73,7 @@ s[:point] = map(x -> scaling_mat*x, s[:point])
 s[:edge_orientation] = false
 orient!(s)
 # Visualize the mesh.
-GLMakie.wireframe(s)
+WGLMakie.wireframe(s)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
 subdivide_duals!(sd, Circumcenter())
 
@@ -116,7 +116,7 @@ L = fill(1.0, length(left_wall_idxs))
 F₁ = map(sd[:point]) do (x,y)
  (x-0.3)^2 + (y-0.6)^2 ≤ (0.1)^2 ? 5.0 : 0.0
 end
-GLMakie.mesh(s, color=F₁, colormap=:jet)
+WGLMakie.mesh(s, color=F₁, colormap=:jet)
 
 F₂ = zeros(nv(sd))
 
@@ -139,11 +139,11 @@ fₘ = sim(sd, generate)
 u₀ = ComponentArrays(U=U, V=V, One=One)
 
 # Visualize the initial conditions.
-# If GLMakie throws errors, then update your graphics drivers,
+# If WGLMakie throws errors, then update your graphics drivers,
 # or use an alternative Makie backend like CairoMakie.
-fig_ic = GLMakie.Figure()
-p1 = GLMakie.mesh(fig_ic[1,2], s, color=findnode(u₀, :U), colormap=:jet)
-p2 = GLMakie.mesh(fig_ic[1,3], s, color=findnode(u₀, :V), colormap=:jet)
+fig_ic = WGLMakie.Figure()
+p1 = WGLMakie.mesh(fig_ic[1,2], s, color=findnode(u₀, :U), colormap=:jet)
+p2 = WGLMakie.mesh(fig_ic[1,3], s, color=findnode(u₀, :V), colormap=:jet)
 
 tₑ = 11.5
 
@@ -159,14 +159,14 @@ soln = solve(prob, Tsit5())
 @save "brusselator_bounded.jld2" soln
 
 # Visualize the final conditions.
-GLMakie.mesh(s, color=findnode(soln(tₑ), :U), colormap=:jet)
+WGLMakie.mesh(s, color=findnode(soln(tₑ), :U), colormap=:jet)
 
 begin # BEGIN Gif creation
 frames = 100
 # Initial frame
-fig = GLMakie.Figure(resolution = (1200, 800))
-p1 = GLMakie.mesh(fig[1,2], s, color=findnode(soln(0), :U), colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
-p2 = GLMakie.mesh(fig[1,4], s, color=findnode(soln(0), :V), colormap=:jet, colorrange=extrema(findnode(soln(0), :V)))
+fig = WGLMakie.Figure(resolution = (1200, 800))
+p1 = WGLMakie.mesh(fig[1,2], s, color=findnode(soln(0), :U), colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
+p2 = WGLMakie.mesh(fig[1,4], s, color=findnode(soln(0), :V), colormap=:jet, colorrange=extrema(findnode(soln(0), :V)))
 ax1 = Axis(fig[1,2], width = 400, height = 400)
 ax2 = Axis(fig[1,4], width = 400, height = 400)
 hidedecorations!(ax1)
@@ -246,9 +246,9 @@ soln = solve(prob, Tsit5())
 begin # BEGIN Gif creation
 frames = 100
 # Initial frame
-fig = GLMakie.Figure(resolution = (1200, 800))
-p1 = GLMakie.mesh(fig[1,2], s, color=findnode(soln(0), :U), colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
-p2 = GLMakie.mesh(fig[1,4], s, color=findnode(soln(0), :V), colormap=:jet, colorrange=extrema(findnode(soln(0), :V)))
+fig = WGLMakie.Figure(resolution = (1200, 800))
+p1 = WGLMakie.mesh(fig[1,2], s, color=findnode(soln(0), :U), colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
+p2 = WGLMakie.mesh(fig[1,4], s, color=findnode(soln(0), :V), colormap=:jet, colorrange=extrema(findnode(soln(0), :V)))
 ax1 = Axis(fig[1,2], width = 400, height = 400)
 ax2 = Axis(fig[1,4], width = 400, height = 400)
 hidedecorations!(ax1)

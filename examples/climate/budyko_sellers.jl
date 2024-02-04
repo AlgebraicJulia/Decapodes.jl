@@ -14,9 +14,9 @@ using ComponentArrays
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
-# Uncomment to load GLMakie if your system supports it.
+# Uncomment to load WGLMakie if your system supports it.
 # Otherwise, do using CairoMakie
-#using GLMakie
+#using WGLMakie
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 
@@ -218,7 +218,7 @@ lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)
 # Initial frame
 frames = 100
 fig = Figure(resolution = (800, 800))
-ax1 = CairoMakie.Axis(fig[1,1])
+ax1 = WGLMakie.Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
 ylims!(ax1, extrema(soln(tₑ).Tₛ))
 Label(fig[1,1,Top()], "Surface temperature, Tₛ, [C°]")

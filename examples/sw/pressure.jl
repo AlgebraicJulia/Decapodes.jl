@@ -7,7 +7,7 @@ using MLStyle
 using Distributions
 using LinearAlgebra
 using Catlab.ACSetInterface
-using GLMakie
+using WGLMakie
 using Logging
 using ComponentArrays
 # using CairoMakie 

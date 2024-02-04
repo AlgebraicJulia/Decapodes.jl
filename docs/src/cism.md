@@ -26,7 +26,7 @@ using OrdinaryDiffEq
 using JLD2
 using SparseArrays
 using Statistics
-using CairoMakie
+using WGLMakie
 using BenchmarkTools
 using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
@@ -269,7 +269,7 @@ We recall that these dynamics are of the "shallow slope" and "shallow ice" appro
 # Plot the final conditions
 function plot_final_conditions()
   fig = Figure()
-  ax = CairoMakie.Axis(fig[1,1],
+  ax = WGLMakie.Axis(fig[1,1],
     title="Modeled thickness (m) at time 200.0",
     aspect=0.6)
   msh = mesh!(ax, s′, color=soln(200.0).dynamics_h, colormap=:jet)
@@ -287,7 +287,7 @@ save("ice_numeric_solution.png", fig)
 function plot_analytic()
   hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s′))
   fig = Figure()
-  ax = CairoMakie.Axis(fig[1,1],
+  ax = WGLMakie.Axis(fig[1,1],
     title="Analytic thickness (m) at time 200.0",
     aspect=0.6)
   msh = mesh!(ax, s′, color=hₐ, colormap=:jet)
@@ -307,7 +307,7 @@ function plot_error()
   h_diff = soln(tₑ).dynamics_h - hₐ
   extrema(h_diff)
   fig = Figure()
-  ax = CairoMakie.Axis(fig[1,1],
+  ax = WGLMakie.Axis(fig[1,1],
     title="Modeled thickness - Analytic thickness at time 200.0",
     aspect=0.6)
   msh = mesh!(ax, s′, color=h_diff, colormap=:jet)
