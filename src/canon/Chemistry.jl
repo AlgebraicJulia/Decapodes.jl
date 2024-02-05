@@ -1,5 +1,9 @@
+module Chemistry
+
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
+using ..Canon
+using Markdown
 
 @docapode(Brusselator
   ,"https://en.wikipedia.org/wiki/brusselator"
@@ -39,3 +43,5 @@ end)
     ∂ₜ(V) == V̇
   end
 )
+
+end

@@ -1,9 +1,29 @@
+module Physics
+
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
+using ..Canon
+using Markdown
 
-@docapode(Momentum
+@docapode("Mohamed Eq. 10, N2"
+          ,""
+          ,""
+          ,mohamed_flow
+          ,begin
+  𝐮::Form1
+  (P, 𝑝ᵈ)::Form0
+  (negone, half, μ)::Constant
+
+  ∂ₜ(𝐮) == 𝐮̇
+
+  𝑝ᵈ == P + half * i(𝐮,𝐮)
+
+  𝐮̇ == μ * ∘(d, ⋆, d, ⋆)(𝐮) + (negone)*⋆₁⁻¹(∧₁₀ₚᵈ(𝐮, ⋆(d(𝐮)))) + d(𝑝ᵈ)
+end)
+
+@docapode("Momentum"
   ,"https://www.google.com"
-  ,"desc"
+  ,""
   ,momentum
   ,begin
     (f,b)::Form0
@@ -19,9 +39,9 @@ using DiagrammaticEquations.Deca
     uˢ̇ == force(U)
   
   end
-)
+ )
 
-@docapode(FicksLaw
+@docapode("Ficks Law"
   ,"https://en.wikipedia.org/wiki/Fick%27s_laws_of_diffusion"
   ,"Equation for diffusion first stated by Adolf Fick. The diffusion flux is proportional to the concentration gradient."
   ,ficks_law
@@ -46,7 +66,7 @@ using DiagrammaticEquations.Deca
   end
 )
 
-@docapode(AbsorbedShortwaveRadiation
+@docapode("Absorbed Shortwave Radiation"
   ,"https://www.google.com"
   ,"The proportion of light reflected by a surface is the **albedo**. The absorbed shortwave radiation is the complement of this quantity."
   ,absorbed_shortwave_radiation
@@ -84,7 +104,7 @@ using DiagrammaticEquations.Deca
 
 @docapode(Schoedinger
   ,"https://en.wikipedia.org/wiki/Schrodinger_equation"
-  ,"The evolution of the wave functioin over time."
+  ,"The evolution of the wave function over time."
   ,schroedinger
   ,begin
     (i,h,m)::Constant
@@ -95,7 +115,7 @@ using DiagrammaticEquations.Deca
   end
 )
 
-@docapode(NavierStokes
+@docapode("Navier-Stokes"
   ,"https://en.wikipedia.org/wiki/Navier_Stokes_equation"
   ,"Partial differential equations which describe the motion of viscous fluid surfaces."
   ,navier_stokes
@@ -103,22 +123,20 @@ using DiagrammaticEquations.Deca
     (V, V̇, G)::Form1{X}
     (ρ, ṗ, p)::Form0{X}
 
-    # TODO: Find the right LHS for the next line
-    V == Δ₁(V) + third(d₀(δ₁(V)))
-
-    ∂ₜ(V) == neg₁(L₁′(V, V)) + 
-      kᵥ(Δ(V) + (1/3)*d(δ(V))) / avg₀₁(ρ) +
-      d(0.5 * (i₁′(V, V))) +
-      -1 * d(p) / avg₀₁(ρ) +
-      G
-
-    ∂ₜ(p) == -1 * ⋆(L₀(V, ⋆(p)))
+    V̇ == neg₁(L₁′(V, V)) + 
+        div₁(kᵥ(Δ₁(V) + third(d₀(δ₁(V)))), avg₀₁(ρ)) +
+        d₀(half(i₁′(V, V))) +
+        neg₁(div₁(d₀(p),avg₀₁(ρ))) +
+        G
+    ∂ₜ(V) == V̇
+    ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(p))))# + ⋆₀⁻¹(dual_d₁(⋆₁(kᵨ(d₀(ρ)))))
+    ∂ₜ(p) == ṗ
   end
-),
+)
 
 @docapode(Poiseuille
-  ,"https://www.google.com"
-  ,"desc"
+  ,"https://en.wikipedia.org/wiki/Hagen-Poiseuille_equation"
+  ,"A relation between the pressure drop in an incompressible and Newtownian fluid in laminar flow flowing through a long cylindrical pipe."
   ,poiseuille
   ,begin
     P::Form0
@@ -127,6 +145,7 @@ using DiagrammaticEquations.Deca
 
     # Laplacian of q for the viscous effect
     Δq == Δ(q)
+
     # Gradient of P for the pressure driving force
     ∇P == d(P)
 
@@ -268,3 +287,4 @@ using DiagrammaticEquations.Deca
 #   ∂ₜ{Form0{X}}(C) == Ċ
 # end
 
+end
