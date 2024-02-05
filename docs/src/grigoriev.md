@@ -224,10 +224,12 @@ save("grigoriev_fc.png", f)
 function save_dynamics(save_file_name)
   time = Observable(0.0)
   h = @lift(soln($time).h)
-  f,a,o = mesh(s′, color=h, colormap=:jet,
-             colorrange=extrema(soln(tₑ).h);
-             axis = (; title = @lift("Grigoriev Ice Cap Dynamic Thickness [m] at time $($time))")))
-  Colorbar(f[1,2], limits=extrema(soln(0.0).h), colormap=:jet)
+  f = Figure()
+  ax = CairoMakie.Axis(f[1,1], title = @lift("Grigoriev Ice Cap Dynamic Thickness [m] at time $($time)"))
+  gmsh = mesh!(ax, s′, color=h, colormap=:jet,
+               colorrange=extrema(soln(tₑ).h))
+  #Colorbar(f[1,2], gmsh, limits=extrema(soln(tₑ).h))
+  Colorbar(f[1,2], gmsh)
   timestamps = range(0, tₑ, step=1e-1)
   record(f, save_file_name, timestamps; framerate = 15) do t
     time[] = t

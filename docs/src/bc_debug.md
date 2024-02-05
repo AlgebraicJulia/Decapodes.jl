@@ -105,7 +105,7 @@ is only a primal mesh, we also generate and subdivide the dual mesh.
 
 ```@example Debug
 using CombinatorialSpaces, CombinatorialSpaces.DiscreteExteriorCalculus
-using WGLMakie
+using CairoMakie
 
 plot_mesh = loadmesh(Rectangle_30x10())
 
@@ -190,7 +190,7 @@ framerate = 30
 
 # Animation
 record(fig, "diff_adv_right.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-  ob.color = sol(t).C
+  pmsh.color = sol(t).C
 end
 ```
 
