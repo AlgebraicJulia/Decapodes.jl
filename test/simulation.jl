@@ -15,6 +15,7 @@ using ComponentArrays
 using OrdinaryDiffEq
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
+using GeometryBasics
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
   hodge = ⋆(k,sd,hodge=hodge)
@@ -795,6 +796,35 @@ end
   f(du, u, constants_and_parameters, 0)
 
   @test all(isapprox.(du.A, -1 * ones(ne(earth))))  
+
+end
+
+@testset "1-D Mat Generation" begin
+  Point2D = Point2{Float64}
+  function generate_dual_mesh(s::HasDeltaSet1D)
+    orient!(s)
+    sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point2D}(s)
+    subdivide_duals!(sd, Barycenter())
+    sd
+  end
+
+  primal_line = EmbeddedDeltaSet1D{Bool,Point2D}()
+  add_vertices!(primal_line, 3, point=[Point2D(1,0), Point2D(0,0), Point2D(0,2)])
+  add_edges!(primal_line, [1,2], [2,3])
+  line = generate_dual_mesh(primal_line)
+
+    # Testing Diagonal inverse hodge 1
+    DiagonalInvHodge1 = @decapode begin
+      A::DualForm1
   
+      B == ∂ₜ(A)
+      B == ⋆(A)
+    end
+    g = gensim(DiagonalInvHodge1)
+    @test gensim(DiagonalInvHodge1).args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
+    sim = eval(g)
   
+    # Test that no error is thrown here
+    f = sim(line, default_dec_generate, DiagonalHodge())  
+
 end
