@@ -409,7 +409,7 @@ soln = solve(prob, Tsit5())
 ``` @example DEC
 # Final conditions:
 fig = Figure()
-ax = Axis(fig[1,1])
+ax = CairoMakie.Axis(fig[1,1])
 msh = mesh!(ax, s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 display(fig)
 ```
@@ -418,7 +418,7 @@ display(fig)
 begin
   frames = 100
   fig = Figure()
-  ax = Axis(fig[1,1])
+  ax = CairoMakie.Axis(fig[1,1])
   msh = CairoMakie.mesh(ax, s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
   Colorbar(fig[1,2], msh)
   record(fig, "ice_dynamics2D.gif", range(0.0, tₑ; length=frames); framerate = 15) do t

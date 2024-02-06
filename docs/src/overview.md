@@ -114,7 +114,7 @@ periodic_mesh = loadmesh(Torus_30x10())
 point_map = loadmesh(Point_Map())
 
 fig = Figure()
-ax = Axis(fig[1,1], aspect = AxisAspect(3.0))
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
 wireframe!(ax, plot_mesh)
 fig
 ```
@@ -155,7 +155,7 @@ c_dist = MvNormal([7, 5], [1.5, 1.5])
 c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
 
 fig = Figure()
-ax = Axis(fig[1,1], aspect = AxisAspect(3.0))
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
 mesh!(ax, plot_mesh; color=c[point_map])
 fig
 ```
@@ -178,7 +178,7 @@ colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
 fig = Figure()
-ax = Axis(fig[1,1], aspect = AxisAspect(3.0))
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
 pmsh = mesh!(ax, plot_mesh; color=colors[1], colorrange = extrema(vcat(colors...)))
 Colorbar(fig[1,2], pmsh)
 framerate = 30
@@ -341,7 +341,7 @@ colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
 fig = Figure()
-ax = Axis(fig[1,1], aspect = AxisAspect(3.0))
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
 pmsh = mesh!(ax, plot_mesh; color=colors[1], colorrange = extrema(vcat(colors...)))
 Colorbar(fig[1,2], pmsh)
 framerate = 30

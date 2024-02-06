@@ -115,7 +115,7 @@ plot_mesh_dual = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}(plot
 subdivide_duals!(plot_mesh_dual, Circumcenter())
 
 fig = Figure()
-ax = Axis(fig[1,1], aspect = AxisAspect(3.0))
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
 wireframe!(ax, plot_mesh)
 fig
 ```
@@ -155,7 +155,7 @@ c_dist = MvNormal([1, 5], [1.5, 1.5])
 c = [pdf(c_dist, [p[1], p[2]]) for p in plot_mesh_dual[:point]]
 
 fig = Figure()
-ax = Axis(fig[1,1], aspect = AxisAspect(3.0))
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
 mesh!(ax, plot_mesh; color=c[1:nv(plot_mesh)])
 fig
 ```
@@ -183,7 +183,7 @@ colors = [sol(t).C for t in times]
 extrema
 # Initial frame
 fig = Figure()
-ax = Axis(fig[1,1], aspect = AxisAspect(3.0))
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
 pmsh = mesh!(ax, plot_mesh; color=colors[1], colorrange = extrema(vcat(colors...)))
 Colorbar(fig[1,2], pmsh)
 framerate = 30

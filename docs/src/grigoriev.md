@@ -73,7 +73,7 @@ s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
 
 fig = Figure()
-ax = Axis(fig[1,1])
+ax = CairoMakie.Axis(fig[1,1])
 wf = wireframe!(ax, s)
 display(fig)
 ```

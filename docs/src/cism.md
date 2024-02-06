@@ -126,8 +126,10 @@ subdivide_duals!(s, Barycenter())
 x̄ = mean(p -> p[1], point(s))
 ȳ = mean(p -> p[2], point(s))
 
-wf = wireframe(s)
-save("ice_mesh.png", wf)
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1])
+wf = wireframe!(ax, s)
+save("ice_mesh.png", fig)
 ```
 
 !["Wireframe of the Domain"](ice_mesh.png)
@@ -167,7 +169,9 @@ end
 # Set the initial conditions for ice sheet height:
 # Ice height is a primal 0-form. i.e. valued at vertices.
 h₀ = map(x -> height_at_p(x[1], x[2], 0), point(s′))
-fig = mesh(s′, color=h₀, colormap=:jet)
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1])
+msh = mesh!(ax, s′, color=h₀, colormap=:jet)
 save("ice_initial_conditions.png", fig)
 ```
 
@@ -350,10 +354,12 @@ rmse = sqrt(sum(map(x -> x*x, h_diff)) / length(h_diff))
 # Create a gif
 begin
   frames = 100
-  fig, ax, ob = mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(tₑ).dynamics_h))
-  Colorbar(fig[1,2], ob)
+  fig = Figure()
+  ax = CairoMakie.Axis(fig[1,1])
+  msh = mesh!(ax, s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(tₑ).dynamics_h))
+  Colorbar(fig[1,2], msh)
   record(fig, "ice_dynamics_cism.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
-    ob.color = soln(t).dynamics_h
+    msh.color = soln(t).dynamics_h
   end
 end
 ```
