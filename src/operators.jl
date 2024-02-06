@@ -53,7 +53,7 @@ function dec_pair_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::Ge
     ((y, x) -> ldiv!(y, inv_hdg, x), x -> inv_hdg \ x)
 end
 
-function dec_pair_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::DiagonalHodge)
+function dec_pair_inv_hodge(::Type{Val{1}}, sd::HasDeltaSet, ::DiagonalHodge)
     inv_hdg = dec_inv_hodge_star(1, sd, DiagonalHodge())
     ((y, x) -> mul!(y, inv_hdg, x), x -> inv_hdg * x)
 end
