@@ -288,7 +288,7 @@ Create animated GIFs of the temperature and ice height dynamics.
 begin
 # Initial frame
 frames = 100
-fig = Figure(resolution = (800, 800))
+fig = Figure(; size = (800, 800))
 ax1 = CairoMakie.Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
 ylims!(ax1, extrema(soln(tₑ).Tₛ))
@@ -304,7 +304,7 @@ end
 begin
 # Initial frame
 frames = 100
-fig = Figure(resolution = (800, 800))
+fig = Figure(; size = (800, 800))
 ax1 = CairoMakie.Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
 ylims!(ax1, extrema(soln(tₑ).halfar_h))
