@@ -419,7 +419,7 @@ begin
   frames = 100
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1])
-  msh = CairoMakie.mesh(ax, s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+  msh = CairoMakie.mesh!(ax, s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
   Colorbar(fig[1,2], msh)
   record(fig, "ice_dynamics2D.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
     msh.color = soln(t).dynamics_h
