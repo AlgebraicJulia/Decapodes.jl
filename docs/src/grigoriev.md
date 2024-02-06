@@ -71,7 +71,11 @@ s′ = triangulated_grid(
 s′[:point] = map(x -> x + Point3D(MIN_X, MIN_Y, 0), s′[:point])
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
-wireframe(s)
+
+fig = Figure()
+ax = Axis(fig[1,1])
+wf = wireframe!(ax, s)
+display(fig)
 ```
 
 The coordinates of a vertex are stored in `s[:point]`. Let's use our interpolator to assign ice thickness values to each vertex in the mesh:

@@ -408,16 +408,21 @@ soln = solve(prob, Tsit5())
 
 ``` @example DEC
 # Final conditions:
-mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+fig = Figure()
+ax = Axis(fig[1,1])
+msh = mesh!(ax, s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+display(fig)
 ```
 
 ``` @example DEC
 begin
   frames = 100
-  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
-  Colorbar(fig[1,2], ob)
+  fig = Figure()
+  ax = Axis(fig[1,1])
+  msh = CairoMakie.mesh(ax, s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+  Colorbar(fig[1,2], msh)
   record(fig, "ice_dynamics2D.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    ob.color = soln(t).dynamics_h
+    msh.color = soln(t).dynamics_h
   end
 end
 ```
@@ -449,7 +454,10 @@ end
 
 # Visualize initial condition for ice sheet height.
 # There is lots of ice at the poles, and no ice at the equator.
-mesh(s′, color=h₀, colormap=:jet)
+fig = Figure()
+ax = LScene(fig[1,1], scenekw=(lights=[],))
+msh = CairoMakie.mesh!(ax, s′, color=h₀, colormap=:jet)
+display(fig)
 ```
 
 ``` @example DEC
@@ -483,7 +491,10 @@ extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)
 ```
 
 ``` @example DEC
-mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+fig = Figure()
+ax = LScene(fig[1,1], scenekw=(lights=[],))
+msh = CairoMakie.mesh!(ax, s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+display(fig)
 ```
 
 ``` @example DEC
