@@ -15,6 +15,7 @@ using ComponentArrays
 using OrdinaryDiffEq
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
+using GeometryBasics
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
   hodge = ⋆(k,sd,hodge=hodge)
@@ -799,6 +800,7 @@ end
 end
 
 @testset "1-D Mat Generation" begin
+  Point2D = Point2{Float64}
   function generate_dual_mesh(s::HasDeltaSet1D)
     orient!(s)
     sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point2D}(s)
