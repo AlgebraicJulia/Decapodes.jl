@@ -127,7 +127,7 @@ x̄ = mean(p -> p[1], point(s))
 ȳ = mean(p -> p[2], point(s))
 
 fig = Figure()
-ax = CairoMakie.Axis(fig[1,1])
+ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
 wf = wireframe!(ax, s)
 save("ice_mesh.png", fig)
 ```
@@ -170,7 +170,7 @@ end
 # Ice height is a primal 0-form. i.e. valued at vertices.
 h₀ = map(x -> height_at_p(x[1], x[2], 0), point(s′))
 fig = Figure()
-ax = CairoMakie.Axis(fig[1,1])
+ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
 msh = mesh!(ax, s′, color=h₀, colormap=:jet)
 save("ice_initial_conditions.png", fig)
 ```
@@ -275,7 +275,7 @@ function plot_final_conditions()
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1],
     title="Modeled thickness (m) at time 200.0",
-    aspect=0.6)
+    aspect=0.6, xticks = [0, 3e4, 6e4])
   msh = mesh!(ax, s′, color=soln(200.0).dynamics_h, colormap=:jet)
   Colorbar(fig[1,2], msh)
   fig
@@ -293,7 +293,7 @@ function plot_analytic()
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1],
     title="Analytic thickness (m) at time 200.0",
-    aspect=0.6)
+    aspect=0.6, xticks = [0, 3e4, 6e4])
   msh = mesh!(ax, s′, color=hₐ, colormap=:jet)
   Colorbar(fig[1,2], msh)
   fig
@@ -313,7 +313,7 @@ function plot_error()
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1],
     title="Modeled thickness - Analytic thickness at time 200.0",
-    aspect=0.6)
+    aspect=0.6, xticks = [0, 3e4, 6e4])
   msh = mesh!(ax, s′, color=h_diff, colormap=:jet)
   Colorbar(fig[1,2], msh)
   fig
@@ -355,7 +355,7 @@ rmse = sqrt(sum(map(x -> x*x, h_diff)) / length(h_diff))
 begin
   frames = 100
   fig = Figure()
-  ax = CairoMakie.Axis(fig[1,1])
+  ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
   msh = mesh!(ax, s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(tₑ).dynamics_h))
   Colorbar(fig[1,2], msh)
   record(fig, "ice_dynamics_cism.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
