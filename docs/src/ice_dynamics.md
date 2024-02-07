@@ -307,7 +307,11 @@ to_graphviz(ice_dynamics3)
 s′ = triangulated_grid(10_000,10_000,800,800,Point3D)
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
-wireframe(s)
+
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1])
+wf = wireframe!(ax, s′)
+fig
 ```
 
 # Define our input data
@@ -325,6 +329,11 @@ end
 
 # Visualize initial condition for ice sheet height.
 mesh(s′, color=h₀, colormap=:jet)
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1])
+msh = mesh!(ax, s′, color=h₀, colormap=:jet)
+Colorbar(fig[1,2], msh)
+fig
 ```
 
 ``` @example DEC
@@ -411,7 +420,8 @@ soln = solve(prob, Tsit5())
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1])
 msh = mesh!(ax, s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
-display(fig)
+Colorbar(fig[1,2], msh)
+fig
 ```
 
 ``` @example DEC
