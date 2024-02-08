@@ -249,7 +249,7 @@ Let's examine the final conditions:
 ``` @example DEC
 fig,ax,ob = lines(map(x -> x[1], point(s′)), soln(tₑ).dynamics_h, linewidth=5)
 ylims!(ax, extrema(h₀))
-display(fig)
+fig
 ```
 
 We see that our distribution converges to a more uniform ice height across our domain, which matches our physical intuition.
@@ -467,7 +467,8 @@ end
 fig = Figure()
 ax = LScene(fig[1,1], scenekw=(lights=[],))
 msh = CairoMakie.mesh!(ax, s′, color=h₀, colormap=:jet)
-display(fig)
+Colorbar(fig[1,2], msh)
+fig
 ```
 
 ``` @example DEC
@@ -504,7 +505,8 @@ extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)
 fig = Figure()
 ax = LScene(fig[1,1], scenekw=(lights=[],))
 msh = CairoMakie.mesh!(ax, s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
-display(fig)
+Colorbar(fig[1,2], msh)
+fig
 ```
 
 ``` @example DEC
