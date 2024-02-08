@@ -13,8 +13,8 @@ Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 CUDA.allowscalar(false)
 
-# rect = loadmesh(Rectangle_30x10())
-rect = triangulated_grid(100, 100, 1, 1, Point3D)
+rect = loadmesh(Rectangle_30x10())
+# rect = triangulated_grid(100, 100, 1, 1, Point3D)
 d_rect = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(rect)
 subdivide_duals!(d_rect, Circumcenter())
 
@@ -87,4 +87,16 @@ begin
   CairoMakie.record(fig, "Heat_GPU.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
     msh.color = Vector{Float64}(soln(t).U)
   end
+end
+
+# Figure out a way to do atomic adds so we can split the addition across threads.y
+function dec_cu_c_wedge_product_01!(wedge_terms, f, α, primal_vertices)
+  index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x   
+  stride = Int32(4) * blockDim().x
+  i = index
+  @inbounds while i <= length(wedge_terms)
+    wedge_terms[i] = 0.5f0 * α[i] * (f[primal_vertices[i, 1]] + f[primal_vertices[i, 2]])
+    i += stride
+  end
+  return nothing
 end
