@@ -14,7 +14,7 @@ Point3D = Point3{Float64}
 CUDA.allowscalar(false)
 
 rect = loadmesh(Rectangle_30x10())
-# rect = triangulated_grid(200, 200, 1, 1, Point3D)
+# rect = triangulated_grid(400, 400, 1, 1, Point3D)
 d_rect = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(rect)
 subdivide_duals!(d_rect, Circumcenter())
 
@@ -103,16 +103,18 @@ end
 
 function dec_cu_atom_c_wedge_product_01!(wedge_terms::CuDeviceArray{T}, f, α, primal_vertices) where T
   index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x   
-  stride = Int32(128) * blockDim().x
-  i = index
+  stride = Int32(512) * blockDim().x
   j = threadIdx().y
 
+  i = index
   @inbounds while i <= length(wedge_terms)
-    wedge_terms[i] = 0
+    if(j == Int32(1))
+      wedge_terms[i] = Int32(0)
+    end
     sync_threads()
 
     temp = T(0.5) * α[i] * f[primal_vertices[i, j]]
-    CUDA.atomic_add!(pointer(wedge_terms) + sizeof(T) * (i - 1), temp)
+    CUDA.atomic_add!(pointer(wedge_terms) + sizeof(T) * (i - Int32(1)), temp)
     sync_threads()
     
     i += stride
@@ -120,22 +122,22 @@ function dec_cu_atom_c_wedge_product_01!(wedge_terms::CuDeviceArray{T}, f, α, p
   return nothing
 end
   
-function dec_cu_atom_c_wedge_product_01!(wedge_terms, f, α, primal_vertices)
+function dec_cu_atom_share_c_wedge_product_01!(wedge_terms::CuDeviceArray{T}, f, α, primal_vertices) where T
   index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x   
-  stride = Int32(128) * blockDim().x
-  i = index
+  stride = Int32(512) * blockDim().x
   j = threadIdx().y
 
-  shared_arr = CUDA.CuDynamicSharedArray(Float64, blockDim().x)
+  shared_arr = CUDA.CuDynamicSharedArray(T, blockDim().x)
 
+  i = index
   @inbounds while i <= length(wedge_terms)
-    if(threadIdx().y == 1)
-      shared_arr[threadIdx().x] = 0
+    if(threadIdx().y == Int32(1))
+      shared_arr[threadIdx().x] = Int32(0)
     end
     sync_threads()
 
-    temp = 0.5 * α[i] * f[primal_vertices[i, j]]
-    CUDA.atomic_add!(pointer(shared_arr) + 8 * (threadIdx().x - 1), temp)
+    temp = T(0.5) * α[i] * f[primal_vertices[i, j]]
+    CUDA.atomic_add!(pointer(shared_arr) + sizeof(T) * (threadIdx().x - Int32(1)), temp)
     sync_threads()
     
     if(threadIdx().y == 1)
