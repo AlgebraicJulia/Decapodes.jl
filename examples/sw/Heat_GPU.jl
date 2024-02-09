@@ -14,7 +14,7 @@ Point3D = Point3{Float64}
 CUDA.allowscalar(false)
 
 rect = loadmesh(Rectangle_30x10())
-# rect = triangulated_grid(100, 100, 1, 1, Point3D)
+# rect = triangulated_grid(200, 200, 1, 1, Point3D)
 d_rect = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(rect)
 subdivide_duals!(d_rect, Circumcenter())
 
@@ -92,10 +92,57 @@ end
 # Figure out a way to do atomic adds so we can split the addition across threads.y
 function dec_cu_c_wedge_product_01!(wedge_terms, f, α, primal_vertices)
   index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x   
-  stride = Int32(4) * blockDim().x
+  stride = Int32(128) * blockDim().x
   i = index
   @inbounds while i <= length(wedge_terms)
-    wedge_terms[i] = 0.5f0 * α[i] * (f[primal_vertices[i, 1]] + f[primal_vertices[i, 2]])
+    wedge_terms[i] = 0.5 * α[i] * (f[primal_vertices[i, 1]] + f[primal_vertices[i, 2]])
+    i += stride
+  end
+  return nothing
+end
+
+function dec_cu_atom_c_wedge_product_01!(wedge_terms::CuDeviceArray{T}, f, α, primal_vertices) where T
+  index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x   
+  stride = Int32(128) * blockDim().x
+  i = index
+  j = threadIdx().y
+
+  @inbounds while i <= length(wedge_terms)
+    wedge_terms[i] = 0
+    sync_threads()
+
+    temp = T(0.5) * α[i] * f[primal_vertices[i, j]]
+    CUDA.atomic_add!(pointer(wedge_terms) + sizeof(T) * (i - 1), temp)
+    sync_threads()
+    
+    i += stride
+  end
+  return nothing
+end
+  
+function dec_cu_atom_c_wedge_product_01!(wedge_terms, f, α, primal_vertices)
+  index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x   
+  stride = Int32(128) * blockDim().x
+  i = index
+  j = threadIdx().y
+
+  shared_arr = CUDA.CuDynamicSharedArray(Float64, blockDim().x)
+
+  @inbounds while i <= length(wedge_terms)
+    if(threadIdx().y == 1)
+      shared_arr[threadIdx().x] = 0
+    end
+    sync_threads()
+
+    temp = 0.5 * α[i] * f[primal_vertices[i, j]]
+    CUDA.atomic_add!(pointer(shared_arr) + 8 * (threadIdx().x - 1), temp)
+    sync_threads()
+    
+    if(threadIdx().y == 1)
+      wedge_terms[i] = shared_arr[threadIdx().x]
+    end
+    sync_threads()
+
     i += stride
   end
   return nothing
