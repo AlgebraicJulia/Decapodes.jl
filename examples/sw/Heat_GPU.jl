@@ -89,6 +89,24 @@ begin
   end
 end
 
+begin
+rect = loadmesh(Rectangle_30x10())
+# rect = triangulated_grid(400, 400, 1, 1, Point3D)
+d_rect = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(rect)
+subdivide_duals!(d_rect, Circumcenter())
+
+R = rand(ne(d_rect));
+A = rand(nv(d_rect));
+B = rand(ne(d_rect));
+
+cuR = CuArray(R)
+cuA = CuArray(A)
+cuB = CuArray(B)
+
+val_pack = dec_p_wedge_product(Tuple{0,1}, d_rect)
+primal_vertices = CuArray(val_pack[1])
+end
+
 # Figure out a way to do atomic adds so we can split the addition across threads.y
 function dec_cu_c_wedge_product_01!(wedge_terms, f, α, primal_vertices)
   index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x   
@@ -140,7 +158,7 @@ function dec_cu_atom_share_c_wedge_product_01!(wedge_terms::CuDeviceArray{T}, f,
     CUDA.atomic_add!(pointer(shared_arr) + sizeof(T) * (threadIdx().x - Int32(1)), temp)
     sync_threads()
     
-    if(threadIdx().y == 1)
+    if(threadIdx().y == Int32(1))
       wedge_terms[i] = shared_arr[threadIdx().x]
     end
     sync_threads()
