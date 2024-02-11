@@ -112,7 +112,7 @@ We'll need a mesh to simulate on. Since this is a 1D mesh, we can go ahead and m
 ``` @example DEC
 # This is a 1D mesh, consisting of edges and vertices.
 s′ = EmbeddedDeltaSet1D{Bool, Point2D}()
-# 20 hundred vertices along a line, connected by edges.
+# 20 vertices along a line, connected by edges.
 add_vertices!(s′, 20, point=Point2D.(range(0, 10_000, length=20), 0))
 add_edges!(s′, 1:nv(s′)-1, 2:nv(s′))
 orient!(s′)
