@@ -90,6 +90,19 @@ begin
 end
 
 begin
+  using Decapodes
+  using DiagrammaticEquations
+  using CombinatorialSpaces
+  using GeometryBasics
+  using MLStyle
+  using ComponentArrays
+  using CUDA
+  using LinearAlgebra
+  using SparseArrays
+  Point2D = Point2{Float64}
+  Point3D = Point3{Float64}
+  CUDA.allowscalar(false)
+
 rect = loadmesh(Rectangle_30x10())
 # rect = triangulated_grid(400, 400, 1, 1, Point3D)
 d_rect = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(rect)
@@ -112,7 +125,7 @@ function dec_cu_c_wedge_product_01!(wedge_terms, f, α, primal_vertices)
   index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x   
   stride = Int32(128) * blockDim().x
   i = index
-  @inbounds while i <= length(wedge_terms)
+  @inbounds while i <= Int32(length(wedge_terms))
     wedge_terms[i] = 0.5 * α[i] * (f[primal_vertices[i, 1]] + f[primal_vertices[i, 2]])
     i += stride
   end
@@ -162,6 +175,24 @@ function dec_cu_atom_share_c_wedge_product_01!(wedge_terms::CuDeviceArray{T}, f,
       wedge_terms[i] = shared_arr[threadIdx().x]
     end
     sync_threads()
+
+    i += stride
+  end
+  return nothing
+end
+
+function dec_cu_shuffle_c_wedge_product_01!(wedge_terms, f, α, primal_vertices)
+  index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x   
+  stride = Int32(128) * blockDim().x
+  j = threadIdx().y
+
+  i = index
+  @inbounds while i <= Int32(length(wedge_terms))
+    val = 0.5 * α[i] * f[primal_vertices[i, j]]
+    val += shfl_down_sync(vote_ballot_sync(0, j % 2 == 0), val, 1)
+    if(j % 2 == 1){}
+      wedge_terms[i] = val
+    end
 
     i += stride
   end
