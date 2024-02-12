@@ -1,4 +1,4 @@
-# This is a small implementation of Oceananigans.jl's NonhydrostaticModel.
+# This is a discrete exterior calculus implementation of Oceananigans.jl's `NonhydrostaticModel`.
 
 #######################
 # Import Dependencies #
@@ -11,7 +11,7 @@ using Decapodes
 
 # External Dependencies
 using GeometryBasics: Point3
-using GLMakie
+using CairoMakie
 using JLD2
 using LinearAlgebra
 using OrdinaryDiffEq
@@ -23,21 +23,37 @@ Point3D = Point3{Float64}
 ####################
 
 # Equation 1: "The momentum conservation equation" from https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-momentum-conservation-equation
-momentum = @decapode begin
-  (f,b)::Form0
-  (v,V,g,Fᵥ,uˢ,v_up)::Form1
-  τ::Form2
-  U::Parameter
+@decapode momentum begin
+  (v,V)::DualForm1
+  f::PrimalForm0
+  uˢ::DualForm1
+  p::DualForm0
+  b::Constant
+  ĝ::DualForm1
+  Fᵥ::DualForm1
 
-  uˢ̇ == ∂ₜ(uˢ)
-
-  v_up == -1 * L(v,v) - L(V,v) - L(v,V) -
-       f∧v - ∘(⋆,d,⋆)(uˢ)∧v - d(p) + b∧g - ∘(⋆,d,⋆)(τ) + uˢ̇ + Fᵥ
-
-  uˢ̇ == force(U)
+  ∂ₜ(v) ==
+    -ℒ(v,v) + (1/2)dι(v,v) -
+     dι(v,V) + ι(v,dV) + ι(V,dv) -
+     (f - ∘(d,⋆)(uˢ)) ∧ v -
+     d(p) +
+     b∧ĝ -
+     StressDivergence +
+     ∂ₜ(uˢ) +
+     Fᵥ
 end
 momentum = expand_operators(momentum)
 to_graphviz(momentum, graph_attrs=Dict(:rankdir => "LR"))
+
+# Why write "StressDivergence" instead of ∇⋅τ?
+# According to this docs page:
+# https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/
+# , the user simply selects what model to insert in place of the term ∇⋅τ.
+# For example, in the isotropic case, Oceananigans.jl rewrites with:
+# ∇⋅τ = nuΔv.
+# Thus, we write StressDivergence, and replace this term with a choice of
+# "turbulence closure" model. Using the "constant isotropic diffusivity" case,
+# we can operate purely in terms of scalar-valued forms.
 
 # Equation 2: "The tracer conservation equation" from https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-tracer-conservation-equation
 tracer = @decapode begin
@@ -57,6 +73,15 @@ equation_of_state = @decapode begin
 end
 to_graphviz(equation_of_state)
 
+# Equation 2: "Constant isotropic diffusivity" from https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity
+@decapode isotropic_diffusivity begin
+  StressDivergence::DualForm1
+  nu::Constant
+
+  StressDivergence == nu*Δ(v)
+end
+to_graphviz(equation_of_state)
+
 boundary_conditions = @decapode begin
   (S,T)::Form0
   (Ṡ,T_up)::Form0
@@ -72,7 +97,10 @@ end
 to_graphviz(boundary_conditions)
 
 buoyancy_composition_diagram = @relation () begin
-  momentum(V, v, v_up, b)
+  momentum(V, v, v_up, b, SD)
+
+  # "The turbulence closure selected by the user determines the form of stress divergence"
+  turbulence(SD)
 
   # "Both T and S obey the tracer conservation equation"
   temperature(V, v, T, T_up)
@@ -86,11 +114,12 @@ end
 to_graphviz(buoyancy_composition_diagram, box_labels=:name, junction_labels=:variable, prog="fdp", graph_attrs=Dict(["sep" => "1.5"]))
 
 buoyancy_cospan = oapply(buoyancy_composition_diagram, [
-  Open(momentum,          [:V, :v, :v_up, :b]),
-  Open(tracer,            [:V, :v, :c, :c_up]),
-  Open(tracer,            [:V, :v, :c, :c_up]),
-  Open(equation_of_state, [:b, :T, :S]),
-  Open(boundary_conditions, [:v, :S, :T, :v_up, :Ṡ, :T_up])])
+  Open(momentum,              [:V, :v, :v_up, :b, :StressDivergence]),
+  Open(isotropic_diffusivity, [:StressDivergence]),
+  Open(tracer,                [:V, :v, :c, :c_up]),
+  Open(tracer,                [:V, :v, :c, :c_up]),
+  Open(equation_of_state,     [:b, :T, :S]),
+  Open(boundary_conditions,   [:v, :S, :T, :v_up, :Ṡ, :T_up])])
 
 buoyancy = apex(buoyancy_cospan)
 to_graphviz(buoyancy)
@@ -99,7 +128,6 @@ buoyancy = expand_operators(buoyancy)
 infer_types!(buoyancy)
 resolve_overloads!(buoyancy)
 to_graphviz(buoyancy)
-
 
 #s′ = loadmesh(Rectangle_30x10())
 s′ = triangulated_grid(80,80, 10, 10, Point3D)
@@ -115,6 +143,11 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :L₁ => (x,y) -> L₁′(x,y,sd,hodge)
     :L₂ᵈ => (x,y) -> lie_derivative_flat(2, sd, x, y)
+    :ℒ => (x,y) -> begin
+      # ℒ_y(x) := ⋆(⋆(d(x)∧y))
+      # TODO: Check the order of arguments to ∧.
+      star2_mat * ∧(Tuple{1,1}, sd, (star1_mat \ (duald0_mat * x)), y)
+    end
     :force => x -> x
     :∂_spatial => x -> begin
       left = findall(x -> x[1] ≈ 0.0, point(sd))
@@ -271,3 +304,4 @@ triple_tracer = expand_operators(triple_tracer)
 infer_types!(triple_tracer)
 resolve_overloads!(triple_tracer)
 to_graphviz(triple_tracer)
+
