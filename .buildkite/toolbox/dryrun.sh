@@ -10,7 +10,7 @@ fi
 # check if we are in a valid git repository 
 REPO=`git rev-parse --show-toplevel`
 if [[ ! $REPO ]]; then 
-  echo "badness"  
+  echo "We are not in a valid git repo $(pwd)"  
   exit 1
 fi
 

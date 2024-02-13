@@ -78,29 +78,30 @@ end)
   end
  )
 
-# @docapode(:OutgoingLongwaveRadiation
-#   ,"https://www.google.com"
-#   ,"desc"
-#   ,:outgoing_longwave_radiation
-#   ,begin
-#     (Tₛ, OLR)::Form0
-#     (A,B)::Constant
+## TODO
+@docapode("Outgoing Longwave Radiation"
+  ,"https://www.google.com"
+  ,""
+  ,:outgoing_longwave_radiation
+  ,begin
+    (Tₛ, OLR)::Form0
+    (A,B)::Constant
 
-#     OLR == A .+ (B .* Tₛ)
-#   end
-# )
+    OLR == A .+ (B .* Tₛ)
+  end
+)
 
-# @docapode("Heat Transfer"
-#   ,"https://www.google.com"
-#   ,"desc"
-#   ,"heat_transfer"
-#   ,begin
-#     (HT, Tₛ)::Form0
-#     (D,cosϕᵖ,cosϕᵈ)::Constant
+@docapode("Heat Transfer"
+  ,"https://www.google.com"
+  ,""
+  ,:heat_transfer
+  ,begin
+    (HT, Tₛ)::Form0
+    (D,cosϕᵖ,cosϕᵈ)::Constant
 
-#     HT == (D ./ cosϕᵖ) .* ⋆(d(cosϕᵈ .* ⋆(d(Tₛ))))
-#   end
-# )
+    HT == (D ./ cosϕᵖ) .* ⋆(d(cosϕᵈ .* ⋆(d(Tₛ))))
+  end
+)
 
 @docapode(Schoedinger
   ,"https://en.wikipedia.org/wiki/Schrodinger_equation"
