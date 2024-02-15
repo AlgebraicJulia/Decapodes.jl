@@ -236,6 +236,7 @@ function dec_cu_ker_c_differential_same!(res, f, indices)
 end
 
 
+
   #= 
   function dec_cu_atom_c_wedge_product_01!(wedge_terms::CuDeviceArray{T}, f, α, primal_vertices) where T
     index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x   

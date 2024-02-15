@@ -3,10 +3,10 @@ using Catlab.Graphics
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
 using Decapodes
+using DiagrammaticEquations
 using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
-using GLMakie
 using Logging
 using JLD2
 using Printf
@@ -33,19 +33,6 @@ Brusselator = @decapode begin
   ∂ₜ(U) == U̇
   ∂ₜ(V) == V̇
 end
-# Visualize. You must have graphviz installed.
-to_graphviz(Brusselator)
-
-# We resolve types of intermediate variables using sets of rules.
-
-infer_types!(Brusselator)
-# Visualize. Note that variables now all have types.
-to_graphviz(Brusselator)
-
-# Resolve overloads. i.e. ~dispatch
-resolve_overloads!(Brusselator)
-# Visualize. Note that functions are renamed.
-to_graphviz(Brusselator)
 
 # TODO: Create square domain of approximately 32x32 vertices.
 s = loadmesh(Rectangle_30x10())
@@ -56,28 +43,16 @@ s[:point] = map(x -> scaling_mat*x, s[:point])
 s[:edge_orientation] = false
 orient!(s)
 # Visualize the mesh.
-GLMakie.wireframe(s)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
 subdivide_duals!(sd, Circumcenter())
 
 # Define how operations map to Julia functions.
-hodge = GeometricHodge()
-Δ₀ = δ(1, sd, hodge=hodge) * d(0, sd)
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    # The Laplacian operator on 0-Forms is the codifferential of
-    # the exterior derivative. i.e. dδ
-    :Δ₀ => x -> Δ₀ * x
-    :.* => (x,y) -> x .* y
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
 end
-
-# Create initial data.
-@assert all(map(sd[:point]) do (x,y)
-  0.0 ≤ x ≤ 1.0 && 0.0 ≤ y ≤ 1.0
-end)
 
 U = map(sd[:point]) do (_,y)
   22 * (y *(1-y))^(3/2)
@@ -87,13 +62,10 @@ V = map(sd[:point]) do (x,_)
   27 * (x *(1-x))^(3/2)
 end
 
-# TODO: Try making this sparse.
 F₁ = map(sd[:point]) do (x,y)
  (x-0.3)^2 + (y-0.6)^2 ≤ (0.1)^2 ? 5.0 : 0.0
 end
-GLMakie.mesh(s, color=F₁, colormap=:jet)
 
-# TODO: Try making this sparse.
 F₂ = zeros(nv(sd))
 
 One = ones(nv(sd))
@@ -104,7 +76,6 @@ constants_and_parameters = (
   α = 0.001,
   F = t -> t ≥ 1.1 ? F₂ : F₁)
 
-# Generate the simulation.
 gensim(expand_operators(Brusselator))
 sim = eval(gensim(expand_operators(Brusselator)))
 fₘ = sim(sd, generate)
@@ -112,13 +83,6 @@ fₘ = sim(sd, generate)
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
 u₀ = ComponentArrays(U=U, V=V, One=One)
-
-# Visualize the initial conditions.
-# If GLMakie throws errors, then update your graphics drivers,
-# or use an alternative Makie backend like CairoMakie.
-fig_ic = GLMakie.Figure()
-p1 = GLMakie.mesh(fig_ic[1,2], s, color=u₀.U, colormap=:jet)
-p2 = GLMakie.mesh(fig_ic[1,3], s, color=u₀.V, colormap=:jet)
 
 tₑ = 11.5
 
