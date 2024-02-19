@@ -6,7 +6,7 @@ using ..Canon
 using Markdown
 
 @docapode("Mohamed Eq. 10, N2"
-          ,""
+          ,"https://google.com"
           ,""
           ,mohamed_flow
           ,begin
@@ -54,7 +54,7 @@ end)
   end
 ) 
 
-@docapode(Advection
+@docapode("Advection"
   ,"https://en.wikipedia.org/wiki/Advection"
   ,"Advection refers to the transport of a bulk along a vector field."
   ,advection,
@@ -158,9 +158,9 @@ end)
   end
 )
 
-@docapode(PoiseuilleDensity
+@docapode("Poiseuille Density"
   ,"https://en.wikipedia.org/wiki/hagen-poiseuille_density"
-  ,"desc"
+  ,""
   ,poiseuille_density
   ,begin
     q::Form1
@@ -182,7 +182,7 @@ end)
   end
 )
 
-@docapode(JordanKinderlehrerOtto
+@docapode("Jordan-Kinderlehrer-Otto"
   ,"https://www.google.com"
   ,"Jordan, R., Kinderlehrer, D., & Otto, F. (1998). The Variational Formulation of the Fokker--Planck Equation. In SIAM Journal on Mathematical Analysis (Vol. 29, Issue 1, pp. 1–17). Society for Industrial & Applied Mathematics (SIAM). https://doi.org/10.1137/s0036141096303359"
   ,jko_scheme
@@ -193,7 +193,7 @@ end)
   end
 )
 
-@docapode(Oscillator
+@docapode("Oscillator"
   ,"https://en.wikipedia.org/wiki/Harmonic_oscillator"
   ,"Equation governing the motion of an object whose acceleration is negatively-proportional to its position."
   ,oscillator
@@ -207,10 +207,9 @@ end)
   end
 )
 
-# TODO
 @docapode(Lie
   ,"https://en.wikipedia.org/wiki/lie_derivative"
-  ,"..."
+  ,""
   ,lie
   ,begin
     C::Form0
@@ -223,7 +222,7 @@ end)
 
 @docapode(Superposition
   ,"https://en.wikipedia.org/wiki/superposition"
-  ,"desc"
+  ,""
   ,superposition
   ,begin
     (C, Ċ)::Form0
@@ -253,39 +252,5 @@ end)
 
 
 
-
-# Diffusion = @decapode DiffusionQuantities begin
-#   (C, Ċ)::Form0{X}
-#   ϕ::Form1{X}
-
-#   # Fick's first law
-#   ϕ ==  k(d₀{X}(C))
-#   # Diffusion equation
-#   Ċ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(ϕ)))
-#   ∂ₜ{Form0{X}}(C) == Ċ
-# end
-
-# Diffusion = @decapode DiffusionQuantities begin
-#   C::Form0{X}
-#   ϕ::Form1{X}
-
-#   # Fick's first law
-#   ϕ ==  k(d₀{X}(C))
-# end
-
-# Advection = @decapode DiffusionQuantities begin
-#   C::Form0{X}
-#   (V, ϕ)::Form1{X}
-#   ϕ == ∧₀₁{X}(C,V)
-# end
-
-# Superposition = @decapode DiffusionQuantities begin
-#   (C, Ċ)::Form0{X}
-#   (ϕ, ϕ₁, ϕ₂)::Form1{X}
-
-#   ϕ == ϕ₁ + ϕ₂
-#   Ċ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(ϕ)))
-#   ∂ₜ{Form0{X}}(C) == Ċ
-# end
 
 end

@@ -14,6 +14,8 @@ using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
 using CairoMakie
+import CairoMakie: wireframe, mesh, Figure, Axis
+
 using Logging
 using JLD2
 using Printf
@@ -23,18 +25,18 @@ Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 
 BrusselatorDynamics = @decapode begin
-  # Values living on vertices.
-  (U, V)::Form0{X} # State variables.
-  (U2V, One)::Form0{X} # Named intermediate variables.
-  (U̇, V̇)::Form0{X} # Tangent variables.
+  ## Values living on vertices.
+  (U, V)::Form0{X} ## State variables.
+  (U2V, One)::Form0{X} ## Named intermediate variables.
+  (U̇, V̇)::Form0{X} ## Tangent variables.
   (α)::Constant{X}
   (F)::Parameter{X}
-  # A named intermediate variable.
+  ## A named intermediate variable.
   U2V == (U .* U) .* V
-  # Specify how to compute the tangent variables.
+  ## Specify how to compute the tangent variables.
   U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
   V̇ == (3.4 * U) - U2V + (α * Δ(U))
-  # Associate tangent variables with a state variable.
+  ## Associate tangent variables with a state variable.
   ∂ₜ(U) == U̇
   ∂ₜ(V) == V̇
 end
@@ -75,7 +77,7 @@ s[:point] = map(x -> scaling_mat*x, s[:point])
 s[:edge_orientation] = false
 orient!(s)
 # Visualize the mesh.
-CairoMakie.wireframe(s)
+wireframe(s)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
 subdivide_duals!(sd, Circumcenter())
 
@@ -118,7 +120,7 @@ L = fill(1.0, length(left_wall_idxs))
 F₁ = map(sd[:point]) do (x,y)
  (x-0.3)^2 + (y-0.6)^2 ≤ (0.1)^2 ? 5.0 : 0.0
 end
-CairoMakie.mesh(s, color=F₁, colormap=:jet)
+mesh(s, color=F₁, colormap=:jet)
 
 F₂ = zeros(nv(sd))
 
@@ -138,14 +140,14 @@ fₘ = sim(sd, generate)
 
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
-u₀ = ComponentArrays(U=U, V=V, One=One)
+u₀ = ComponentArray(U=U, V=V, One=One)
 
 # Visualize the initial conditions.
 # If GLMakie throws errors, then update your graphics drivers,
 # or use an alternative Makie backend like CairoMakie.
-fig_ic = CairoMakie.Figure()
-p1 = CairoMakie.mesh(fig_ic[1,2], s, color=findnode(u₀, :U), colormap=:jet)
-p2 = CairoMakie.mesh(fig_ic[1,3], s, color=findnode(u₀, :V), colormap=:jet)
+fig_ic = Figure()
+p1 = mesh(fig_ic[1,2], s, color=u₀.U, colormap=:jet)
+p2 = mesh(fig_ic[1,3], s, color=u₀.V, colormap=:jet)
 
 tₑ = 11.5
 
@@ -161,14 +163,14 @@ soln = solve(prob, Tsit5())
 @save "brusselator_bounded.jld2" soln
 
 # Visualize the final conditions.
-GLMakie.mesh(s, color=findnode(soln(tₑ), :U), colormap=:jet)
+mesh(s, color=soln(tₑ).U, colormap=:jet)
 
 begin # BEGIN Gif creation
 frames = 100
-# Initial frame
-fig = CairoMakie.Figure(resolution = (1200, 800))
-p1 = CairoMakie.mesh(fig[1,2], s, color=findnode(soln(0), :U), colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
-p2 = CairoMakie.mesh(fig[1,4], s, color=findnode(soln(0), :V), colormap=:jet, colorrange=extrema(findnode(soln(0), :V)))
+## Initial frame
+fig = Figure(resolution = (1200, 800))
+p1 = mesh(fig[1,2], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
+p2 = mesh(fig[1,4], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
 ax1 = Axis(fig[1,2], width = 400, height = 400)
 ax2 = Axis(fig[1,4], width = 400, height = 400)
 hidedecorations!(ax1)
@@ -181,14 +183,15 @@ Label(fig[1,2,Top()], "U")
 Label(fig[1,4,Top()], "V")
 lab1 = Label(fig[1,3], "")
 
-# Animation
+## Animation
 record(fig, "brusselator_bounded.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    p1.plot.color = findnode(soln(t), :U)
-    p2.plot.color = findnode(soln(t), :V)
+    p1.plot.color = soln(t).U
+    p2.plot.color = soln(t).V
     lab1.text = @sprintf("%.2f",t)
 end
 
-end # END Gif creation
+end 
+## END Gif creation
 
 # Use boundaries on the left and right walls
 BrusselatorBoundaries = @decapode begin
@@ -245,12 +248,13 @@ soln = solve(prob, Tsit5())
 
 @save "brusselator_double_bounded.jld2" soln
 
-begin # BEGIN Gif creation
+begin 
+## BEGIN Gif creation
 frames = 100
-# Initial frame
-fig = CairoMakie.Figure(resolution = (1200, 800))
-p1 = CairoMakie.mesh(fig[1,2], s, color=findnode(soln(0), :U), colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
-p2 = CairoMakie.mesh(fig[1,4], s, color=findnode(soln(0), :V), colormap=:jet, colorrange=extrema(findnode(soln(0), :V)))
+## Initial frame
+fig = Figure(resolution = (1200, 800))
+p1 = mesh(fig[1,2], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
+p2 = mesh(fig[1,4], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
 ax1 = Axis(fig[1,2], width = 400, height = 400)
 ax2 = Axis(fig[1,4], width = 400, height = 400)
 hidedecorations!(ax1)
@@ -263,11 +267,12 @@ Label(fig[1,2,Top()], "U")
 Label(fig[1,4,Top()], "V")
 lab1 = Label(fig[1,3], "")
 
-# Animation
+## Animation
 record(fig, "brusselator_dual_bounded.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    p1.plot.color = findnode(soln(t), :U)
-    p2.plot.color = findnode(soln(t), :V)
+    p1.plot.color = soln(t).U
+    p2.plot.color = soln(t).V
     lab1.text = @sprintf("%.2f",t)
 end
 
-end # END Gif creation
+end 
+## END Gif creation

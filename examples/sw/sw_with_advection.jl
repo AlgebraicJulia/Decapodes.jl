@@ -1,6 +1,8 @@
 using Catlab
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using OrdinaryDiffEq
 using MLStyle
@@ -40,7 +42,7 @@ function generate(sd, my_symbol)
     :dual_d₀ => x->dual_derivative(0,sd)*x
     :dual_d₁ => x->dual_derivative(1,sd)*x
     :∧₀₁ => (x,y)-> map(simplices(0+1, sd)) do z
-                        #∧(Tuple{0,1}, sd, x, y, z)
+                        ##∧(Tuple{0,1}, sd, x, y, z)
 
                         subs = subsimplices(1, sd, z)
                         vs = primal_vertex(1, sd, subs)
@@ -49,7 +51,7 @@ function generate(sd, my_symbol)
                     end
     :plus => (+)
   end
-  # return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
+  ## return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
   return (args...) ->  op(args...)
 end
 
@@ -62,11 +64,11 @@ AdvectionDiffusionExprBody =  quote
     ϕ₁::Form1{X}
     ϕ₂::Form1{X}
 
-    # Fick's first law
+    ## Fick's first law
     ϕ₁ ==  (d₀∘k)(C)
     ϕ₂ == ∧₀₁(C,V)
     ϕ == ϕ₁ + ϕ₂
-    # Diffusion equation
+    ## Diffusion equation
     Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
     ∂ₜ(C) == Ċ
 end
@@ -78,8 +80,6 @@ gensim(expand_operators(ddp), [:C, :V])
 f = eval(gensim(expand_operators(ddp), [:C, :V]))
 
 radius = 6371+90
-#primal_earth, npi, spi = makeSphere(0, 180, 5, 0, 360, 5, radius);
-#nploc = primal_earth[npi, :point]
 primal_earth = loadmesh(Icosphere(4, radius))
 nploc = argmax(x -> x[3], primal_earth[:point])
 orient!(primal_earth)
@@ -98,7 +98,7 @@ tₑ = 1000
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
-using GLMakie
+using CairoMakie
 
 mesh(primal_earth, color=soln(0).C, colormap=:plasma)
 mesh(primal_earth, color=soln(tₑ).C, colormap=:plasma)

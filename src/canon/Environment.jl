@@ -30,10 +30,10 @@ using Markdown
 end)
 
 
-@docapode(energy_balance
-          ,source
+@docapode("Energy balance"
+          ,"https://google.com"
           ,"energy balance equation from Budyko Sellers"
-          , energy_balance
+          ,energy_balance
           ,begin
   (Tₛ, ASR, OLR, HT)::Form0
   (C)::Constant
@@ -44,7 +44,7 @@ end)
 end)
 
 @docapode("Insolation"
-          ,""
+          ,"https://google.com"
           ,""
           ,insolation
           , begin
@@ -55,7 +55,7 @@ end)
 end)
 
 @docapode("Warming"
-          ,""
+          ,"https://google.com"
           ,""
           ,warming
           , begin
@@ -66,7 +66,7 @@ end)
 end)
 
 @docapode("Tracer"
-          ,""
+          ,"https://google.com"
           ,""
           ,tracer
           , begin
@@ -77,7 +77,7 @@ end)
 end)
 
 @docapode("Equation of State"
-          ,""
+          ,"https://google.com"
           ,""
           ,equation_of_state
           , begin
@@ -88,7 +88,7 @@ end)
 end)
 
 @docapode("Boundary Conditions"
-          ,""
+          ,"https://google.com"
           ,""
           ,boundary_conditions
           , begin

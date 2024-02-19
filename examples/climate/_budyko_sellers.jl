@@ -1,6 +1,4 @@
-#######################
-# Import Dependencies #
-#######################
+# Import Dependencies 
 
 # AlgebraicJulia Dependencies
 using Catlab
@@ -22,9 +20,7 @@ using JLD2
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 
-####################
-# Define the model #
-####################
+# Define the model 
 
 # ϕ := Latitude
 # Tₛ(ϕ,t) := Surface temperature
@@ -104,9 +100,7 @@ to_graphviz(budyko_sellers)
 resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
 to_graphviz(budyko_sellers)
 
-###############################
-# Demonstrate storing as JSON #
-###############################
+# Demonstrate storing as JSON
 
 write_json_acset(budyko_sellers, "budyko_sellers.json")
 # When reading back in, we specify that all attributes are "Symbol"s.
@@ -114,10 +108,7 @@ budyko_sellers2 = read_json_acset(SummationDecapode{Symbol,Symbol,Symbol}, "budy
 # Or, you could choose to interpret the data as "String"s.
 budyko_sellers3 = read_json_acset(SummationDecapode{String,String,String}, "budyko_sellers.json")
 
-###################
-# Define the mesh #
-###################
-
+# Define the mesh
 s′ = EmbeddedDeltaSet1D{Bool, Point2D}()
 add_vertices!(s′, 30, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=30), 0))
 add_edges!(s′, 1:nv(s′)-1, 2:nv(s′))
@@ -125,9 +116,7 @@ orient!(s′)
 s = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s′)
 subdivide_duals!(s, Circumcenter())
 
-########################################################
-# Define constants, parameters, and initial conditions #
-########################################################
+# Define constants, parameters, and initial conditions 
 
 # This is a primal 0-form, with values at vertices.
 cosϕᵖ = map(x -> cos(x[1]), point(s′))
@@ -173,24 +162,18 @@ constants_and_parameters = (
   cosϕᵖ = cosϕᵖ,
   diffusion_cosϕᵈ = cosϕᵈ)
 
-#############################################
-# Define how symbols map to Julia functions #
-#############################################
+# Define how symbols map to Julia functions 
 
 # In this example, all operators come from the Discrete Exterior Calculus module
 # from CombinatorialSpaces.
 function generate(sd, my_symbol; hodge=GeometricHodge()) end
 
-#######################
-# Generate simulation #
-#######################
+# Generate simulation 
 
 sim = eval(gensim(budyko_sellers, dimension=1))
 fₘ = sim(s, generate)
 
-##################
-# Run simulation #
-##################
+# Run simulation
 
 tₑ = 1e9
 
@@ -210,9 +193,7 @@ soln = solve(prob, Tsit5())
 
 soln = solve(prob, FBDF())
 
-#############
-# Visualize #
-#############
+# Visualize 
 
 lines(map(x -> x[1], point(s′)), soln(0.0).Tₛ)
 lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)
