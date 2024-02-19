@@ -158,7 +158,7 @@ Label(fig[1,2,Top()], "U")
 Label(fig[1,4,Top()], "V")
 lab1 = Label(fig[1,3], "")
 
-# Animation
+## Animation
 record(fig, "brusselator.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
     p1.plot.color = soln(t).U
     p2.plot.color = soln(t).V
@@ -257,7 +257,7 @@ p2 = mesh(fig[2,1], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0
 Colorbar(fig[1,2])
 Colorbar(fig[2,2])
 
-# Animation
+## Animation
 record(fig, "brusselator_sphere.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
     p1.plot.color = soln(t).U
     p2.plot.color = soln(t).V

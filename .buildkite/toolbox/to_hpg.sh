@@ -14,7 +14,8 @@ if [[ ! $REPO ]]; then
   exit 1
 fi
 
-REMOTE_DIR="$REPO/.buildkite/remote/"
+REMOTE_DIR="$REPO/.buildkite/toolbox/"
+CONFIG="$REPO/.buildkite/config.json"
 
 # obtain username
 if [ ! -f "$REMOTE_DIR/username" ]; then
@@ -34,7 +35,7 @@ fi
 BRANCH=`echo $REPO | xargs basename`
 
 TIME=`date +%s`
-rsync -a --exclude '.buildkite/remote/dryrun.sh' --exclude '.git' --exclude-from '.gitignore' --rsync-path="mkdir -p builds/$BRANCH/ && rsync -arv " $REPO $USERNAME@hpg.rc.ufl.edu:~/builds/$BRANCH/
+rsync -a --exclude '.buildkite/remote/to_hpg.sh' --exclude '.git' --exclude-from '.gitignore' --rsync-path="mkdir -p builds/ && rsync -arv " $REPO $USERNAME@hpg.rc.ufl.edu:~/builds/
 
 
 

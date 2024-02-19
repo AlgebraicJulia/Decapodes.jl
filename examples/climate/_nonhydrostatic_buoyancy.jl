@@ -1,8 +1,6 @@
 # This is a small implementation of Oceananigans.jl's NonhydrostaticModel.
 
-#######################
 # Import Dependencies #
-#######################
 
 # AlgebraicJulia Dependencies
 using Catlab
@@ -20,9 +18,7 @@ using OrdinaryDiffEq
 using ComponentArrays
 Point3D = Point3{Float64}
 
-####################
 # Define the model #
-####################
 
 # Equation 1: "The momentum conservation equation" from https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-momentum-conservation-equation
 momentum = @decapode begin
@@ -76,11 +72,11 @@ to_graphviz(boundary_conditions)
 buoyancy_composition_diagram = @relation () begin
   momentum(V, v, v_up, b)
 
-  # "Both T and S obey the tracer conservation equation"
+  ## "Both T and S obey the tracer conservation equation"
   temperature(V, v, T, T_up)
   salinity(V, v, S, S_up)
 
-  # "Buoyancy is determined from a linear equation of state"
+  ## "Buoyancy is determined from a linear equation of state"
   eos(b, T, S)
 
   bcs(v, S, T, v_up, S_up, T_up)
@@ -151,7 +147,7 @@ S = map(point(s)) do (_,_,_)
   35.0
 end
 T = map(point(s)) do (x,z,_)
-  #273.15 + 4 + ((zmax-z)^2 + (xmax-x)^2)^(1/2)/(1e2)
+  ##273.15 + 4 + ((zmax-z)^2 + (xmax-x)^2)^(1/2)/(1e2)
   273.15 + 4
 end
 left = findall(x -> x[1] ≈ 0.0, point(sd))
@@ -219,10 +215,10 @@ extrema(soln(1.5).T)
 # Create a gif
 begin
   frames = 100
-  #fig, ax, ob = GLMakie.mesh(s′, color=soln(0).T, colormap=:jet, colorrange=extrema(soln(tₑ).h))
+  ##fig, ax, ob = GLMakie.mesh(s′, color=soln(0).T, colormap=:jet, colorrange=extrema(soln(tₑ).h))
   fig, ax, ob = GLMakie.mesh(s′, color=soln(0).T, colormap=:jet, colorrange=extrema(soln(1.5).T))
   Colorbar(fig[1,2], ob)
-  #record(fig, "oceananigans.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
+  ##record(fig, "oceananigans.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
   record(fig, "oceananigans.gif", range(0.0, 1.5; length=frames); framerate = 30) do t
     ob.color = soln(t).T
   end
