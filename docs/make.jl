@@ -1,7 +1,6 @@
 using Documenter
 using Literate
 using Distributed
-using ProgressMeter
 
 @info "Loading Decapodes"
 using Decapodes
@@ -40,8 +39,7 @@ makedocs(
   modules   = [Decapodes],
   format    = Documenter.HTML(
     assets = ["assets/analytics.js"],
- ),
-  remotes   = nothing,
+  ),
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
@@ -57,9 +55,9 @@ makedocs(
     "Glacial Flow" => "ice_dynamics.md",
     "Grigoriev Ice Cap" => "grigoriev.md",
     "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
-    "Examples" => Any[
-      "examples/cfd_example.md"
-    ],
+    # "Examples" => Any[
+    #   "examples/cfd_example.md"
+    # ],
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ]

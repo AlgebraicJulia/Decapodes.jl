@@ -103,7 +103,7 @@ end)
   end
 )
 
-@docapode(Schoedinger
+@docapode("Schoedinger"
   ,"https://en.wikipedia.org/wiki/Schrodinger_equation"
   ,"The evolution of the wave function over time."
   ,schroedinger
@@ -135,7 +135,7 @@ end)
   end
 )
 
-@docapode(Poiseuille
+@docapode("Poiseuille"
   ,"https://en.wikipedia.org/wiki/Hagen-Poiseuille_equation"
   ,"A relation between the pressure drop in an incompressible and Newtownian fluid in laminar flow flowing through a long cylindrical pipe."
   ,poiseuille
@@ -220,7 +220,7 @@ end)
   end
 )
 
-@docapode(Superposition
+@docapode("Superposition"
   ,"https://en.wikipedia.org/wiki/superposition"
   ,""
   ,superposition
@@ -233,24 +233,4 @@ end)
     ∂ₜ(C) == Ċ
   end
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 end

@@ -5,7 +5,7 @@ using DiagrammaticEquations.Deca
 using ..Canon
 using Markdown
 
-@docapode(Brusselator
+@docapode("Brusselator"
   ,"https://en.wikipedia.org/wiki/brusselator"
   ,"A model of reaction-diffusion for an oscillatory chemical system."
   ,brusselator
@@ -27,7 +27,7 @@ using Markdown
     ∂ₜ(V) == V̇
 end)
 
-@docapode(Gray-Scott
+@docapode("Gray-Scott"
   ,"https://www.google.com"
   ,"A model of reaction-diffusion"
   ,GrayScott
