@@ -59,7 +59,7 @@ end
 
 # Equation 2: "The tracer conservation equation" from https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-tracer-conservation-equation
 tracer_conservation = @decapode begin
-  (c,C,F,c_up,FluxDivergence)::DualForm0
+  (c,C,F,FluxDivergence)::DualForm0
   (v,V)::DualForm1
 
   ∂ₜ(c) ==
@@ -110,15 +110,15 @@ We will use our operad algebra to guarantee model compatibility and physical con
 # Specify the equations that a tracer obeys:
 tracer_composition = @relation () begin
   # "The turbulence closure selected by the user determines the form of ... diffusive flux divergence"
-  turbulence(FD,v)
+  turbulence(FD,v,c)
 
-  continuity(FD,v)
+  continuity(FD,v,c)
 end
 
 # Let's "lock in" isotropic diffusivity by doing an intermediate oapply.
 isotropic_tracer = apex(oapply(tracer_composition, [
-  Open(isotropic_diffusivity, [:FluxDivergence, :v]),
-  Open(tracer_conservation,   [:FluxDivergence, :v])]))
+  Open(isotropic_diffusivity, [:FluxDivergence, :v, :c]),
+  Open(tracer_conservation,   [:FluxDivergence, :v, :c])]))
 
 # Use this building-block tracer physics at the next level:
 
@@ -139,8 +139,8 @@ end
 
 isotropic_nonhydrostatic_buoyancy = apex(oapply(nonhydrostatic_composition, [
   Open(momentum,          [:V, :v, :b, :StressDivergence]),
-  Open(isotropic_tracer,  [:continuity_V, :v, :continuity_c, :turbulence_StressDivergence]),
-  Open(isotropic_tracer,  [:continuity_V, :v, :continuity_c, :turbulence_StressDivergence]),
+  Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence]),
+  Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence]),
   Open(equation_of_state, [:b, :T, :S])]))
 
 #################
@@ -161,6 +161,10 @@ subdivide_duals!(sd, Barycenter())
 xmax = maximum(x -> x[1], point(s))
 zmax = maximum(x -> x[2], point(s))
 #wireframe(s)
+
+#################################
+# Define Differential Operators #
+#################################
 
 # TODO: Provide these functions by default.
 i11 = interior_product_dd(Tuple{1,1}, sd);
@@ -186,59 +190,67 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return (args...) -> op(args...)
 end
 
+#######################
+# Generate Simulation #
+#######################
+
 sim = eval(gensim(isotropic_nonhydrostatic_buoyancy))
 fₘ = sim(sd, generate)
 
-S = map(point(s)) do (_,_,_)
-  35.0
-end
-T = map(point(s)) do (x,z,_)
-  #273.15 + 4 + ((zmax-z)^2 + (xmax-x)^2)^(1/2)/(1e2)
-  273.15 + 4
-end
-left = findall(x -> x[1] ≈ 0.0, point(sd))
-right = findall(x -> x[1] ≈ xmax, point(sd))
-T[left] .= 276
-T[right] .= 279
-extrema(T)
-mesh(s′, color=T, colormap=:jet)
-p = map(point(s)) do (x,z,_)
-  (zmax-z)
-end
-extrema(p)
-f = zeros(nv(s))
-Fₛ = zeros(nv(s))
-Fₜ = zeros(nv(s))
-f = zeros(nv(s))
-Cₛ = zeros(nv(s))
-Cₜ = zeros(nv(s))
+#################################
+# Define Differential Operators #
+#################################
 
-V = zeros(ne(s))
-v = zeros(ne(s))
-g = ♭(sd, DualVectorField(fill(Point3D(0,1,0), ntriangles(s)))).data
-Fᵥ = zeros(ne(s))
-qₛ = zeros(ne(s))
-qₜ = zeros(ne(s))
-uˢ = zeros(ne(s))
-dtuˢ = zeros(ne(s))
+S = map(sd[sd[:tri_center], :dual_point]) do (_,_,_)
+  0.0
+end
+T = map(sd[sd[:tri_center], :dual_point]) do (_,_,_)
+  0.0
+end
+p = map(sd[sd[:tri_center], :dual_point]) do (_,_,_)
+  0.0
+end
+f = zeros(nv(sd))
+Fₛ = zeros(ntriangles(sd))
+Fₜ = zeros(ntriangles(sd))
+f = zeros(ntriangles(sd))
+Cₛ = zeros(ntriangles(sd))
+Cₜ = zeros(ntriangles(sd))
+V = zeros(ne(sd))
+v = zeros(ne(sd))
+ĝ = ♭(sd, DualVectorField(fill(Point3D(0,1,0), ntriangles(sd)))).data
+Fᵥ = zeros(ne(sd))
+qₛ = zeros(ne(sd))
+qₜ = zeros(ne(sd))
+uˢ = zeros(ne(sd))
 
-τ = zeros(ntriangles(s))
-
-u₀ = ComponentArrays(momentum_f=f,v=v,V=V,momentum_g=g,
-      momentum_Fᵥ=Fᵥ,momentum_uˢ=uˢ,momentum_τ=τ,
-      momentum_dtuˢ=dtuˢ,momentum_p=p,T=T,
-      temperature_F=Fₜ,temperature_q=qₜ,
-      temperature_C=Cₜ,S=S,salinity_F=Fₛ,
-      salinity_q=qₛ,salinity_C=Cₛ)
+u₀ = ComponentArray(
+  v = v,
+  V = V,
+  momentum_f = f,
+  momentum_uˢ = uˢ,
+  momentum_p = p,
+  momentum_ĝ = ĝ,
+  momentum_Fᵥ = Fᵥ,
+  T = T,
+  temperature_continuity_C = Cₜ,
+  temperature_continuity_F = Fₜ,
+  S = S,
+  salinity_continuity_C = Cₛ,
+  salinity_continuity_F = Fₛ)
 
 gᶜ = 9.81
 α = 2e-3
 β = 5e-4
 constants_and_parameters = (
+  temperature_turbulence_κ = 0.0,
+  temperature_turbulence_nu = 0.0,
+  salinity_turbulence_κ = 0.0,
+  salinity_turbulence_nu = 0.0,
   eos_g = gᶜ,
   eos_α = α,
-  eos_β = β,
-  momentum_U = t -> 0)
+  eos_β = β)
+  
 
 tₑ = 1.5
 
