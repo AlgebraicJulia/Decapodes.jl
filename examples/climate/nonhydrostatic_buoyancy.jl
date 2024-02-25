@@ -7,15 +7,18 @@
 # AlgebraicJulia Dependencies
 using Catlab
 using CombinatorialSpaces
+using CombinatorialSpaces: interior_product_dd, ℒ_dd
 using Decapodes
+using DiagrammaticEquations
 
 # External Dependencies
-using GeometryBasics: Point3
 using CairoMakie
+using ComponentArrays
+using GeometryBasics: Point3
 using JLD2
 using LinearAlgebra
+using MLStyle
 using OrdinaryDiffEq
-using ComponentArrays
 Point3D = Point3{Float64}
 
 ####################
@@ -23,27 +26,26 @@ Point3D = Point3{Float64}
 ####################
 
 # Equation 1: "The momentum conservation equation" from https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-momentum-conservation-equation
-@decapode momentum begin
+momentum =  @decapode begin
   (v,V)::DualForm1
-  f::PrimalForm0
+  f::Form0
   uˢ::DualForm1
   p::DualForm0
-  b::Constant
+  b::DualForm0
   ĝ::DualForm1
   Fᵥ::DualForm1
+  StressDivergence::DualForm1
 
   ∂ₜ(v) ==
-    -ℒ(v,v) + (1/2)dι(v,v) -
-     dι(v,V) + ι(v,dV) + ι(V,dv) -
-     (f - ∘(d,⋆)(uˢ)) ∧ v -
+    -ℒ(v,v) + 0.5*d(ι₁₁(v,v)) -
+     d(ι₁₁(v,V)) + ι₁₂(v,d(V)) + ι₁₂(V,d(v)) -
+     (f - ∘(d,⋆)(uˢ)) ∧ᵖ v -
      d(p) +
-     b∧ĝ -
+     b ∧ᵈ ĝ -
      StressDivergence +
      ∂ₜ(uˢ) +
      Fᵥ
 end
-momentum = expand_operators(momentum)
-to_graphviz(momentum, graph_attrs=Dict(:rankdir => "LR"))
 
 # Why write "StressDivergence" instead of ∇⋅τ?
 # According to this docs page:
@@ -56,127 +58,136 @@ to_graphviz(momentum, graph_attrs=Dict(:rankdir => "LR"))
 # we can operate purely in terms of scalar-valued forms.
 
 # Equation 2: "The tracer conservation equation" from https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-tracer-conservation-equation
-tracer = @decapode begin
-  (c,C,F,c_up)::Form0
-  (v,V,q)::Form1
+tracer_conservation = @decapode begin
+  (c,C,F,c_up,FluxDivergence)::DualForm0
+  (v,V)::DualForm1
 
-  c_up == -1*⋆(L(v,⋆(c))) - ⋆(L(V,⋆(c))) - ⋆(L(v,⋆(C))) - ∘(⋆,d,⋆)(q) + F
+  ∂ₜ(c) ==
+    -1*ι₁₁(v,d(c)) -
+    ι₁₁(V,d(c)) -
+    ι₁₁(v,d(C)) -
+    FluxDivergence +
+    F
 end
-to_graphviz(tracer, graph_attrs=Dict(:rankdir => "LR"))
 
 # Equation 2: "Linear equation of state" of seawater buoyancy from https://clima.github.io/OceananigansDocumentation/stable/physics/buoyancy_and_equations_of_state/#Linear-equation-of-state
 equation_of_state = @decapode begin
-  (b,T,S)::Form0
+  (b,T,S)::DualForm0
   (g,α,β)::Constant
 
   b == g*(α*T - β*S)
 end
-to_graphviz(equation_of_state)
 
 # Equation 2: "Constant isotropic diffusivity" from https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity
-@decapode isotropic_diffusivity begin
+isotropic_diffusivity = @decapode begin
+  v::DualForm1
+  c::DualForm0
   StressDivergence::DualForm1
-  nu::Constant
+  FluxDivergence::DualForm0
+  (κ,nu)::Constant
 
   StressDivergence == nu*Δ(v)
+  FluxDivergence == κ*Δ(c)
 end
-to_graphviz(equation_of_state)
 
-boundary_conditions = @decapode begin
-  (S,T)::Form0
-  (Ṡ,T_up)::Form0
-  v::Form1
-  v_up::Form1
-  Ṫ == ∂ₜ(T)
-  Ṡ == ∂ₜ(S)
-  v̇ == ∂ₜ(v)
+##################
+# Compose Models #
+##################
 
-  Ṫ == ∂_spatial(T_up)
-  v̇ == ∂_noslip(v_up)
+"""
+Decapodes composition is formally known as an "operad algebra". That means that we don't have to encode our composition in a single UWD and then apply it. Rather, we can define several UWDs, compose those, and then apply those. Of course, since the output of oapply is another Decapode, we could perform an intermediate oapply, if that is convenient.
+
+Besides it being convenient to break apart large UWDs into component UWDs, this hierarchical composition can enforce rules on our physical quantities.
+
+For example:
+1. We want all the tracers (salinity, temperature, etc.) in our physics to obey the same conservation equation.
+2. We want them to obey the same "turbulence closure", which affects their flux-divergence term.
+3. At the same time, a choice of turbulence closure doesn't just affect (each of) the flux-divergence terms, it also constrains which stress-divergence is physically valid in the momentum equation.
+
+We will use our operad algebra to guarantee model compatibility and physical consistency, guarantees that would be burdensome to fit into a one-off type system.
+"""
+
+# Specify the equations that a tracer obeys:
+tracer_composition = @relation () begin
+  # "The turbulence closure selected by the user determines the form of ... diffusive flux divergence"
+  turbulence(FD,v)
+
+  continuity(FD,v)
 end
-to_graphviz(boundary_conditions)
 
-buoyancy_composition_diagram = @relation () begin
-  momentum(V, v, v_up, b, SD)
+# Let's "lock in" isotropic diffusivity by doing an intermediate oapply.
+isotropic_tracer = apex(oapply(tracer_composition, [
+  Open(isotropic_diffusivity, [:FluxDivergence, :v]),
+  Open(tracer_conservation,   [:FluxDivergence, :v])]))
 
+# Use this building-block tracer physics at the next level:
+
+nonhydrostatic_composition = @relation () begin
   # "The turbulence closure selected by the user determines the form of stress divergence"
-  turbulence(SD)
+  #   => Note that the StressDivergence term, SD, is shared by momentum and all the tracers.
+  momentum(V, v, b, SD)
 
   # "Both T and S obey the tracer conservation equation"
-  temperature(V, v, T, T_up)
-  salinity(V, v, S, S_up)
+  #   => Temperature and Salinity both receive a copy of the tracer physics.
+  temperature(V, v, T, SD)
+  salinity(V, v, S, SD)
 
   # "Buoyancy is determined from a linear equation of state"
+  #   => The b term in momentum is that described by the equation of state here.
   eos(b, T, S)
-
-  bcs(v, S, T, v_up, S_up, T_up)
 end
-to_graphviz(buoyancy_composition_diagram, box_labels=:name, junction_labels=:variable, prog="fdp", graph_attrs=Dict(["sep" => "1.5"]))
 
-buoyancy_cospan = oapply(buoyancy_composition_diagram, [
-  Open(momentum,              [:V, :v, :v_up, :b, :StressDivergence]),
-  Open(isotropic_diffusivity, [:StressDivergence]),
-  Open(tracer,                [:V, :v, :c, :c_up]),
-  Open(tracer,                [:V, :v, :c, :c_up]),
-  Open(equation_of_state,     [:b, :T, :S]),
-  Open(boundary_conditions,   [:v, :S, :T, :v_up, :Ṡ, :T_up])])
+isotropic_nonhydrostatic_buoyancy = apex(oapply(nonhydrostatic_composition, [
+  Open(momentum,          [:V, :v, :b, :StressDivergence]),
+  Open(isotropic_tracer,  [:continuity_V, :v, :continuity_c, :turbulence_StressDivergence]),
+  Open(isotropic_tracer,  [:continuity_V, :v, :continuity_c, :turbulence_StressDivergence]),
+  Open(equation_of_state, [:b, :T, :S])]))
 
-buoyancy = apex(buoyancy_cospan)
-to_graphviz(buoyancy)
+#################
+# Define a Mesh #
+#################
 
-buoyancy = expand_operators(buoyancy)
-infer_types!(buoyancy)
-resolve_overloads!(buoyancy)
-to_graphviz(buoyancy)
+# This is the sphere with the same surface area as the Oceananigans
+# example torus:
+#s = loadmesh(Icosphere(5, (3*π)^(1/3)))
 
-#s′ = loadmesh(Rectangle_30x10())
-s′ = triangulated_grid(80,80, 10, 10, Point3D)
-s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
-subdivide_duals!(s, Barycenter())
+# This is a torus with resolution of its dual mesh similar to that
+# used by Oceananigans (explicitly represented as a torus, not as a
+# square with periodic boundary conditions!)
+#download("https://cise.ufl.edu/~luke.morris/torus.obj", "torus.obj")
+s = EmbeddedDeltaSet2D("torus.obj")
+sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
+subdivide_duals!(sd, Barycenter())
 xmax = maximum(x -> x[1], point(s))
 zmax = maximum(x -> x[2], point(s))
-wireframe(s)
+#wireframe(s)
 
-# Some extra operators that haven't been up-streamed into CombinatorialSpaces yet.
-include("dec_operators.jl")
+# TODO: Provide these functions by default.
+i11 = interior_product_dd(Tuple{1,1}, sd);
+i12 = interior_product_dd(Tuple{1,2}, sd);
+lie11 = ℒ_dd(Tuple{1,1}, sd);
+Λᵖ = dec_wedge_product_pd(Tuple{0,1}, sd);
+Λᵈ = dec_wedge_product_dd(Tuple{0,1}, sd);
+# TODO: Upstream the dual 0 Laplacian.
+dd0 = dec_dual_derivative(0, sd);
+ihs1 = dec_inv_hodge_star(1, sd, GeometricHodge());
+d1 = dec_differential(1,sd);
+hs2 = dec_hodge_star(2, sd, GeometricHodge());
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :L₁ => (x,y) -> L₁′(x,y,sd,hodge)
-    :L₂ᵈ => (x,y) -> lie_derivative_flat(2, sd, x, y)
-    :ℒ => (x,y) -> begin
-      # ℒ_y(x) := ⋆(⋆(d(x)∧y))
-      # TODO: Check the order of arguments to ∧.
-      star2_mat * ∧(Tuple{1,1}, sd, (star1_mat \ (duald0_mat * x)), y)
-    end
-    :force => x -> x
-    :∂_spatial => x -> begin
-      left = findall(x -> x[1] ≈ 0.0, point(sd))
-      right = findall(x -> x[1] ≈ xmax, point(sd))
-      x[left] .= 0.0
-      x[right] .= 0.0
-      x
-    end
-    :∂_noslip => x -> begin
-      right = findall(x -> x[1] ≈ xmax, point(sd))
-      top = findall(x -> x[2] ≈ zmax, point(sd))
-      bottom = findall(x -> x[2] ≈ 0.0, point(sd))
-      x[findall(x -> x[1] ≈ 0.0 , point(sd,sd[:∂v0]))] .= 0
-      x[findall(x -> x[1] ≈ 0.0 , point(sd,sd[:∂v1]))] .= 0
-      x[findall(x -> x[1] ≈ xmax, point(sd,sd[:∂v0]))] .= 0
-      x[findall(x -> x[1] ≈ xmax, point(sd,sd[:∂v1]))] .= 0
-      x[findall(x -> x[2] ≈ 0.0 , point(sd,sd[:∂v0]))] .= 0
-      x[findall(x -> x[2] ≈ 0.0 , point(sd,sd[:∂v1]))] .= 0
-      x[findall(x -> x[2] ≈ zmax, point(sd,sd[:∂v0]))] .= 0
-      x[findall(x -> x[2] ≈ zmax, point(sd,sd[:∂v1]))] .= 0
-      x
-    end
+    :ℒ => lie11
+    :ι₁₁ => i11
+    :ι₁₂ => i12
+    :∧ᵖ => Λᵖ
+    :∧ᵈ => Λᵈ
+    :Δ => x -> hs2 * d1 * ihs1(dd0 * x)
     _ => default_dec_generate(sd, my_symbol, hodge)
   end
   return (args...) -> op(args...)
 end
 
-sim = eval(gensim(buoyancy))
-fₘ = sim(s, generate)
+sim = eval(gensim(isotropic_nonhydrostatic_buoyancy))
+fₘ = sim(sd, generate)
 
 S = map(point(s)) do (_,_,_)
   35.0
