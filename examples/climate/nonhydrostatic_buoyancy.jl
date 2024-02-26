@@ -101,7 +101,6 @@ resolve_overloads!(buoyancy)
 to_graphviz(buoyancy)
 
 
-include("../../grid_meshes.jl")
 #s′ = loadmesh(Rectangle_30x10())
 s′ = triangulated_grid(80,80, 10, 10, Point3D)
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)

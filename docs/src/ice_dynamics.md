@@ -112,7 +112,7 @@ We'll need a mesh to simulate on. Since this is a 1D mesh, we can go ahead and m
 ``` @example DEC
 # This is a 1D mesh, consisting of edges and vertices.
 s′ = EmbeddedDeltaSet1D{Bool, Point2D}()
-# 20 hundred vertices along a line, connected by edges.
+# 20 vertices along a line, connected by edges.
 add_vertices!(s′, 20, point=Point2D.(range(0, 10_000, length=20), 0))
 add_edges!(s′, 1:nv(s′)-1, 2:nv(s′))
 orient!(s′)
@@ -249,7 +249,7 @@ Let's examine the final conditions:
 ``` @example DEC
 fig,ax,ob = lines(map(x -> x[1], point(s′)), soln(tₑ).dynamics_h, linewidth=5)
 ylims!(ax, extrema(h₀))
-display(fig)
+fig
 ```
 
 We see that our distribution converges to a more uniform ice height across our domain, which matches our physical intuition.
@@ -304,11 +304,14 @@ to_graphviz(ice_dynamics3)
 # Define our mesh
 
 ``` @example DEC
-include("../../examples/grid_meshes.jl")
 s′ = triangulated_grid(10_000,10_000,800,800,Point3D)
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
-wireframe(s)
+
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1])
+wf = wireframe!(ax, s′)
+fig
 ```
 
 # Define our input data
@@ -326,6 +329,11 @@ end
 
 # Visualize initial condition for ice sheet height.
 mesh(s′, color=h₀, colormap=:jet)
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1])
+msh = mesh!(ax, s′, color=h₀, colormap=:jet)
+Colorbar(fig[1,2], msh)
+fig
 ```
 
 ``` @example DEC
@@ -409,16 +417,22 @@ soln = solve(prob, Tsit5())
 
 ``` @example DEC
 # Final conditions:
-mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1])
+msh = mesh!(ax, s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+Colorbar(fig[1,2], msh)
+fig
 ```
 
 ``` @example DEC
 begin
   frames = 100
-  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
-  Colorbar(fig[1,2], ob)
+  fig = Figure()
+  ax = CairoMakie.Axis(fig[1,1])
+  msh = CairoMakie.mesh!(ax, s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+  Colorbar(fig[1,2], msh)
   record(fig, "ice_dynamics2D.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    ob.color = soln(t).dynamics_h
+    msh.color = soln(t).dynamics_h
   end
 end
 ```
@@ -450,7 +464,11 @@ end
 
 # Visualize initial condition for ice sheet height.
 # There is lots of ice at the poles, and no ice at the equator.
-mesh(s′, color=h₀, colormap=:jet)
+fig = Figure()
+ax = LScene(fig[1,1], scenekw=(lights=[],))
+msh = CairoMakie.mesh!(ax, s′, color=h₀, colormap=:jet)
+Colorbar(fig[1,2], msh)
+fig
 ```
 
 ``` @example DEC
@@ -484,19 +502,25 @@ extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)
 ```
 
 ``` @example DEC
-mesh(s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+fig = Figure()
+ax = LScene(fig[1,1], scenekw=(lights=[],))
+msh = CairoMakie.mesh!(ax, s′, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+Colorbar(fig[1,2], msh)
+fig
 ```
 
 ``` @example DEC
 begin
   frames = 200
-  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
+  fig = Figure()
+  ax = LScene(fig[1,1], scenekw=(lights=[],))
+  msh = CairoMakie.mesh!(ax, s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 
-  Colorbar(fig[1,2], ob)
+  Colorbar(fig[1,2], msh)
   # These particular initial conditions diffuse quite quickly, so let's just look at
   # the first moments of those dynamics.
   record(fig, "ice_dynamics2D_sphere.gif", range(0.0, tₑ/64; length=frames); framerate = 20) do t
-    ob.color = soln(t).dynamics_h
+    msh.color = soln(t).dynamics_h
   end
 end
 ```

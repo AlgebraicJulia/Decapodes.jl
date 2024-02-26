@@ -60,7 +60,6 @@ To use this interpolating object `ice_interp`, we can simply query it for the va
 Let's generate a triangulated grid located at the appropriate coordinates:
 
 ``` @example DEC
-include("../../examples/grid_meshes.jl")
 # Specify a resolution:
 RES_Y = (MAX_Y-MIN_Y)/30.0
 RES_X = RES_Y
@@ -72,7 +71,11 @@ s′ = triangulated_grid(
 s′[:point] = map(x -> x + Point3D(MIN_X, MIN_Y, 0), s′[:point])
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
-wireframe(s)
+
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1])
+wf = wireframe!(ax, s)
+display(fig)
 ```
 
 The coordinates of a vertex are stored in `s[:point]`. Let's use our interpolator to assign ice thickness values to each vertex in the mesh:
@@ -225,10 +228,12 @@ save("grigoriev_fc.png", f)
 function save_dynamics(save_file_name)
   time = Observable(0.0)
   h = @lift(soln($time).h)
-  f,a,o = mesh(s′, color=h, colormap=:jet,
-             colorrange=extrema(soln(tₑ).h);
-             axis = (; title = @lift("Grigoriev Ice Cap Dynamic Thickness [m] at time $($time))")))
-  Colorbar(f[1,2], limits=extrema(soln(0.0).h), colormap=:jet)
+  f = Figure()
+  ax = CairoMakie.Axis(f[1,1], title = @lift("Grigoriev Ice Cap Dynamic Thickness [m] at time $($time)"))
+  gmsh = mesh!(ax, s′, color=h, colormap=:jet,
+               colorrange=extrema(soln(tₑ).h))
+  #Colorbar(f[1,2], gmsh, limits=extrema(soln(tₑ).h))
+  Colorbar(f[1,2], gmsh)
   timestamps = range(0, tₑ, step=1e-1)
   record(f, save_file_name, timestamps; framerate = 15) do t
     time[] = t

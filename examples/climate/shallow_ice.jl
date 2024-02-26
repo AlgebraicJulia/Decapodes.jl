@@ -14,8 +14,8 @@ using ComponentArrays
 # Uncomment to load GLMakie if your system supports it.
 # Otherwise, do using CairoMakie
 #using GLMakie
-using GeometryBasics: Point2
-Point2D = Point2{Float64}
+using GeometryBasics: Point3
+Point3D = Point3{Float64}
 
 ####################
 # Define the model #
@@ -85,9 +85,6 @@ to_graphviz(ice_dynamics3)
 # Define the mesh #
 ###################
 
-#include("../../grid_meshes.jl")
-#include("../grid_meshes.jl")
-include("../../examples/grid_meshes.jl")
 s′ = triangulated_grid(10_000,10_000,800,800,Point3D)
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
