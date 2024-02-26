@@ -65,7 +65,7 @@ resolve_overloads!(Brusselator)
 to_graphviz(Brusselator)
 
 # TODO: Create square domain of approximately 32x32 vertices.
-s = loadmesh(Rectangle_30x10())
+s = triangulated_grid(30,10,2,2)
 scaling_mat = Diagonal([1/maximum(x->x[1], s[:point]),
                         1/maximum(x->x[2], s[:point]),
                         1.0])
@@ -230,7 +230,7 @@ constants_and_parameters = (
   R = R,
   F = t -> t ≥ 1.1 ? F₂ : F₁)
 
-tₑ = 21.5e4
+tₑ = 21.5e2
 
 @info("Precompiling Solver")
 prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
