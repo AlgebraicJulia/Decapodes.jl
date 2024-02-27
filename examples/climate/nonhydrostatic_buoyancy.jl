@@ -30,6 +30,7 @@ momentum =  @decapode begin
   (v,V)::DualForm1
   f::Form0
   uˢ::DualForm1
+  ∂tuˢ::DualForm1
   p::DualForm0
   b::DualForm0
   ĝ::DualForm1
@@ -43,7 +44,7 @@ momentum =  @decapode begin
      d(p) +
      b ∧ᵈ ĝ -
      StressDivergence +
-     ∂ₜ(uˢ) +
+     ∂tuˢ +
      Fᵥ
 end
 
@@ -86,8 +87,8 @@ isotropic_diffusivity = @decapode begin
   FluxDivergence::DualForm0
   (κ,nu)::Constant
 
-  StressDivergence == nu*Δ(v)
-  FluxDivergence == κ*Δ(c)
+  StressDivergence == nu*Δᵈ₁(v)
+  FluxDivergence == κ*Δᵈ₀(c)
 end
 
 ##################
@@ -177,6 +178,11 @@ dd0 = dec_dual_derivative(0, sd);
 ihs1 = dec_inv_hodge_star(1, sd, GeometricHodge());
 d1 = dec_differential(1,sd);
 hs2 = dec_hodge_star(2, sd, GeometricHodge());
+# TODO: Upstream the dual 1 Laplacian.
+dd1 = dec_dual_derivative(1, sd);
+ihs0 = dec_inv_hodge_star(0, sd, GeometricHodge());
+d0 = dec_differential(0,sd);
+hs1 = dec_hodge_star(1, sd, GeometricHodge());
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :ℒ => lie11
@@ -184,7 +190,11 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :ι₁₂ => i12
     :∧ᵖ => Λᵖ
     :∧ᵈ => Λᵈ
-    :Δ => x -> hs2 * d1 * ihs1(dd0 * x)
+    :Δᵈ₀ => x -> hs2 * d1 * ihs1(dd0 * x)
+    :Δᵈ₁ => x -> begin
+      hs1 * d0 * ihs0 * dd1 * x +
+      dd0 * hs2 * d1 * ihs1(x)
+    end
     _ => default_dec_generate(sd, my_symbol, hodge)
   end
   return (args...) -> op(args...)
@@ -194,7 +204,11 @@ end
 # Generate Simulation #
 #######################
 
-sim = eval(gensim(isotropic_nonhydrostatic_buoyancy))
+open("nhs.jl", "w") do f
+  write(f, string(gensim(expand_operators(isotropic_nonhydrostatic_buoyancy))))
+end
+sim = include("nhs.jl")
+#sim = eval(gensim(isotropic_nonhydrostatic_buoyancy))
 fₘ = sim(sd, generate)
 
 #################################
@@ -213,7 +227,6 @@ end
 f = zeros(nv(sd))
 Fₛ = zeros(ntriangles(sd))
 Fₜ = zeros(ntriangles(sd))
-f = zeros(ntriangles(sd))
 Cₛ = zeros(ntriangles(sd))
 Cₜ = zeros(ntriangles(sd))
 V = zeros(ne(sd))
@@ -223,12 +236,14 @@ Fᵥ = zeros(ne(sd))
 qₛ = zeros(ne(sd))
 qₜ = zeros(ne(sd))
 uˢ = zeros(ne(sd))
+∂tuˢ = zeros(ne(sd))
 
 u₀ = ComponentArray(
   v = v,
   V = V,
   momentum_f = f,
   momentum_uˢ = uˢ,
+  momentum_∂tuˢ = ∂tuˢ,
   momentum_p = p,
   momentum_ĝ = ĝ,
   momentum_Fᵥ = Fᵥ,
