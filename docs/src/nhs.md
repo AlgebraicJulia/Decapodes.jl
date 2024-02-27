@@ -231,7 +231,7 @@ tₑ = 50
 # Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
 prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
-soln = solve(prob, Tsit5(), dtmin=1e-3, force_dtmin=true)
+soln = solve(prob, Vern7())
 soln.retcode != :Unstable || error("Solver was not stable")
 
 @info("Solving")
@@ -274,7 +274,7 @@ function save_vorticity(is_2d=false)
     time[] = t
   end
 end
-save_vorticity(true)
+save_vorticity(false)
 
 function save_speed(is_2d=false) frames = 200
   time = Observable(0.0)
@@ -293,7 +293,7 @@ function save_speed(is_2d=false) frames = 200
     time[] = t
   end
 end
-save_speed(true)
+save_speed(false)
 ```
 
 ![Vorticity](vorticity.gif)
