@@ -2,6 +2,7 @@
 using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
+using DiagrammaticEquations
 using Decapodes
 
 # External Dependencies
@@ -13,7 +14,7 @@ using SparseArrays
 using ComponentArrays
 # Uncomment to load GLMakie if your system supports it.
 # Otherwise, do using CairoMakie
-#using GLMakie
+using GLMakie
 using GeometryBasics: Point3
 Point3D = Point3{Float64}
 
@@ -171,23 +172,19 @@ soln.retcode != :Unstable || error("Solver was not stable")
 # This next run should be fast.
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5())
+@time soln = solve(prob, Tsit5())
 @show soln.retcode
 @info("Done")
 
 @save "ice_dynamics.jld2" soln
 
-#############
-# Visualize #
-#############
-
-# Visualize the final conditions.
+@info("Visualizing final conditions")
 mesh(s′, color=soln(tₑ).h, colormap=:jet)
 
-# Create a gif
-begin
+@info("Create the animation")
+@time begin
   frames = 100
-  fig, ax, ob = CairoMakie.mesh(s′, color=soln(0).h, colormap=:jet, colorrange=extrema(soln(tₑ).h))
+  fig, ax, ob = mesh(s′, color=soln(0).h, colormap=:jet, colorrange=extrema(soln(tₑ).h))
   Colorbar(fig[1,2], ob)
   record(fig, "ice_dynamics.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
     ob.color = soln(t).h
