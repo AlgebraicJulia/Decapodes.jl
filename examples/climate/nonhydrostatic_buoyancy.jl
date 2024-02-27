@@ -17,8 +17,11 @@ using ComponentArrays
 using GeometryBasics: Point3
 using JLD2
 using LinearAlgebra
+using Logging: global_logger
 using MLStyle
 using OrdinaryDiffEq
+using TerminalLoggers: TerminalLogger
+global_logger(TerminalLogger())
 Point3D = Point3{Float64}
 
 ####################
@@ -230,8 +233,11 @@ Fₜ = zeros(ntriangles(sd))
 Cₛ = zeros(ntriangles(sd))
 Cₜ = zeros(ntriangles(sd))
 V = zeros(ne(sd))
-v = zeros(ne(sd))
-ĝ = ♭(sd, DualVectorField(fill(Point3D(0,1,0), ntriangles(sd)))).data
+#v = zeros(ne(sd))
+#v = rand(ne(sd)) *1e-5
+v = rand(ne(sd)) *1e-8
+#ĝ = ♭(sd, DualVectorField(fill(Point3D(0,1,0), ntriangles(sd)))).data
+ĝ = ♭(sd, DualVectorField(fill(Point3D(0,0,0), ntriangles(sd)))).data
 Fᵥ = zeros(ne(sd))
 qₛ = zeros(ne(sd))
 qₜ = zeros(ne(sd))
@@ -267,7 +273,7 @@ constants_and_parameters = (
   eos_β = β)
   
 
-tₑ = 1.5
+tₑ = 5e4
 
 # Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
@@ -277,13 +283,16 @@ soln.retcode != :Unstable || error("Solver was not stable")
 
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5(), dtmin=1e-3, force_dtmin=true)
+soln = solve(prob, Tsit5(), dtmin=1e-16, force_dtmin=true, progress=true)
 @show soln.retcode
 @info("Done")
 
-mesh(s′, color=soln(1.5).T, colormap=:jet)
-extrema(soln(0).T)
-extrema(soln(1.5).T)
+# Vorticity:
+mesh(s,  
+        color=ihs0*dd1*soln(tₑ).v,
+        colormap=:jet)
+
+# Speed:
 
 # Create a gif
 begin
