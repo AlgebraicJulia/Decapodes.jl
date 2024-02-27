@@ -133,8 +133,8 @@ nonhydrostatic_composition = @relation () begin
 
   # "Both T and S obey the tracer conservation equation"
   #   => Temperature and Salinity both receive a copy of the tracer physics.
-  temperature(V, v, T, SD)
-  salinity(V, v, S, SD)
+  temperature(V, v, T, SD, nu)
+  salinity(V, v, S, SD, nu)
 
   # "Buoyancy is determined from a linear equation of state"
   #   => The b term in momentum is that described by the equation of state here.
@@ -143,8 +143,8 @@ end
 
 isotropic_nonhydrostatic_buoyancy = apex(oapply(nonhydrostatic_composition, [
   Open(momentum,          [:V, :v, :b, :StressDivergence]),
-  Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence]),
-  Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence]),
+  Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence, :turbulence_nu]),
+  Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence, :turbulence_nu]),
   Open(equation_of_state, [:b, :T, :S])]))
 
 #################
@@ -211,7 +211,6 @@ open("nhs.jl", "w") do f
   write(f, string(gensim(expand_operators(isotropic_nonhydrostatic_buoyancy))))
 end
 sim = include("nhs.jl")
-#sim = eval(gensim(isotropic_nonhydrostatic_buoyancy))
 fₘ = sim(sd, generate)
 
 #################################
@@ -265,9 +264,8 @@ gᶜ = 9.81
 β = 5e-4
 constants_and_parameters = (
   temperature_turbulence_κ = 0.0,
-  temperature_turbulence_nu = 0.0,
   salinity_turbulence_κ = 0.0,
-  salinity_turbulence_nu = 0.0,
+  nu = 0.0,
   eos_g = gᶜ,
   eos_α = α,
   eos_β = β)
