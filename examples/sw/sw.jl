@@ -1,6 +1,8 @@
 using Catlab
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using OrdinaryDiffEq
 using MLStyle
@@ -12,32 +14,6 @@ using GeometryBasics: Point3
 Point3D = Point3{Float64}
 
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
-
-#= function generate(sd, my_symbol; hodge=GeometricHodge())
-  i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
-  op = @match my_symbol begin
-    :k => x->2000x
-    :⋆₀ => x->⋆(0,sd,hodge=hodge)*x
-    :⋆₁ => x->⋆(1, sd, hodge=hodge)*x
-    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=hodge)
-    :⋆₁⁻¹ => x->inv_hodge_star(1,sd,hodge=hodge)*x
-    :d₀ => x->d(0,sd)*x
-    :dual_d₀ => x->dual_derivative(0,sd)*x
-    :dual_d₁ => x->dual_derivative(1,sd)*x
-    :∧₀₁ => (x,y)-> wedge_product(Tuple{0,1}, sd, x, y)
-    :plus => (+)
-    :(-) => x-> -x
-    # :L₀ => (v,x)->dual_derivative(1, sd)*(i0(v, x))
-    :L₀ => (v,x)->begin
-      # dual_derivative(1, sd)*⋆(1, sd)*wedge_product(Tuple{1,0}, sd, v, x)
-      ⋆(1, sd; hodge=hodge)*wedge_product(Tuple{1,0}, sd, v, x)
-    end
-    :i₀ => i0 
-    :debug => (args...)->begin println(args[1], length.(args[2:end])) end
-  end
-  # return (args...) -> begin println("applying $my_symbol"); println("arg length $(length.(args))"); op(args...);end
-  return (args...) ->  op(args...)
-end =#
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
@@ -54,9 +30,9 @@ DiffusionExprBody =  quote
     Ċ::Form0{X}
     ϕ::Form1{X}
 
-    # Fick's first law
+    ## Fick's first law
     ϕ ==  ∘(d₀, k)(C)
-    # Diffusion equation
+    ## Diffusion equation
     Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
     ∂ₜ(C) == Ċ
 end
@@ -85,13 +61,13 @@ fₘ = f(earth, generate)
 c_dist = MvNormal(nploc[[1,2]], 100[1, 1])
 c = [pdf(c_dist, [p[1], p[2]]./√RADIUS) for p in earth[:point]]
 
-u₀ = ComponentArrays(C=c)
+u₀ = ComponentArray(C=c)
 tₑ = 10
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
-#using CairoMakie 
-using GLMakie
+using CairoMakie 
+import CairoMakie: wireframe, mesh, Figure, Axis, arrows
 
 #mesh(primal_earth, color=soln(0).C, colormap=:plasma)
 #mesh(primal_earth, color=soln(tₑ).C, colormap=:plasma)
@@ -107,13 +83,13 @@ AdvDiff = quote
     ϕ₂::Form1{X}
     starC::DualForm2{X}
     lvc::Form1{X}
-    # Fick's first law
+    ## Fick's first law
     ϕ₁ ==  ∘(d₀,k,⋆₁)(C)
-    # Advective Flux
+    ## Advective Flux
     ϕ₂ == -(L₀(V, C))
-    # Superposition Principle
+    ## Superposition Principle
     ϕ == plus(ϕ₁ , ϕ₂)
-    # Conservation of Mass
+    ## Conservation of Mass
     Ċ == ∘(dual_d₁,⋆₀⁻¹)(ϕ)
     ∂ₜ(C) == Ċ
 end
@@ -128,16 +104,14 @@ end
 
 begin
   vmag = 500
-  # velocity(p) = vmag*ϕhat(p)
   velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, vmag/4))
-  # velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, -vmag/4))
 
-# visualize the vector field
+  ## visualize the vector field
   ps = earth[:point]
   ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
 
   GLMakie.arrows(
-      ps, ns, fxaa=true, # turn on anti-aliasing
+      ps, ns, fxaa=true, ## turn on anti-aliasing
       linecolor = :gray, arrowcolor = :gray,
       linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),
       align = :center, axis=(type=Axis3,)
@@ -161,53 +135,30 @@ c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 
 c = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
 
-u₀ = ComponentArrays(C=c,V=collect(v))
-#mesh(primal_earth, color=u₀.C, colormap=:plasma)
+u₀ = ComponentArray(C=c,V=collect(v))
 tₑ = 30.0
 
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 end
+
 begin
 mass(soln, t, mesh, concentration=:C) = sum(⋆(0, mesh)*soln(t).concentration)
 @show extrema(mass(soln, t, earth, :C) for t in 0:tₑ/150:tₑ)
 end
-#mesh(primal_earth, color=soln(0).C, colormap=:jet)
-#mesh(primal_earth, color=soln(0) - soln(tₑ).C, colormap=:jet)
+
 begin
 
-#function interactive_sim_view(my_mesh::EmbeddedDeltaSet2D, tₑ, soln; loop_times = 1)
-#  times = range(0.0, tₑ, length = 150)
-#  colors = [soln(t).C for t in times]
-#  fig, ax, ob = mesh(my_mesh, color=colors[1],
-#    colorrange = extrema(vcat(colors...)), colormap=:jet)
-#  display(fig)
-#  loop = range(0.0, tₑ; length=150)
-#  for _ in 1:loop_times
-#    for t in loop
-#      ob.color = soln(t).C
-#      sleep(0.05)
-#    end
-#    for t in reverse(loop)
-#      ob.color = soln(t).C
-#      sleep(0.05)
-#    end
-#  end
-#end
-#
-#interactive_sim_view(primal_earth, tₑ, soln, loop_times = 2)
-
-# Plot the result
+## Plot the result
 times = range(0.0, tₑ, length=150)
 colors = [soln(t).C for t in times]
 
-# Initial frame
-# fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = extrema(vcat(colors...)), colormap=:jet)
+## Initial frame
 fig, ax, ob = mesh(primal_earth, color=colors[1], colorrange = (-0.0001, 0.0001), colormap=:jet)
 Colorbar(fig[1,2], ob)
 framerate = 5
 
-# Animation
+## Animation
 record(fig, "diff_adv.gif", range(0.0, tₑ; length=150); framerate = 30) do t
     ob.color = soln(t).C
 end

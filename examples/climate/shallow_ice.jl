@@ -2,9 +2,13 @@
 using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 
 # External Dependencies
+using CairoMakie
+import CairoMakie: wireframe, mesh, Figure, Axis
 using MLStyle
 using LinearAlgebra
 using OrdinaryDiffEq
@@ -13,13 +17,11 @@ using SparseArrays
 using ComponentArrays
 # Uncomment to load GLMakie if your system supports it.
 # Otherwise, do using CairoMakie
-#using GLMakie
+# using GLMakie
 using GeometryBasics: Point3
 Point3D = Point3{Float64}
 
-####################
-# Define the model #
-####################
+# Define the model 
 
 # Equation 2 from Halfar, P. ON THE DYNAMICS OF THE ICE SHEETS. (1981)
 halfar_eq2 = @decapode begin
@@ -43,9 +45,7 @@ glens_law = @decapode begin
 end
 to_graphviz(glens_law)
 
-#####################
-# Compose the model #
-#####################
+# Compose the model 
 
 ice_dynamics_composition_diagram = @relation () begin
   dynamics(h,Γ,n)
@@ -69,9 +69,7 @@ to_graphviz(ice_dynamics)
 resolve_overloads!(ice_dynamics)
 to_graphviz(ice_dynamics)
 
-###################
-# Store the model #
-###################
+# Store the model 
 
 write_json_acset(ice_dynamics, "ice_dynamics.json")
 # When reading back in, we specify that all attributes are "Symbol"s.
@@ -81,17 +79,13 @@ to_graphviz(ice_dynamics2)
 ice_dynamics3 = read_json_acset(SummationDecapode{String,String,String}, "ice_dynamics.json")
 to_graphviz(ice_dynamics3)
 
-###################
-# Define the mesh #
-###################
+# Define the mesh 
 
 s′ = triangulated_grid(10_000,10_000,800,800,Point3D)
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
 subdivide_duals!(s, Barycenter())
 
-########################################################
 # Define constants, parameters, and initial conditions #
-########################################################
 
 n = 3
 ρ = 910
@@ -113,9 +107,7 @@ constants_and_parameters = (
   stress_ρ = ρ,
   stress_g = g)
 
-#############################################
-# Define how symbols map to Julia functions #
-#############################################
+# Define how symbols map to Julia functions 
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
@@ -149,16 +141,12 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return (args...) -> op(args...)
 end
 
-#######################
 # Generate simulation #
-#######################
 
 sim = eval(gensim(ice_dynamics, dimension=2))
 fₘ = sim(s, generate)
 
-##################
-# Run simulation #
-##################
+# Run simulation 
 
 tₑ = 5e13
 
@@ -177,9 +165,7 @@ soln = solve(prob, Tsit5())
 
 @save "ice_dynamics.jld2" soln
 
-#############
-# Visualize #
-#############
+# Visualize 
 
 # Visualize the final conditions.
 mesh(s′, color=soln(tₑ).h, colormap=:jet)

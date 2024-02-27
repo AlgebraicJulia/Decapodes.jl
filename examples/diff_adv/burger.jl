@@ -1,16 +1,18 @@
 # AlgebraicJulia Dependencies
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using Catlab
 using CombinatorialSpaces
 
 # External Dependencies
 using Logging: global_logger
-using TerminalLoggers: TerminalLogger
-global_logger(TerminalLogger())
+## using TerminalLoggers: TerminalLogger
+## global_logger(TerminalLogger())
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 using Distributions
-using GLMakie
+using CairoMakie
 using LinearAlgebra
 using MLStyle
 using ComponentArrays
@@ -22,7 +24,7 @@ Diffusion = @decapode begin
   ϕ::Form1
   ν::Constant
 
-  # Fick's first law
+  ## Fick's first law
   ϕ == ν * d(C)
 end
 
@@ -88,15 +90,15 @@ c_dist = MvNormal([500, 5], [10.5, 10.5])
 c = [pdf(c_dist, [p[1], p[2]]) for p in point(sd)]
 dX = ones(ne(sd))
 
-u₀ = ComponentArrays(C=c, lie_dX=dX)
+u₀ = ComponentArray(C=c, lie_dX=dX)
 
 cs_ps = (diffusion_ν = 0.0005,)
 
 # Describe mappings from symbols to discrete differential operators.
 function generate(sd, my_symbol; hodge=DiagonalHodge())
   op = @match my_symbol begin
-    # Specify which wedge product to use.
-    # This should probably be the default.
+    ## Specify which wedge product to use.
+    ## This should probably be the default.
     :∧₀₁ => (x,y) -> begin
       ∧(Tuple{0,1},sd,x,y)
     end

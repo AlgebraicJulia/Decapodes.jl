@@ -26,4 +26,7 @@ include("coordinates.jl")
 include("operators.jl")
 include("simulation.jl")
 
+# documentation
+include("canon/Canon.jl")
+
 end

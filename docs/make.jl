@@ -1,5 +1,6 @@
 using Documenter
 using Literate
+using Distributed
 
 @info "Loading Decapodes"
 using Decapodes
@@ -18,9 +19,11 @@ end
 # const literate_dir = joinpath(@__DIR__, "..", "examples")
 # const generated_dir = joinpath(@__DIR__, "src", "examples")
 
+# @info "Building literate files"
 # for (root, dirs, files) in walkdir(literate_dir)
 #   out_dir = joinpath(generated_dir, relpath(root, literate_dir))
-#   pmap(files) do file
+#   # @showprogress pmap(files) do file
+#   for file in files
 #     f,l = splitext(file)
 #     if l == ".jl" && !startswith(f, "_")
 #       Literate.markdown(joinpath(root, file), out_dir;
@@ -52,9 +55,10 @@ makedocs(
     "Glacial Flow" => "ice_dynamics.md",
     "Grigoriev Ice Cap" => "grigoriev.md",
     "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
-#    "Examples" => Any[
-#      "examples/cfd_example.md"
-#    ],
+    # "Examples" => Any[
+    #   "examples/cfd_example.md"
+    # ],
+    "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ]
 )

@@ -3,11 +3,14 @@ using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
 using CairoMakie
+import CairoMakie: wireframe, mesh, Figure, Axis
 using Logging
 using JLD2
 using Printf
@@ -62,14 +65,14 @@ soln = solve(prob, Tsit5())
 # Create side-by-side GIF
 begin
 frames = 800
-# Initial frame
-fig = CairoMakie.Figure(resolution = (1200, 1200))
-p1 = CairoMakie.mesh(fig[1,1], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
-p2 = CairoMakie.mesh(fig[2,1], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
+## Initial frame
+fig = Figure(resolution = (1200, 1200))
+p1 = mesh(fig[1,1], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
+p2 = mesh(fig[2,1], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
 Colorbar(fig[1,2])
 Colorbar(fig[2,2])
 
-# Animation
+## Animation
 record(fig, "brusselator_teapot.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
     p1.plot.color = soln(t).U
     p2.plot.color = soln(t).V
