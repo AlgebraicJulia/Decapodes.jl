@@ -157,7 +157,7 @@ isotropic_nonhydrostatic_buoyancy = apex(oapply(nonhydrostatic_composition, [
 # This is a torus with resolution of its dual mesh similar to that
 # used by Oceananigans (explicitly represented as a torus, not as a
 # square with periodic boundary conditions!)
-#download("https://cise.ufl.edu/~luke.morris/torus.obj", "torus.obj")
+download("https://cise.ufl.edu/~luke.morris/torus.obj", "torus.obj")
 s = EmbeddedDeltaSet2D("torus.obj")
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Barycenter())
@@ -202,10 +202,7 @@ Fₜ = zeros(ntriangles(sd))
 Cₛ = zeros(ntriangles(sd))
 Cₜ = zeros(ntriangles(sd))
 V = zeros(ne(sd))
-#v = zeros(ne(sd))
-#v = rand(ne(sd)) *1e-5
-v = rand(ne(sd)) *1e-8
-#ĝ = ♭(sd, DualVectorField(fill(Point3D(0,1,0), ntriangles(sd)))).data
+v = rand(ne(sd)) * 1e-8
 ĝ = ♭(sd, DualVectorField(fill(Point3D(0,0,0), ntriangles(sd)))).data
 Fᵥ = zeros(ne(sd))
 qₛ = zeros(ne(sd))
@@ -235,13 +232,12 @@ gᶜ = 9.81
 constants_and_parameters = (
   temperature_turbulence_κ = 0.0,
   salinity_turbulence_κ = 0.0,
-  nu = 0.0,
+  nu = 1e-5,
   eos_g = gᶜ,
   eos_α = α,
   eos_β = β)
   
-
-tₑ = 5e4
+tₑ = 50
 
 # Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
@@ -251,31 +247,58 @@ soln.retcode != :Unstable || error("Solver was not stable")
 
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-#soln = solve(prob, Tsit5(), dtmin=1e-16, force_dtmin=true, progress=true)
-soln = solve(prob, Tsit5(), force_dtmin=true, progress=true)
+soln = solve(prob, Vern7(), force_dtmin=true, dtmax=0.2, progress=true,progress_steps=1)
 @show soln.retcode
 @info("Done")
 
-# Vorticity:
-mesh(s,  
-        color=ihs0*dd1*soln(tₑ).v,
-        colormap=:jet)
-
-# Speed:
-
-# Create a gif
-begin
-  frames = 100
-  #fig, ax, ob = GLMakie.mesh(s′, color=soln(0).T, colormap=:jet, colorrange=extrema(soln(tₑ).h))
-  fig, ax, ob = GLMakie.mesh(s′, color=soln(0).T, colormap=:jet, colorrange=extrema(soln(1.5).T))
-  Colorbar(fig[1,2], ob)
-  #record(fig, "oceananigans.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
-  record(fig, "oceananigans.gif", range(0.0, 1.5; length=frames); framerate = 30) do t
-    ob.color = soln(t).T
-  end
+ihs0 = dec_inv_hodge_star(Val{0}, sd, GeometricHodge())
+dd1 = dec_dual_derivative(1, sd)
+♯_m = ♯_mat(sd, LLSDDSharp())
+using LinearAlgebra: norm
+function vorticity(α)
+  ihs0*dd1*α
+end
+function speed(α)
+  norm.(♯_m * α)
 end
 
-begin end
+function save_vorticity(is_2d=false)
+  frames = 200
+  time = Observable(0.0)
+  fig = Figure(title = @lift("Vorticity at $($time)"))
+  ax = is_2d ?
+    CairoMakie.Axis(fig[1,1]) :
+    LScene(fig[1,1], scenekw=(lights=[],))
+  msh = CairoMakie.mesh!(ax, s,
+    color=@lift(vorticity(soln($time).v)),
+    colorrange=extrema(vorticity(soln(tₑ).v)).*.9,
+    colormap=:jet)
+
+  Colorbar(fig[1,2], msh)
+  record(fig, "vorticity.gif", range(0.0, tₑ; length=frames); framerate = 20) do t
+    time[] = t
+  end
+end
+save_vorticity(true)
+
+function save_speed(is_2d=false) frames = 200
+  time = Observable(0.0)
+  fig = Figure(title = @lift("Speed at $($time)"))
+  ax = is_2d ?
+    CairoMakie.Axis(fig[1,1]) :
+    LScene(fig[1,1], scenekw=(lights=[],))
+  msh = CairoMakie.scatter!(ax, sd[sd[:tri_center], :dual_point],
+    color=@lift(speed(soln($time).v)),
+    colorrange=extrema(speed(soln(tₑ).v)).*.9,
+    colormap=:jet,
+    markersize=5)
+
+  Colorbar(fig[1,2], msh)
+  record(fig, "speed.gif", range(0.0, tₑ; length=frames); framerate = 20) do t
+    time[] = t
+  end
+end
+save_speed(true)
 
 # Track a single tracer.
 single_tracer_composition_diagram = @relation () begin
