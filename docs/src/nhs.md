@@ -1,9 +1,8 @@
-# This is a discrete exterior calculus implementation of Oceananigans.jl's `NonhydrostaticModel`.
+# Implement Oceananigans.jl's NonhydrostaticModel in the Discrete Exterior Calculus
 
-#######################
-# Import Dependencies #
-#######################
+Let's use Decapodes to implement the [NonhydrostaticModel](https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/) from Oceananigans.jl. We will take the opportunity to demonstrate how we can use our "algebra of model compositions" to encode certain guarantees on the models we generate. We will use the [2D Turbulence](https://clima.github.io/OceananigansDocumentation/stable/generated/two_dimensional_turbulence/) as a guiding example, and use only equations found in the Oceananigans docs to construct our model.
 
+```@example DEC
 # AlgebraicJulia Dependencies
 using Catlab
 using CombinatorialSpaces
@@ -16,18 +15,16 @@ using ComponentArrays
 using GeometryBasics: Point3
 using JLD2
 using LinearAlgebra
-using Logging: global_logger
 using MLStyle
 using OrdinaryDiffEq
-using TerminalLoggers: TerminalLogger
-global_logger(TerminalLogger())
-Point3D = Point3{Float64}
+Point3D = Point3{Float64};
+```
 
-####################
-# Define the model #
-####################
+## Specify our models.
 
-# Equation 1: "The momentum conservation equation" from https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-momentum-conservation-equation
+This is [Equation 1: "The momentum conservation equation"](https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-momentum-conservation-equation). This is the first formulation of mutual advection (of v along V, and V along v) that we could find in the exterior calculus.
+
+```@example DEC
 momentum =  @decapode begin
   (v,V)::DualForm1
   f::Form0
@@ -49,18 +46,12 @@ momentum =  @decapode begin
      ∂tuˢ +
      Fᵥ
 end
+```
 
-# Why write "StressDivergence" instead of ∇⋅τ?
-# According to this docs page:
-# https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/
-# , the user simply selects what model to insert in place of the term ∇⋅τ.
-# For example, in the isotropic case, Oceananigans.jl rewrites with:
-# ∇⋅τ = nuΔv.
-# Thus, we write StressDivergence, and replace this term with a choice of
-# "turbulence closure" model. Using the "constant isotropic diffusivity" case,
-# we can operate purely in terms of scalar-valued forms.
+Why did we write "StressDivergence" instead of ∇⋅τ, as in the linked equation? According to [this docs page](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/), the user makes a selection of what model to insert in place of the term ∇⋅τ. For example, in [the isotropic case](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity), Oceananigans.jl replaces this term with: ∇⋅τ = nuΔv. Thus, we write StressDivergence, and replace this term with a choice of "turbulence closure" model. Using the "constant isotropic diffusivity" case, we can operate purely in terms of scalar-valued forms.
 
-# Equation 2: "The tracer conservation equation" from https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-tracer-conservation-equation
+This is [Equation 2: "The tracer conservation equation"](https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-tracer-conservation-equation).
+```@example DEC
 tracer_conservation = @decapode begin
   (c,C,F,FluxDivergence)::DualForm0
   (v,V)::DualForm1
@@ -72,16 +63,20 @@ tracer_conservation = @decapode begin
     FluxDivergence +
     F
 end
+```
 
-# Equation 2: "Linear equation of state" of seawater buoyancy from https://clima.github.io/OceananigansDocumentation/stable/physics/buoyancy_and_equations_of_state/#Linear-equation-of-state
+This is [Equation 2: "Linear equation of state"](https://clima.github.io/OceananigansDocumentation/stable/physics/buoyancy_and_equations_of_state/#Linear-equation-of-state) of seawater buoyancy.
+```@example DEC
 equation_of_state = @decapode begin
   (b,T,S)::DualForm0
   (g,α,β)::Constant
 
   b == g*(α*T - β*S)
 end
+```
 
-# Equation 2: "Constant isotropic diffusivity" from https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity
+This is [Equation 2: "Constant isotropic diffusivity"](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity).
+```@example DEC
 isotropic_diffusivity = @decapode begin
   v::DualForm1
   c::DualForm0
@@ -92,12 +87,10 @@ isotropic_diffusivity = @decapode begin
   StressDivergence == nu*Δᵈ₁(v)
   FluxDivergence == κ*Δᵈ₀(c)
 end
+```
 
-##################
-# Compose Models #
-##################
+## Compatibility Guarantees via Operadic Composition
 
-"""
 Decapodes composition is formally known as an "operad algebra". That means that we don't have to encode our composition in a single UWD and then apply it. Rather, we can define several UWDs, compose those, and then apply those. Of course, since the output of oapply is another Decapode, we could perform an intermediate oapply, if that is convenient.
 
 Besides it being convenient to break apart large UWDs into component UWDs, this hierarchical composition can enforce rules on our physical quantities.
@@ -108,23 +101,27 @@ For example:
 3. At the same time, a choice of turbulence closure doesn't just affect (each of) the flux-divergence terms, it also constrains which stress-divergence is physically valid in the momentum equation.
 
 We will use our operad algebra to guarantee model compatibility and physical consistency, guarantees that would be burdensome to fit into a one-off type system.
-"""
 
-# Specify the equations that a tracer obeys:
+Here, we specify the equations that any tracer obeys:
+```@example DEC
 tracer_composition = @relation () begin
   # "The turbulence closure selected by the user determines the form of ... diffusive flux divergence"
   turbulence(FD,v,c)
 
   continuity(FD,v,c)
 end
+```
 
-# Let's "lock in" isotropic diffusivity by doing an intermediate oapply.
+ Let's "lock in" isotropic diffusivity by doing an intermediate oapply.
+```@example DEC
 isotropic_tracer = apex(oapply(tracer_composition, [
   Open(isotropic_diffusivity, [:FluxDivergence, :v, :c]),
   Open(tracer_conservation,   [:FluxDivergence, :v, :c])]))
+```
 
-# Use this building-block tracer physics at the next level:
+Let's use this building-block tracer physics at the next level. The quotes that appear in this composition diagram appear directly in the Oceananigans.jl docs.
 
+```@example DEC
 nonhydrostatic_composition = @relation () begin
   # "The turbulence closure selected by the user determines the form of stress divergence"
   #   => Note that the StressDivergence term, SD, is shared by momentum and all the tracers.
@@ -144,16 +141,14 @@ isotropic_nonhydrostatic_buoyancy = apex(oapply(nonhydrostatic_composition, [
   Open(momentum,          [:V, :v, :b, :StressDivergence]),
   Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence, :turbulence_nu]),
   Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence, :turbulence_nu]),
-  Open(equation_of_state, [:b, :T, :S])]))
+  Open(equation_of_state, [:b, :T, :S])]));
+```
 
-#################
-# Define a Mesh #
-#################
+## Meshes and Initial Conditions
 
-# This is the sphere with the same surface area as the Oceananigans
-# example torus:
-#s = loadmesh(Icosphere(5, (3*π)^(1/3)))
+Let's execute these dynamics on the torus explicitly, instead of using a square with periodic boundary conditions.
 
+```@example DEC
 # This is a torus with resolution of its dual mesh similar to that
 # used by Oceananigans (explicitly represented as a torus, not as a
 # square with periodic boundary conditions!)
@@ -162,10 +157,6 @@ s = EmbeddedDeltaSet2D("torus.obj")
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Barycenter())
 
-#################################
-# Define Differential Operators #
-#################################
-
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     _ => default_dec_matrix_generate(sd, my_symbol, hodge)
@@ -173,19 +164,11 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return (args...) -> op(args...)
 end
 
-#######################
-# Generate Simulation #
-#######################
-
 open("nhs.jl", "w") do f
   write(f, string(gensim(expand_operators(isotropic_nonhydrostatic_buoyancy))))
 end
 sim = include("nhs.jl")
 fₘ = sim(sd, generate)
-
-#################################
-# Define Differential Operators #
-#################################
 
 S = map(sd[sd[:tri_center], :dual_point]) do (_,_,_)
   0.0
@@ -235,8 +218,14 @@ constants_and_parameters = (
   nu = 1e-5,
   eos_g = gᶜ,
   eos_α = α,
-  eos_β = β)
+  eos_β = β);
+```
   
+## Execute the Simulation
+
+We specified our physics, our mesh, and our initial conditions. We have everything we need to execute the simulation.
+
+```@example DEC
 tₑ = 50
 
 # Julia will pre-compile the generated simulation the first time it is run.
@@ -250,7 +239,13 @@ prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Vern7(), force_dtmin=true, dtmax=0.2, progress=true,progress_steps=1)
 @show soln.retcode
 @info("Done")
+```
 
+## Results
+
+In the DEC, vorticity is encoded with `d⋆`, and speed can be encoded with `norm ♯`. We can use our operators from CombinatorialSpaces.jl to create our GIFs.
+
+```@example DEC
 ihs0 = dec_inv_hodge_star(Val{0}, sd, GeometricHodge())
 dd1 = dec_dual_derivative(1, sd)
 ♯_m = ♯_mat(sd, LLSDDSharp())
@@ -299,48 +294,9 @@ function save_speed(is_2d=false) frames = 200
   end
 end
 save_speed(true)
+```
 
-# Track a single tracer.
-single_tracer_composition_diagram = @relation () begin
-  momentum(V, v)
-  tracer(V, v)
-end
-to_graphviz(single_tracer_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
+![Vorticity](vorticity.gif)
 
-single_tracer_cospan = oapply(single_tracer_composition_diagram,
-  [Open(momentum, [:V, :v]),
-  Open(tracer, [:V, :v])])
-
-single_tracer = apex(single_tracer_cospan)
-to_graphviz(single_tracer)
-
-single_tracer = expand_operators(single_tracer)
-infer_types!(single_tracer)
-resolve_overloads!(single_tracer)
-to_graphviz(single_tracer)
-
-
-# Track multiple tracers.
-triple_tracer_composition_diagram = @relation () begin
-  momentum(V, v)
-
-  mercury(V, v)
-  phosphate(V, v)
-  oil(V, v)
-end
-to_graphviz(triple_tracer_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
-
-triple_tracer_cospan = oapply(triple_tracer_composition_diagram,
-  [Open(momentum, [:V, :v]),
-  Open(tracer, [:V, :v]),
-  Open(tracer, [:V, :v]),
-  Open(tracer, [:V, :v])])
-
-triple_tracer = apex(triple_tracer_cospan)
-to_graphviz(triple_tracer)
-
-triple_tracer = expand_operators(triple_tracer)
-infer_types!(triple_tracer)
-resolve_overloads!(triple_tracer)
-to_graphviz(triple_tracer)
+![Speed](speed.gif)
 
