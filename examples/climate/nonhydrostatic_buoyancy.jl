@@ -7,7 +7,6 @@
 # AlgebraicJulia Dependencies
 using Catlab
 using CombinatorialSpaces
-using CombinatorialSpaces: interior_product_dd, ℒ_dd
 using Decapodes
 using DiagrammaticEquations
 
@@ -41,11 +40,11 @@ momentum =  @decapode begin
   StressDivergence::DualForm1
 
   ∂ₜ(v) ==
-    -ℒ(v,v) + 0.5*d(ι₁₁(v,v)) -
+    -ℒ₁(v,v) + 0.5*d(ι₁₁(v,v)) -
      d(ι₁₁(v,V)) + ι₁₂(v,d(V)) + ι₁₂(V,d(v)) -
-     (f - ∘(d,⋆)(uˢ)) ∧ᵖ v -
+     (f - ∘(d,⋆)(uˢ)) ∧ᵖᵈ₀₁ v -
      d(p) +
-     b ∧ᵈ ĝ -
+     b ∧ᵈᵈ₀₁ ĝ -
      StressDivergence +
      ∂tuˢ +
      Fᵥ
@@ -162,43 +161,14 @@ isotropic_nonhydrostatic_buoyancy = apex(oapply(nonhydrostatic_composition, [
 s = EmbeddedDeltaSet2D("torus.obj")
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Barycenter())
-xmax = maximum(x -> x[1], point(s))
-zmax = maximum(x -> x[2], point(s))
-#wireframe(s)
 
 #################################
 # Define Differential Operators #
 #################################
 
-# TODO: Provide these functions by default.
-i11 = interior_product_dd(Tuple{1,1}, sd);
-i12 = interior_product_dd(Tuple{1,2}, sd);
-lie11 = ℒ_dd(Tuple{1,1}, sd);
-Λᵖ = dec_wedge_product_pd(Tuple{0,1}, sd);
-Λᵈ = dec_wedge_product_dd(Tuple{0,1}, sd);
-# TODO: Upstream the dual 0 Laplacian.
-dd0 = dec_dual_derivative(0, sd);
-ihs1 = dec_inv_hodge_star(1, sd, GeometricHodge());
-d1 = dec_differential(1,sd);
-hs2 = dec_hodge_star(2, sd, GeometricHodge());
-# TODO: Upstream the dual 1 Laplacian.
-dd1 = dec_dual_derivative(1, sd);
-ihs0 = dec_inv_hodge_star(0, sd, GeometricHodge());
-d0 = dec_differential(0,sd);
-hs1 = dec_hodge_star(1, sd, GeometricHodge());
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :ℒ => lie11
-    :ι₁₁ => i11
-    :ι₁₂ => i12
-    :∧ᵖ => Λᵖ
-    :∧ᵈ => Λᵈ
-    :Δᵈ₀ => x -> hs2 * d1 * ihs1(dd0 * x)
-    :Δᵈ₁ => x -> begin
-      hs1 * d0 * ihs0 * dd1 * x +
-      dd0 * hs2 * d1 * ihs1(x)
-    end
-    _ => default_dec_generate(sd, my_symbol, hodge)
+    _ => default_dec_matrix_generate(sd, my_symbol, hodge)
   end
   return (args...) -> op(args...)
 end
@@ -281,7 +251,8 @@ soln.retcode != :Unstable || error("Solver was not stable")
 
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5(), dtmin=1e-16, force_dtmin=true, progress=true)
+#soln = solve(prob, Tsit5(), dtmin=1e-16, force_dtmin=true, progress=true)
+soln = solve(prob, Tsit5(), force_dtmin=true, progress=true)
 @show soln.retcode
 @info("Done")
 
