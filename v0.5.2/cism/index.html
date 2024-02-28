@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>CISM v2.1 · Decapodes.jl</title><meta name="title" content="CISM v2.1 · Decapodes.jl"/><meta property="og:title" content="CISM v2.1 · Decapodes.jl"/><meta property="twitter:title" content="CISM v2.1 · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><script src="../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Decapodes.jl</a></li><li><a class="tocitem" href="../overview/">Overview</a></li><li class="is-active"><a class="tocitem" href>CISM v2.1</a><ul class="internal"><li><a class="tocitem" href="#Specifying-and-Composing-Physics"><span>Specifying and Composing Physics</span></a></li><li><a class="tocitem" href="#Providing-a-Semantics"><span>Providing a Semantics</span></a></li><li><a class="tocitem" href="#Defining-input-data"><span>Defining input data</span></a></li></ul></li><li><a class="tocitem" href="../klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../nhs/">NHS</a></li><li><a class="tocitem" href="../equations/">Equations</a></li><li><a class="tocitem" href="../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../canon/">Canonical Models</a></li><li><a class="tocitem" href="../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>CISM v2.1</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>CISM v2.1</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/cism.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Replicating-the-Community-Ice-Sheet-Model-v2.1-Halfar-Dome-Benchmark-with-Decapodes"><a class="docs-heading-anchor" href="#Replicating-the-Community-Ice-Sheet-Model-v2.1-Halfar-Dome-Benchmark-with-Decapodes">Replicating the Community Ice Sheet Model v2.1 Halfar Dome Benchmark with Decapodes</a><a id="Replicating-the-Community-Ice-Sheet-Model-v2.1-Halfar-Dome-Benchmark-with-Decapodes-1"></a><a class="docs-heading-anchor-permalink" href="#Replicating-the-Community-Ice-Sheet-Model-v2.1-Halfar-Dome-Benchmark-with-Decapodes" title="Permalink"></a></h1><p>The Decapodes framework takes high-level representations of physics equations and automatically generates solvers.</p><p>We do so by translating equations from vector calculus notation to the &quot;discrete exterior calculus&quot; (DEC). This process is roughly about recognizing whether physical quantities represent scalar or vector quantities, and recognizing whether differential operators represent gradient, divergence, and so on.</p><p>In this benchmark, we will implement the &quot;small slope approximation&quot; of glacial dynamics used by P. Halfar in his 1981 work &quot;On the dynamics of the ice sheets&quot; by taking his original formulation, translating it into the DEC, then providing a mesh and initial conditions.</p><p>The initial conditions used here are exactly those considered by W. H. Lipscomb et al. in &quot;Description And Evaluation of the Community Ice Sheet Model (CISM) v2.1&quot; (2019).</p><pre><code class="language-julia hljs"># AlgebraicJulia Dependencies
+using Catlab
+using Catlab.Graphics
+using CombinatorialSpaces
+using Decapodes
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
+
+# External Dependencies
+using ComponentArrays
+using MLStyle
+using LinearAlgebra
+using OrdinaryDiffEq
+using JLD2
+using SparseArrays
+using Statistics
+using CairoMakie
+using BenchmarkTools
+using GeometryBasics: Point2, Point3
+Point2D = Point2{Float64}</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Point3{Float64}<span class="sgr90"> (alias for Point{3, Float64})</span></code></pre><h2 id="Specifying-and-Composing-Physics"><a class="docs-heading-anchor" href="#Specifying-and-Composing-Physics">Specifying and Composing Physics</a><a id="Specifying-and-Composing-Physics-1"></a><a class="docs-heading-anchor-permalink" href="#Specifying-and-Composing-Physics" title="Permalink"></a></h2><p><img src="https://cise.ufl.edu/~luke.morris/halfar_eq2.jpg" alt="&quot;Halfar Equation 2&quot;"/></p><p>We will translate Halfar&#39;s equation into the DEC below. Although the equation given by Halfar is dense, this notation does not allow you to see which operators represent divergence, which components represent diffusivity constants, and so on. In the DEC, there is a small pool of operators, ⋆, d, ∧, ♯, and ♭, which combine according to set rules to encode all of these notions.</p><p>In the DEC, gradients are generalized by the exterior derivative &quot;d&quot;. Given scalar-data, d gives the slope along edges in our mesh. Similarly, the operator (⋆, d, ⋆) generalizes divergence.</p><p>In Halfar&#39;s equation there is a term corresponding to the magnitude of the slope, but it is not clear where this quantity is to be defined. Is it a scalar-like quantity, or a vector-like quantity? In the DEC translation, we take the gradient of h, d(h), and use the &quot;sharp&quot; operator to define it on points in the domain, where we then take its magnitude. The &quot;wedge product&quot;, ∧, takes care of multiplying a scalar-like quantity by a vector-like quantity.</p><p>Halfar&#39;s equation looks a little disjoint. It seems that the front most terms are responsible for computing some parameter, while the remaining terms on the right encode something about the dynamics. This is because Halfar&#39;s equation is actually describing two equations in one. The front-most term defines a quantity - depending on the strain of the ice - that controls the rate at which ice diffuses. Since this computation is rather separate from the rest of the computations involving our differential operators, we will call it &quot;Gamma&quot; here, and define it in a later component Decapode.</p><pre><code class="language-julia hljs"># Equation 2 from Halfar, P. ON THE DYNAMICS OF THE ICE SHEETS. (1981),
+# translated into the exterior calculus.
+halfar_eq2 = @decapode begin
+  h::Form0
+  Γ::Form1
+  n::Constant
+
+  ḣ == ∂ₜ(h)
+  ḣ == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
+end
+
+to_graphviz(halfar_eq2)</code></pre><img src="c0dd50c5.svg" alt="Example block output"/><p><img src="https://cise.ufl.edu/~luke.morris/glen_law1.jpg" alt="&quot;Glen&#39;s Law&quot;"/></p><p>Here, we recognize that Gamma is in fact what glaciologists call &quot;Glen&#39;s Flow Law.&quot; It states that the strain rate of a sheet of ice can be related to applied stress via a power law. Below, we encode the formulation as it is usually given in the literature, depending explicitly on the gravitational constant, g.</p><pre><code class="language-julia hljs"># Equation 1 from Glen, J. W. THE FLOW LAW OF ICE: A discussion of the
+# assumptions made in glacier theory, their experimental foundations and
+# consequences. (1958)
+glens_law = @decapode begin
+  Γ::Form1
+  (A,ρ,g,n)::Constant
+
+  Γ == (2/(n+2))*A*(ρ*g)^n
+end
+
+to_graphviz(glens_law)</code></pre><img src="23f87477.svg" alt="Example block output"/><p>We now need some way to compose these physics equations together. Since this physics is rather small, and there are no naming conflicts of physical quantities, this composition is also rather simple.</p><pre><code class="language-julia hljs">#####################
+# Compose the model #
+#####################
+
+ice_dynamics_composition_diagram = @relation () begin
+  dynamics(Γ,n)
+  stress(Γ,n)
+end
+to_graphviz(ice_dynamics_composition_diagram, box_labels=:name, junction_labels=:variable, prog=&quot;circo&quot;)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="229pt" height="250pt"
+ viewBox="0.00 0.00 228.60 249.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 245.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-245.6 224.6,-245.6 224.6,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="115.3" cy="-18" rx="44.98" ry="18"/>
+<text text-anchor="middle" x="115.3" y="-14.3" font-family="Serif" font-size="14.00">dynamics</text>
+</g>
+<!-- n3 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n3</title>
+<ellipse fill="black" stroke="black" cx="12.5" cy="-120.8" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="5" y="-127.1" font-family="Serif" font-size="14.00">Γ</text>
+</g>
+<!-- n1&%2345;&%2345;n3 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n3</title>
+<path fill="none" stroke="black" d="M98.32,-34.98C72.32,-60.98 24.56,-108.74 14.42,-118.88"/>
+</g>
+<!-- n4 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n4</title>
+<ellipse fill="black" stroke="black" cx="218.1" cy="-120.8" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="210.6" y="-127.1" font-family="Serif" font-size="14.00">n</text>
+</g>
+<!-- n1&%2345;&%2345;n4 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&%2345;n4</title>
+<path fill="none" stroke="black" d="M132.27,-34.98C158.28,-60.98 206.04,-108.74 216.18,-118.88"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="115.3" cy="-223.6" rx="30.72" ry="18"/>
+<text text-anchor="middle" x="115.3" y="-219.9" font-family="Serif" font-size="14.00">stress</text>
+</g>
+<!-- n2&%2345;&%2345;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&%2345;n3</title>
+<path fill="none" stroke="black" d="M99.69,-207.99C74.07,-182.37 24.93,-133.23 14.48,-122.78"/>
+</g>
+<!-- n2&%2345;&%2345;n4 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&%2345;n4</title>
+<path fill="none" stroke="black" d="M130.91,-207.99C156.52,-182.37 205.67,-133.23 216.12,-122.78"/>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs"># Plug in our Decapodes to the composition pattern.
+ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
+  [Open(halfar_eq2, [:Γ,:n]),
+   Open(glens_law, [:Γ,:n])])
+
+ice_dynamics = apex(ice_dynamics_cospan)
+to_graphviz(ice_dynamics, verbose=false)</code></pre><img src="a18c0407.svg" alt="Example block output"/><p>We have a representation of our composed physics. Now, we need to specify that these dynamics occur in 2 dimensions.</p><h2 id="Providing-a-Semantics"><a class="docs-heading-anchor" href="#Providing-a-Semantics">Providing a Semantics</a><a id="Providing-a-Semantics-1"></a><a class="docs-heading-anchor-permalink" href="#Providing-a-Semantics" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Interpret this multiphysics diagram in the 2D exterior calculus.
+
+ice_dynamics2D = expand_operators(ice_dynamics)
+infer_types!(ice_dynamics2D)
+resolve_overloads!(ice_dynamics2D)
+to_graphviz(ice_dynamics2D, verbose=false)</code></pre><img src="bb6f4441.svg" alt="Example block output"/><p>We are done encoding our dynamics. Now, we need to provide a mesh,  initial data to use for our quantities, and what functions to use for our differential operators.</p><p>Our mesh library, CombinatorialSpaces, can interpret arbitrary .OBJ files to run our dynamics on. Here, we use a script that generates a triangulated grid of the resolution used in the CISM benchmark. Note though that the &quot;resolution&quot; of a triangulated and non-triangulated grid is difficult to directly compare.</p><pre><code class="language-julia hljs">s′ = triangulated_grid(60_000,100_000,2_000,2_000,Point3D)
+s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
+subdivide_duals!(s, Barycenter())
+x̄ = mean(p -&gt; p[1], point(s))
+ȳ = mean(p -&gt; p[2], point(s))
+
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
+wf = wireframe!(ax, s)
+save(&quot;ice_mesh.png&quot;, fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">CairoMakie.Screen{IMAGE}
+</code></pre><p><img src="../ice_mesh.png" alt="&quot;Wireframe of the Domain&quot;"/></p><h2 id="Defining-input-data"><a class="docs-heading-anchor" href="#Defining-input-data">Defining input data</a><a id="Defining-input-data-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-input-data" title="Permalink"></a></h2><p>We replicate the initial conditions and parameter values used in the CISM benchmark.</p><pre><code class="language-julia hljs"># These are the initial conditions to the Halfar Dome test case that the
+# Community Ice Sheet Model uses.
+R₀ = 60_000 * sqrt(0.125)
+H = 2_000 * sqrt(0.125)
+
+n = 3
+g = 9.8101
+ρ = 910
+alpha = 1/9
+beta = 1/18
+flwa = 1e-16
+A = fill(1e-16, ne(s))
+
+Gamma = 2.0/(n+2) * flwa * (ρ * g)^n
+t0 = (beta/Gamma) * (7.0/4.0)^3 * (R₀^4 / H^7)
+
+# This is the analytic solution for comparison.
+# It is ported over from the CISM code for comparison&#39;s sake,
+# and we will use it to set initial conditions.
+function height_at_p(x,y,t)
+  tr = (t + t0) / t0
+  r = sqrt((x - x̄)^2 + (y - ȳ)^2)
+  r = r/R₀
+  inside = max(0.0, 1.0 - (r / tr^beta)^((n+1.0) / n))
+  H * inside^(n / (2*n + 1)) / tr^alpha
+end
+
+# Set the initial conditions for ice sheet height:
+# Ice height is a primal 0-form. i.e. valued at vertices.
+h₀ = map(x -&gt; height_at_p(x[1], x[2], 0), point(s′))
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
+msh = mesh!(ax, s′, color=h₀, colormap=:jet)
+save(&quot;ice_initial_conditions.png&quot;, fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">CairoMakie.Screen{IMAGE}
+</code></pre><p><img src="../ice_initial_conditions.png" alt="&quot;Initial Conditions&quot;"/></p><pre><code class="language-julia hljs"># Store these values to be passed to the solver.
+u₀ = ComponentArray(dynamics_h = h₀)
+constants_and_parameters = (
+  n = n,
+  stress_ρ = ρ,
+  stress_g = g,
+  stress_A = A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(n = 3, stress_ρ = 910, stress_g = 9.8101, stress_A = [1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16  …  1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16])</code></pre><p>We provide here the mapping from symbols to differential operators. As more of the differential operators of the DEC are implemented, they are upstreamed to the Decapodes and CombinatorialSpaces libraries. Of course, users can also provide their own implementations of these operators and others as they see fit.</p><pre><code class="language-julia hljs">#############################################
+# Define how symbols map to Julia functions #
+#############################################
+
+function generate(sd, my_symbol; hodge=GeometricHodge())
+  # We pre-allocate matrices that encode differential operators.
+  op = @match my_symbol begin
+    :mag =&gt; x -&gt; begin
+      norm.(x)
+    end
+    :^ =&gt; (x,y) -&gt; begin
+      x .^ y
+    end
+    _ =&gt; default_dec_matrix_generate(sd, my_symbol, hodge)
+  end
+  return (args...) -&gt; op(args...)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><p>The <code>gensim</code> function takes our high-level representation of the physics equations and produces compiled simulation code. It performs optimizations such as allocating memory for intermediate variables, and so on.</p><pre><code class="language-julia hljs">#######################
+# Generate simulation #
+#######################
+
+sim = eval(gensim(ice_dynamics2D))
+fₘ = sim(s, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#16&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#10#13&quot;{Main.var&quot;#9#12&quot;}, Main.var&quot;#10#13&quot;{Main.var&quot;#8#11&quot;}, Main.var&quot;#10#13&quot;{Decapodes.var&quot;#29#30&quot;{SparseArrays.SparseMatrixCSC{Point3{Float64}, Int64}}}, Decapodes.var&quot;#17#19&quot;{1, Tuple{Matrix{Int32}, UnitRange{Int64}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><p>Julia is a &quot;Just-In-Time&quot; compiled language. That means that functions are compiled the first time they are called, and later calls to those functions skip this step. To get a feel for just how fast this simulation is, we will run the dynamics twice, once for a very short timespan to trigger pre-compilation, and then again for the actual dynamics.</p><pre><code class="language-julia hljs"># Pre-compile simulation
+
+# Julia will pre-compile the generated simulation the first time it is run.
+@info(&quot;Precompiling Solver&quot;)
+# We run for a short timespan to pre-compile.
+prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
+soln = solve(prob, Tsit5())
+soln.retcode != :Unstable || error(&quot;Solver was not stable&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><pre><code class="language-julia hljs"># Run simulation
+tₑ = 200
+
+# This next run should be fast.
+@info(&quot;Solving&quot;)
+prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+soln = solve(prob, Tsit5())
+@show soln.retcode
+@info(&quot;Done&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Solving
+soln.retcode = SciMLBase.ReturnCode.Success
+[ Info: Done</code></pre><p>We can benchmark the compiled simulation with <code>@benchmarkable</code>. This macro runs many samples of the simulation function so we get an accurate estimate of the simulation time. The simulation time is quite fast compared to the CISM benchmarks. These results are run automatically via GitHub Actions as part of our docs build, which is not optimized for numerical simulations.</p><pre><code class="language-julia hljs"># Time the simulation
+
+b = @benchmarkable solve(prob, Tsit5())
+c = run(b)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 259 samples with 1 evaluation.
+ Range <span class="sgr90">(</span><span class="sgr36"><span class="sgr1">min</span></span> … <span class="sgr35">max</span><span class="sgr90">):  </span><span class="sgr36"><span class="sgr1">18.191 ms</span></span> … <span class="sgr35">32.773 ms</span>  <span class="sgr90">┊</span> GC <span class="sgr90">(</span>min … max<span class="sgr90">): </span>0.00% … 24.41%
+ Time  <span class="sgr90">(</span><span class="sgr34"><span class="sgr1">median</span></span><span class="sgr90">):     </span><span class="sgr34"><span class="sgr1">18.487 ms              </span></span><span class="sgr90">┊</span> GC <span class="sgr90">(</span>median<span class="sgr90">):    </span>0.00%
+ Time  <span class="sgr90">(</span><span class="sgr32"><span class="sgr1">mean</span></span> ± <span class="sgr32">σ</span><span class="sgr90">):   </span><span class="sgr32"><span class="sgr1">19.154 ms</span></span> ± <span class="sgr32"> 1.731 ms</span>  <span class="sgr90">┊</span> GC <span class="sgr90">(</span>mean ± σ<span class="sgr90">):  </span>2.42% ±  4.42%
+
+  ▆█<span class="sgr34">▅</span>  <span class="sgr32"> </span>      ▁▃▂                                              
+  ██<span class="sgr34">█</span>▇▇<span class="sgr32">▄</span>▄▁▁▁▁▇███▅▄▆▁▁▄▁▄▁▁▁▁▁▁▄▁▁▁▁▁▅▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▄ ▅
+  18.2 ms<span class="sgr90">      Histogram: <span class="sgr1">log(</span>frequency<span class="sgr1">)</span> by time</span>      28.6 ms <span class="sgr1">&lt;</span>
+
+ Memory estimate<span class="sgr90">: </span><span class="sgr33">26.46 MiB</span>, allocs estimate<span class="sgr90">: </span><span class="sgr33">2114</span>.</code></pre><pre><code class="language-julia hljs"># Save the solution information to a file.
+@save &quot;ice_dynamics2D.jld2&quot; soln</code></pre><p>We recall that these dynamics are of the &quot;shallow slope&quot; and &quot;shallow ice&quot; approximations. So, at the edge of our parabolic dome of ice, we expect increased error as the slope increases. On the interior of the dome, we expect the dynamics to match more closely that given by the analytic model. We will see that the CISM results likewise accumulate error in the same neighborhood.</p><p><img src="https://cise.ufl.edu/~luke.morris/halfar_small_grad_approximation.jpg" alt="&quot;Halfar Small Ice Approximation Quote&quot;"/></p><pre><code class="language-julia hljs"># Plot the final conditions
+function plot_final_conditions()
+  fig = Figure()
+  ax = CairoMakie.Axis(fig[1,1],
+    title=&quot;Modeled thickness (m) at time 200.0&quot;,
+    aspect=0.6, xticks = [0, 3e4, 6e4])
+  msh = mesh!(ax, s′, color=soln(200.0).dynamics_h, colormap=:jet)
+  Colorbar(fig[1,2], msh)
+  fig
+end
+fig = plot_final_conditions()
+save(&quot;ice_numeric_solution.png&quot;, fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">CairoMakie.Screen{IMAGE}
+</code></pre><p><img src="../ice_numeric_solution.png" alt="&quot;Numerical Solution&quot;"/></p><pre><code class="language-julia hljs"># Plot the final conditions according to the analytic solution.
+function plot_analytic()
+  hₐ = map(x -&gt; height_at_p(x[1], x[2], 200.0), point(s′))
+  fig = Figure()
+  ax = CairoMakie.Axis(fig[1,1],
+    title=&quot;Analytic thickness (m) at time 200.0&quot;,
+    aspect=0.6, xticks = [0, 3e4, 6e4])
+  msh = mesh!(ax, s′, color=hₐ, colormap=:jet)
+  Colorbar(fig[1,2], msh)
+  fig
+end
+fig = plot_analytic()
+save(&quot;ice_analytic_solution.png&quot;, fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">CairoMakie.Screen{IMAGE}
+</code></pre><p><img src="../ice_analytic_solution.png" alt="&quot;Analytic Solution"/></p><pre><code class="language-julia hljs"># Plot the error.
+function plot_error()
+  hₐ = map(x -&gt; height_at_p(x[1], x[2], 200.0), point(s′))
+  h_diff = soln(tₑ).dynamics_h - hₐ
+  extrema(h_diff)
+  fig = Figure()
+  ax = CairoMakie.Axis(fig[1,1],
+    title=&quot;Modeled thickness - Analytic thickness at time 200.0&quot;,
+    aspect=0.6, xticks = [0, 3e4, 6e4])
+  msh = mesh!(ax, s′, color=h_diff, colormap=:jet)
+  Colorbar(fig[1,2], msh)
+  fig
+end
+fig = plot_error()
+save(&quot;ice_error.png&quot;, fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">CairoMakie.Screen{IMAGE}
+</code></pre><p><img src="../ice_error.png" alt="&quot;Numeric Solution - Analytic Solution&quot;"/></p><p>We compute below that the maximum absolute error is approximately 89 meters. We observe that this error occurs exactly on the edge of the dome, which we expect given that this is where the &quot;shallow slope approximation&quot; breaks down, and the updates to our physical quantities should become more unstable. This pattern likewise occurs in the CISM benchmarks.</p><pre><code class="language-julia hljs"># Compute max absolute error:
+hₐ = map(x -&gt; height_at_p(x[1], x[2], 200.0), point(s′))
+h_diff = soln(tₑ).dynamics_h - hₐ
+maximum(abs.(h_diff))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">89.25883061368135</code></pre><p>We compute root meand square error (RMSE) as well, both over the entire domain, and <em>excluding where the ice distribution is 0 in the analytic solution.</em> (Considering the entire domain decreases the RMSE, while not telling you much about the dynamics in the area of interest.) Note that the official CISM benchmark reports 6.43 and 9.06 RMSE for their two solver implementations.</p><pre><code class="language-julia hljs"># Compute RMSE not considering the &quot;outside&quot;.
+hₐ = map(x -&gt; height_at_p(x[1], x[2], 200.0), point(s′))
+nonzeros = findall(!=(0), hₐ)
+h_diff = soln(tₑ).dynamics_h - hₐ
+rmse = sqrt(sum(map(x -&gt; x*x, h_diff[nonzeros])) / length(nonzeros))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10.399805753564129</code></pre><pre><code class="language-julia hljs"># Compute RMSE of the entire domain.
+hₐ = map(x -&gt; height_at_p(x[1], x[2], 200.0), point(s′))
+h_diff = soln(tₑ).dynamics_h - hₐ
+rmse = sqrt(sum(map(x -&gt; x*x, h_diff)) / length(h_diff))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10.084315213043197</code></pre><pre><code class="language-julia hljs"># Create a gif
+begin
+  frames = 100
+  fig = Figure()
+  ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
+  msh = mesh!(ax, s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(tₑ).dynamics_h))
+  Colorbar(fig[1,2], msh)
+  record(fig, &quot;ice_dynamics_cism.gif&quot;, range(0.0, tₑ; length=frames); framerate = 30) do t
+    msh.color = soln(t).dynamics_h
+  end
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics_cism.gif&quot;</code></pre><p><img src="../ice_dynamics_cism.gif" alt="&quot;Ice Dynamics"/></p><p>For comparison&#39;s sake, we paste the results produced by CISM below. We observe that the error likewise accumulates around the edge of the dome, with more accurate predictions on the interior. We note that our simulation produces slight over-estimates on the interior, but there are further strategies that one can employ to increase accuracy, such as tweaking the error tolerance of the solver, and so on.</p><p>Not that since the DEC is based on triangulated meshes, the &quot;resolution&quot; of the CISM benchmark and the Decapodes implementation cannot be directly compared. An advantage of the DEC is that we do not need to operate on uniform grids. For example, you could construct a mesh that is finer along the dome edge, where you need more resolution, and coarser as you are farther away from the reach of the ice.</p><p><img src="https://cise.ufl.edu/~luke.morris/cism_results.png" alt="CISM Results"/></p><p>We saw in this document how to create performant and accurate simulations in the Decapodes framework, and compared against the CISM library . Although we do not expect to be both more performant and accurate compared to every hand-crafted simulation, Decapodes makes up for this difference in terms of development time, flexibility, and composition. For example, the original implementation of the Decapodes shallow ice model took place over a couple of afternoons during a hackathon.</p><p>Since Decapodes targets high-level representations of physics, it is uniquely suited to incorporating knowledge from subject matter experts to increase simulation accuracy. This process does not require an ice dynamics expert to edit physics equations that have already been weaved into solver code.</p><p>Further improvements to the Decapodes library are made continuously. We are creating implementations of DEC operators that are constructed and execute faster. And we are in the beginning stages of 3D simulations using the DEC.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overview/">« Overview</a><a class="docs-footer-nextpage" href="../klausmeier/">Klausmeier »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Wednesday 28 February 2024 18:52">Wednesday 28 February 2024</span>. Using Julia version 1.10.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
