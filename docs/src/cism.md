@@ -194,22 +194,16 @@ We provide here the mapping from symbols to differential operators. As more of t
 # Define how symbols map to Julia functions #
 #############################################
 
-# This sharp operator, ♯, is scheduled to be upstreamed.
-include("sharp_op.jl")
 function generate(sd, my_symbol; hodge=GeometricHodge())
   # We pre-allocate matrices that encode differential operators.
-  ♯_m = ♯_mat(sd)
   op = @match my_symbol begin
-    :♯ => x -> begin
-      ♯_m * x
-    end
     :mag => x -> begin
       norm.(x)
     end
     :^ => (x,y) -> begin
       x .^ y
     end
-    x => error("Unmatched operator $my_symbol")
+    _ => default_dec_matrix_generate(sd, my_symbol, hodge)
   end
   return (args...) -> op(args...)
 end

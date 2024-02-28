@@ -31,6 +31,32 @@ function default_dec_matrix_generate(sd, my_symbol, hodge)
         :∧₂₀ => dec_pair_wedge_product(Tuple{2,0}, sd)
         :∧₁₁ => dec_pair_wedge_product(Tuple{1,1}, sd)
 
+        # Primal-Dual Wedge Products
+        :∧ᵖᵈ₁₁ => dec_wedge_product_pd(Tuple{1,1}, sd)
+        :∧ᵖᵈ₀₁ => dec_wedge_product_pd(Tuple{0,1}, sd)
+        :∧ᵈᵖ₁₁ => dec_wedge_product_dp(Tuple{1,1}, sd)
+        :∧ᵈᵖ₁₀ => dec_wedge_product_dp(Tuple{1,0}, sd)
+
+        # Dual-Dual Wedge Products
+        :∧ᵈᵈ₁₁ => dec_wedge_product_dd(Tuple{1,1}, sd)
+        :∧ᵈᵈ₁₀ => dec_wedge_product_dd(Tuple{1,0}, sd)
+        :∧ᵈᵈ₀₁ => dec_wedge_product_dd(Tuple{0,1}, sd)
+
+        # Dual-Dual Interior Products
+        :ι₁₁ => interior_product_dd(Tuple{1,1}, sd)
+        :ι₁₂ => interior_product_dd(Tuple{1,2}, sd)
+
+        # Dual-Dual Lie Derivatives
+        :ℒ₁ => ℒ_dd(Tuple{1,1}, sd)
+
+        # Dual Laplacians
+        :Δᵈ₀ => Δᵈ(Val{0},sd)
+        :Δᵈ₁ => Δᵈ(Val{1},sd)
+
+        # Dual Laplacians
+        :♯ => dec_♯_p(sd)
+        :♯ᵈ => dec_♯_d(sd)
+
         _ => error("Unmatched operator $my_symbol")
     end
 
@@ -84,6 +110,16 @@ function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
     val_pack = dec_p_wedge_product(Tuple{1,1}, sd)
     ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack),
         (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack))
+end
+
+function dec_♯_p(sd::HasDeltaSet2D)
+  ♯_m = ♯_mat(sd, AltPPSharp())
+  x -> ♯_m * x
+end
+
+function dec_♯_d(sd::HasDeltaSet2D)
+  ♯_m = ♯_mat(sd, LLSDDSharp())
+  x -> ♯_m * x
 end
 
 function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
