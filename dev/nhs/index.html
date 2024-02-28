@@ -1,0 +1,2454 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Implement Oceananigans.jl&#39;s NonhydrostaticModel in the Discrete Exterior Calculus · Decapodes.jl</title><meta name="title" content="Implement Oceananigans.jl&#39;s NonhydrostaticModel in the Discrete Exterior Calculus · Decapodes.jl"/><meta property="og:title" content="Implement Oceananigans.jl&#39;s NonhydrostaticModel in the Discrete Exterior Calculus · Decapodes.jl"/><meta property="twitter:title" content="Implement Oceananigans.jl&#39;s NonhydrostaticModel in the Discrete Exterior Calculus · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><script src="../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Decapodes.jl</a></li><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../cism/">CISM v2.1</a></li><li><a class="tocitem" href="../klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../equations/">Equations</a></li><li><a class="tocitem" href="../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../canon/">Canonical Models</a></li><li><a class="tocitem" href="../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Implement Oceananigans.jl&#39;s NonhydrostaticModel in the Discrete Exterior Calculus</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Implement Oceananigans.jl&#39;s NonhydrostaticModel in the Discrete Exterior Calculus</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/nhs.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Implement-Oceananigans.jl&#39;s-NonhydrostaticModel-in-the-Discrete-Exterior-Calculus"><a class="docs-heading-anchor" href="#Implement-Oceananigans.jl&#39;s-NonhydrostaticModel-in-the-Discrete-Exterior-Calculus">Implement Oceananigans.jl&#39;s NonhydrostaticModel in the Discrete Exterior Calculus</a><a id="Implement-Oceananigans.jl&#39;s-NonhydrostaticModel-in-the-Discrete-Exterior-Calculus-1"></a><a class="docs-heading-anchor-permalink" href="#Implement-Oceananigans.jl&#39;s-NonhydrostaticModel-in-the-Discrete-Exterior-Calculus" title="Permalink"></a></h1><p>Let&#39;s use Decapodes to implement the <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/">NonhydrostaticModel</a> from Oceananigans.jl. We will take the opportunity to demonstrate how we can use our &quot;algebra of model compositions&quot; to encode certain guarantees on the models we generate. We will use the <a href="https://clima.github.io/OceananigansDocumentation/stable/generated/two_dimensional_turbulence/">2D Turbulence</a> as a guiding example, and use only equations found in the Oceananigans docs to construct our model.</p><pre><code class="language-julia hljs"># AlgebraicJulia Dependencies
+using Catlab
+using CombinatorialSpaces
+using Decapodes
+using DiagrammaticEquations
+
+# External Dependencies
+using CairoMakie
+using ComponentArrays
+using GeometryBasics: Point3
+using JLD2
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+Point3D = Point3{Float64};</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Point3{Float64}<span class="sgr90"> (alias for Point{3, Float64})</span></code></pre><h2 id="Specify-our-models."><a class="docs-heading-anchor" href="#Specify-our-models.">Specify our models.</a><a id="Specify-our-models.-1"></a><a class="docs-heading-anchor-permalink" href="#Specify-our-models." title="Permalink"></a></h2><p>This is <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-momentum-conservation-equation">Equation 1: &quot;The momentum conservation equation&quot;</a>. This is the first formulation of mutual advection (of v along V, and V along v) that we could find in the exterior calculus.</p><pre><code class="language-julia hljs">momentum =  @decapode begin
+  (v,V)::DualForm1
+  f::Form0
+  uˢ::DualForm1
+  ∂tuˢ::DualForm1
+  p::DualForm0
+  b::DualForm0
+  ĝ::DualForm1
+  Fᵥ::DualForm1
+  StressDivergence::DualForm1
+
+  ∂ₜ(v) ==
+    -ℒ₁(v,v) + 0.5*d(ι₁₁(v,v)) -
+     d(ι₁₁(v,V)) + ι₁₂(v,d(V)) + ι₁₂(V,d(v)) -
+     (f - ∘(d,⋆)(uˢ)) ∧ᵖᵈ₀₁ v -
+     d(p) +
+     b ∧ᵈᵈ₀₁ ĝ -
+     StressDivergence +
+     ∂tuˢ +
+     Fᵥ
+end</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:35, TVar:1, Op1:8, Op2:13, Σ:4, Summand:10, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">v</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">V</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">f</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">uˢ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">∂tuˢ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">p</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">b</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">ĝ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">Fᵥ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">StressDivergence</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">v̇</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">17</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•7</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">18</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•8</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">19</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">20</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•9</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">21</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•10</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">22</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">sum_1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">23</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•11</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">24</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•12</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">25</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•13</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">26</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•14</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">27</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•15</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">28</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•16</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">29</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">sum_2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">30</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•17</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">31</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•18</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">32</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•19</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">33</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•20</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">34</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•21</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">35</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">sum_3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">11</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">21</td>
+      <td style = "text-align: right;">20</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">24</td>
+      <td style = "text-align: right;">23</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">26</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">28</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">32</td>
+      <td style = "text-align: right;">[:d, :⋆]</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">33</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">ℒ₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">21</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">19</td>
+      <td style = "text-align: right;">20</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">24</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">22</td>
+      <td style = "text-align: right;">23</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">26</td>
+      <td style = "text-align: right;">25</td>
+      <td style = "text-align: right;">ι₁₂</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">28</td>
+      <td style = "text-align: right;">27</td>
+      <td style = "text-align: right;">ι₁₂</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">32</td>
+      <td style = "text-align: right;">31</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">31</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">30</td>
+      <td style = "text-align: right;">∧ᵖᵈ₀₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">29</td>
+      <td style = "text-align: right;">30</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">33</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">34</td>
+      <td style = "text-align: right;">∧ᵈᵈ₀₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">35</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Σ</th>
+      <th style = "text-align: right;">sum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">22</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">29</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">35</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">11</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Summand</th>
+      <th style = "text-align: right;">summand</th>
+      <th style = "text-align: right;">summation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">25</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">27</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">34</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Why did we write &quot;StressDivergence&quot; instead of ∇⋅τ, as in the linked equation? According to <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/">this docs page</a>, the user makes a selection of what model to insert in place of the term ∇⋅τ. For example, in <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity">the isotropic case</a>, Oceananigans.jl replaces this term with: ∇⋅τ = nuΔv. Thus, we write StressDivergence, and replace this term with a choice of &quot;turbulence closure&quot; model. Using the &quot;constant isotropic diffusivity&quot; case, we can operate purely in terms of scalar-valued forms.</p><p>This is <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-tracer-conservation-equation">Equation 2: &quot;The tracer conservation equation&quot;</a>.</p><pre><code class="language-julia hljs">tracer_conservation = @decapode begin
+  (c,C,F,FluxDivergence)::DualForm0
+  (v,V)::DualForm1
+
+  ∂ₜ(c) ==
+    -1*ι₁₁(v,d(c)) -
+    ι₁₁(V,d(c)) -
+    ι₁₁(v,d(C)) -
+    FluxDivergence +
+    F
+end</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:18, TVar:1, Op1:4, Op2:7, Σ:1, Summand:2, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">c</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">C</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">F</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">FluxDivergence</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">v</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">V</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">ċ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">-1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•7</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•8</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•9</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">17</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•10</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">18</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•11</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">7</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Σ</th>
+      <th style = "text-align: right;">sum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">7</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Summand</th>
+      <th style = "text-align: right;">summand</th>
+      <th style = "text-align: right;">summation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>This is <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/buoyancy_and_equations_of_state/#Linear-equation-of-state">Equation 2: &quot;Linear equation of state&quot;</a> of seawater buoyancy.</p><pre><code class="language-julia hljs">equation_of_state = @decapode begin
+  (b,T,S)::DualForm0
+  (g,α,β)::Constant
+
+  b == g*(α*T - β*S)
+end</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:9, TVar:0, Op1:0, Op2:4, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">b</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">T</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">S</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">g</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">α</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">β</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>This is <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity">Equation 2: &quot;Constant isotropic diffusivity&quot;</a>.</p><pre><code class="language-julia hljs">isotropic_diffusivity = @decapode begin
+  v::DualForm1
+  c::DualForm0
+  StressDivergence::DualForm1
+  FluxDivergence::DualForm0
+  (κ,nu)::Constant
+
+  StressDivergence == nu*Δᵈ₁(v)
+  FluxDivergence == κ*Δᵈ₀(c)
+end</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:8, TVar:0, Op1:2, Op2:2, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">v</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">c</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">StressDivergence</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">FluxDivergence</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">κ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">nu</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•2</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">Δᵈ₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">Δᵈ₀</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<h2 id="Compatibility-Guarantees-via-Operadic-Composition"><a class="docs-heading-anchor" href="#Compatibility-Guarantees-via-Operadic-Composition">Compatibility Guarantees via Operadic Composition</a><a id="Compatibility-Guarantees-via-Operadic-Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Compatibility-Guarantees-via-Operadic-Composition" title="Permalink"></a></h2><p>Decapodes composition is formally known as an &quot;operad algebra&quot;. That means that we don&#39;t have to encode our composition in a single UWD and then apply it. Rather, we can define several UWDs, compose those, and then apply those. Of course, since the output of oapply is another Decapode, we could perform an intermediate oapply, if that is convenient.</p><p>Besides it being convenient to break apart large UWDs into component UWDs, this hierarchical composition can enforce rules on our physical quantities.</p><p>For example:</p><ol><li>We want all the tracers (salinity, temperature, etc.) in our physics to obey the same conservation equation.</li><li>We want them to obey the same &quot;turbulence closure&quot;, which affects their flux-divergence term.</li><li>At the same time, a choice of turbulence closure doesn&#39;t just affect (each of) the flux-divergence terms, it also constrains which stress-divergence is physically valid in the momentum equation.</li></ol><p>We will use our operad algebra to guarantee model compatibility and physical consistency, guarantees that would be burdensome to fit into a one-off type system.</p><p>Here, we specify the equations that any tracer obeys:</p><pre><code class="language-julia hljs">tracer_composition = @relation () begin
+  # &quot;The turbulence closure selected by the user determines the form of ... diffusive flux divergence&quot;
+  turbulence(FD,v,c)
+
+  continuity(FD,v,c)
+end</code></pre><div class="c-set">
+<span class="c-set-summary">Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol} {Box:2, Port:6, OuterPort:0, Junction:3, Name:0, VarName:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Box</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">turbulence</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">continuity</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Port</th>
+      <th style = "text-align: right;">box</th>
+      <th style = "text-align: right;">junction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Junction</th>
+      <th style = "text-align: right;">variable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">FD</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">v</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">c</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Let&#39;s &quot;lock in&quot; isotropic diffusivity by doing an intermediate oapply.</p><pre><code class="language-julia hljs">isotropic_tracer = apex(oapply(tracer_composition, [
+  Open(isotropic_diffusivity, [:FluxDivergence, :v, :c]),
+  Open(tracer_conservation,   [:FluxDivergence, :v, :c])]))</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:23, TVar:1, Op1:6, Op2:9, Σ:1, Summand:2, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">v</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">c</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">turbulence_StressDivergence</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">FD</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">turbulence_κ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">turbulence_nu</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">turbulence_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">turbulence_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">continuity_C</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">continuity_F</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">continuity_V</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">continuity_ċ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">continuity_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">continuity_•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">continuity_•4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">continuity_•5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">17</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">-1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">18</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">continuity_•6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">19</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">continuity_•7</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">20</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">continuity_•8</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">21</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">continuity_•9</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">22</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">continuity_•10</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">23</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">continuity_•11</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">12</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">Δᵈ₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">Δᵈ₀</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">19</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">21</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">23</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">19</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">21</td>
+      <td style = "text-align: right;">20</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">20</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">23</td>
+      <td style = "text-align: right;">22</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">22</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Σ</th>
+      <th style = "text-align: right;">sum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">12</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Summand</th>
+      <th style = "text-align: right;">summand</th>
+      <th style = "text-align: right;">summation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Let&#39;s use this building-block tracer physics at the next level. The quotes that appear in this composition diagram appear directly in the Oceananigans.jl docs.</p><pre><code class="language-julia hljs">nonhydrostatic_composition = @relation () begin
+  # &quot;The turbulence closure selected by the user determines the form of stress divergence&quot;
+  #   =&gt; Note that the StressDivergence term, SD, is shared by momentum and all the tracers.
+  momentum(V, v, b, SD)
+
+  # &quot;Both T and S obey the tracer conservation equation&quot;
+  #   =&gt; Temperature and Salinity both receive a copy of the tracer physics.
+  temperature(V, v, T, SD, nu)
+  salinity(V, v, S, SD, nu)
+
+  # &quot;Buoyancy is determined from a linear equation of state&quot;
+  #   =&gt; The b term in momentum is that described by the equation of state here.
+  eos(b, T, S)
+end
+
+isotropic_nonhydrostatic_buoyancy = apex(oapply(nonhydrostatic_composition, [
+  Open(momentum,          [:V, :v, :b, :StressDivergence]),
+  Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence, :turbulence_nu]),
+  Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence, :turbulence_nu]),
+  Open(equation_of_state, [:b, :T, :S])]));</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:80, TVar:3, Op1:20, Op2:35, Σ:6, Summand:14, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">v</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">V</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">momentum_f</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">momentum_uˢ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">momentum_∂tuˢ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">momentum_p</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">b</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">momentum_ĝ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">momentum_Fᵥ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">DualForm1</td>
+      <td style = "text-align: right;">SD</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_v̇</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">17</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•7</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">18</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•8</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">19</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">0.5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">20</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•9</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">21</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•10</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">22</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_sum_1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">23</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•11</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">24</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•12</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">25</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•13</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">26</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•14</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">27</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•15</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">28</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•16</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">29</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_sum_2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">30</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•17</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">31</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•18</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">32</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•19</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">33</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•20</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">34</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_•21</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">35</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">momentum_sum_3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">36</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">T</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">37</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">temperature_FD</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">38</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">temperature_turbulence_κ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">39</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">nu</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">40</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_turbulence_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">41</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_turbulence_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">42</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">temperature_continuity_C</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">43</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">temperature_continuity_F</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">44</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_continuity_ċ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">45</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_continuity_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">46</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_continuity_•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">47</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_continuity_•4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">48</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_continuity_•5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">49</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">-1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">50</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_continuity_•6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">51</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_continuity_•7</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">52</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_continuity_•8</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">53</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_continuity_•9</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">54</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_continuity_•10</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">55</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">temperature_continuity_•11</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">56</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">S</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">57</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">salinity_FD</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">58</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">salinity_turbulence_κ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">59</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_turbulence_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">60</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_turbulence_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">61</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">salinity_continuity_C</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">62</td>
+      <td style = "text-align: right;">DualForm0</td>
+      <td style = "text-align: right;">salinity_continuity_F</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">63</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_continuity_ċ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">64</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_continuity_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">65</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_continuity_•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">66</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_continuity_•4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">67</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_continuity_•5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">68</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">-1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">69</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_continuity_•6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">70</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_continuity_•7</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">71</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_continuity_•8</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">72</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_continuity_•9</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">73</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_continuity_•10</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">74</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">salinity_continuity_•11</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">75</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">eos_g</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">76</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">eos_α</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">77</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">eos_β</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">78</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">eos_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">79</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">eos_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">80</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">eos_•3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">11</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">44</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">63</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">21</td>
+      <td style = "text-align: right;">20</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">24</td>
+      <td style = "text-align: right;">23</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">26</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">28</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">32</td>
+      <td style = "text-align: right;">[:d, :⋆]</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">33</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">41</td>
+      <td style = "text-align: right;">Δᵈ₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">36</td>
+      <td style = "text-align: right;">40</td>
+      <td style = "text-align: right;">Δᵈ₀</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">36</td>
+      <td style = "text-align: right;">44</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">36</td>
+      <td style = "text-align: right;">51</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">36</td>
+      <td style = "text-align: right;">53</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">42</td>
+      <td style = "text-align: right;">55</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">60</td>
+      <td style = "text-align: right;">Δᵈ₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">56</td>
+      <td style = "text-align: right;">59</td>
+      <td style = "text-align: right;">Δᵈ₀</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">17</td>
+      <td style = "text-align: right;">56</td>
+      <td style = "text-align: right;">63</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">18</td>
+      <td style = "text-align: right;">56</td>
+      <td style = "text-align: right;">70</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">19</td>
+      <td style = "text-align: right;">56</td>
+      <td style = "text-align: right;">72</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">20</td>
+      <td style = "text-align: right;">61</td>
+      <td style = "text-align: right;">74</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">ℒ₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">21</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">19</td>
+      <td style = "text-align: right;">20</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">24</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">22</td>
+      <td style = "text-align: right;">23</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">26</td>
+      <td style = "text-align: right;">25</td>
+      <td style = "text-align: right;">ι₁₂</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">28</td>
+      <td style = "text-align: right;">27</td>
+      <td style = "text-align: right;">ι₁₂</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">32</td>
+      <td style = "text-align: right;">31</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">31</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">30</td>
+      <td style = "text-align: right;">∧ᵖᵈ₀₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">29</td>
+      <td style = "text-align: right;">30</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">33</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">34</td>
+      <td style = "text-align: right;">∧ᵈᵈ₀₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">35</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">39</td>
+      <td style = "text-align: right;">41</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">38</td>
+      <td style = "text-align: right;">40</td>
+      <td style = "text-align: right;">37</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">51</td>
+      <td style = "text-align: right;">50</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">17</td>
+      <td style = "text-align: right;">49</td>
+      <td style = "text-align: right;">50</td>
+      <td style = "text-align: right;">48</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">18</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">53</td>
+      <td style = "text-align: right;">52</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">19</td>
+      <td style = "text-align: right;">48</td>
+      <td style = "text-align: right;">52</td>
+      <td style = "text-align: right;">47</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">20</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">55</td>
+      <td style = "text-align: right;">54</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">21</td>
+      <td style = "text-align: right;">47</td>
+      <td style = "text-align: right;">54</td>
+      <td style = "text-align: right;">46</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">22</td>
+      <td style = "text-align: right;">46</td>
+      <td style = "text-align: right;">37</td>
+      <td style = "text-align: right;">45</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">23</td>
+      <td style = "text-align: right;">39</td>
+      <td style = "text-align: right;">60</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">24</td>
+      <td style = "text-align: right;">58</td>
+      <td style = "text-align: right;">59</td>
+      <td style = "text-align: right;">57</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">25</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">70</td>
+      <td style = "text-align: right;">69</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">26</td>
+      <td style = "text-align: right;">68</td>
+      <td style = "text-align: right;">69</td>
+      <td style = "text-align: right;">67</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">27</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">72</td>
+      <td style = "text-align: right;">71</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">28</td>
+      <td style = "text-align: right;">67</td>
+      <td style = "text-align: right;">71</td>
+      <td style = "text-align: right;">66</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">29</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">74</td>
+      <td style = "text-align: right;">73</td>
+      <td style = "text-align: right;">ι₁₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">30</td>
+      <td style = "text-align: right;">66</td>
+      <td style = "text-align: right;">73</td>
+      <td style = "text-align: right;">65</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">31</td>
+      <td style = "text-align: right;">65</td>
+      <td style = "text-align: right;">57</td>
+      <td style = "text-align: right;">64</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">32</td>
+      <td style = "text-align: right;">76</td>
+      <td style = "text-align: right;">36</td>
+      <td style = "text-align: right;">80</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">33</td>
+      <td style = "text-align: right;">77</td>
+      <td style = "text-align: right;">56</td>
+      <td style = "text-align: right;">78</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">34</td>
+      <td style = "text-align: right;">80</td>
+      <td style = "text-align: right;">78</td>
+      <td style = "text-align: right;">79</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">35</td>
+      <td style = "text-align: right;">75</td>
+      <td style = "text-align: right;">79</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Σ</th>
+      <th style = "text-align: right;">sum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">22</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">29</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">35</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">11</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">44</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">63</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Summand</th>
+      <th style = "text-align: right;">summand</th>
+      <th style = "text-align: right;">summation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">25</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">27</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">34</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">45</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">43</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">64</td>
+      <td style = "text-align: right;">6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">62</td>
+      <td style = "text-align: right;">6</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<h2 id="Meshes-and-Initial-Conditions"><a class="docs-heading-anchor" href="#Meshes-and-Initial-Conditions">Meshes and Initial Conditions</a><a id="Meshes-and-Initial-Conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Meshes-and-Initial-Conditions" title="Permalink"></a></h2><p>Let&#39;s execute these dynamics on the torus explicitly, instead of using a square with periodic boundary conditions.</p><pre><code class="language-julia hljs"># This is a torus with resolution of its dual mesh similar to that
+# used by Oceananigans (explicitly represented as a torus, not as a
+# square with periodic boundary conditions!)
+download(&quot;https://cise.ufl.edu/~luke.morris/torus.obj&quot;, &quot;torus.obj&quot;)
+s = EmbeddedDeltaSet2D(&quot;torus.obj&quot;)
+sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
+subdivide_duals!(sd, Barycenter())
+
+function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    _ =&gt; default_dec_matrix_generate(sd, my_symbol, hodge)
+  end
+  return (args...) -&gt; op(args...)
+end
+
+open(&quot;nhs.jl&quot;, &quot;w&quot;) do f
+  write(f, string(gensim(expand_operators(isotropic_nonhydrostatic_buoyancy))))
+end
+sim = include(&quot;nhs.jl&quot;)
+fₘ = sim(sd, generate)
+
+S = map(sd[sd[:tri_center], :dual_point]) do (_,_,_)
+  0.0
+end
+T = map(sd[sd[:tri_center], :dual_point]) do (_,_,_)
+  0.0
+end
+p = map(sd[sd[:tri_center], :dual_point]) do (_,_,_)
+  0.0
+end
+f = zeros(nv(sd))
+Fₛ = zeros(ntriangles(sd))
+Fₜ = zeros(ntriangles(sd))
+Cₛ = zeros(ntriangles(sd))
+Cₜ = zeros(ntriangles(sd))
+V = zeros(ne(sd))
+v = rand(ne(sd)) * 1e-8
+ĝ = ♭(sd, DualVectorField(fill(Point3D(0,0,0), ntriangles(sd)))).data
+Fᵥ = zeros(ne(sd))
+qₛ = zeros(ne(sd))
+qₜ = zeros(ne(sd))
+uˢ = zeros(ne(sd))
+∂tuˢ = zeros(ne(sd))
+
+u₀ = ComponentArray(
+  v = v,
+  V = V,
+  momentum_f = f,
+  momentum_uˢ = uˢ,
+  momentum_∂tuˢ = ∂tuˢ,
+  momentum_p = p,
+  momentum_ĝ = ĝ,
+  momentum_Fᵥ = Fᵥ,
+  T = T,
+  temperature_continuity_C = Cₜ,
+  temperature_continuity_F = Fₜ,
+  S = S,
+  salinity_continuity_C = Cₛ,
+  salinity_continuity_F = Fₛ)
+
+gᶜ = 9.81
+α = 2e-3
+β = 5e-4
+constants_and_parameters = (
+  temperature_turbulence_κ = 0.0,
+  salinity_turbulence_κ = 0.0,
+  nu = 1e-5,
+  eos_g = gᶜ,
+  eos_α = α,
+  eos_β = β);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(temperature_turbulence_κ = 0.0, salinity_turbulence_κ = 0.0, nu = 1.0e-5, eos_g = 9.81, eos_α = 0.002, eos_β = 0.0005)</code></pre><h2 id="Execute-the-Simulation"><a class="docs-heading-anchor" href="#Execute-the-Simulation">Execute the Simulation</a><a id="Execute-the-Simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Execute-the-Simulation" title="Permalink"></a></h2><p>We specified our physics, our mesh, and our initial conditions. We have everything we need to execute the simulation.</p><pre><code class="language-julia hljs">tₑ = 50
+
+# Julia will pre-compile the generated simulation the first time it is run.
+@info(&quot;Precompiling Solver&quot;)
+prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
+soln = solve(prob, Vern7())
+soln.retcode != :Unstable || error(&quot;Solver was not stable&quot;)
+
+@info(&quot;Solving&quot;)
+prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+soln = solve(prob, Vern7(), force_dtmin=true, dtmax=0.2, progress=true,progress_steps=1)
+@show soln.retcode
+@info(&quot;Done&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Precompiling Solver
+[ Info: Solving
+soln.retcode = SciMLBase.ReturnCode.Success
+[ Info: Done</code></pre><h2 id="Results"><a class="docs-heading-anchor" href="#Results">Results</a><a id="Results-1"></a><a class="docs-heading-anchor-permalink" href="#Results" title="Permalink"></a></h2><p>In the DEC, vorticity is encoded with <code>d⋆</code>, and speed can be encoded with <code>norm ♯</code>. We can use our operators from CombinatorialSpaces.jl to create our GIFs.</p><pre><code class="language-julia hljs">ihs0 = dec_inv_hodge_star(Val{0}, sd, GeometricHodge())
+dd1 = dec_dual_derivative(1, sd)
+♯_m = ♯_mat(sd, LLSDDSharp())
+using LinearAlgebra: norm
+function vorticity(α)
+  ihs0*dd1*α
+end
+function speed(α)
+  norm.(♯_m * α)
+end
+
+function save_vorticity(is_2d=false)
+  frames = 200
+  time = Observable(0.0)
+  fig = Figure(title = @lift(&quot;Vorticity at $($time)&quot;))
+  ax = is_2d ?
+    CairoMakie.Axis(fig[1,1]) :
+    LScene(fig[1,1], scenekw=(lights=[],))
+  msh = CairoMakie.mesh!(ax, s,
+    color=@lift(vorticity(soln($time).v)),
+    colorrange=extrema(vorticity(soln(tₑ).v)).*.9,
+    colormap=:jet)
+
+  Colorbar(fig[1,2], msh)
+  record(fig, &quot;vorticity.gif&quot;, range(0.0, tₑ; length=frames); framerate = 20) do t
+    time[] = t
+  end
+end
+save_vorticity(false)
+
+function save_speed(is_2d=false) frames = 200
+  time = Observable(0.0)
+  fig = Figure(title = @lift(&quot;Speed at $($time)&quot;))
+  ax = is_2d ?
+    CairoMakie.Axis(fig[1,1]) :
+    LScene(fig[1,1], scenekw=(lights=[],))
+  msh = CairoMakie.scatter!(ax, sd[sd[:tri_center], :dual_point],
+    color=@lift(speed(soln($time).v)),
+    colorrange=extrema(speed(soln(tₑ).v)).*.9,
+    colormap=:jet,
+    markersize=5)
+
+  Colorbar(fig[1,2], msh)
+  record(fig, &quot;speed.gif&quot;, range(0.0, tₑ; length=frames); framerate = 20) do t
+    time[] = t
+  end
+end
+save_speed(false)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;speed.gif&quot;</code></pre><p><img src="../vorticity.gif" alt="Vorticity"/></p><p><img src="../speed.gif" alt="Speed"/></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Wednesday 28 February 2024 04:35">Wednesday 28 February 2024</span>. Using Julia version 1.10.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
