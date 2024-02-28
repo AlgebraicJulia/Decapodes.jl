@@ -48,6 +48,7 @@ makedocs(
     "Overview" => "overview.md",
     "CISM v2.1" => "cism.md",
     "Klausmeier" => "klausmeier.md",
+    "NHS" => "nhs.md",
     "Equations" => "equations.md",
     "ASCII Operators" => "ascii.md",
     "Misc Features" => "bc_debug.md",
