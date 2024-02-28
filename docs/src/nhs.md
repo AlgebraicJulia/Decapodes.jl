@@ -46,6 +46,7 @@ momentum =  @decapode begin
      ∂tuˢ +
      Fᵥ
 end
+to_graphviz(momentum)
 ```
 
 Why did we write "StressDivergence" instead of ∇⋅τ, as in the linked equation? According to [this docs page](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/), the user makes a selection of what model to insert in place of the term ∇⋅τ. For example, in [the isotropic case](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity), Oceananigans.jl replaces this term with: ∇⋅τ = nuΔv. Thus, we write StressDivergence, and replace this term with a choice of "turbulence closure" model. Using the "constant isotropic diffusivity" case, we can operate purely in terms of scalar-valued forms.
@@ -63,6 +64,7 @@ tracer_conservation = @decapode begin
     FluxDivergence +
     F
 end
+to_graphviz(tracer_conservation)
 ```
 
 This is [Equation 2: "Linear equation of state"](https://clima.github.io/OceananigansDocumentation/stable/physics/buoyancy_and_equations_of_state/#Linear-equation-of-state) of seawater buoyancy.
@@ -73,6 +75,7 @@ equation_of_state = @decapode begin
 
   b == g*(α*T - β*S)
 end
+to_graphviz(equation_of_state)
 ```
 
 This is [Equation 2: "Constant isotropic diffusivity"](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity).
@@ -87,6 +90,7 @@ isotropic_diffusivity = @decapode begin
   StressDivergence == nu*Δᵈ₁(v)
   FluxDivergence == κ*Δᵈ₀(c)
 end
+to_graphviz(isotropic_diffusivity)
 ```
 
 ## Compatibility Guarantees via Operadic Composition
@@ -110,6 +114,7 @@ tracer_composition = @relation () begin
 
   continuity(FD,v,c)
 end
+to_graphviz(tracer_composition)
 ```
 
  Let's "lock in" isotropic diffusivity by doing an intermediate oapply.
@@ -117,6 +122,7 @@ end
 isotropic_tracer = apex(oapply(tracer_composition, [
   Open(isotropic_diffusivity, [:FluxDivergence, :v, :c]),
   Open(tracer_conservation,   [:FluxDivergence, :v, :c])]))
+to_graphviz(isotropic_tracer)
 ```
 
 Let's use this building-block tracer physics at the next level. The quotes that appear in this composition diagram appear directly in the Oceananigans.jl docs.
@@ -136,12 +142,17 @@ nonhydrostatic_composition = @relation () begin
   #   => The b term in momentum is that described by the equation of state here.
   eos(b, T, S)
 end
+to_graphviz(nonhydrostatic_composition)
+```
 
+
+```@example DEC
 isotropic_nonhydrostatic_buoyancy = apex(oapply(nonhydrostatic_composition, [
   Open(momentum,          [:V, :v, :b, :StressDivergence]),
   Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence, :turbulence_nu]),
   Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence, :turbulence_nu]),
   Open(equation_of_state, [:b, :T, :S])]));
+to_graphviz(isotropic_nonhydrostatic_buoyancy)
 ```
 
 ## Meshes and Initial Conditions
