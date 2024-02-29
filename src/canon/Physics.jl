@@ -10,15 +10,13 @@ using Markdown
           ,""
           ,mohamed_flow
           ,begin
-  𝐮::Form1
-  (P, 𝑝ᵈ)::Form0
-  (negone, half, μ)::Constant
+  (𝐮,w)::DualForm1
+  (P, 𝑝ᵈ)::DualForm0
+  μ::Constant
 
-  ∂ₜ(𝐮) == 𝐮̇
+  𝑝ᵈ == P + 0.5 * ι₁₁(w,w)
 
-  𝑝ᵈ == P + half * i(𝐮,𝐮)
-
-  𝐮̇ == μ * ∘(d, ⋆, d, ⋆)(𝐮) + (negone)*⋆₁⁻¹(∧₁₀ₚᵈ(𝐮, ⋆(d(𝐮)))) + d(𝑝ᵈ)
+  ∂ₜ(𝐮) == μ * ∘(d, ⋆, d, ⋆)(w) + (-1)*⋆₁⁻¹(∧ᵈᵖ₁₀(w, ⋆(d(w)))) + d(𝑝ᵈ)
 end)
 
 @docapode("Momentum"
@@ -231,6 +229,18 @@ end)
     ϕ == ϕ₁ + ϕ₂
     Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
     ∂ₜ(C) == Ċ
+  end
+)
+
+@docapode("IceBlockingWater"
+  ,"google.com"
+  ,""
+  ,iceblockingwater
+  ,begin
+  h::Form0
+  (𝐮,w)::DualForm1
+
+  w == (1-σ(h)) ∧ᵖᵈ₀₁ 𝐮
   end
 )
 end
