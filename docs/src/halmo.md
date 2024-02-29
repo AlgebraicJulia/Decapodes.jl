@@ -228,8 +228,8 @@ function save_vorticity(is_2d=false)
     CairoMakie.Axis(fig[1,1]) :
     LScene(fig[1,1], scenekw=(lights=[],))
   msh = CairoMakie.mesh!(ax, s,
-    color=@lift(vorticity(soln($time).v)),
-    colorrange=extrema(vorticity(soln(tₑ).v)).*.9,
+    color=@lift(vorticity(soln($time).flow)),
+    colorrange=extrema(vorticity(soln(tₑ).flow)).*.9,
     colormap=:jet)
 
   Colorbar(fig[1,2], msh)
@@ -246,8 +246,8 @@ function save_speed(is_2d=false) frames = 200
     CairoMakie.Axis(fig[1,1]) :
     LScene(fig[1,1], scenekw=(lights=[],))
   msh = CairoMakie.scatter!(ax, s[s[:tri_center], :dual_point],
-    color=@lift(speed(soln($time).v)),
-    colorrange=extrema(speed(soln(tₑ).v)).*.9,
+    color=@lift(speed(soln($time).flow)),
+    colorrange=extrema(speed(soln(tₑ).flow)).*.9,
     colormap=:jet,
     markersize=5)
 
