@@ -189,7 +189,7 @@ constants_and_parameters = (
 We specified our physics, our mesh, and our initial conditions. We have everything we need to execute the simulation.
 
 ```@example DEC
-tₑ = 1e3
+tₑ = 1e2
 
 # Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
