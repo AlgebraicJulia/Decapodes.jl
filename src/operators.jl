@@ -53,9 +53,13 @@ function default_dec_matrix_generate(sd, my_symbol, hodge)
         :Δᵈ₀ => Δᵈ(Val{0},sd)
         :Δᵈ₁ => Δᵈ(Val{1},sd)
 
-        # Dual Laplacians
+        # Musical Isomorphisms
         :♯ => dec_♯_p(sd)
         :♯ᵈ => dec_♯_d(sd)
+
+        :♭ => dec_♭(sd)
+
+        :neg => x -> -1 .* x
 
         _ => error("Unmatched operator $my_symbol")
     end
@@ -120,6 +124,11 @@ end
 function dec_♯_d(sd::HasDeltaSet2D)
   ♯_m = ♯_mat(sd, LLSDDSharp())
   x -> ♯_m * x
+end
+
+function dec_♭(sd::HasDeltaSet2D)
+  ♭_m = ♭_mat(sd)
+  x -> ♭_m * x
 end
 
 function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())

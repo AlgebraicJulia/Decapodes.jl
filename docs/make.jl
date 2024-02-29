@@ -46,16 +46,17 @@ makedocs(
   pages     = Any[
     "Decapodes.jl" => "index.md",
     "Overview" => "overview.md",
-    "CISM v2.1" => "cism.md",
     "Klausmeier" => "klausmeier.md",
+    "Glacial Flow" => "ice_dynamics.md",
+    "Grigoriev Ice Cap" => "grigoriev.md",
+    "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
+    "CISM v2.1" => "cism.md",
     "NHS" => "nhs.md",
+    "Halfar-NS" => "halmo.md",
     "Equations" => "equations.md",
     "ASCII Operators" => "ascii.md",
     "Misc Features" => "bc_debug.md",
     "Pipe Flow" => "poiseuille.md",
-    "Glacial Flow" => "ice_dynamics.md",
-    "Grigoriev Ice Cap" => "grigoriev.md",
-    "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
     # "Examples" => Any[
     #   "examples/cfd_example.md"
     # ],
