@@ -199,7 +199,7 @@ soln.retcode != :Unstable || error("Solver was not stable")
 
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Vern7(), force_dtmin=true, dtmax=0.2, progress=true,progress_steps=1)
+soln = solve(prob, Vern7())
 @show soln.retcode
 @info("Done")
 ```
@@ -227,7 +227,7 @@ function save_vorticity(is_2d=false)
   ax = is_2d ?
     CairoMakie.Axis(fig[1,1]) :
     LScene(fig[1,1], scenekw=(lights=[],))
-  msh = CairoMakie.mesh!(ax, s,
+  msh = CairoMakie.mesh!(ax, s′,
     color=@lift(vorticity(soln($time).flow)),
     colorrange=extrema(vorticity(soln(tₑ).flow)).*.9,
     colormap=:jet)
@@ -238,30 +238,9 @@ function save_vorticity(is_2d=false)
   end
 end
 save_vorticity(false)
-
-function save_speed(is_2d=false) frames = 200
-  time = Observable(0.0)
-  fig = Figure(title = @lift("Speed at $($time)"))
-  ax = is_2d ?
-    CairoMakie.Axis(fig[1,1]) :
-    LScene(fig[1,1], scenekw=(lights=[],))
-  msh = CairoMakie.scatter!(ax, s[s[:tri_center], :dual_point],
-    color=@lift(speed(soln($time).flow)),
-    colorrange=extrema(speed(soln(tₑ).flow)).*.9,
-    colormap=:jet,
-    markersize=5)
-
-  Colorbar(fig[1,2], msh)
-  record(fig, "speed_ice_water.gif", range(0.0, tₑ; length=frames); framerate = 20) do t
-    time[] = t
-  end
-end
-save_speed(false)
 ```
 
 ![Vorticity](vorticity_ice_water.gif)
-
-![Speed](speed_ice_water.gif)
 
 Let's look at the dynamics of the ice as well:
 
