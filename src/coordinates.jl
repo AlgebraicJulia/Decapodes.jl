@@ -7,19 +7,19 @@ using CombinatorialSpaces.MeshInterop
 a point in cartesian coordinates, intended as a wrapper around Point3 from GeometryBasics.
 """
 struct CartesianPoint{T}
-    p::T
+  p::T
 end
 
 r(p::CartesianPoint) = hypot(p.p...)
 theta(p::CartesianPoint) = atan(sqrt(p.p[1]^2 + p.p[2]^2)/p.p[3])
 phi(p::CartesianPoint) = atan(p.p[2]/p.p[1])
-  
+
 """    SpherePoint{T}(p)
 
 a point in spherical coordinates, intended as a wrapper around Point3 from GeometryBasics.
 """
 struct SpherePoint{T}
-    p::T
+  p::T
 end
 
 r(p::SpherePoint) = p.p[1]
@@ -47,15 +47,15 @@ If the base point is in spherical coordinates, this is the identity,
 if the base point is in cartesian coordinates, it returns the tangent vector in cartesian coordinates.
 """
 function (tb::TangentBasis)(w) 
-    tb(w[1], w[2])
+  tb(w[1], w[2])
 end
 
 function (tb::TangentBasis{P})(w) where {P <: SpherePoint}
-    return w
+  return w
 end
 
 function (tb::TangentBasis)(w1,w2) 
-    w1p = w1*θhat(tb)
-    w2p = w2*ϕhat(tb)
-    return w1p + w2p
+  w1p = w1*θhat(tb)
+  w2p = w2*ϕhat(tb)
+  return w1p + w2p
 end
