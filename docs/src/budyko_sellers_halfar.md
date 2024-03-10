@@ -35,7 +35,8 @@ halfar_eq2 = @decapode begin
 end
 glens_law = @decapode begin
   Γ::Form1
-  (A,ρ,g,n)::Constant
+  A::Form1
+  (ρ,g,n)::Constant
   
   Γ == (2/(n+2))*A*(ρ*g)^n
 end
