@@ -119,11 +119,6 @@ budyko_sellers = apex(budyko_sellers_cospan)
 to_graphviz(budyko_sellers, verbose=false)
 ```
 
-``` @example DEC
-halfar = ice_dynamics; # hide
-true; # hide
-```
-
 ## Warming
 
 We need to specify physically what it means for these two terms to interact. We will say that ice will diffuse faster as temperature increases, and will pick some coefficients that demonstrate interesting dynamics on short timescales.
