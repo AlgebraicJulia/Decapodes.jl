@@ -7,6 +7,7 @@ using Catlab
 using Catlab.WiringDiagrams
 using AlgebraicPetri
 using CairoMakie
+using Distributed
 
 # Set Literate.jl config if not being compiled on recognized service.
 config = Dict{String,String}()
