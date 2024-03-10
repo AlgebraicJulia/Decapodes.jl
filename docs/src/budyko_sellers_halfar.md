@@ -51,7 +51,7 @@ halfar = apex(ice_dynamics_cospan)
 to_graphviz(halfar, verbose=false)
 ```
 
-We will introduce the Budyko-Sellers energy balance model in more detail. First, let's define the composite physics. We will visualize them all in a single diagram wihtout any composition at first:
+We will introduce the Budyko-Sellers energy balance model in more detail. First, let's define the composite physics. We will visualize them all in a single diagram without any composition at first:
 
 ``` @example DEC
 energy_balance = @decapode begin
@@ -117,6 +117,11 @@ budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
 
 budyko_sellers = apex(budyko_sellers_cospan)
 to_graphviz(budyko_sellers, verbose=false)
+```
+
+``` @example DEC
+halfar = ice_dynamics; # hide
+true; # hide
 ```
 
 ## Warming
@@ -235,7 +240,7 @@ lines(map(x -> x[1], point(s′)), h₀)
 
 ``` @example DEC
 # Store these values to be passed to the solver.
-u₀ = ComponentArray(Tₛ=Tₛ₀, halfar_h=h₀)
+u₀ = ComponentArray(Tₛ=Tₛ₀, halfar_dynamics_h=h₀)
 
 constants_and_parameters = (
   budyko_sellers_absorbed_radiation_α = α,
@@ -342,7 +347,7 @@ lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)
 
 Quickly examine the final conditions for ice height:
 ``` @example DEC
-lines(map(x -> x[1], point(s′)), soln(tₑ).halfar_h)
+lines(map(x -> x[1], point(s′)), soln(tₑ).halfar_dynamics_h)
 ```
 
 Create animated GIFs of the temperature and ice height dynamics:
@@ -369,13 +374,13 @@ frames = 100
 fig = Figure(; size = (800, 800))
 ax1 = CairoMakie.Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
-ylims!(ax1, extrema(soln(tₑ).halfar_h))
+ylims!(ax1, extrema(soln(tₑ).halfar_dynamics_h))
 Label(fig[1,1,Top()], "Ice height, h")
 Label(fig[2,1,Top()], "Line plot of ice height from North to South pole, every $(tₑ/frames) time units")
 
 # Animation
 record(fig, "budyko_sellers_halfar_h.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-  lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).halfar_h)
+  lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).halfar_dynamics_h)
 end
 end
 ```
