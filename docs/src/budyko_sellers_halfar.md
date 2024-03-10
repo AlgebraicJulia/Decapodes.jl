@@ -22,7 +22,35 @@ using GeometryBasics: Point2
 Point2D = Point2{Float64};
 ```
 
-We have defined the Halfar ice model in other docs pages. We introduce the Budyko-Sellers energy balance model here. First, let's define the composite physics. We will visualize them all in a single diagram wihtout any composition at first:
+We have defined the Halfar ice model in other docs pages, and so will quickly define it here.
+
+``` @example DEC
+halfar_eq2 = @decapode begin
+  h::Form0
+  Γ::Form1
+  n::Constant
+
+  ḣ == ∂ₜ(h)
+  ḣ == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
+end
+glens_law = @decapode begin
+  Γ::Form1
+  (A,ρ,g,n)::Constant
+  
+  Γ == (2/(n+2))*A*(ρ*g)^n
+end
+ice_dynamics_composition_diagram = @relation () begin
+  dynamics(Γ,n)
+  stress(Γ,n)
+end
+ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
+  [Open(halfar_eq2, [:Γ,:n]),
+   Open(glens_law, [:Γ,:n])])
+halfar = apex(ice_dynamics_cospan)
+to_graphviz(halfar, verbose=false)
+```
+
+We will introduce the Budyko-Sellers energy balance model in more detail. First, let's define the composite physics. We will visualize them all in a single diagram wihtout any composition at first:
 
 ``` @example DEC
 energy_balance = @decapode begin
@@ -88,11 +116,6 @@ budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
 
 budyko_sellers = apex(budyko_sellers_cospan)
 to_graphviz(budyko_sellers, verbose=false)
-```
-
-``` @example DEC
-halfar = ice_dynamics; # hide
-true; # hide
 ```
 
 ## Warming
