@@ -1,5 +1,6 @@
 using Documenter
 using Literate
+using Distributed
 
 @info "Loading Decapodes"
 using Decapodes
@@ -15,21 +16,23 @@ if !(haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "GITLAB_CI"))
   config["repo_root_url"] = "https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs"
 end
 
-#const literate_dir = joinpath(@__DIR__, "..", "examples")
-#const generated_dir = joinpath(@__DIR__, "src", "examples")
-#
-#for (root, dirs, files) in walkdir(literate_dir)
-#  out_dir = joinpath(generated_dir, relpath(root, literate_dir))
-#  for file in files
-#    f,l = splitext(file)
-#    if l == ".jl" && !startswith(f, "_")
-#      Literate.markdown(joinpath(root, file), out_dir;
-#        config=config, documenter=true, credit=false)
-#      Literate.notebook(joinpath(root, file), out_dir;
-#        execute=true, documenter=true, credit=false)
-#    end
-#  end
-#end
+# const literate_dir = joinpath(@__DIR__, "..", "examples")
+# const generated_dir = joinpath(@__DIR__, "src", "examples")
+
+# @info "Building literate files"
+# for (root, dirs, files) in walkdir(literate_dir)
+#   out_dir = joinpath(generated_dir, relpath(root, literate_dir))
+#   # @showprogress pmap(files) do file
+#   for file in files
+#     f,l = splitext(file)
+#     if l == ".jl" && !startswith(f, "_")
+#       Literate.markdown(joinpath(root, file), out_dir;
+#         config=config, documenter=true, credit=false)
+#       Literate.notebook(joinpath(root, file), out_dir;
+#         execute=true, documenter=true, credit=false)
+#     end
+#   end
+# end
 
 @info "Building Documenter.jl docs"
 makedocs(
@@ -46,15 +49,19 @@ makedocs(
     "Equations" => "equations.md",
     "Meshes" => "meshes.md",
     "Klausmeier" => "klausmeier.md",
-    "ASCII Operators" => "ascii.md",
-    "Misc Features" => "bc_debug.md",
-    "Pipe Flow" => "poiseuille.md",
     "Glacial Flow" => "ice_dynamics.md",
     "Grigoriev Ice Cap" => "grigoriev.md",
     "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
-#    "Examples" => Any[
-#      "examples/cfd_example.md"
-#    ],
+    "CISM v2.1" => "cism.md",
+    "NHS" => "nhs.md",
+    "Halfar-NS" => "halmo.md",
+    "ASCII Operators" => "ascii.md",
+    "Misc Features" => "bc_debug.md",
+    "Pipe Flow" => "poiseuille.md",
+    # "Examples" => Any[
+    #   "examples/cfd_example.md"
+    # ],
+    "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ]
 )

@@ -1,11 +1,11 @@
-#######################
-# Import Dependencies #
-#######################
+# Import Dependencies 
 
 # AlgebraicJulia Dependencies
 using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 using Decapodes: SchSummationDecapode
 
@@ -14,18 +14,16 @@ using MLStyle
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
-using GLMakie
+using CairoMakie
 using GeometryBasics: Point2
 using ComponentArray
 Point2D = Point2{Float64}
 
-#######################
-# Import prior models #
-#######################
-# If the Budyko-Sellers and Halfar models are not already created, they can be
-# with these scripts:
-#include("budyko_sellers.jl")
-#include("shallow_ice.jl")
+# Import prior models 
+## If the Budyko-Sellers and Halfar models are not already created, they can be
+## with these scripts:
+## include("budyko_sellers.jl")
+## include("shallow_ice.jl")
 
 budyko_sellers = apex(budyko_sellers_cospan)
 halfar = apex(ice_dynamics_cospan)
@@ -33,17 +31,15 @@ halfar = apex(ice_dynamics_cospan)
 to_graphviz(budyko_sellers)
 to_graphviz(halfar)
 
-####################
-# Define the model #
-####################
+## Define the model
 
-# Tₛ(ϕ,t) := Surface temperature
-# A(ϕ) := Longwave emissions at 0°C
+## Tₛ(ϕ,t) := Surface temperature
+## A(ϕ) := Longwave emissions at 0°C
 warming = @decapode begin
   (Tₛ)::Form0
   (A)::Form1
 
-  #A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e-17)
+  ## A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e-17)
   A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e7)
 
 end
@@ -73,25 +69,21 @@ to_graphviz(budyko_sellers_halfar)
 resolve_overloads!(budyko_sellers_halfar, op1_res_rules_1D, op2_res_rules_1D)
 to_graphviz(budyko_sellers_halfar)
 
-###################
-# Define the mesh #
-###################
+## Define the mesh
 
 s′ = EmbeddedDeltaSet1D{Bool, Point2D}()
-#add_vertices!(s′, 30, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=30), 0))
+## add_vertices!(s′, 30, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=30), 0))
 add_vertices!(s′, 100, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=100), 0))
 add_edges!(s′, 1:nv(s′)-1, 2:nv(s′))
 orient!(s′)
 s = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s′)
 subdivide_duals!(s, Circumcenter())
 
-########################################################
-# Define constants, parameters, and initial conditions #
-########################################################
+# Define constants, parameters, and initial conditions
 
-# This is a primal 0-form, with values at vertices.
+## This is a primal 0-form, with values at vertices.
 cosϕᵖ = map(x -> cos(x[1]), point(s′))
-# This is a dual 0-form, with values at edge centers.
+## This is a dual 0-form, with values at edge centers.
 cosϕᵈ = map(edges(s′)) do e
   (cos(point(s′, src(s′, e))[1]) + cos(point(s′, tgt(s′, e))[1])) / 2
 end
@@ -143,17 +135,15 @@ constants_and_parameters = (
   halfar_stress_ρ = ρ,
   halfar_stress_g = g)
 
-#############################################
-# Define how symbols map to Julia functions #
-#############################################
+# Define how symbols map to Julia functions
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :♯ => x -> begin
-      # This is an implementation of the "sharp" operator from the exterior
-      # calculus, which takes co-vector fields to vector fields.
-      # This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
-      # this operation is not bespoke to this simulation.)
+      ## This is an implementation of the "sharp" operator from the exterior
+      ## calculus, which takes co-vector fields to vector fields.
+      ## This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
+      ## this operation is not bespoke to this simulation.)
       e_vecs = map(edges(sd)) do e
         point(sd, sd[e, :∂v0]) - point(sd, sd[e, :∂v1])
       end
@@ -193,16 +183,12 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return (args...) -> op(args...)
 end
 
-#######################
-# Generate simulation #
-#######################
+## Generate simulation 
 
 sim = eval(gensim(budyko_sellers_halfar, dimension=1))
 fₘ = sim(s, generate)
 
-##################
-# Run simulation #
-##################
+## Run simulation 
 
 tₑ = 1e6
 #tₑ = 5e13
@@ -226,9 +212,7 @@ extrema(soln(tₑ).halfar_h)
 
 @save "budyko_sellers_halfar.jld2" soln
 
-#############
-# Visualize #
-#############
+# Visualize 
 
 lines(map(x -> x[1], point(s′)), soln(0.0).Tₛ)
 lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)
@@ -237,7 +221,7 @@ lines(map(x -> x[1], point(s′)), soln(0.0).halfar_h)
 lines(map(x -> x[1], point(s′)), soln(tₑ).halfar_h)
 
 begin
-# Initial frame
+## Initial frame
 frames = 100
 fig = Figure(resolution = (800, 800))
 ax1 = CairoMakie.Axis(fig[1,1])
@@ -246,14 +230,14 @@ ylims!(ax1, extrema(soln(tₑ).Tₛ))
 Label(fig[1,1,Top()], "Surface temperature, Tₛ, [C°]")
 Label(fig[2,1,Top()], "Line plot of temperature from North to South pole, every $(tₑ/frames) time units")
 
-# Animation
+## Animation
 record(fig, "budyko_sellers_halfar_T.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
   lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).Tₛ)
 end
 end
 
 begin
-# Initial frame
+## Initial frame
 frames = 100
 fig = Figure(resolution = (800, 800))
 ax1 = CairoMakie.Axis(fig[1,1])
@@ -262,7 +246,7 @@ ylims!(ax1, extrema(soln(tₑ).halfar_h))
 Label(fig[1,1,Top()], "Ice height, h")
 Label(fig[2,1,Top()], "Line plot of ice height from North to South pole, every $(tₑ/frames) time units")
 
-# Animation
+## Animation
 record(fig, "budyko_sellers_halfar_h.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
   lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).halfar_h)
 end

@@ -114,8 +114,9 @@ plot_mesh_dual = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}(plot
 # Calculate distances and subdivisions for the dual mesh
 subdivide_duals!(plot_mesh_dual, Circumcenter())
 
-fig, ax, ob = wireframe(plot_mesh)
-ax.aspect = AxisAspect(3.0)
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
+wireframe!(ax, plot_mesh)
 fig
 ```
 
@@ -153,8 +154,9 @@ using Distributions
 c_dist = MvNormal([1, 5], [1.5, 1.5])
 c = [pdf(c_dist, [p[1], p[2]]) for p in plot_mesh_dual[:point]]
 
-fig, ax, ob = mesh(plot_mesh; color=c[1:nv(plot_mesh)])
-ax.aspect = AxisAspect(3.0)
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
+mesh!(ax, plot_mesh; color=c[1:nv(plot_mesh)])
 fig
 ```
 
@@ -180,14 +182,15 @@ times = range(0.0, 100.0, length=150)
 colors = [sol(t).C for t in times]
 extrema
 # Initial frame
-fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
-ax.aspect = AxisAspect(3.0)
-Colorbar(fig[1,2], ob)
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
+pmsh = mesh!(ax, plot_mesh; color=colors[1], colorrange = extrema(vcat(colors...)))
+Colorbar(fig[1,2], pmsh)
 framerate = 30
 
 # Animation
 record(fig, "diff_adv_right.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-  ob.color = sol(t).C
+  pmsh.color = sol(t).C
 end
 ```
 

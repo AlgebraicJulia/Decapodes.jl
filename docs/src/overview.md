@@ -113,8 +113,9 @@ plot_mesh = loadmesh(Rectangle_30x10())
 periodic_mesh = loadmesh(Torus_30x10())
 point_map = loadmesh(Point_Map())
 
-fig, ax, ob = wireframe(plot_mesh)
-ax.aspect = AxisAspect(3.0)
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
+wireframe!(ax, plot_mesh)
 fig
 ```
 
@@ -153,8 +154,9 @@ using Distributions
 c_dist = MvNormal([7, 5], [1.5, 1.5])
 c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
 
-fig, ax, ob = mesh(plot_mesh; color=c[point_map])
-ax.aspect = AxisAspect(3.0)
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
+mesh!(ax, plot_mesh; color=c[point_map])
 fig
 ```
 
@@ -175,14 +177,15 @@ times = range(0.0, 100.0, length=150)
 colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
-fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
-ax.aspect = AxisAspect(3.0)
-Colorbar(fig[1,2], ob)
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
+pmsh = mesh!(ax, plot_mesh; color=colors[1], colorrange = extrema(vcat(colors...)))
+Colorbar(fig[1,2], pmsh)
 framerate = 30
 
 # Animation
 record(fig, "diffusion.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-ob.color = sol(t).C[point_map]
+  pmsh.color = sol(t).C[point_map]
 end
 ```
 
@@ -337,14 +340,15 @@ times = range(0.0, 100.0, length=150)
 colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
-fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
-ax.aspect = AxisAspect(3.0)
-Colorbar(fig[1,2], ob)
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
+pmsh = mesh!(ax, plot_mesh; color=colors[1], colorrange = extrema(vcat(colors...)))
+Colorbar(fig[1,2], pmsh)
 framerate = 30
 
 # Animation
 record(fig, "diff_adv.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-ob.color = sol(t).C[point_map]
+  pmsh.color = sol(t).C[point_map]
 end
 ```
 
