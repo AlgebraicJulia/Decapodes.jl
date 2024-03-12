@@ -18,6 +18,7 @@ using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
 using CairoMakie
+using SparseArrays
 using GeometryBasics: Point2
 Point2D = Point2{Float64};
 ```
