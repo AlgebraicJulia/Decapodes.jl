@@ -18,48 +18,116 @@ using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
 using CairoMakie
+using SparseArrays
 using GeometryBasics: Point2
 Point2D = Point2{Float64};
 ```
 
-We defined the Budyko-Sellers and Halfar models in example scripts (soon to be turned into Docs pages) in the `examples/climate` folder of the main repository. We recall them here.
-
-``` @setup DEC
-include("../../examples/climate/budyko_sellers.jl")
-```
-
-``` @setup DEC
-include("../../examples/climate/shallow_ice.jl")
-```
+We have defined the Halfar ice model in other docs pages, and so will quickly define it here.
 
 ``` @example DEC
-budyko_sellers = apex(budyko_sellers_cospan)
+halfar_eq2 = @decapode begin
+  h::Form0
+  Γ::Form1
+  n::Constant
+
+  ḣ == ∂ₜ(h)
+  ḣ == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
+end
+glens_law = @decapode begin
+  Γ::Form1
+  A::Form1
+  (ρ,g,n)::Constant
+  
+  Γ == (2/(n+2))*A*(ρ*g)^n
+end
+ice_dynamics_composition_diagram = @relation () begin
+  dynamics(Γ,n)
+  stress(Γ,n)
+end
+ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
+  [Open(halfar_eq2, [:Γ,:n]),
+   Open(glens_law, [:Γ,:n])])
 halfar = apex(ice_dynamics_cospan)
-true # hide
+to_graphviz(halfar, verbose=false)
 ```
 
-## Budyko-Sellers
+We will introduce the Budyko-Sellers energy balance model in more detail. First, let's define the composite physics. We will visualize them all in a single diagram without any composition at first:
 
 ``` @example DEC
-to_graphviz(budyko_sellers)
+energy_balance = @decapode begin
+  (Tₛ, ASR, OLR, HT)::Form0
+  (C)::Constant
+
+  Tₛ̇ == ∂ₜ(Tₛ) 
+
+  Tₛ̇ == (ASR - OLR + HT) ./ C
+end
+
+absorbed_shortwave_radiation = @decapode begin
+  (Q, ASR)::Form0
+  α::Constant
+
+  ASR == (1 .- α) .* Q
+end
+
+outgoing_longwave_radiation = @decapode begin
+  (Tₛ, OLR)::Form0
+  (A,B)::Constant
+
+  OLR == A .+ (B .* Tₛ)
+end
+
+heat_transfer = @decapode begin
+  (HT, Tₛ)::Form0
+  (D,cosϕᵖ,cosϕᵈ)::Constant
+
+  HT == (D ./ cosϕᵖ) .* ⋆(d(cosϕᵈ .* ⋆(d(Tₛ))))
+end
+
+insolation = @decapode begin
+  Q::Form0
+  cosϕᵖ::Constant
+
+  Q == 450 * cosϕᵖ
+end
+
+to_graphviz(oplus([energy_balance, absorbed_shortwave_radiation, outgoing_longwave_radiation, heat_transfer, insolation]), directed=false)
 ```
 
-## Halfar
+Now let's compose the Budyko-Sellers model:
 
 ``` @example DEC
-to_graphviz(halfar)
+budyko_sellers_composition_diagram = @relation () begin
+  energy(Tₛ, ASR, OLR, HT)
+  absorbed_radiation(Q, ASR)
+  outgoing_radiation(Tₛ, OLR)
+  diffusion(Tₛ, HT, cosϕᵖ)
+  insolation(Q, cosϕᵖ)
+end
+to_graphviz(budyko_sellers_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
+```
+
+``` @example DEC
+budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
+  [Open(energy_balance,               [:Tₛ, :ASR, :OLR, :HT]),
+   Open(absorbed_shortwave_radiation, [:Q, :ASR]),
+   Open(outgoing_longwave_radiation,  [:Tₛ, :OLR]),
+   Open(heat_transfer,                [:Tₛ, :HT, :cosϕᵖ]),
+   Open(insolation,                   [:Q, :cosϕᵖ])])
+
+budyko_sellers = apex(budyko_sellers_cospan)
+to_graphviz(budyko_sellers, verbose=false)
 ```
 
 ## Warming
 
-This is a formula that computes `A` for use in the Halfar glacial dynamics, given `T` from the Budyko-Sellers model.
+We need to specify physically what it means for these two terms to interact. We will say that ice will diffuse faster as temperature increases, and will pick some coefficients that demonstrate interesting dynamics on short timescales.
 
 ``` @example DEC
-# Tₛ(ϕ,t) := Surface temperature
-# A(ϕ) := Longwave emissions at 0°C
 warming = @decapode begin
-  (Tₛ)::Form0
-  (A)::Form1
+  Tₛ::Form0
+  A::Form1
 
   A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e7)
 
@@ -69,7 +137,7 @@ to_graphviz(warming)
 
 ## Composition
 
-Observe that this composition technique is the same as that used in composing each of the Budyko-Sellers and Halfar models.
+Observe that Decapodes composition is hierarchical. This composition technique is the same as that used in composing each of the Budyko-Sellers and Halfar models.
 
 ``` @example DEC
 budyko_sellers_halfar_composition_diagram = @relation () begin
@@ -87,13 +155,13 @@ We apply a composition by plugging in a Decapode for each component. We also spe
 ``` @example DEC
 budyko_sellers_halfar_cospan = oapply(budyko_sellers_halfar_composition_diagram,
   [Open(budyko_sellers, [:Tₛ]),
-   Open(warming, [:A, :Tₛ]),
-   Open(halfar, [:stress_A])])
+   Open(warming,        [:A, :Tₛ]),
+   Open(halfar,         [:stress_A])])
 budyko_sellers_halfar = apex(budyko_sellers_halfar_cospan)
 to_graphviz(budyko_sellers_halfar)
 ```
 
-We can perform type inference to determine what kind of differential form each of our variables are.
+We can perform type inference to determine what kind of differential form each of our variables are. This is done automatically with the `dimension=1` keyword given to `gensim`, but we will do it in-place for demonstration purposes.
 
 ``` @example DEC
 budyko_sellers_halfar = expand_operators(budyko_sellers_halfar)
@@ -108,7 +176,6 @@ These dynamics will occur on a 1-D manifold (a line). Points near +-π/2 will re
 
 ``` @example DEC
 s′ = EmbeddedDeltaSet1D{Bool, Point2D}()
-#add_vertices!(s′, 30, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=30), 0))
 add_vertices!(s′, 100, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=100), 0))
 add_edges!(s′, 1:nv(s′)-1, 2:nv(s′))
 orient!(s′)
@@ -118,7 +185,7 @@ subdivide_duals!(s, Circumcenter())
 
 ## Define input data
 
-We need to supply initial conditions to our model. We create synthetic data here, although one may imagine that they could source this from their data repo of choice.
+We need to supply initial conditions to our model. We will use synthetic data here.
 
 ``` @example DEC
 # This is a primal 0-form, with values at vertices.
@@ -169,7 +236,7 @@ lines(map(x -> x[1], point(s′)), h₀)
 
 ``` @example DEC
 # Store these values to be passed to the solver.
-u₀ = ComponentArray(Tₛ=Tₛ₀,halfar_h=h₀)
+u₀ = ComponentArray(Tₛ=Tₛ₀, halfar_dynamics_h=h₀)
 
 constants_and_parameters = (
   budyko_sellers_absorbed_radiation_α = α,
@@ -226,10 +293,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     end
     :^ => (x,y) -> x .^ y
     :* => (x,y) -> x .* y
-    :show => x -> begin
-      @show x
-      x
-    end
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
@@ -273,17 +336,17 @@ We can save the solution file to examine later.
 
 ## Visualize
 
-Quickly examine the final conditions for temperature.
+Quickly examine the final conditions for temperature:
 ``` @example DEC
 lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)
 ```
 
-Quickly examine the final conditions for ice height.
+Quickly examine the final conditions for ice height:
 ``` @example DEC
-lines(map(x -> x[1], point(s′)), soln(tₑ).halfar_h)
+lines(map(x -> x[1], point(s′)), soln(tₑ).halfar_dynamics_h)
 ```
 
-Create animated GIFs of the temperature and ice height dynamics.
+Create animated GIFs of the temperature and ice height dynamics:
 ``` @example DEC
 begin
 # Initial frame
@@ -307,13 +370,13 @@ frames = 100
 fig = Figure(; size = (800, 800))
 ax1 = CairoMakie.Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
-ylims!(ax1, extrema(soln(tₑ).halfar_h))
+ylims!(ax1, extrema(soln(tₑ).halfar_dynamics_h))
 Label(fig[1,1,Top()], "Ice height, h")
 Label(fig[2,1,Top()], "Line plot of ice height from North to South pole, every $(tₑ/frames) time units")
 
 # Animation
 record(fig, "budyko_sellers_halfar_h.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-  lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).halfar_h)
+  lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).halfar_dynamics_h)
 end
 end
 ```
