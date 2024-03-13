@@ -117,6 +117,7 @@ budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
    Open(insolation,                   [:Q, :cosϕᵖ])])
 
 budyko_sellers = apex(budyko_sellers_cospan)
+write_json_acset(budyko_sellers, "budyko_sellers.json") # Save this Decapode as a JSON file
 to_graphviz(budyko_sellers, verbose=false)
 ```
 
