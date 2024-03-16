@@ -1,5 +1,9 @@
 using Test
 
+@testset "Code Quality (Aqua.jl)" begin
+  include("aqua.jl")
+end
+
 @testset "Coordinates" begin
   include("coordinates.jl")
 end
