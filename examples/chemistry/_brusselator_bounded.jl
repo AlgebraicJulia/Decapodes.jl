@@ -9,7 +9,6 @@ using ComponentArrays
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 using Decapodes
-using MultiScaleArrays
 using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra

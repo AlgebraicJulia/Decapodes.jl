@@ -10,6 +10,7 @@ using Distributions
 using LinearAlgebra
 using ComponentArrays
 using GeometryBasics: Point3
+using CairoMakie
 
 Point3D = Point3{Float64}
 
@@ -110,7 +111,7 @@ begin
   ps = earth[:point]
   ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
 
-  GLMakie.arrows(
+  arrows(
       ps, ns, fxaa=true, ## turn on anti-aliasing
       linecolor = :gray, arrowcolor = :gray,
       linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),

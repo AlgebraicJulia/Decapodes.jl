@@ -34,7 +34,7 @@ Point3D = Point3{Float64}; # hide
 The ice thickness data is [stored in a TIF](https://zenodo.org/api/records/7735970/files-archive). We have downloaded it locally, and load it using basic `FileIO`.
 
 ``` @example DEC
-file_name = "Icethickness_Grigoriev_ice_cap_2021.tif"
+file_name = "../../assets/Icethickness_Grigoriev_ice_cap_2021.tif"
 ice_thickness_tif = load(file_name)
 ```
 
@@ -138,7 +138,7 @@ to_graphviz(ice_dynamics)
 # Define our functions
 
 ``` @example DEC
-include("sharp_op.jl")
+include("../../assets/sharp_op.jl")
 function generate(sd, my_symbol; hodge=GeometricHodge())
   ♯_m = ♯_mat(sd)
   I = Vector{Int64}()
