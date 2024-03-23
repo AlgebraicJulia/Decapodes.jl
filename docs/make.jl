@@ -66,7 +66,6 @@ makedocs(
   format    = Documenter.HTML(
     assets = ["assets/analytics.js"],
   ),
-  remotes   = nothing,
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
