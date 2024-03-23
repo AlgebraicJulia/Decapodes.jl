@@ -34,7 +34,7 @@ for (root, dirs, files) in walkdir(literate_dir)
 end
 @info "Completed literate"
 
-pages = Any[]
+pages = Vector{Pair{String, String}}
 push!(pages, "Decapodes.jl"      => "index.md")
 push!(pages, "Overview"          => "overview.md")
 push!(pages, "Equations"         => "equations.md")
@@ -60,27 +60,6 @@ push!(pages, "Examples" => [
 push!(pages, "Canonical Models"  => "canon.md")
 push!(pages, "Library Reference" => "api.md")
 
-#examples = Any[]
-#@info "Adding literate files to dictionary"
-#exampledirs = Dict("chemistry" => "Chemistry"
-#                  ,"climate"   => "Climate"
-#                  ,"diff_adv"  => "Diff Adv")
-#predir = joinpath(@__DIR__, "src", "examples")
-#for d in keys(exampledirs)
-#  files    = readdir(joinpath(predir, d))
-#  mdfiles  = filter(f -> occursin(".md", f), files)
-#  @info mdfiles
-#  dir_dict = Any[]
-#  for file in mdfiles
-#    filename = first(split(file, ".md"))
-#    @info "LOOK AT THIS!!!!!" joinpath.(d, file)
-#    push!(examples, filename => joinpath(d, file))
-#  end
-#  # push!(examples, exampledirs[d] => dir_dict) 
-#end
-#push!(pages, "Examples" => examples)
-
-
 @info "Building Documenter.jl docs"
 makedocs(
   modules   = [Decapodes],
@@ -91,34 +70,11 @@ makedocs(
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
-  pages     = pages, 
-
-#Any[
-#    "Decapodes.jl" => "index.md",
-#    "Halfar-NS" => "halmo.md",
-#    "Overview" => "overview.md",
-#    "Klausmeier" => "klausmeier.md",
-#    "Glacial Flow" => "ice_dynamics.md",
-#    "Grigoriev Ice Cap" => "grigoriev.md",
-#    "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
-#    "CISM v2.1" => "cism.md",
-#    "NHS" => "nhs.md",
-#    "Equations" => "equations.md",
-#    "ASCII Operators" => "ascii.md",
-#    "Misc Features" => "bc_debug.md",
-#    "Pipe Flow" => "poiseuille.md",
-#    "Examples" => Any[
-#      "examples/chemistry/brusselator"
-#    ],
-#    "Canonical Models" => "canon.md",
-#    "Library Reference" => "api.md"
-#  ]
-)
+  pages     = pages)
 
 @info "Deploying docs"
 deploydocs(
   target = "build",
   repo   = "github.com/AlgebraicJulia/Decapodes.jl.git",
   branch = "gh-pages",
-  devbranch = "main"
-)
+  devbranch = "main")
