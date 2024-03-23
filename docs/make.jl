@@ -34,7 +34,7 @@ for (root, dirs, files) in walkdir(literate_dir)
 end
 @info "Completed literate"
 
-pages = Vector{Pair{String, Union{String, Vector{String}}}}()
+pages = Any[] 
 push!(pages, "Decapodes.jl"      => "index.md")
 push!(pages, "Overview"          => "overview.md")
 push!(pages, "Equations"         => "equations.md")
