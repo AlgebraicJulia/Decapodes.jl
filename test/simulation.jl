@@ -199,124 +199,6 @@ end
 Point3D = Point3{Float64}
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
-# Testing Advection-Diffusion
-#= @testset "Advection-Diffusion Simulation" begin
-
-  function generate(sd, my_symbol; hodge=GeometricHodge())
-    op = @match my_symbol begin
-      :k => x->2000x
-      :d₀ => test_differential(0, sd)
-      :⋆₁ => test_hodge(1, sd, hodge)
-      :⋆₀⁻¹ => test_inverse_hodge(0, sd, hodge)
-      :dual_d₁ => test_dual_differential(1, sd)  
-      :(-) => x-> -x
-      :plus => (+)
-      _ => default_dec_generate_2D(sd, my_symbol, hodge)
-    end
-
-    return (args...) ->  op(args...)
-  end
-
-  
-  RADIUS = 6371+90
-  primal_earth = loadmesh(Icosphere(1, RADIUS))
-  nploc = argmax(x -> x[3], primal_earth[:point])
-  primal_earth[:edge_orientation] = false
-  orient!(primal_earth)
-  earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
-  subdivide_duals!(earth, Circumcenter())
-  
-  AdvDiff = quote
-      C::Form0{X}
-      Ċ::Form0{X}
-      V::Form1{X}
-      ϕ::Form1{X}
-      ϕ₁::Form1{X}
-      ϕ₂::Form1{X}
-      # starC::DualForm2{X}
-      # lvc::Form1{X}
-      # Fick's first law
-      ϕ₁ ==  ∘(d₀,k,⋆₁)(C)
-      # Advective Flux
-      ϕ₂ == -(L₀(V, C))
-      # Superposition Principle
-      ϕ == ϕ₁ + ϕ₂
-      # Conservation of Mass
-      Ċ == ∘(dual_d₁,⋆₀⁻¹)(ϕ)
-      ∂ₜ(C) == Ċ
-  end
-
-  advdiff = parse_decapode(AdvDiff)
-  advdiffdp = SummationDecapode(advdiff)
-
-  function old_simulate(mesh, operators)
-    begin
-        d₀ = generate(mesh, :d₀)
-        k = generate(mesh, :k)
-        (⋆₁) = generate(mesh, :⋆₁)
-        (⋆₀) = generate(mesh, :⋆₀)
-        (-) = generate(mesh, :-)
-        dual_d₁ = generate(mesh, :dual_d₁)
-        (⋆₀⁻¹) = generate(mesh, :⋆₀⁻¹)
-        L₀ = operators(mesh, :L₀)
-        plus = operators(mesh, :plus)
-    end
-    return begin
-            f(du, u, p, t) = begin
-                    begin
-                        C = (u.C)
-                        V = (u.V)
-                    end
-                    ϕ₁ = (∘(⋆₁, k, d₀))(C)
-                    var"•1" = L₀(V, C)
-                    ϕ₂ = -var"•1"
-                    ϕ = plus(ϕ₁, ϕ₂)
-                    Ċ = ((⋆₀⁻¹) ∘ dual_d₁)(ϕ)
-                    du .= 0.0
-                    begin
-                        (du.C) .= Ċ
-                    end
-                end
-        end
-  end
-
-  fₙ = old_simulate(earth, generate)
-
-  new_sim = evalsim(advdiffdp, [:C, :V])
-  fₘ = new_sim(earth, generate)
-
-  # Running with the old gensim simulation
-  velocity(p) = TangentBasis(CartesianPoint(p))((vmag/4, vmag/4))
-  begin
-    c_dist = MvNormal(nploc[[1,2]], 100[1, 1])
-    c = [pdf(c_dist, [p[1], p[2]]./√RADIUS) for p in earth[:point]]
-
-    vmag = 500
-    v = flatten(velocity, earth)
-
-    u₀ = ComponentArray(C=c,V=collect(v))
-    tₑ = 6
-    prob = ODEProblem(fₙ,u₀,(0, tₑ))
-    old_soln = solve(prob, Tsit5())
-  end
-
-  # Running with the new gensim simulation
-  begin
-    c_dist = MvNormal(nploc[[1,2]], 100[1, 1])
-    c = [pdf(c_dist, [p[1], p[2]]./√RADIUS) for p in earth[:point]]
-
-    vmag = 500
-    v = flatten(velocity, earth)
-
-    u₀ = ComponentArray(C=c,V=collect(v))
-    tₑ = 6
-    prob = ODEProblem(fₘ,u₀,(0, tₑ))
-    new_soln = solve(prob, Tsit5())
-  end
-
-  @test old_soln.u ≈ new_soln.u
-end =#
-
 # Testing Brusselator
 @testset "Brusselator Simulation" begin
 
@@ -826,5 +708,78 @@ end
   
     # Test that no error is thrown here
     f = sim(line, default_dec_generate, DiagonalHodge())  
+end
+
+@testset "GenSim Compilation" begin
+
+  rect = triangulated_grid(100, 100, 50, 50, Point3{Float64})
+  d_rect = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}(rect)
+  subdivide_duals!(d_rect, Circumcenter())
+
+  function generate(sd, my_symbol, hodge)
+    op = @match my_symbol begin
+      end
+    return op
+  end
+  
+  HeatTransfer = @decapode begin
+    (HT, Tₛ)::Form0      
+    (D, cosϕᵖ, cosϕᵈ)::Constant      
+    HT == (D ./ cosϕᵖ) .* (⋆)(d(cosϕᵈ .* (⋆)(d(Tₛ))))
+  end
+
+  sim_HT = evalsim(HeatTransfer)
+  @test sim_HT(d_rect, generate, DiagonalHodge()) isa Any
+
+  Jordan_Kinderlehrer_Otto = @decapode begin 
+    (ρ, Ψ)::Form0       
+    β⁻¹::Constant          
+    ∂ₜ(ρ) == (∘(⋆, d, ⋆))(d(Ψ) ∧ ρ) + β⁻¹ * Δ(ρ)
+  end
+
+  sim_JKO = evalsim(Jordan_Kinderlehrer_Otto)
+  @test sim_JKO(d_rect, generate, DiagonalHodge()) isa Any
+
+  Schoedinger = @decapode begin
+    (i, h, m)::Constant
+    V::Parameter
+    Ψ::Form0
+    ∂ₜ(Ψ) == (((-1 * h ^ 2) / (2m)) * Δ(Ψ) + V * Ψ) / (i * h)
+  end
+  sim_Schoedinger = evalsim(Schoedinger)
+  @test sim_Schoedinger(d_rect, generate, DiagonalHodge()) isa Any
+
+  Gray_Scott = @decapode begin
+    (U, V)::Form0
+    UV2::Form0
+    (U̇, V̇)::Form0
+    (f, k, rᵤ, rᵥ)::Constant
+    UV2 == U .* (V .* V)
+    U̇ == (rᵤ * Δ(U) - UV2) + f * (1 .- U)
+    V̇ == (rᵥ * Δ(V) + UV2) - (f + k) .* V
+    ∂ₜ(U) == U̇
+    ∂ₜ(V) == V̇
+  end
+
+  sim_GS = evalsim(Gray_Scott)
+  @test sim_GS(d_rect, generate, DiagonalHodge()) isa Any
+
+  Lejeune = @decapode begin
+    ρ::Form0
+    (μ, Λ, L)::Constant
+    ∂ₜ(ρ) == (ρ * (((1 - μ) + (Λ - 1) * ρ) - ρ * ρ) + 0.5 * (L * L - ρ) * Δ(ρ)) - 0.125 * ρ * Δ(ρ) * Δ(ρ)
+  end
+
+  sim_LJ = evalsim(Lejeune)
+  @test sim_LJ(d_rect, generate, DiagonalHodge()) isa Any
+
+  Tracer = @decapode begin
+    (c, C, F, c_up)::Form0   
+    (v, V, q)::Form1
+    c_up == (((-1 * (⋆)(L(v, (⋆)(c))) - (⋆)(L(V, (⋆)(c)))) - (⋆)(L(v, (⋆)(C)))) - (∘(⋆, d, ⋆))(q)) + F
+  end
+
+  sim_Tracer = evalsim(Tracer)
+  @test sim_Tracer(d_rect, generate, DiagonalHodge()) isa Any
 
 end
