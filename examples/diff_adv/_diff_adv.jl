@@ -6,10 +6,10 @@
 ## """
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
-using Decapodes, Decapodes.Diagrams
+using Decapodes
 using Catlab, Catlab.Graphics
 
-Variable = @decapode Decapodes2D begin
+Variable = @decapode begin
   C::Form0{X}
 end;
 
@@ -19,14 +19,14 @@ draw_equation(decapode) = to_graphviz(decapode, node_labels=true, prog="neato",
 
 draw_equation(Variable)
 
-TwoVariables = @decapode Decapodes2D begin
+TwoVariables = @decapode begin
   C::Form0{X}
   dC::Form1{X}
 end;
 
 draw_equation(TwoVariables)
 
-Equation = @decapode Decapodes2D begin
+Equation = @decapode begin
   C::Form0{X}
   dC::Form1{X}
 
@@ -34,10 +34,6 @@ Equation = @decapode Decapodes2D begin
 end;
 
 draw_equation(Equation)
-
-@present DiffusionQuantities <: Decapodes2D begin
-  k::Hom(Form1(X), Form1(X))    ## diffusivity (usually scalar multiplication)
-end;
 
 Diffusion = @decapode begin
   (C, Ċ)::Form0{X}
@@ -64,13 +60,11 @@ fig, ax, ob = wireframe(plot_mesh)
 ax.aspect = AxisAspect(3.0)
 fig
 
-using Decapodes.Schedules
 
 explicit_ts = diag2dwd(Diffusion)
 to_graphviz(explicit_ts, orientation=LeftToRight)
 
 using LinearAlgebra
-using Decapodes.Examples, Decapodes.Simulations
 
 funcs = sym2func(periodic_mesh)
 
@@ -136,7 +130,6 @@ draw_equation(Diffusion)
 draw_equation(Advection)
 
 draw_equation(Superposition)
-using Catlab.Programs
 
 compose_diff_adv = @relation (C, V) begin
   diffusion(C, ϕ₁)
@@ -147,7 +140,6 @@ end
 to_graphviz(compose_diff_adv, box_labels=:name, junction_labels=:variable,
             graph_attrs=Dict(:start => "2"))
 
-using Decapodes.OpenDiagrams
 DiffusionAdvection = oapply(compose_diff_adv,
                   [OpenDiagram(Diffusion, [:C, :ϕ]),
                    OpenDiagram(Advection, [:C, :ϕ, :V]),

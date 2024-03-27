@@ -13,7 +13,7 @@ using GeometryBasics: Point3
 
 Point3D = Point3{Float64}
 
-""" Wedge product of a 0-form and a ``k``-form.
+""" Wedge product of a 0-form and a k-form.
 """
 function my_wedge_product_zero(::Type{Val{k}}, s::HasDeltaSet,
                             f, α, x::Int) where k
@@ -93,7 +93,7 @@ v = ones(Float64, ne(earth))
 
 wedge_product(Tuple{0,1}, earth, c, v)
 
-u₀ = ComponentArrays(C=c, V=v)
+u₀ = ComponentArray(C=c, V=v)
 tₑ = 1000
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())

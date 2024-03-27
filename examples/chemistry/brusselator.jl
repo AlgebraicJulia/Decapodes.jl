@@ -166,7 +166,6 @@ record(fig, "brusselator.gif", range(0.0, tₑ; length=frames); framerate = 15) 
 end
 
 end 
-# END Gif creation
 
 # Run on the sphere.
 # You can use lower resolution meshes, such as Icosphere(3).
@@ -264,4 +263,3 @@ record(fig, "brusselator_sphere.gif", range(0.0, tₑ; length=frames); framerate
 end
 
 end 
-# END Gif creation
