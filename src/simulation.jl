@@ -252,8 +252,8 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
   visited_2 = falses(nparts(d, :Op2))
   visited_Σ = falses(nparts(d, :Σ))
 
-  promote_arithmetic_map = Dict(:(+) => :.+, :(-) => :.-, :(*) => :.*, :(/) => :./, :(=) => :.=,
-                                :.+ => :.+, :.- => :.-, :.* => :.*, :./ => :./, :.= => :.=)
+  promote_arithmetic_map = Dict(:(+) => :.+, :(-) => :.-, :(*) => :.*, :(/) => :./, :(^) => :.^, :(=) => :.=,
+                                :.+ => :.+, :.- => :.-, :.* => :.*, :./ => :./, :.^ => :.^, :.= => :.=)
 
   # FIXME: this is a quadratic implementation of topological_sort inlined in here.
   op_order = []
@@ -339,6 +339,10 @@ end =#
         if(operator == :(-))
           operator = promote_arithmetic_map[operator]
         end
+        if(operator == :(^))
+          operator = promote_arithmetic_map[operator]
+        end
+
 
         visited_2[op] = true
         visited_Var[r] = true
