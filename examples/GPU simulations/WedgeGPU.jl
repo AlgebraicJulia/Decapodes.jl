@@ -310,3 +310,60 @@ end
     return nothing
   end
   =#
+
+function sharp_pp(sharp_mat)
+  sharp_mat1 = sparse(map(x -> x[1], sharp_mat))
+  sharp_mat2 = sparse(map(x -> x[2], sharp_mat))
+  sharp_mat3 = sparse(map(x -> x[3], sharp_mat))
+  sharp_mat_slices = (sharp_mat1, sharp_mat2, sharp_mat3)
+
+  x -> dec_c_sharp_pp(sharp_mat_slices, x)
+end
+
+function dec_c_sharp_pp(sharp_mat_slices, v)
+  sharp_mat1, sharp_mat2, sharp_mat3 = sharp_mat_slices
+
+  v1 = map(x -> x[1], v)
+  v2 = map(x -> x[2], v)
+  v3 = map(x -> x[3], v)
+
+  res1 = sharp_mat1 * v1
+  res2 = sharp_mat2 * v2
+  res3 = sharp_mat3 * v3
+
+  map((x,y,z) -> Point3{Float64}(x,y,z), res1, res2, res3)
+end
+
+function cu_sharp_pp(sharp_mat)
+  sharp_mat1 = sparse(CUDA.map(x -> x[1], sharp_mat))
+  sharp_mat2 = sparse(CUDA.map(x -> x[2], sharp_mat))
+  sharp_mat3 = sparse(CUDA.map(x -> x[3], sharp_mat))
+  sharp_mat_slices = (sharp_mat1, sharp_mat2, sharp_mat3)
+
+  scratch_pad_res_1 = CuVector{Float64}(undef, size(sharp_mat, 1))
+  scratch_pad_res_2 = CuVector{Float64}(undef, size(sharp_mat, 1))
+  scratch_pad_res_3 = CuVector{Float64}(undef, size(sharp_mat, 1))
+
+  scratch_pad = (scratch_pad_res_1, scratch_pad_res_2, scratch_pad_res_3)
+
+  x -> dec_c_cu_sharp_pp(sharp_mat_slices, scratch_pad, x)
+end
+
+function dec_c_cu_sharp_pp(sharp_mat_slices, scratch_pad, v)
+  sharp_mat1, sharp_mat2, sharp_mat3 = sharp_mat_slices
+  scratch_pad_res_1, scratch_pad_res_2, scratch_pad_res_3 = scratch_pad
+
+  v1 = CUDA.map(x -> x[1], v)
+  v2 = CUDA.map(x -> x[2], v)
+  v3 = CUDA.map(x -> x[3], v)
+
+  # mul!(scratch_pad_res_1, sharp_mat1, v1)
+  # mul!(scratch_pad_res_2, sharp_mat2, v2)
+  # mul!(scratch_pad_res_3, sharp_mat3, v3)
+
+  scratch_pad_res_1 .= sharp_mat1 * v1
+  scratch_pad_res_2 .= sharp_mat2 * v2
+  scratch_pad_res_3 .= sharp_mat3 * v3
+
+  CUDA.map((x,y,z) -> Point3{Float64}(x,y,z), scratch_pad_res_1, scratch_pad_res_2, scratch_pad_res_3)
+end

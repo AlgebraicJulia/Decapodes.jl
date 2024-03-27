@@ -11,6 +11,11 @@ import Catlab.Programs.GenerateJuliaPrograms: compile
 
 const gensim_in_place_stub = Symbol("GenSim-M")
 
+abstract type GenerationTarget end
+
+struct CPU <: GenerationTarget end
+struct CUDA <: GenerationTarget end
+
 abstract type AbstractCall end
 
 struct UnaryCall <: AbstractCall 
@@ -29,6 +34,8 @@ Base.Expr(c::UnaryCall) = begin
     if(c.equality == :.=)
         if(operator == add_inplace_stub(:⋆₁⁻¹)) # Since inverse hodge Geo is a solver
             Expr(:call, c.operator, c.output, c.input)
+        elseif(operator == :.-)
+            Expr(c.equality, c.output, Expr(:call, operator, c.input))
         else
             Expr(:call, :mul!, c.output, operator, c.input)
         end
@@ -171,11 +178,11 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con
     end
 
     for op in d[:op1]
-      if op == DerivOp 
+      if op == DerivOp
         continue
       end
 
-      if(op in con_dec_operators || op in defined_ops)
+      if(op in con_dec_operators || op in defined_ops || op in assumed_ops)
           continue
       end
   
@@ -277,15 +284,20 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
                 # TODO: Check to see if this is a DEC operator
                 if(operator in optimizable_dec_operators)
                     # push!(dec_matrices, operator)
-
                     if(is_form(d, t))
                         equality = promote_arithmetic_map[equality]
                         operator = add_stub(gensim_in_place_stub, operator)
 
                         push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype))
                     end
-                end
+                elseif(operator == :(-) || operator == :.-)
+                    if(is_form(d, t))
+                        equality = promote_arithmetic_map[equality]
+                        operator = promote_arithmetic_map[operator]
 
+                        push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype))
+                    end
+                end
 
                 visited_Var[t] = true
                 c = UnaryCall(operator, equality, sname, tname)
@@ -393,7 +405,7 @@ function resolve_types_compiler!(d::SummationDecapode)
     end
 end
 
-function replace_negation_with_multiply!(d::SummationDecapode, input_vars)
+#= function replace_negation_with_multiply!(d::SummationDecapode, input_vars)
     found_negation = false
     rem_negations = []
     neg1var = 0
@@ -411,7 +423,7 @@ function replace_negation_with_multiply!(d::SummationDecapode, input_vars)
         
     end
     rem_parts!(d, :Op1, rem_negations)
-end
+end =#
 
 function replace_names_compiler!(d::SummationDecapode)
     dec_op1 = Pair{Symbol, Any}[]
@@ -479,6 +491,15 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
     contract_defs
 end
 
+function link_contract_operators_generate_expr(computation_name, computation, ::CPU)
+    return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
+end
+
+function link_contract_operators_generate_expr(computation_name, computation, ::CUDA)
+    return :($(add_inplace_stub(computation_name)) = CUDA.CUSPARSE.CuSparseMatrixCSC(Float64.($(Expr(:call, :*, computation...)))))
+end
+
+
 # TODO: Will want to eventually support contracted operations
 function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2,
                 stateeltype = Float64)
@@ -490,7 +511,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2,
     d′ = expand_operators(user_d)
     #d′ = average_rewrite(d′)
 
-    replace_negation_with_multiply!(d′, input_vars)
+    # replace_negation_with_multiply!(d′, input_vars)
 
     dec_matrices = Vector{Symbol}();
     alloc_vectors = Vector{AllocVecCall}();
