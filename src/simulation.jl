@@ -13,8 +13,8 @@ const gensim_in_place_stub = Symbol("GenSim-M")
 
 abstract type GenerationTarget end
 
-struct CPU <: GenerationTarget end
-struct CUDA <: GenerationTarget end
+struct gen_CPU <: GenerationTarget end
+struct gen_CUDA <: GenerationTarget end
 
 abstract type AbstractCall end
 
@@ -112,11 +112,11 @@ Base.Expr(c::AllocVecCall) = begin
   hook_ExprAVC_generate_cache_expr(c, resolved_form, c.code_target)
 end
 
-function hook_ExprAVC_generate_cache_expr(c::AllocVecCall, resolved_form::Symbol, ::CPU)
+function hook_ExprAVC_generate_cache_expr(c::AllocVecCall, resolved_form::Symbol, ::gen_CPU)
   :($(Symbol(:__,c.name)) = Decapodes.FixedSizeDiffCache(Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form))))))
 end
 
-function hook_ExprAVC_generate_cache_expr(c::AllocVecCall, resolved_form::Symbol, ::CUDA)
+function hook_ExprAVC_generate_cache_expr(c::AllocVecCall, resolved_form::Symbol, ::gen_CUDA)
   :($(c.name) = CuVector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end
 
@@ -254,7 +254,7 @@ function set_tanvars_code(d::AbstractNamedDecapode)
   return stmts
 end
 
-function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}; dimension=2, stateeltype=Float64, code_target=CPU())
+function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}; dimension=2, stateeltype=Float64, code_target=gen_CPU())
   # Get the Vars of the inputs (probably state Vars).
   visited_Var = falses(nparts(d, :Var))
 
@@ -404,7 +404,7 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
   end
 
   cache_exprs = []
-  if(code_target isa CPU)
+  if(code_target isa gen_CPU)
     cache_exprs = map(alloc_vectors) do vec
       :($(vec.name) = (Decapodes.get_tmp($(Symbol(:__,vec.name)), u)))
     end
@@ -510,18 +510,18 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
   contract_defs
 end
 
-function hook_LCO_generate_inplace_expr(computation_name, computation, ::CPU, float_type::DataType)
+function hook_LCO_generate_inplace_expr(computation_name, computation, ::gen_CPU, float_type::DataType)
   return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
 end
 
 # Adapt this to also write Diagonal Matrices as CuVectors, sparsifying diagonal matrices slows down computations 
-function hook_LCO_generate_inplace_expr(computation_name, computation, ::CUDA, float_type::DataType)
+function hook_LCO_generate_inplace_expr(computation_name, computation, ::gen_CUDA, float_type::DataType)
   return :($(add_inplace_stub(computation_name)) = CUDA.CUSPARSE.CuSparseMatrixCSC{$(float_type)}($(Expr(:call, :*, computation...))))
 end
 
 
 # TODO: Will want to eventually support contracted operations
-function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = CPU())
+function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = gen_CPU())
   # TODO: May want to move this after infer_types if we let users
   # set their own inference rules
   recognize_types(user_d)
@@ -588,10 +588,10 @@ gensim(collate(c); dimension=dimension)
 
 Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
 """
-gensim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = CPU()) = gensim(d, vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype, code_target=code_target)
+gensim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = gen_CPU()) = gensim(d, vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype, code_target=code_target)
 
-evalsim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = CPU()) = eval(gensim(d, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
-evalsim(d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = CPU()) = eval(gensim(d, input_vars, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
+evalsim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = gen_CPU()) = eval(gensim(d, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
+evalsim(d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = gen_CPU()) = eval(gensim(d, input_vars, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
 
 """
 function find_unreachable_tvars(d)
