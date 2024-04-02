@@ -12,11 +12,12 @@ using Logging: global_logger
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 using Distributions
-using CairoMakie
 using LinearAlgebra
 using MLStyle
-using ComponentArrays
 using OrdinaryDiffEq
+using CairoMakie
+import CairoMakie: Axis
+using ComponentArrays
 
 # Represent component Decapodes.
 Diffusion = @decapode begin

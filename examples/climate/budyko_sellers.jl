@@ -16,7 +16,7 @@ using OrdinaryDiffEq
 using JLD2
 # Uncomment to load GLMakie if your system supports it.
 # Otherwise, do using CairoMakie
-#using GLMakie
+using CairoMakie
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 
@@ -141,9 +141,6 @@ C = map(point(s′)) do ϕ
 end
 D = 0.6
 
-#Tₛ₀ = map(point(s′)) do ϕ
-#    12 .- 40*((1/2)*(3*(sin(ϕ[1]))^2 - 1))
-#end
 # Isothermal initial conditions:
 Tₛ₀ = map(point(s′)) do ϕ
   15

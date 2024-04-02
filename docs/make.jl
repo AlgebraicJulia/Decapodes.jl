@@ -16,23 +16,49 @@ if !(haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "GITLAB_CI"))
   config["repo_root_url"] = "https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs"
 end
 
-# const literate_dir = joinpath(@__DIR__, "..", "examples")
-# const generated_dir = joinpath(@__DIR__, "src", "examples")
+const literate_dir = joinpath(@__DIR__, "..", "examples")
+const generated_dir = joinpath(@__DIR__, "src", "examples")
 
-# @info "Building literate files"
-# for (root, dirs, files) in walkdir(literate_dir)
-#   out_dir = joinpath(generated_dir, relpath(root, literate_dir))
-#   # @showprogress pmap(files) do file
-#   for file in files
-#     f,l = splitext(file)
-#     if l == ".jl" && !startswith(f, "_")
-#       Literate.markdown(joinpath(root, file), out_dir;
-#         config=config, documenter=true, credit=false)
-#       Literate.notebook(joinpath(root, file), out_dir;
-#         execute=true, documenter=true, credit=false)
-#     end
-#   end
-# end
+@info "Building literate files"
+for (root, dirs, files) in walkdir(literate_dir)
+  out_dir = joinpath(generated_dir, relpath(root, literate_dir))
+  pmap(files) do file
+    f,l = splitext(file)
+    if l == ".jl" && !startswith(f, "_")
+      Literate.markdown(joinpath(root, file), out_dir;
+        config=config, documenter=true, credit=false)
+      Literate.notebook(joinpath(root, file), out_dir;
+        execute=true, documenter=true, credit=false)
+    end
+  end
+end
+@info "Completed literate"
+
+pages = Any[]
+push!(pages, "Decapodes.jl"      => "index.md")
+push!(pages, "Overview"          => "overview.md")
+push!(pages, "Equations"         => "equations.md")
+push!(pages, "BC Debug"          => "bc_debug.md")
+push!(pages, "ASCII Operators"   => "ascii.md")
+dirs = Dict("physics"  => "Physics"
+	   ,"biology"  => "Biology"
+	   ,"climate"  => "Climate")
+for d in keys(dirs)
+  dir   = joinpath(@__DIR__, "src", d)
+  files = readdir(dir)
+  push!(pages, dirs[d] => joinpath.(d, files))
+end
+
+push!(pages, "Examples" => [
+	"Brusselator"        => "examples/chemistry/brusselator.md",
+	"Brusselator Teapot" => "examples/chemistry/brusselator_teapot.md",
+	"Gray-Scott"         => "examples/chemistry/gray_scott.md",
+	"Budyko-Sellers"     => "examples/climate/budyko_sellers.md",
+	"Budyko-Sellers-Halfar" => "examples/climate/budyko_sellers_halfar.md",
+	"Burger" => "examples/diff_adv/burger.md",
+])
+push!(pages, "Canonical Models"  => "canon.md")
+push!(pages, "Library Reference" => "api.md")
 
 @info "Building Documenter.jl docs"
 makedocs(
@@ -40,30 +66,12 @@ makedocs(
   format    = Documenter.HTML(
     assets = ["assets/analytics.js"],
   ),
+  remotes   = nothing,
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
-  pages     = Any[
-    "Decapodes.jl" => "index.md",
-    "Halfar-NS" => "halmo.md",
-    "Overview" => "overview.md",
-    "Klausmeier" => "klausmeier.md",
-    "Glacial Flow" => "ice_dynamics.md",
-    "Grigoriev Ice Cap" => "grigoriev.md",
-    "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
-    "CISM v2.1" => "cism.md",
-    "NHS" => "nhs.md",
-    "Equations" => "equations.md",
-    "ASCII Operators" => "ascii.md",
-    "Misc Features" => "bc_debug.md",
-    "Pipe Flow" => "poiseuille.md",
-    # "Examples" => Any[
-    #   "examples/cfd_example.md"
-    # ],
-    "Canonical Models" => "canon.md",
-    "Library Reference" => "api.md"
-  ]
-)
+  pages     = pages)
+
 
 @info "Deploying docs"
 deploydocs(

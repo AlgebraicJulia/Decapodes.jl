@@ -1,9 +1,0 @@
-[deps]
-CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
-Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
-CombinatorialSpaces = "b1c52339-7909-45ad-8b6a-6e388f7c67f2"
-Decapodes = "679ab3ea-c928-4fe6-8d59-fd451142d391"
-Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
-OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
