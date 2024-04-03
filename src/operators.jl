@@ -3,7 +3,7 @@ using LinearAlgebra
 using Base.Iterators
 using Catlab
 
-function default_dec_matrix_generate(sd, my_symbol, hodge)
+function default_cu_dec_matrix_generate(sd, my_symbol, hodge)
   op = @match my_symbol begin
 
     # Regular Hodge Stars
