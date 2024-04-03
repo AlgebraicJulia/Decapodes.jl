@@ -2,10 +2,9 @@ using CombinatorialSpaces
 using LinearAlgebra
 using Base.Iterators
 using Catlab
-using CUDA
-using CUDA.CUSPARSE
+using Krylov
 
-function default_cu_dec_matrix_generate(sd, my_symbol, hodge)
+function default_dec_matrix_generate(sd, my_symbol, hodge, code_target::gen)
   op = @match my_symbol begin
 
     # Regular Hodge Stars
@@ -33,36 +32,7 @@ function default_cu_dec_matrix_generate(sd, my_symbol, hodge)
     :∧₂₀ => dec_pair_wedge_product(Tuple{2,0}, sd)
     :∧₁₁ => dec_pair_wedge_product(Tuple{1,1}, sd)
 
-    # Primal-Dual Wedge Products
-    :∧ᵖᵈ₁₁ => dec_wedge_product_pd(Tuple{1,1}, sd)
-    :∧ᵖᵈ₀₁ => dec_wedge_product_pd(Tuple{0,1}, sd)
-    :∧ᵈᵖ₁₁ => dec_wedge_product_dp(Tuple{1,1}, sd)
-    :∧ᵈᵖ₁₀ => dec_wedge_product_dp(Tuple{1,0}, sd)
-
-    # Dual-Dual Wedge Products
-    :∧ᵈᵈ₁₁ => dec_wedge_product_dd(Tuple{1,1}, sd)
-    :∧ᵈᵈ₁₀ => dec_wedge_product_dd(Tuple{1,0}, sd)
-    :∧ᵈᵈ₀₁ => dec_wedge_product_dd(Tuple{0,1}, sd)
-
-    # Dual-Dual Interior Products
-    :ι₁₁ => interior_product_dd(Tuple{1,1}, sd)
-    :ι₁₂ => interior_product_dd(Tuple{1,2}, sd)
-
-    # Dual-Dual Lie Derivatives
-    :ℒ₁ => ℒ_dd(Tuple{1,1}, sd)
-
-    # Dual Laplacians
-    :Δᵈ₀ => Δᵈ(Val{0},sd)
-    :Δᵈ₁ => Δᵈ(Val{1},sd)
-
-    # Musical Isomorphisms
-    :♯ => dec_♯_p(sd)
-    :♯ᵈ => dec_♯_d(sd)
-
-    :♭ => dec_♭(sd)
-
-    :neg => x -> -1 .* x
-     _ => error("Unmatched operator $my_symbol")
+    _ => error("Unmatched operator $my_symbol")
   end
 
   return op
@@ -70,38 +40,37 @@ end
 
 # TODO: Update this to better cast hodges
 function dec_mat_hodge(k, sd::HasDeltaSet, hodge)
-  hodge = dec_hodge_star(k, sd, hodge=hodge)
-  if(hodge isa Diagonal)
-    hodge = CuArray(hodge)
-  else
-    hodge = CuSparseMatrixCSC(hodge)
-  end
+  hodge = dec_hodge_star(k, sd, hodge, Val{CUDA})
   return (hodge, x -> hodge * x)
 end
 
 function dec_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge)
-  invhodge = CuArray(dec_inv_hodge_star(k, sd, hodge=hodge))
+  invhodge = dec_inv_hodge_star(k, sd, hodge, Val{CUDA})
   return (invhodge, x -> invhodge * x)
 end
 
 # Special case for inverse hodge for DualForm1 to Form1
-function dec_pair_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
-  inv_hdg = LinearAlgebra.factorize(-1 * CuSparseMatrixCSC(dec_hodge_star(1, sd, GeometricHodge())))
-  ((y, x) -> ldiv!(y, inv_hdg, x), x -> inv_hdg \ x)
+# TODO: This should be changed to use Krylov, need to figure out inplace version of this
+function dec_pair_inv_hodge(::Type{Val{1}}, sd::EmbeddedDeltaDualComplex2D{Bool, float_type, _p},  ::GeometricHodge where _p) where float_type
+  hdg = -1 * dec_hodge_star(1, sd, GeometricHodge(), Val{CUDA})
+  # TODO: Figure out what a good number for this memory value is
+  gmres_solver = GmresSolver(size(hdg, 1), size(hdg, 2), 10, CuVector{float_type})
+
+  ((y, b) -> (y .= gmres!(gmres_solver, hdg, b).x), b -> gmres!(gmres_solver, hdg, b).x)
 end
 
 function dec_pair_inv_hodge(::Type{Val{1}}, sd::HasDeltaSet, ::DiagonalHodge)
-  inv_hdg = CuArray(dec_inv_hodge_star(1, sd, DiagonalHodge()))
+  inv_hdg = dec_inv_hodge_star(1, sd, DiagonalHodge(), Val{CUDA})
   ((y, x) -> mul!(y, inv_hdg, x), x -> inv_hdg * x)
 end
 
 function dec_mat_differential(k::Int, sd::HasDeltaSet)
-  diff = CuSparseMatrixCSC(dec_differential(k, sd))
+  diff = dec_differential(k, sd, Val{CUDA})
   return (diff, x -> diff * x)
 end
 
 function dec_mat_dual_differential(k::Int, sd::HasDeltaSet)
-  dualdiff = CuSparseMatrixCSC(dec_dual_derivative(k, sd))
+  dualdiff = dec_dual_derivative(k, sd, Val{CUDA})
   return (dualdiff, x -> dualdiff * x)
 end
 
@@ -123,6 +92,7 @@ function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
     (α, β) -> dec_cu_c_wedge_product(Tuple{1,1}, α, β, val_pack))
 end
 
+# TODO: These need to be converted into CuArrays/kernels
 function dec_♯_p(sd::HasDeltaSet2D)
   ♯_m = ♯_mat(sd, AltPPSharp())
   x -> ♯_m * x
