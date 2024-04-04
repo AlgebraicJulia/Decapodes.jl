@@ -58,10 +58,10 @@ end
 
 function to_op(d::SummationDecapode, op::Int, ::Type{Val{:op2}})
   @match d[op, :op2] begin
-    op::Symbol && if op ∈ [:+, :-] => BinaryOperator(op, [], :A, false, false)
-    op::Symbol && if op ∈ [:.+, :.-] => BinaryOperator(op, [], :A, false, true)
-    op::Symbol && if op ∈ [:*, :/] => BinaryOperator(op, [], :M, false, false)
-    op::Symbol && if op ∈ [:.*, :./] => BinaryOperator(op, [], :M, false, true)
+    match_op::Symbol && if match_op ∈ [:+, :-] => BinaryOperator(match_op, [], :A, false, false, false)
+    match_op::Symbol && if match_op ∈ [:.+, :.-] => BinaryOperator(match_op, [], :A, false, true, false)
+    match_op::Symbol && if match_op ∈ [:*, :/] => BinaryOperator(match_op, [], :M, false, false, false)
+    match_op::Symbol && if match_op ∈ [:.*, :./] => BinaryOperator(match_op, [], :M, false, true, false)
     _ => nothing
   end
 end
@@ -74,7 +74,8 @@ end
 # TODO: Add back support for contract operators
 Base.Expr(call::UnaryCall) = begin
   @match call begin
-    UnaryCall(; operator=UnOp(:⋆₁⁻¹, [in_place_stub]), equality=:.=) => Expr(:call, call.operator, c.output, c.input)
+    # TODO: Check if this MLStyle works. Also do we need this equality field?
+    UnaryCall(; operator=UnaryOperator(:⋆₁⁻¹, [in_place_stub]), equality=:.=) => Expr(:call, call.operator, c.output, c.input)
     UnaryCall(; equality=:.=) => Expr(:call, :mul!, c.output, c.operator, c.input)
     _ => Expr(call.equality, call.output, Expr(:call, c.operator, c.input))
   end
@@ -89,10 +90,12 @@ struct BinaryCall <: AbstractCall
 end
 
 @as_record BinaryCall
+@as_record BinaryOperator
 
 # TODO: After getting rid of AppCirc2, do we need this check?
 Base.Expr(call::BinaryCall) = begin
   @match call begin
+    # TODO: Check if this MLStyle works. Also do we need this equality field?
     BinaryCall(; operator=BinaryOperator(; stubs=[in_place_stub]), equality=:.=) => 
       Expr(:call, call.operator, c.output, call.input1, c.input2)
     _ => Expr(call.equality, call.output, Expr(:call, call.operator, call.input1, call.input2))
@@ -147,11 +150,12 @@ Base.Expr(c::AllocVecCall) = begin
 end
 
 # WARNING: This may not work if names are not unique, use above instead
-function get_form_number(d::SummationDecapode, var_name::Symbol)
+#= function get_form_number(d::SummationDecapode, var_name::Symbol)
 var_id = first(incident(d, var_name, :name))
 return get_form_number(d, var_id)
 end =#
 
+# TODO: Remove this list comprehension
 struct Form
   dim::Int
   is_dual::Bool
@@ -191,38 +195,39 @@ end
 # This will be the function and matrix generation
 function compile_env(
   d::AbstractNamedDecapode,
-  dec_matrices::Vector{Symbol},
+  dec_inplace_ops::Vector{Symbol},
   con_dec_operators::Set{Symbol},
 )
   # TODO 
   assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./])
-  defined_ops = Set()
 
   defs = quote end
 
-  # TODO can we just use symdiff?
-  for op in dec_matrices
-    if (op in defined_ops)
-      continue
-    end
+  unique_dec_inplace_ops = unique(dec_inplace_ops)
 
+  # TODO can we just use symdiff?
+  for op in unique_dec_inplace_ops
     quote_op = QuoteNode(op)
     mat_op = add_stub(in_place_stub, op)
-    # Could turn this into a special call
+    # TODO: Could turn this into a special call
     def = :(($mat_op, $op) = default_dec_matrix_generate(mesh, $quote_op, hodge))
     push!(defs.args, def)
-
-    push!(defined_ops, op)
   end
   
   # LUKE
-  op1s = map(filter(x -> x \notin [con_dec_operators…, DerivOp], unique(d[:op1]))) do op
+  op1s = map(filter(x -> x ∉ [con_dec_operators..., DerivOp], unique(d[:op1]))) do op
     :($op = operators(mesh, $(QuoteNode(op))))
   end
   append!(defs.args, op1s)
 
+  # LUKE
+  op2s = map(filter(x -> x ∉ assumed_ops, unique(d[:op2]))) do op
+    :($op = operators(mesh, $(QuoteNode(op))))
+  end
+  append!(defs.args, op2s)
+
   # TODO can we just use setdiff?
-  for op in setdiff(d[:op1], con_dec_operators, defined_ops, [DerivOp])
+#=   for op in setdiff(d[:op1], con_dec_operators, unique_dec_inplace_ops, [DerivOp])
     # if op == DerivOp
     #   continue
     # end
@@ -237,7 +242,8 @@ function compile_env(
     push!(defs.args, def)
 
     push!(defined_ops, op)
-  end
+  end =#
+
   for op in setdiff(d[:op2], assumed_ops, defined_ops)
     # TODO setdiff?
     if op in assumed_ops || op in defined_ops
@@ -332,7 +338,7 @@ function compile_body!(schedule::Vector{AbstractCall}, d::SummationDecapode, op:
   
   # TODO unfinished
   call = BinaryCall(operator,
-                    :(=),
+                    :(=),)
 
   # the point of this block is to loop over d[:res] ∩ forms
   any_inferred = any(is_infer.(d, [arg1, arg2]))
@@ -462,11 +468,8 @@ function infer_overload_compiler!(d::SummationDecapode, dimension::Int)
 end
 
 # TODO I think out variables (or those being modified in place) should be first as arguments
-function init_dec_matrices!(d::SummationDecapode, dec_matrices::Vector{Symbol}, optimizable_dec_operators::Set{Symbol})
-  # TODO type issue with ∩ here but I think this is a virtuous suggestion
-  for op ∈ union(d[:op1], d[:op2]) ∩ optimizable_dec_operators
-    push!(dec_matrices, op)
-  end
+function init_dec_inplace_ops!(d::SummationDecapode, dec_inplace_ops::Vector{Symbol}, optimizable_dec_operators::Set{Symbol})
+  append!(dec_inplace_ops, (d[:op1] ∪ d[:op2]) ∩ optimizable_dec_operators)
 end
 
 function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol})
@@ -548,7 +551,8 @@ function gensim(
 
   replace_negation_with_multiply!(d′, input_vars)
 
-  dec_matrices = Vector{Symbol}()
+  # TODO: This dec_inplace_ops should probably be a set
+  dec_inplace_ops = Vector{Symbol}()
   alloc_vectors = Vector{AllocVecCall}()
 
   vars = get_vars_code(d′, input_vars, stateeltype)
@@ -569,9 +573,10 @@ function gensim(
     Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹, :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁])
   extra_dec_operators = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
-  init_dec_matrices!(
+  # This returns all in-placable DEC operators that appear in the Decapode
+  init_dec_inplace_ops!(
     d′,
-    dec_matrices,
+    dec_inplace_ops,
     union(optimizable_dec_operators, extra_dec_operators),
   )
 
@@ -580,6 +585,7 @@ function gensim(
   contract_operators!(d′, allowable_ops = optimizable_dec_operators)
   cont_defs = link_contract_operators(d′, contracted_dec_operators)
 
+  # This collects all in-placable DEC operators into optimizable_dec_operators
   union!(optimizable_dec_operators, contracted_dec_operators, extra_dec_operators)
 
   # Compilation of the simulation
@@ -592,7 +598,7 @@ function gensim(
     stateeltype = stateeltype,
   )
 
-  func_defs = compile_env(d′, dec_matrices, contracted_dec_operators)
+  func_defs = compile_env(d′, dec_inplace_ops, contracted_dec_operators)
   vect_defs = compile_var(alloc_vectors)
 
   quote
