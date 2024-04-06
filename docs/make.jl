@@ -40,10 +40,9 @@ push!(pages, "Overview"          => "overview.md")
 push!(pages, "Equations"         => "equations.md")
 push!(pages, "BC Debug"          => "bc_debug.md")
 push!(pages, "ASCII Operators"   => "ascii.md")
-dirs = Dict(
-	   "physics"  => "Physics"
+dirs = Dict("physics"  => "Physics"
 	   ,"biology"  => "Biology"
-	   "climate"  => "Climate")
+	   ,"climate"  => "Climate")
 for d in keys(dirs)
   dir   = joinpath(@__DIR__, "src", d)
   files = readdir(dir)
