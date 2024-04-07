@@ -6,8 +6,6 @@ using CUDA
 using CUDA.CUSPARSE
 using CombinatorialSpaces
 using Distributions
-using CairoMakie
-using JLD2
 using LinearAlgebra
 using MLStyle
 using ComponentArrays
@@ -28,8 +26,6 @@ Klausmeier[9, :type] = :DualForm0
 Klausmeier[10, :type] = :DualForm0
 Klausmeier[15, :type] = :DualForm0
 
-sim = eval(gensim(Klausmeier, dimension=1, code_target=gen_CUDA()))
-
 function circle(n, c)
   s = EmbeddedDeltaSet1D{Bool, Point2D}()
   map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
@@ -43,6 +39,8 @@ function circle(n, c)
 end
 s,sd = circle(7, 500)
 
+sim = eval(gensim(Klausmeier, dimension=1, code_target=gen_CUDA()))
+
 lap_mat = CuSparseMatrixCSC(hodge_star(1,sd) * d(0,sd) * inv_hodge_star(0,sd) * dual_derivative(0,sd))
 function generate(sd, my_symbol; hodge=DiagonalHodge())
   op = @match my_symbol begin
@@ -53,21 +51,23 @@ end
 
 fₘ = sim(sd, generate, DiagonalHodge())
 
-n_dist = Normal(pi)
-n = CuVector{Float64}([pdf(n_dist, t)*(√(2pi))*7.2 + 0.08 - 5e-2 for t in range(0,2pi; length=ne(sd))])
+begin 
+  n_dist = Normal(pi)
+  n = CuVector{Float64}([pdf(n_dist, t)*(√(2pi))*7.2 + 0.08 - 5e-2 for t in range(0,2pi; length=ne(sd))])
 
-w_dist = Normal(pi, 20)
-w = CuVector{Float64}([pdf(w_dist, t) for t in range(0,2pi; length=ne(sd))])
+  w_dist = Normal(pi, 20)
+  w = CuVector{Float64}([pdf(w_dist, t) for t in range(0,2pi; length=ne(sd))])
 
-dX = CuVector{Float64}(sd[:length])
+  dX = CuVector{Float64}(sd[:length])
 
-u₀ = ComponentArray(n = n, w = w, dX = dX)
+  u₀ = ComponentArray(n = n, w = w, dX = dX)
 
-cs_ps = (m = 0.45,
-         a = 0.94,
-         ν = 182.5)
+  cs_ps = (m = 0.45,
+          a = 0.94,
+          ν = 182.5)
+end
 
 tₑ = 600.0
 prob = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
+@info "Solving"
 soln = solve(prob, Tsit5())
-                 

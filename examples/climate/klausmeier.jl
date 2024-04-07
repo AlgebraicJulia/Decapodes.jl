@@ -70,5 +70,6 @@ cs_ps = (m = 0.45,
 
 tₑ = 600.0
 prob = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
+@info "Solving"
 soln = solve(prob, Tsit5())
                  

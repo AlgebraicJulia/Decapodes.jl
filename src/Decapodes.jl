@@ -17,7 +17,7 @@ using DiagrammaticEquations.Deca
 
 export
 findname, flat_op,
-gensim, evalsim, closest_point, findnode, compile, compile_env,  PhysicsState,  default_dec_matrix_generate, default_dec_generate, default_dec_generate, VectorForm,
+gensim, evalsim, closest_point, findnode, compile, compile_env,  PhysicsState,  default_dec_matrix_generate, default_dec_cu_matrix_generate, default_dec_generate, VectorForm,
 CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat,
 gen_CPU, gen_CUDA
 
@@ -25,6 +25,7 @@ append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
 include("coordinates.jl")
 include("operators.jl")
+include("operators_CUDA.jl")
 include("simulation.jl")
 
 # documentation
