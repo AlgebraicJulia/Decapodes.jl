@@ -166,7 +166,7 @@ end
 add_inplace_stub(var_name::Symbol) = add_stub(gensim_in_place_stub, var_name)
 
 # This will be the function and matrix generation
-function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol})
+function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = gen_CPU())
   assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^])
   defined_ops = Set()
 
@@ -180,7 +180,13 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con
     quote_op = QuoteNode(op)
     mat_op = add_stub(gensim_in_place_stub, op)
     # Could turn this into a special call
-    def = :(($mat_op, $op) = default_dec_matrix_generate(mesh, $quote_op, hodge))
+
+    default_generation = :default_dec_matrix_generate
+    if(code_target isa gen_CUDA)
+      default_generation = :default_dec_cu_matrix_generate
+    end
+
+    def = :(($mat_op, $op) = $(default_generation)(mesh, $quote_op, hodge))
     push!(defs.args, def)
 
     push!(defined_ops, op)
@@ -516,7 +522,8 @@ end
 
 # Adapt this to also write Diagonal Matrices as CuVectors, sparsifying diagonal matrices slows down computations 
 function hook_LCO_generate_inplace_expr(computation_name, computation, ::gen_CUDA, float_type::DataType)
-  return :($(add_inplace_stub(computation_name)) = CUDA.CUSPARSE.CuSparseMatrixCSC{$(float_type)}($(Expr(:call, :*, computation...))))
+  # return :($(add_inplace_stub(computation_name)) = CUDA.CUSPARSE.CuSparseMatrixCSC{$(float_type)}($(Expr(:call, :*, computation...))))
+  return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
 end
 
 
@@ -564,7 +571,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, sta
   # Compilation of the simulation
   equations = compile(d′, input_vars, alloc_vectors, optimizable_dec_operators, dimension=dimension, stateeltype=stateeltype, code_target=code_target)
 
-  func_defs = compile_env(d′, dec_matrices, contracted_dec_operators)
+  func_defs = compile_env(d′, dec_matrices, contracted_dec_operators, code_target)
   vect_defs = compile_var(alloc_vectors)
 
   quote
