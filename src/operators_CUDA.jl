@@ -9,7 +9,7 @@ function default_dec_cu_matrix_generate(sd, my_symbol, hodge)
 
     # Regular Hodge Stars
     :⋆₀ => dec_cu_mat_hodge(0, sd, hodge)
-    :⋆₁ => dec_cu_mat_hodge(1, sd, hodge)
+    :⋆₁ => dec_cu_mat_hodge(Val{1}, sd, hodge)
     :⋆₂ => dec_cu_mat_hodge(2, sd, hodge)
 
     # Inverse Hodge Stars
@@ -41,6 +41,16 @@ end
 # TODO: Update this to better cast hodges
 function dec_cu_mat_hodge(k, sd::HasDeltaSet, hodge)
   hodge = dec_hodge_star(k, sd, hodge, Val{:CUDA})
+  return (hodge, x -> hodge * x)
+end
+
+function dec_cu_mat_hodge(::Type{Val{1}}, sd::HasDeltaSet, hodge::DiagonalHodge)
+  hodge = dec_hodge_star(1, sd, hodge, Val{:CUDA})
+  return (hodge, x -> hodge * x)
+end
+
+function dec_cu_mat_hodge(::Type{Val{1}}, sd::HasDeltaSet, hodge::GeometricHodge)
+  hodge = dec_hodge_star(Val{1}, sd, hodge, Val{:CUDA})
   return (hodge, x -> hodge * x)
 end
 
