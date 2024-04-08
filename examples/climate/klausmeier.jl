@@ -26,8 +26,6 @@ Klausmeier[9, :type] = :DualForm0
 Klausmeier[10, :type] = :DualForm0
 Klausmeier[15, :type] = :DualForm0
 
-sim = eval(gensim(Klausmeier, dimension=1))
-
 function circle(n, c)
   s = EmbeddedDeltaSet1D{Bool, Point2D}()
   map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
@@ -40,6 +38,9 @@ function circle(n, c)
   s,sd
 end
 s,sd = circle(7, 500)
+
+begin
+sim = eval(gensim(Klausmeier, dimension=1))
 
 lap_mat = hodge_star(1,sd) * d(0,sd) * inv_hodge_star(0,sd) * dual_derivative(0,sd)
 function generate(sd, my_symbol; hodge=DiagonalHodge())
@@ -68,8 +69,10 @@ cs_ps = (m = 0.45,
          a = 0.94,
          ν = 182.5)
 
-tₑ = 600.0
+tₑ = 10.0
 prob = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
 @info "Solving"
+end
+@time solve(prob, Tsit5());
 soln = solve(prob, Tsit5())
                  
