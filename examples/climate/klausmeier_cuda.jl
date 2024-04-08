@@ -67,7 +67,7 @@ begin
           ν = 182.5)
 end
 
-tₑ = 600.0
+tₑ = 10.0
 prob = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
 @info "Solving"
 soln = solve(prob, Tsit5())
