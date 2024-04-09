@@ -116,6 +116,7 @@ function hook_ExprAVC_generate_cache_expr(c::AllocVecCall, resolved_form::Symbol
   :($(Symbol(:__,c.name)) = Decapodes.FixedSizeDiffCache(Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form))))))
 end
 
+# TODO: Allow user to overload these hooks with user-defined code_target
 function hook_ExprAVC_generate_cache_expr(c::AllocVecCall, resolved_form::Symbol, ::gen_CUDA)
   :($(c.name) = CuVector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end
@@ -513,6 +514,7 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
   contract_defs
 end
 
+# TODO: Allow user to overload these hooks with user-defined code_target
 function hook_LCO_generate_inplace_expr(computation_name, computation, ::gen_CPU, float_type::DataType)
   return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
 end
