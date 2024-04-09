@@ -11,19 +11,19 @@ Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 
 Brusselator = @decapode begin
-  # Values living on vertices.
+  ## Values living on vertices.
   (U, V)::Form0{X} # State variables.
   (U2V)::Form0{X} # Named intermediate variables.
   (U̇, V̇)::Form0{X} # Tangent variables.
-  # Scalars.
+  ## Scalars.
   (α)::Constant{X}
   F::Parameter{X}
-  # A named intermediate variable.
+  ## A named intermediate variable.
   U2V == (U .* U) .* V
-  # Specify how to compute the tangent variables.
+  ## Specify how to compute the tangent variables.
   U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
   V̇ == (3.4 * U) - U2V + (α * Δ(U))
-  # Associate tangent variables with a state variable.
+  ## Associate tangent variables with a state variable.
   ∂ₜ(U) == U̇
   ∂ₜ(V) == V̇
 end
