@@ -12,7 +12,7 @@ using ..Canon
 using Markdown
 
 @docapode("Logistic"
-  ,"https://www.google.com"
+  ,"https://en.wikipedia.org/wiki/Logistic_function"
   ,"Eq. 34 from Yi et al.
   A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance
   Evolution of Solid Tumors,
@@ -28,7 +28,7 @@ using Markdown
 )
 
 @docapode("Gompertz"
-  ,"https://www.google.com"
+  ,"https://en.wikipedia.org/wiki/Gompertz_function"
   ,"Eq. 34 from Yi et al.
   A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance
   Evolution of Solid Tumors,
