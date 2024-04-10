@@ -13,61 +13,38 @@ using Markdown
 
 @docapode("Logistic"
   ,"https://www.google.com"
-  ,""
+  ,"Eq. 34 from Yi et al.
+  A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance
+  Evolution of Solid Tumors,
+  with f given as logistic growth. (Eq. 5)"
   ,logistic
   ,begin
-    r::Constant # intrinsic growth rate
-    K::Constant # carrying capacity
-    V::Form0
+    C::Form0
+    (Dif, Kd, Cmax)::Constant
 
-    ∂ₜ(V) == r * V * (1 - V / K)
+    fC == C * (1 - C / Cmax)
+    ∂ₜ(C) == Dif * Δ(C) + fC - Kd * C
   end
 )
 
-logistic = @decapode begin
-  K::Constant
-  r::Constant
-  V::Form0
+@docapode("Gompertz"
+  ,"https://www.google.com"
+  ,"Eq. 34 from Yi et al.
+  A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance
+  Evolution of Solid Tumors,
+  with f given as Gompertz growth. (Eq. 6)"
+  ,gompertz
+  ,begin
+  C::Form0
+  (Dif, Kd, Cmax)::Constant
 
-  ∂ₜ(V) == r * V * (1 - V / K)
-end
-
-logadv = @decapode begin
-  K₀::Constant # carrying-capacity
-  c::Constant  # waste metabolite process
-  r::Constant  # TODO should be contingent on nutrient influx
-  K::Form0     # current carrying-capacity
-  W::Form0     # waste
-  V::Form0
-  ∂ₜ(W) == c * V
-  K == K₀- W
-  ∂ₜ(V) == r * V * (1 - V / K)
-end
+  fC == C * ln(Cmax / C)
+  ∂ₜ(C) == Dif * Δ(C) + fC - Kd * C
+end)
 
 ## Another way to account for angiogenesis effect on tumor
 ## growth is by assuming the carrying capacity of the tumor is
 ## determined by the effective tumor vascular support that is
 ## in turn affected by the tumor volume (Eqs. 15 and 16). -Review of...
-
-# gompertz = @decapode begin
-#   {a,b,c}::Constant
-#   V::Form0
-#   ∂ₜ(V) == a * V * log(b / (V + c))
-# end
-
-space = Icosphere(1) |> loadmesh
-
-sim = evalsim(logistic)
-
-f = sim(space, default_dec_generate)
-
-forms = ComponentArray(V = rand(nv(space)))
-
-copied = copy(forms)
-
-params = ComponentArray(r = 1, K = 2)
-
-f(copied, forms, params, 0)
-
 
 end
