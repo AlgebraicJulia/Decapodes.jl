@@ -168,7 +168,7 @@ add_inplace_stub(var_name::Symbol) = add_stub(gensim_in_place_stub, var_name)
 
 # This will be the function and matrix generation
 function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = cpu())
-  assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^])
+  assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^, :.>, :.<, :.≤, :.≥])
   defined_ops = Set()
 
   defs = quote end
