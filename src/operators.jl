@@ -136,6 +136,7 @@ function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
 
     :plus => (+)
     :(-) || :neg => x -> -1 .* x
+    :ln => (x -> log.(x))
 
     _ => error("Unmatched operator $my_symbol")
   end

@@ -339,6 +339,9 @@ end =#
         if(operator == :(-))
           operator = promote_arithmetic_map[operator]
         end
+        if(operator == :(/))
+          operator = promote_arithmetic_map[operator]
+        end
 
         visited_2[op] = true
         visited_Var[r] = true

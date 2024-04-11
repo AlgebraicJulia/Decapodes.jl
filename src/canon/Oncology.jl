@@ -11,35 +11,43 @@ using CombinatorialSpaces
 using ..Canon 
 using Markdown
 
-@docapode("Logistic"
-  ,"https://en.wikipedia.org/wiki/Logistic_function"
-  ,"Eq. 34 from Yi et al.
+@docapode("TumorInvasion"
+  ,"https://en.wikipedia.org/wiki/Cancer_cell#Causes"
+  ,"Eq. 35 from Yi et al.
   A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance
-  Evolution of Solid Tumors,
-  with f given as logistic growth. (Eq. 5)"
-  ,logistic
+  Evolution of Solid Tumors"
+  ,invasion
   ,begin
-    C::Form0
+    (C,fC)::Form0
     (Dif, Kd, Cmax)::Constant
 
-    fC == C * (1 - C / Cmax)
     ∂ₜ(C) == Dif * Δ(C) + fC - Kd * C
-  end
-)
+end)
+
+@docapode("Logistic"
+  ,"https://en.wikipedia.org/wiki/Logistic_function"
+  ,"Eq. 5 from Yi et al.
+  A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance
+  Evolution of Solid Tumors"
+  ,logistic
+  ,begin
+    (C,fC)::Form0
+    Cmax::Constant
+
+    fC == C * (1 - C / Cmax)
+  end)
 
 @docapode("Gompertz"
   ,"https://en.wikipedia.org/wiki/Gompertz_function"
-  ,"Eq. 34 from Yi et al.
+  ,"Eq. 6 from Yi et al.
   A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance
-  Evolution of Solid Tumors,
-  with f given as Gompertz growth. (Eq. 6)"
+  Evolution of Solid Tumors"
   ,gompertz
   ,begin
-  C::Form0
-  (Dif, Kd, Cmax)::Constant
+    (C,fC)::Form0
+    Cmax::Constant
 
-  fC == C * ln(Cmax / C)
-  ∂ₜ(C) == Dif * Δ(C) + fC - Kd * C
+    fC == C * ln(Cmax / C)
 end)
 
 ## Another way to account for angiogenesis effect on tumor
