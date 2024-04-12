@@ -151,7 +151,7 @@ add_inplace_stub(var_name::Symbol) = add_stub(gensim_in_place_stub, var_name)
 
 # This will be the function and matrix generation
 function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol})
-  assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./])
+  assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^])
   defined_ops = Set()
 
   defs = quote end
@@ -252,8 +252,8 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
   visited_2 = falses(nparts(d, :Op2))
   visited_Σ = falses(nparts(d, :Σ))
 
-  promote_arithmetic_map = Dict(:(+) => :.+, :(-) => :.-, :(*) => :.*, :(/) => :./, :(=) => :.=,
-                                :.+ => :.+, :.- => :.-, :.* => :.*, :./ => :./, :.= => :.=)
+  promote_arithmetic_map = Dict(:(+) => :.+, :(-) => :.-, :(*) => :.*, :(/) => :./, :(^) => :.^, :(=) => :.=,
+                                :.+ => :.+, :.- => :.-, :.* => :.*, :./ => :./, :.^ => :.^, :.= => :.=)
 
   # FIXME: this is a quadratic implementation of topological_sort inlined in here.
   op_order = []
@@ -333,6 +333,7 @@ end =#
           end
         end
 
+        # TODO: Clean this in another PR (with a @match maybe).
         if(operator == :(*))
           operator = promote_arithmetic_map[operator]
         end
@@ -340,6 +341,9 @@ end =#
           operator = promote_arithmetic_map[operator]
         end
         if(operator == :(/))
+          operator = promote_arithmetic_map[operator]
+        end
+        if(operator == :(^))
           operator = promote_arithmetic_map[operator]
         end
 
@@ -502,6 +506,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2,
   tars = set_tanvars_code(d′)
 
   # We need to run this after we grab the constants and parameters out
+  infer_overload_compiler!(d′, dimension)
   resolve_types_compiler!(d′)
   infer_overload_compiler!(d′, dimension)
 
