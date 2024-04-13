@@ -3,11 +3,11 @@ using CombinatorialSpaces.DiscreteExteriorCalculus
 using Catlab
 using LinearAlgebra
 
-# using CairoMakie
+using CairoMakie
 using OrdinaryDiffEq
-# using Logging: global_logger
-# using TerminalLoggers: TerminalLogger
-# global_logger(TerminalLogger())
+using Logging: global_logger
+using TerminalLoggers: TerminalLogger
+global_logger(TerminalLogger())
 
 using Decapodes
 using DiagrammaticEquations
@@ -54,9 +54,9 @@ begin
     (V, V̇, G)::Form1
     (T, ρ, ṗ, p)::Form0
     (kᵥ)::Constant
-    V̇ == -(L₁′(V, V)) + 
+    V̇ == -(-(∧₁₀′(V, ⋆(d(V)))) + d(⋆(∧₁₁′(V, ⋆(V))))) + 
           kᵥ * (Δ₁(V) + (1/3) * (d₀(δ₁(V)))) / avg₀₁(ρ) +
-          d₀(0.5 * (i₁′(V, V))) +
+          d₀(0.5 * ⋆(∧₁₁′(V, ⋆(V)))) +
           -(d₀(p) / avg₀₁(ρ)) +
           G
     ∂ₜ(V) == V̇
@@ -82,7 +82,7 @@ begin
     # no-slip edges
     ∂ᵥ(V̇) == bc₁
     # No change on left/right boundaries
-    ∂ₜ(Ṫ) == bc₀
+    ∂ᵣ(Ṫ) == bc₀ ## Changed from partial t
     ∂ₚ(ṗ) == bc₀
   end
 
@@ -343,115 +343,118 @@ begin
 end
 ## Mesh Creation
 
-s = EmbeddedDeltaSet2D("examples/diff_adv/su2_mesh_square_small_51.stl")
+s = EmbeddedDeltaSet2D("examples/diff_adv/su2_mesh_square_small_51.stl");
+sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s);
+subdivide_duals!(sd, Barycenter());
 if ⋆(Val{1}, sd)[1,1] < 0.0
   orient_component!(s, 1, false)
-end
-sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
-subdivide_duals!(sd, Circumcenter())
+end;
 
 ## BoundaryConditions
 
 # Get boundaries of cylinders
 
-locs = [(10.5, 0.0), (5.5, 0.0), (0.5, 0.0)]
-cyl = vcat(map(locs) do loc
-    findall(p -> ( ((p[1] - loc[1])^2 + (p[2] - loc[2])^2) <= 0.5^2 + 1e-4),s[:point])
-end...)
-fuzzy_bound = unique(vcat(incident(s, cyl, :∂v1)..., incident(s, cyl, :∂v0)...))
-cyl_edge = filter(e -> (s[e, :∂v1] ∈ cyl)&&(s[e, :∂v0] ∈ cyl), fuzzy_bound)
+begin
+  locs = [(10.5, 0.0), (5.5, 0.0), (0.5, 0.0)]
+  cyl = vcat(map(locs) do loc
+      findall(p -> ( ((p[1] - loc[1])^2 + (p[2] - loc[2])^2) <= 0.5^2 + 1e-4),s[:point])
+  end...)
+  fuzzy_bound = unique(vcat(incident(s, cyl, :∂v1)..., incident(s, cyl, :∂v0)...))
+  cyl_edge = filter(e -> (s[e, :∂v1] ∈ cyl)&&(s[e, :∂v0] ∈ cyl), fuzzy_bound)
 
-cyl_bound = vcat(map(locs) do loc
-    findall(p -> (0.5^2 - 1e-4 <= ((p[1] - loc[1])^2 + (p[2] - loc[2])^2) <= 0.5^2 + 1e-4),s[:point])
-end...)
-fuzzy_boundary = unique(vcat(incident(s, cyl_bound, :∂v1)..., incident(s, cyl_bound, :∂v0)...))
-cyl_bound_edge = filter(e -> (s[e, :∂v1] ∈ cyl_bound)&&(s[e, :∂v0] ∈ cyl_bound), fuzzy_boundary)
-cyl_inner = filter(p -> !(p ∈ cyl_bound), cyl)
-slip_edge = filter!(p -> !(p ∈ cyl_bound_edge), cyl_edge)
+  cyl_bound = vcat(map(locs) do loc
+      findall(p -> (0.5^2 - 1e-4 <= ((p[1] - loc[1])^2 + (p[2] - loc[2])^2) <= 0.5^2 + 1e-4),s[:point])
+  end...)
+  fuzzy_boundary = unique(vcat(incident(s, cyl_bound, :∂v1)..., incident(s, cyl_bound, :∂v0)...))
+  cyl_bound_edge = filter(e -> (s[e, :∂v1] ∈ cyl_bound)&&(s[e, :∂v0] ∈ cyl_bound), fuzzy_boundary)
+  cyl_inner = filter(p -> !(p ∈ cyl_bound), cyl)
+  slip_edge = filter!(p -> !(p ∈ cyl_bound_edge), cyl_edge)
 
-k_col = fill(k₁, ne(s))
-k_col[cyl_edge] .= k₂
-k = diagm(k_col)
+  k_col = fill(k₁, ne(s))
+  k_col[cyl_edge] .= k₂
+  k = diagm(k_col)
+end
 
 # Get other boundaries
-function boundary_inds(::Type{Val{1}}, s)
-  collect(findall(x -> x != 0, boundary(Val{2},s) * fill(1,ntriangles(s))))
-end
-
-function boundary_inds(::Type{Val{0}}, s)
-  ∂1_inds = boundary_inds(Val{1}, s)
-  # TODO: Changed src and tgt to v0 and v1
-  unique(vcat(s[∂1_inds,:∂v0],s[∂1_inds,:∂v1]))
-end
-
-function boundary_inds(::Type{Val{2}}, s)
-  ∂1_inds = boundary_inds(Val{1}, s)
-  inds = map([:∂e0, :∂e1, :∂e2]) do esym
-    vcat(incident(s, ∂1_inds, esym)...)
+begin
+  function boundary_inds(::Type{Val{1}}, s)
+    collect(findall(x -> x != 0, boundary(Val{2},s) * fill(1,ntriangles(s))))
   end
-  unique(vcat(inds...))
+
+  function boundary_inds(::Type{Val{0}}, s)
+    ∂1_inds = boundary_inds(Val{1}, s)
+    # TODO: Changed src and tgt to v0 and v1
+    unique(vcat(s[∂1_inds,:∂v0],s[∂1_inds,:∂v1]))
+  end
+
+  function boundary_inds(::Type{Val{2}}, s)
+    ∂1_inds = boundary_inds(Val{1}, s)
+    inds = map([:∂e0, :∂e1, :∂e2]) do esym
+      vcat(incident(s, ∂1_inds, esym)...)
+    end
+    unique(vcat(inds...))
+  end
+
+  function bound_edges(s, ∂₀)
+    te = vcat(incident(s, ∂₀, :∂v1)...)
+    se = vcat(incident(s, ∂₀, :∂v0)...)
+    intersect(te, se)
+  end
+
+  function adj_edges(s, ∂₀)
+    te = vcat(incident(s, ∂₀, :∂v1)...)
+    se = vcat(incident(s, ∂₀, :∂v0)...)
+    unique(vcat(te, se))
+  end
+
+  ∂₀ = boundary_inds(Val{0}, sd)
+  ∂₁ = boundary_inds(Val{1}, sd)
+
+  ∂ₒ₀ = ∂₀[findall(p-> -9 <= p[1] <= 20 && -9 <= p[2] <= 9, s[∂₀, :point])]
+
+  lx = -10.0
+  rx = 21.0
+  ty = 15.5
+  by = -15.5
+
+  ∂ₗ₀ = ∂₀[findall(p-> p[1] <= lx + 1e-4, s[∂₀, :point])]
+  ∂ᵣ₀ = ∂₀[findall(p-> p[1] >= rx - 1e-4, s[∂₀, :point])]
+  ∂ₜ₀ = ∂₀[findall(p-> p[2] >= ty - 1e-4, s[∂₀, :point])]
+  ∂ᵦ₀ = ∂₀[findall(p-> p[2] <= by + 1e-4, s[∂₀, :point])]
+  ∂ₑ₀ = vcat(∂ₗ₀, ∂ᵣ₀, ∂ₜ₀, ∂ᵦ₀)
+
+  ∂ₗ₁ = bound_edges(s, ∂ₗ₀)
+  ∂ᵣ₁ = bound_edges(s, ∂ᵣ₀)
+  ∂ₑ₁ = bound_edges(s, ∂ₑ₀)
+
+  ∂₁₊ = adj_edges(s, ∂₀)
+
+  ∂ₗ₁₊ = adj_edges(s, ∂ₗ₀)
+  ∂ᵣ₁₊ = adj_edges(s, ∂ᵣ₀)
+  ∂ₑ₁₊ = adj_edges(s, ∂ₑ₀)
+  ∂_points = unique(vcat(s[∂ₑ₁₊, :∂v0], s[∂ₑ₁₊, :∂v1]))
+  ∂ₑ₁₊ = bound_edges(s, ∂_points)
+
+  ∂ₗ₀₊ = unique(vcat(s[∂ₗ₁₊, :∂v1], s[∂ₗ₁₊, :∂v0]))
+  ∂ᵣ₀₊ = unique(vcat(s[∂ᵣ₁₊, :∂v1], s[∂ᵣ₁₊, :∂v0]))
+  ∂ₑ₀₊ = unique(vcat(s[∂ₑ₁₊, :∂v1], s[∂ₑ₁₊, :∂v0]))
+
+  c_objs = fill(288.15, nv(s))
+  c_objs[∂ₒ₀] .= 350.0
+  velocity(p) = [3.402, 0.0, 0.0]
+  gravity(p) = [0.0,0.0,0.0]
+  v = ♭(sd, DualVectorField(velocity.(sd[triangle_center(sd),:dual_point]))).data;
+  g = ♭(sd, DualVectorField(gravity.(sd[triangle_center(sd),:dual_point]))).data;
+  p = [density for p in s[:point]] * (288.15 * R₀)
 end
-
-function bound_edges(s, ∂₀)
-  te = vcat(incident(s, ∂₀, :∂v1)...)
-  se = vcat(incident(s, ∂₀, :∂v0)...)
-  intersect(te, se)
-end
-
-function adj_edges(s, ∂₀)
-  te = vcat(incident(s, ∂₀, :∂v1)...)
-  se = vcat(incident(s, ∂₀, :∂v0)...)
-  unique(vcat(te, se))
-end
-
-∂₀ = boundary_inds(Val{0}, sd)
-∂₁ = boundary_inds(Val{1}, sd)
-
-∂ₒ₀ = ∂₀[findall(p-> -9 <= p[1] <= 20 && -9 <= p[2] <= 9, s[∂₀, :point])]
-
-lx = -10.0
-rx = 21.0
-ty = 15.5
-by = -15.5
-
-∂ₗ₀ = ∂₀[findall(p-> p[1] <= lx + 1e-4, s[∂₀, :point])]
-∂ᵣ₀ = ∂₀[findall(p-> p[1] >= rx - 1e-4, s[∂₀, :point])]
-∂ₜ₀ = ∂₀[findall(p-> p[2] >= ty - 1e-4, s[∂₀, :point])]
-∂ᵦ₀ = ∂₀[findall(p-> p[2] <= by + 1e-4, s[∂₀, :point])]
-∂ₑ₀ = vcat(∂ₗ₀, ∂ᵣ₀, ∂ₜ₀, ∂ᵦ₀)
-
-∂ₗ₁ = bound_edges(s, ∂ₗ₀)
-∂ᵣ₁ = bound_edges(s, ∂ᵣ₀)
-∂ₑ₁ = bound_edges(s, ∂ₑ₀)
-
-∂₁₊ = adj_edges(s, ∂₀)
-
-∂ₗ₁₊ = adj_edges(s, ∂ₗ₀)
-∂ᵣ₁₊ = adj_edges(s, ∂ᵣ₀)
-∂ₑ₁₊ = adj_edges(s, ∂ₑ₀)
-∂_points = unique(vcat(s[∂ₑ₁₊, :∂v0], s[∂ₑ₁₊, :∂v1]))
-∂ₑ₁₊ = bound_edges(s, ∂_points)
-
-∂ₗ₀₊ = unique(vcat(s[∂ₗ₁₊, :∂v1], s[∂ₗ₁₊, :∂v0]))
-∂ᵣ₀₊ = unique(vcat(s[∂ᵣ₁₊, :∂v1], s[∂ᵣ₁₊, :∂v0]))
-∂ₑ₀₊ = unique(vcat(s[∂ₑ₁₊, :∂v1], s[∂ₑ₁₊, :∂v0]))
-
-c_objs = fill(288.15, nv(s))
-c_objs[∂ₒ₀] .= 350.0
-velocity(p) = [3.402, 0.0, 0.0]
-gravity(p) = [0.0,0.0,0.0]
-v = ♭(sd, DualVectorField(velocity.(sd[triangle_center(sd),:dual_point]))).data;
-g = ♭(sd, DualVectorField(gravity.(sd[triangle_center(sd),:dual_point]))).data;
-p = [density for p in s[:point]] * (288.15 * R₀)
-
 m_avg = avg_mat(Val{(0,1)}, sd)
-sim = eval(gensim(HeatXFer))
+# sim = eval(gensim(HeatXFer))
 
 wedge_cache = init_wedge_ops(sd)
 v2comp = comp_support(sd);
 cache_mat = Dict(:t2c => tri2comp(s, v2comp), :e2c => edge2comp(s, v2comp), :cross => changes(sd, v2comp),
                  :α_cache => zeros(ntriangles(sd)*3), :β_cache => zeros(ntriangles(sd)*3))
-function generate(sd, my_symbol; hodge=DiagonalHodge())
+function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :∂ₚ => (x) -> begin
             x[∂ₑ₀₊] .= 0
@@ -468,31 +471,238 @@ function generate(sd, my_symbol; hodge=DiagonalHodge())
       x[∂ₑ₁₊] .= 0
       x
     end
-    :L₁′ => (α, β) -> begin
+    :∂ᵣ => (x) -> begin
+      x[∂ₑ₀₊] .= 0
+      x[∂ₒ₀] .= 0
+    end
+    :∧₁₀′ => (α, β) -> begin
       x = zeros(ne(sd)) # TODO: Correct size?
       cp_2_1!(x, β, α, cache_mat)
       x
     end
-    :i₁′ => (α, β) -> begin
+    :∧₁₁′ => (α, β) -> begin
       x = zeros(nv(sd)) # TODO: Correct size?
-      pd_wedge!(x′, Val{(1,1)}, sd, α, β; wedge_cache...)
+      pd_wedge!(x, Val{(1,1)}, sd, α, β; wedge_cache...)
       x
     end
     x => error("Unmatched operator $my_symbol")
   end
   return op
 end
-fₘ = sim(sd, generate)
+function simulate(mesh, operators, hodge = GeometricHodge())
+  #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:577 =#
+  #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:578 =#
+  begin
+      #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:174 =#
+      (var"GenSim-M_d₁", d₁) = default_dec_matrix_generate(mesh, :d₁, hodge)
+      (var"GenSim-M_⋆₂", ⋆₂) = default_dec_matrix_generate(mesh, :⋆₂, hodge)
+      (var"GenSim-M_⋆₁", ⋆₁) = default_dec_matrix_generate(mesh, :⋆₁, hodge)
+      (var"GenSim-M_⋆₀⁻¹", ⋆₀⁻¹) = default_dec_matrix_generate(mesh, :⋆₀⁻¹, hodge)
+      (var"GenSim-M_d₀", d₀) = default_dec_matrix_generate(mesh, :d₀, hodge)
+      (var"GenSim-M_dual_d₁", dual_d₁) = default_dec_matrix_generate(mesh, :dual_d₁, hodge)
+      (var"GenSim-M_⋆₀", ⋆₀) = default_dec_matrix_generate(mesh, :⋆₀, hodge)
+      (var"GenSim-M_dual_d₀", dual_d₀) = default_dec_matrix_generate(mesh, :dual_d₀, hodge)
+      (var"GenSim-M_⋆₁⁻¹", ⋆₁⁻¹) = default_dec_matrix_generate(mesh, :⋆₁⁻¹, hodge)
+      (var"GenSim-M_∧₀₁", ∧₀₁) = default_dec_matrix_generate(mesh, :∧₀₁, hodge)
+      ∂ᵥ = operators(mesh, :∂ᵥ)
+      ∂ₚ = operators(mesh, :∂ₚ)
+      avg₀₁ = operators(mesh, :avg₀₁)
+      ∂ₜₐ = operators(mesh, :∂ₜₐ)
+      (∧₁₀′) = operators(mesh, :∧₁₀′)
+      (∧₁₁′) = operators(mesh, :∧₁₁′)
+  end
+  #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:579 =#
+  begin
+      #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:484 =#
+      var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_d₀" * var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_dual_d₁" * var"GenSim-M_⋆₁" 
+      var"GenSim-ConMat_1" = (x->var"GenSim-M_GenSim-ConMat_1" * x)
+      var"GenSim-M_GenSim-ConMat_2" = var"GenSim-M_dual_d₀" * var"GenSim-M_⋆₂" * var"GenSim-M_d₁"
+      var"GenSim-ConMat_2" = (x->var"GenSim-M_GenSim-ConMat_2" * x)
+      var"GenSim-M_GenSim-ConMat_3" = var"GenSim-M_⋆₂" * var"GenSim-M_d₁"
+      var"GenSim-ConMat_3" = (x->var"GenSim-M_GenSim-ConMat_3" * x)
+      var"GenSim-M_GenSim-ConMat_4" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_dual_d₁" * var"GenSim-M_⋆₁"
+      var"GenSim-ConMat_4" = (x->var"GenSim-M_GenSim-ConMat_4" * x)
+      var"GenSim-M_GenSim-ConMat_5" = var"GenSim-M_d₀" * var"GenSim-M_⋆₀⁻¹"
+      var"GenSim-ConMat_5" = (x->var"GenSim-M_GenSim-ConMat_5" * x)
+      var"GenSim-M_GenSim-ConMat_6" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_⋆₀"
+      var"GenSim-ConMat_6" = (x->var"GenSim-M_GenSim-ConMat_6" * x)
+  end
+  #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:580 =#
+  begin
+      #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:226 =#
+      var"__flow_•9" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•15" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      __Gensim_Var_5 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      __Gensim_Var_4 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      __Gensim_Var_1 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•22" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•25" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•4" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :Tri)))
+      var"__diffusion_•3" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      __Gensim_Var_12 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      __Gensim_Var_15 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      var"__flow_•14" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•13" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      __Gensim_Var_13 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__energy_•2" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      __ρ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      __Gensim_Var_16 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__diffusion_•2" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•12" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•2" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•20" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      __Ṫ₁ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      var"__energy_•4" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      __flow_sum_3 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      __energy_Ṫₐ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      var"__flow_•6" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•19" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      var"__flow_•24" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      __flow_sum_1 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      __flow_sum_2 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      __Ṫ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      var"__flow_•1" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•18" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•23" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      __ṗ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+      var"__flow_•11" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"__flow_•10" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      __V̇ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+  end
+  #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:581 =#
+  f(du, u, p, t) = begin
+          #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:581 =#
+          #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:582 =#
+          begin
+              #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:251 =#
+              V = u.V
+              flow_G = u.flow_G
+              T = u.T
+              p = u.p
+              flow_kᵥ = kᵥ
+              energy_R₀ = R₀
+              diffusion_k = k₂
+              var"1" = 1.0
+              var"3" = 3.0
+              var"0.5" = 0.5
+          end
+          #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:583 =#
+          var"flow_•9" = Decapodes.get_tmp(var"__flow_•9", u)
+          var"flow_•15" = Decapodes.get_tmp(var"__flow_•15", u)
+          Gensim_Var_5 = Decapodes.get_tmp(__Gensim_Var_5, u)
+          Gensim_Var_4 = Decapodes.get_tmp(__Gensim_Var_4, u)
+          Gensim_Var_1 = Decapodes.get_tmp(__Gensim_Var_1, u)
+          var"flow_•22" = Decapodes.get_tmp(var"__flow_•22", u)
+          var"flow_•25" = Decapodes.get_tmp(var"__flow_•25", u)
+          var"flow_•4" = Decapodes.get_tmp(var"__flow_•4", u)
+          var"diffusion_•3" = Decapodes.get_tmp(var"__diffusion_•3", u)
+          Gensim_Var_12 = Decapodes.get_tmp(__Gensim_Var_12, u)
+          Gensim_Var_15 = Decapodes.get_tmp(__Gensim_Var_15, u)
+          var"flow_•14" = Decapodes.get_tmp(var"__flow_•14", u)
+          var"flow_•13" = Decapodes.get_tmp(var"__flow_•13", u)
+          Gensim_Var_13 = Decapodes.get_tmp(__Gensim_Var_13, u)
+          var"energy_•2" = Decapodes.get_tmp(var"__energy_•2", u)
+          ρ = Decapodes.get_tmp(__ρ, u)
+          Gensim_Var_16 = Decapodes.get_tmp(__Gensim_Var_16, u)
+          var"diffusion_•2" = Decapodes.get_tmp(var"__diffusion_•2", u)
+          var"flow_•12" = Decapodes.get_tmp(var"__flow_•12", u)
+          var"flow_•2" = Decapodes.get_tmp(var"__flow_•2", u)
+          var"flow_•20" = Decapodes.get_tmp(var"__flow_•20", u)
+          Ṫ₁ = Decapodes.get_tmp(__Ṫ₁, u)
+          var"energy_•4" = Decapodes.get_tmp(var"__energy_•4", u)
+          flow_sum_3 = Decapodes.get_tmp(__flow_sum_3, u)
+          energy_Ṫₐ = Decapodes.get_tmp(__energy_Ṫₐ, u)
+          var"flow_•6" = Decapodes.get_tmp(var"__flow_•6", u)
+          var"flow_•19" = Decapodes.get_tmp(var"__flow_•19", u)
+          var"flow_•24" = Decapodes.get_tmp(var"__flow_•24", u)
+          flow_sum_1 = Decapodes.get_tmp(__flow_sum_1, u)
+          flow_sum_2 = Decapodes.get_tmp(__flow_sum_2, u)
+          Ṫ = Decapodes.get_tmp(__Ṫ, u)
+          var"flow_•1" = Decapodes.get_tmp(var"__flow_•1", u)
+          var"flow_•18" = Decapodes.get_tmp(var"__flow_•18", u)
+          var"flow_•23" = Decapodes.get_tmp(var"__flow_•23", u)
+          ṗ = Decapodes.get_tmp(__ṗ, u)
+          var"flow_•11" = Decapodes.get_tmp(var"__flow_•11", u)
+          var"flow_•10" = Decapodes.get_tmp(var"__flow_•10", u)
+          V̇ = Decapodes.get_tmp(__V̇, u)
+          mul!(var"flow_•9", var"GenSim-M_⋆₁", V)
+          mul!(var"flow_•15", var"GenSim-M_GenSim-ConMat_1", V)
+          mul!(Gensim_Var_5, var"GenSim-M_GenSim-ConMat_1", V)
+          mul!(Gensim_Var_4, var"GenSim-M_GenSim-ConMat_2", V)
+          var"GenSim-M_⋆₁⁻¹"(Gensim_Var_1, Gensim_Var_4)
+          mul!(var"flow_•22", var"GenSim-M_⋆₁", V)
+          mul!(var"flow_•25", var"GenSim-M_d₀", p)
+          mul!(var"flow_•4", var"GenSim-M_GenSim-ConMat_3", V)
+          mul!(var"diffusion_•3", var"GenSim-M_d₀", T)
+          mul!(Gensim_Var_12, var"GenSim-M_GenSim-ConMat_6", p)
+          mul!(Gensim_Var_15, var"GenSim-M_GenSim-ConMat_6", T)
+          var"flow_•3" = V ∧₁₀′ var"flow_•4"
+          var"flow_•8" = V ∧₁₁′ var"flow_•9"
+          var"flow_•14" .= var"1" ./ var"3"
+          var"flow_•13" .= var"flow_•14" .* var"flow_•15"
+          var"flow_•21" = V ∧₁₁′ var"flow_•22"
+          var"GenSim-M_∧₀₁"(Gensim_Var_13, Gensim_Var_12, V)
+          var"energy_•2" .= energy_R₀ .* T
+          ρ .= p ./ var"energy_•2"
+          var"GenSim-M_∧₀₁"(Gensim_Var_16, Gensim_Var_15, V)
+          var"diffusion_•2" .= diffusion_k .* var"diffusion_•3"
+          var"flow_•12" .= (.+)(Gensim_Var_1, Gensim_Var_5)
+          var"flow_•2" .= (.-)(var"flow_•3")
+          var"flow_•17" = avg₀₁(ρ)
+          mul!(var"flow_•20", var"GenSim-M_⋆₀⁻¹", var"flow_•21")
+          var"flow_•26" = avg₀₁(ρ)
+          mul!(Ṫ₁, var"GenSim-M_GenSim-ConMat_4", var"diffusion_•2")
+          mul!(var"energy_•4", var"GenSim-M_GenSim-ConMat_4", Gensim_Var_16)
+          mul!(flow_sum_3, var"GenSim-M_GenSim-ConMat_4", Gensim_Var_13)
+          energy_Ṫₐ .= (.-)(var"energy_•4")
+          energy_bc₀ = ∂ₜₐ(energy_Ṫₐ)
+          mul!(var"flow_•6", var"GenSim-M_GenSim-ConMat_5", var"flow_•8")
+          var"flow_•19" .= var"0.5" .* var"flow_•20"
+          var"flow_•24" .= var"flow_•25" ./ var"flow_•26"
+          flow_sum_1 .= (.+)(var"flow_•2", var"flow_•6")
+          flow_sum_2 .= (.+)(var"flow_•12", var"flow_•13")
+          Ṫ .= (.+)(energy_Ṫₐ, Ṫ₁)
+          var"flow_•1" .= (.-)(flow_sum_1)
+          mul!(var"flow_•18", var"GenSim-M_d₀", var"flow_•19")
+          var"flow_•23" .= (.-)(var"flow_•24")
+          ṗ .= (.-)(flow_sum_3)
+          var"flow_•11" .= flow_kᵥ .* flow_sum_2
+          var"flow_•10" .= var"flow_•11" ./ var"flow_•17"
+          V̇ .= (.+)(var"flow_•1", var"flow_•10", var"flow_•18", var"flow_•23", flow_G)
+          bcs_bc₁ = ∂ᵥ(V̇)
+          bcs_bc₀ = ∂ₚ(ṗ)
+          #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:584 =#
+          getproperty(du, :V) .= V̇
+          getproperty(du, :p) .= ṗ
+          getproperty(du, :T) .= Ṫ
+          getproperty(du, :Ṫ) .= bcs_bc₀
+      end
+end
+fₘ = simulate(sd, generate)
 
-u₀ = ComponentArray(V=v, flow_G=g, T=c_objs, p=p)
+u₀ = ComponentArray(V=v, flow_G=g, T=c_objs, p=p, Ṫ=zeros(nv(sd)))
 
-constants_and_parameters = (
-  energy_R₀ = R₀,
-  diffusion_k = k₂, # TODO: Maybe 1?
-  flow_kᵥ = kᵥ
-)
+constants_and_parameters = (energy_R₀=R₀, diffusion_k=k₂, flow_kᵥ=kᵥ)
 
 tₑ = 2.0
+tₑ = 0.5
+
 dt = 0.01
+@info "Solving ODE Problem"
 prob = ODEProblem(fₘ, u₀, (0.0, tₑ), constants_and_parameters)
-sol1 = solve(prob, Tsit5(), #=progress=true, progress_steps=1,=# dtmax=8e-4, saveat=dt, #=p=g=#)
+soln = solve(prob, Tsit5(), progress=true, progress_steps=1, dtmax=8e-4, saveat=dt, save_idxs=[:V, :flow_G, :T, :p] #=p=g=#)
+
+# fₘ(u₀, u₀, constants_and_parameters, 0)
+
+densities(t) = soln(t).p ./ (R₀ * soln(t).T)
+magnitudes(t) = sqrt.(abs.(1e-4 .+ inv_hodge_star(Val{0}, sd)*pd_wedge(Val{(1,1)}, sd, soln(t).V, ⋆(Val{1}, sd) * soln(t).V)))
+begin
+  frames = 100
+  fig = Figure()
+  ax = CairoMakie.Axis(fig[1,1])
+  msh = CairoMakie.mesh!(ax, s, color=densities(0) , colormap=:jet, colorrange=extrema(densities(0)))
+  Colorbar(fig[1,2], msh)
+  CairoMakie.record(fig, "CHT.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
+      msh.color = densities(t)
+  end
+end
