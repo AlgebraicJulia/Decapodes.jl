@@ -25,7 +25,6 @@ append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
 include("coordinates.jl")
 include("operators.jl")
-include("operators_CUDA.jl")
 include("simulation.jl")
 
 # documentation

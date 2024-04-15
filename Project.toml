@@ -6,6 +6,7 @@ version = "0.5.2"
 [deps]
 ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
 Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 CombinatorialSpaces = "b1c52339-7909-45ad-8b6a-6e388f7c67f2"
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
@@ -26,6 +27,12 @@ Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
+
+[weakdeps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+
+[extensions]
+DecapodesCUDAExt = "CUDA"
 
 [compat]
 ACSets = "0.2"

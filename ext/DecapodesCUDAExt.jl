@@ -1,8 +1,13 @@
+module DecapodesCUDAExt
 using CombinatorialSpaces
 using LinearAlgebra
 using Base.Iterators
 using Catlab
 using Krylov
+using CUDA
+using CUDA.CUSPARSE
+using MLStyle
+import Decapodes: default_dec_cu_matrix_generate
 
 function default_dec_cu_matrix_generate(sd, my_symbol, hodge)
   op = @match my_symbol begin
@@ -62,7 +67,7 @@ end
 # Special case for inverse hodge for DualForm1 to Form1
 # TODO: This should be changed to use Krylov, need to figure out inplace version of this
 function dec_cu_pair_inv_hodge(::Type{Val{1}}, sd::EmbeddedDeltaDualComplex2D{Bool, float_type, _p} where _p,  ::GeometricHodge ) where float_type
-  hdg = -1 * dec_hodge_star(1, sd, GeometricHodge(), Val{:CUDA})
+  hdg = -1 * dec_hodge_star(Val{1}, sd, GeometricHodge(), Val{:CUDA})
   # TODO: Figure out what a good number for this memory value is
   gmres_solver = GmresSolver(size(hdg, 1), size(hdg, 2), 10, CuVector{float_type})
 
@@ -116,4 +121,5 @@ end
 function dec_cu_flat(sd::HasDeltaSet2D)
   ♭_m = ♭_mat(sd)
   x -> ♭_m * x
+end
 end
