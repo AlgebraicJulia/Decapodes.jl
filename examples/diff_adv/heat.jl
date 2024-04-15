@@ -52,7 +52,7 @@ soln = solve(prob, Tsit5())
 
 @time solve(prob, Tsit5());
 
-begin
+#= begin
   frames = 100
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1])
@@ -61,4 +61,4 @@ begin
   CairoMakie.record(fig, "Heat.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
     msh.color = soln(t).U
   end
-end
+end =#

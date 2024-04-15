@@ -17,6 +17,9 @@ using ComponentArrays
 using GeometryBasics
 Point3D = Point3{Float64}
 
+using CUDA
+using CUDA.CUSPARSE
+
 ## Physics
 
 begin 
@@ -24,10 +27,10 @@ begin
   Diffusion = @decapode begin
     (T, Ṫ)::Form0
     ϕ::DualForm1
-    k::Constant
+    # k::Constant
 
     # Fick's first law
-    ϕ ==  ⋆₁(k * d₀(T))
+    ϕ ==  ⋆₁(#=k=#0.4662225067399311 * d₀(T))
     # Diffusion equation
     Ṫ == ⋆₀⁻¹(dual_d₁(ϕ))
   end
@@ -53,9 +56,9 @@ begin
   NavierStokes = @decapode begin
     (V, V̇, G)::Form1
     (T, ρ, ṗ, p)::Form0
-    (kᵥ)::Constant
+    # (kᵥ)::Constant
     V̇ == -(-(∧₁₀′(V, ⋆(d(V)))) + d(⋆(∧₁₁′(V, ⋆(V))))) + 
-          kᵥ * (Δ₁(V) + (1/3) * (d₀(δ₁(V)))) / avg₀₁(ρ) +
+          #=kᵥ=# 1.716e-5 * (Δ₁(V) + (1/3) * (d₀(δ₁(V)))) / avg₀₁(ρ) +
           d₀(0.5 * ⋆(∧₁₁′(V, ⋆(V)))) +
           -(d₀(p) / avg₀₁(ρ)) +
           G
@@ -67,9 +70,10 @@ begin
   Energy = @decapode begin
     (V)::Form1
     (ρ, p, T, Ṫ, Ṫₐ, Ṫ₁, bc₀)::Form0
-    (R₀)::Constant
+    #(R₀)::Constant
 
-    ρ == p / (R₀ * T)
+    # ρ == p / (R₀ * T)
+    ρ == p / (287.1015166027786 * T)
     Ṫₐ == -(⋆₀⁻¹(L(V, ⋆₀(T))))
     ∂ₜₐ(Ṫₐ) == bc₀
     Ṫ == Ṫₐ + Ṫ₁
@@ -160,18 +164,18 @@ begin
 
   diag_vols(s) = spdiagm([dual_volume(Val{2}, s, dt) for dt in 1:nparts(s, :DualTri)])
 
-  wedge_mat(::Type{Val{(1,1)}}, s) = 2.0 * (support_to_tri(s)*diag_vols(s)*edge_to_support(s))
-  wedge_mat(::Type{Val{(2,0)}}, s) = support_to_tri(s)*diag_vols(s)*tri_to_support(s)
+  wedge_mat(::Type{Val{(1,1)}}, s) = CuSparseMatrixCSC(2.0 * (support_to_tri(s)*diag_vols(s)*edge_to_support(s)))
+  wedge_mat(::Type{Val{(2,0)}}, s) = CuSparseMatrixCSC(support_to_tri(s)*diag_vols(s)*tri_to_support(s))
 
-  wedge_edge(::Type{Val{(1,1)}}, s) = dual_boundary(Val{2}, s) * 2.0 * (support_to_tri(s)*diag_vols(s)*edge_to_support(s))
-  wedge_edge(::Type{Val{(2,0)}}, s) = dual_boundary(Val{2}, s) * support_to_tri(s)*diag_vols(s)*tri_to_support(s)
+  wedge_edge(::Type{Val{(1,1)}}, s) = CuSparseMatrixCSC(dual_boundary(Val{2}, s) * 2.0 * (support_to_tri(s)*(diag_vols(s)*edge_to_support(s))))
+  wedge_edge(::Type{Val{(2,0)}}, s) = CuSparseMatrixCSC(dual_boundary(Val{2}, s) * support_to_tri(s)*(diag_vols(s)*tri_to_support(s)))
 
-  function pd_wedge!(x, ::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat(Val{(1,1)}, s)), caches=[zeros(nv(s)), zeros(ne(s))], kw...)
+  function pd_wedge!(x, ::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat(Val{(1,1)}, s)), caches=[CUDA.zeros(nv(s)), CUDA.zeros(ne(s))], kw...)
     broadcast!(*, caches[2], α, β)
     mul!(x, wedge_t[(1,1)], caches[2])
   end
 
-  function pd_wedge(::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat(Val{(1,1)}, s)), caches=[zeros(nv(s)), zeros(ne(s))], kw...)
+  function pd_wedge(::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat(Val{(1,1)}, s)), caches=[CUDA.zeros(nv(s)), CUDA.zeros(ne(s))], kw...)
     broadcast!(*, caches[2], α, β)
     wedge_t[(1,1)] * caches[2]
   end
@@ -185,10 +189,10 @@ begin
   end
 
   function init_wedge_ops(s)
-    (d_mat=Dict(:d₁=>d(Val{1}, s), :dual_d₀=>dual_derivative(Val{0}, s)),
+    (d_mat=Dict(:d₁=>CuSparseMatrixCSC(d(Val{1}, s)), :dual_d₀=>CuSparseMatrixCSC(dual_derivative(Val{0}, s))),
     wedge_e=Dict((1,1)=>wedge_edge(Val{(1,1)},s), (2,0)=>wedge_edge(Val{(2,0)},s)),
     wedge_t=Dict((1,1)=>wedge_mat(Val{(1,1)}, s), (2,0)=>wedge_mat(Val{(2,0)},s)),
-    caches=[zeros(nv(s)), zeros(ne(s)), zeros(ntriangles(s))])
+    caches=[CUDA.zeros(Float64, nv(s)), CUDA.zeros(Float64, ne(s)), CUDA.zeros(Float64, ntriangles(s))])
   end
 
   vect(s, e) = (s[s[e,:∂v1], :point] - s[s[e,:∂v0], :point]) * sign(1, s, e)
@@ -229,7 +233,7 @@ begin
             append!(V, dot(n_ort, e_vects[ns[2]]) * orient_vals[ns[2]] * sign(1, s, ns[2])* orient_vals[i]* sign(2,s,t) / 3.0)
         end
     end
-    sparse(I,J,V, ne(s), ntriangles(s)*3)
+    CuSparseMatrixCSC(sparse(I,J,V, ne(s), ntriangles(s)*3))
   end
   function edge2comp(s, v2comp)
     I = Vector{Int64}()
@@ -243,7 +247,7 @@ begin
             push!(V, 1 / CombinatorialSpaces.volume(Val{1}, s, inds[i]))
         end
     end
-    sparse(I,J,V)
+    CuSparseMatrixCSC(sparse(I,J,V))
   end
   function tri2comp(s, v2comp)
     I = Vector{Int64}()
@@ -257,7 +261,7 @@ begin
             push!(V, 1)
         end
     end
-    sparse(I,J,V)
+    CuSparseMatrixCSC(sparse(I,J,V))
   end
 
   function cp_2_1!(x, α, β, matrices)
@@ -278,7 +282,7 @@ begin
         append!(I, [e,e])
         append!(V, [0.5, 0.5])
     end
-    sparse(I,J,V)
+    CuSparseMatrixCSC(sparse(I,J,V))
   end
 end
 
@@ -360,19 +364,19 @@ begin
       findall(p -> ( ((p[1] - loc[1])^2 + (p[2] - loc[2])^2) <= 0.5^2 + 1e-4),s[:point])
   end...)
   fuzzy_bound = unique(vcat(incident(s, cyl, :∂v1)..., incident(s, cyl, :∂v0)...))
-  cyl_edge = filter(e -> (s[e, :∂v1] ∈ cyl)&&(s[e, :∂v0] ∈ cyl), fuzzy_bound)
+  cyl_edge = CuArray(filter(e -> (s[e, :∂v1] ∈ cyl)&&(s[e, :∂v0] ∈ cyl), fuzzy_bound))
 
   cyl_bound = vcat(map(locs) do loc
       findall(p -> (0.5^2 - 1e-4 <= ((p[1] - loc[1])^2 + (p[2] - loc[2])^2) <= 0.5^2 + 1e-4),s[:point])
   end...)
   fuzzy_boundary = unique(vcat(incident(s, cyl_bound, :∂v1)..., incident(s, cyl_bound, :∂v0)...))
-  cyl_bound_edge = filter(e -> (s[e, :∂v1] ∈ cyl_bound)&&(s[e, :∂v0] ∈ cyl_bound), fuzzy_boundary)
-  cyl_inner = filter(p -> !(p ∈ cyl_bound), cyl)
-  slip_edge = filter!(p -> !(p ∈ cyl_bound_edge), cyl_edge)
+  # cyl_bound_edge = filter(e -> (s[e, :∂v1] ∈ cyl_bound)&&(s[e, :∂v0] ∈ cyl_bound), fuzzy_boundary)
+  cyl_inner = CuArray(filter(p -> !(p ∈ cyl_bound), cyl))
+  # slip_edge = filter!(p -> !(p ∈ cyl_bound_edge), cyl_edge)
 
-  k_col = fill(k₁, ne(s))
+  k_col = CuArray(fill(k₁, ne(s)))
   k_col[cyl_edge] .= k₂
-  k = diagm(k_col)
+  # k = CuSparseMatrixCSC(diagm(k_col))
 end
 
 # Get other boundaries
@@ -411,7 +415,7 @@ begin
   ∂₁ = boundary_inds(Val{1}, sd)
 
   ∂ₒ₀ = ∂₀[findall(p-> -9 <= p[1] <= 20 && -9 <= p[2] <= 9, s[∂₀, :point])]
-
+  cu_∂ₒ₀ = CuArray(∂ₒ₀)
   lx = -10.0
   rx = 21.0
   ty = 15.5
@@ -434,26 +438,27 @@ begin
   ∂ₑ₁₊ = adj_edges(s, ∂ₑ₀)
   ∂_points = unique(vcat(s[∂ₑ₁₊, :∂v0], s[∂ₑ₁₊, :∂v1]))
   ∂ₑ₁₊ = bound_edges(s, ∂_points)
+  cu_∂ₑ₁₊ = CuArray(∂ₑ₁₊)
 
   ∂ₗ₀₊ = unique(vcat(s[∂ₗ₁₊, :∂v1], s[∂ₗ₁₊, :∂v0]))
   ∂ᵣ₀₊ = unique(vcat(s[∂ᵣ₁₊, :∂v1], s[∂ᵣ₁₊, :∂v0]))
-  ∂ₑ₀₊ = unique(vcat(s[∂ₑ₁₊, :∂v1], s[∂ₑ₁₊, :∂v0]))
+  ∂ₑ₀₊ = CuArray(unique(vcat(s[∂ₑ₁₊, :∂v1], s[∂ₑ₁₊, :∂v0])))
 
-  c_objs = fill(288.15, nv(s))
-  c_objs[∂ₒ₀] .= 350.0
+  c_objs = CuArray(fill(288.15, nv(s)))
+  c_objs[cu_∂ₒ₀] .= 350.0
   velocity(p) = [3.402, 0.0, 0.0]
   gravity(p) = [0.0,0.0,0.0]
-  v = ♭(sd, DualVectorField(velocity.(sd[triangle_center(sd),:dual_point]))).data;
-  g = ♭(sd, DualVectorField(gravity.(sd[triangle_center(sd),:dual_point]))).data;
-  p = [density for p in s[:point]] * (288.15 * R₀)
+  v = CuArray(♭(sd, DualVectorField(velocity.(sd[triangle_center(sd),:dual_point]))).data);
+  g = CuArray(♭(sd, DualVectorField(gravity.(sd[triangle_center(sd),:dual_point]))).data);
+  p = CuArray([density for p in s[:point]] * (288.15 * R₀))
 end
 m_avg = avg_mat(Val{(0,1)}, sd)
-# sim = eval(gensim(HeatXFer))
+# sim = eval(gensim(HeatXFer, code_target=cuda()))
 
 wedge_cache = init_wedge_ops(sd)
 v2comp = comp_support(sd);
 cache_mat = Dict(:t2c => tri2comp(s, v2comp), :e2c => edge2comp(s, v2comp), :cross => changes(sd, v2comp),
-                 :α_cache => zeros(ntriangles(sd)*3), :β_cache => zeros(ntriangles(sd)*3))
+                 :α_cache => CUDA.zeros(Float64, ntriangles(sd)*3), :β_cache => CUDA.zeros(Float64, ntriangles(sd)*3))
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :∂ₚ => (x) -> begin
@@ -468,20 +473,20 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     end
     :∂ᵥ => (x) -> begin
       x[cyl_edge] .= 0
-      x[∂ₑ₁₊] .= 0
+      x[cu_∂ₑ₁₊] .= 0
       x
     end
     :∂ᵣ => (x) -> begin
       x[∂ₑ₀₊] .= 0
-      x[∂ₒ₀] .= 0
+      x[cu_∂ₒ₀] .= 0
     end
     :∧₁₀′ => (α, β) -> begin
-      x = zeros(ne(sd)) # TODO: Correct size?
+      x = CUDA.zeros(Float64, ne(sd))
       cp_2_1!(x, β, α, cache_mat)
       x
     end
     :∧₁₁′ => (α, β) -> begin
-      x = zeros(nv(sd)) # TODO: Correct size?
+      x = CUDA.zeros(Float64, nv(sd))
       pd_wedge!(x, Val{(1,1)}, sd, α, β; wedge_cache...)
       x
     end
@@ -494,16 +499,16 @@ function simulate(mesh, operators, hodge = GeometricHodge())
   #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:578 =#
   begin
       #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:174 =#
-      (var"GenSim-M_d₁", d₁) = default_dec_matrix_generate(mesh, :d₁, hodge)
-      (var"GenSim-M_⋆₂", ⋆₂) = default_dec_matrix_generate(mesh, :⋆₂, hodge)
-      (var"GenSim-M_⋆₁", ⋆₁) = default_dec_matrix_generate(mesh, :⋆₁, hodge)
-      (var"GenSim-M_⋆₀⁻¹", ⋆₀⁻¹) = default_dec_matrix_generate(mesh, :⋆₀⁻¹, hodge)
-      (var"GenSim-M_d₀", d₀) = default_dec_matrix_generate(mesh, :d₀, hodge)
-      (var"GenSim-M_dual_d₁", dual_d₁) = default_dec_matrix_generate(mesh, :dual_d₁, hodge)
-      (var"GenSim-M_⋆₀", ⋆₀) = default_dec_matrix_generate(mesh, :⋆₀, hodge)
-      (var"GenSim-M_dual_d₀", dual_d₀) = default_dec_matrix_generate(mesh, :dual_d₀, hodge)
-      (var"GenSim-M_⋆₁⁻¹", ⋆₁⁻¹) = default_dec_matrix_generate(mesh, :⋆₁⁻¹, hodge)
-      (var"GenSim-M_∧₀₁", ∧₀₁) = default_dec_matrix_generate(mesh, :∧₀₁, hodge)
+      (var"GenSim-M_d₁", d₁) = default_dec_cu_matrix_generate(mesh, :d₁, hodge)
+      (var"GenSim-M_⋆₂", ⋆₂) = default_dec_cu_matrix_generate(mesh, :⋆₂, hodge)
+      (var"GenSim-M_⋆₁", ⋆₁) = default_dec_cu_matrix_generate(mesh, :⋆₁, hodge)
+      (var"GenSim-M_⋆₀⁻¹", ⋆₀⁻¹) = default_dec_cu_matrix_generate(mesh, :⋆₀⁻¹, hodge)
+      (var"GenSim-M_d₀", d₀) = default_dec_cu_matrix_generate(mesh, :d₀, hodge)
+      (var"GenSim-M_dual_d₁", dual_d₁) = default_dec_cu_matrix_generate(mesh, :dual_d₁, hodge)
+      (var"GenSim-M_⋆₀", ⋆₀) = default_dec_cu_matrix_generate(mesh, :⋆₀, hodge)
+      (var"GenSim-M_dual_d₀", dual_d₀) = default_dec_cu_matrix_generate(mesh, :dual_d₀, hodge)     
+      (var"GenSim-M_⋆₁⁻¹", ⋆₁⁻¹) = default_dec_cu_matrix_generate(mesh, :⋆₁⁻¹, hodge)
+      (var"GenSim-M_∧₀₁", ∧₀₁) = default_dec_cu_matrix_generate(mesh, :∧₀₁, hodge)
       ∂ᵥ = operators(mesh, :∂ᵥ)
       ∂ᵣ = operators(mesh, :∂ᵣ)
       ∂ₚ = operators(mesh, :∂ₚ)
@@ -521,7 +526,7 @@ function simulate(mesh, operators, hodge = GeometricHodge())
       var"GenSim-ConMat_2" = (x->var"GenSim-M_GenSim-ConMat_2" * x)
       var"GenSim-M_GenSim-ConMat_3" = var"GenSim-M_⋆₂" * var"GenSim-M_d₁"
       var"GenSim-ConMat_3" = (x->var"GenSim-M_GenSim-ConMat_3" * x)
-      var"GenSim-M_GenSim-ConMat_4" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_dual_d₁" * var"GenSim-M_⋆₁"
+      var"GenSim-M_GenSim-ConMat_4" = var"GenSim-M_⋆₀⁻¹" * (var"GenSim-M_dual_d₁" * var"GenSim-M_⋆₁")          
       var"GenSim-ConMat_4" = (x->var"GenSim-M_GenSim-ConMat_4" * x)
       var"GenSim-M_GenSim-ConMat_5" = var"GenSim-M_d₀" * var"GenSim-M_⋆₀⁻¹"
       var"GenSim-ConMat_5" = (x->var"GenSim-M_GenSim-ConMat_5" * x)
@@ -531,44 +536,44 @@ function simulate(mesh, operators, hodge = GeometricHodge())
   #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:580 =#
   begin
       #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:226 =#
-      var"__flow_•9" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•15" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      __Gensim_Var_5 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      __Gensim_Var_4 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      __Gensim_Var_1 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•22" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•25" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•4" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :Tri)))
-      var"__diffusion_•3" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      __Gensim_Var_12 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      __Gensim_Var_15 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      var"__flow_•14" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•13" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      __Gensim_Var_13 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__energy_•2" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      __ρ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      __Gensim_Var_16 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__diffusion_•2" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•12" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•2" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•20" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      __Ṫ₁ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      var"__energy_•4" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      __flow_sum_3 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      __energy_Ṫₐ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      var"__flow_•6" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•19" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      var"__flow_•24" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      __flow_sum_1 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      __flow_sum_2 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      __Ṫ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      var"__flow_•1" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•18" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•23" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      __ṗ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-      var"__flow_•11" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      var"__flow_•10" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-      __V̇ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
+      var"flow_•9" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•15" = CuVector{Float64}(undef, nparts(mesh, :E))
+      Gensim_Var_5 = CuVector{Float64}(undef, nparts(mesh, :E))
+      Gensim_Var_4 = CuVector{Float64}(undef, nparts(mesh, :E))
+      Gensim_Var_1 = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•22" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•25" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•4" = CuVector{Float64}(undef, nparts(mesh, :Tri))
+      var"diffusion_•3" = CuVector{Float64}(undef, nparts(mesh, :E))
+      Gensim_Var_12 = CuVector{Float64}(undef, nparts(mesh, :V))
+      Gensim_Var_15 = CuVector{Float64}(undef, nparts(mesh, :V))
+      var"flow_•14" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•13" = CuVector{Float64}(undef, nparts(mesh, :E))
+      Gensim_Var_13 = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"energy_•2" = CuVector{Float64}(undef, nparts(mesh, :V))
+      ρ = CuVector{Float64}(undef, nparts(mesh, :V))
+      Gensim_Var_16 = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"diffusion_•2" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•12" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•2" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•20" = CuVector{Float64}(undef, nparts(mesh, :V))
+      Ṫ₁ = CuVector{Float64}(undef, nparts(mesh, :V))
+      var"energy_•4" = CuVector{Float64}(undef, nparts(mesh, :V))
+      flow_sum_3 = CuVector{Float64}(undef, nparts(mesh, :V))
+      energy_Ṫₐ = CuVector{Float64}(undef, nparts(mesh, :V))
+      var"flow_•6" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•19" = CuVector{Float64}(undef, nparts(mesh, :V))
+      var"flow_•24" = CuVector{Float64}(undef, nparts(mesh, :E))
+      flow_sum_1 = CuVector{Float64}(undef, nparts(mesh, :E))
+      flow_sum_2 = CuVector{Float64}(undef, nparts(mesh, :E))
+      Ṫ = CuVector{Float64}(undef, nparts(mesh, :V))
+      var"flow_•1" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•18" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•23" = CuVector{Float64}(undef, nparts(mesh, :E))
+      ṗ = CuVector{Float64}(undef, nparts(mesh, :V))
+      var"flow_•11" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•10" = CuVector{Float64}(undef, nparts(mesh, :E))
+      V̇ = CuVector{Float64}(undef, nparts(mesh, :E))
   end
   #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:581 =#
   f(du, u, p, t) = begin
@@ -588,44 +593,6 @@ function simulate(mesh, operators, hodge = GeometricHodge())
               var"0.5" = 0.5
           end
           #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:583 =#
-          var"flow_•9" = Decapodes.get_tmp(var"__flow_•9", u)
-          var"flow_•15" = Decapodes.get_tmp(var"__flow_•15", u)
-          Gensim_Var_5 = Decapodes.get_tmp(__Gensim_Var_5, u)
-          Gensim_Var_4 = Decapodes.get_tmp(__Gensim_Var_4, u)
-          Gensim_Var_1 = Decapodes.get_tmp(__Gensim_Var_1, u)
-          var"flow_•22" = Decapodes.get_tmp(var"__flow_•22", u)
-          var"flow_•25" = Decapodes.get_tmp(var"__flow_•25", u)
-          var"flow_•4" = Decapodes.get_tmp(var"__flow_•4", u)
-          var"diffusion_•3" = Decapodes.get_tmp(var"__diffusion_•3", u)
-          Gensim_Var_12 = Decapodes.get_tmp(__Gensim_Var_12, u)
-          Gensim_Var_15 = Decapodes.get_tmp(__Gensim_Var_15, u)
-          var"flow_•14" = Decapodes.get_tmp(var"__flow_•14", u)
-          var"flow_•13" = Decapodes.get_tmp(var"__flow_•13", u)
-          Gensim_Var_13 = Decapodes.get_tmp(__Gensim_Var_13, u)
-          var"energy_•2" = Decapodes.get_tmp(var"__energy_•2", u)
-          ρ = Decapodes.get_tmp(__ρ, u)
-          Gensim_Var_16 = Decapodes.get_tmp(__Gensim_Var_16, u)
-          var"diffusion_•2" = Decapodes.get_tmp(var"__diffusion_•2", u)
-          var"flow_•12" = Decapodes.get_tmp(var"__flow_•12", u)
-          var"flow_•2" = Decapodes.get_tmp(var"__flow_•2", u)
-          var"flow_•20" = Decapodes.get_tmp(var"__flow_•20", u)
-          Ṫ₁ = Decapodes.get_tmp(__Ṫ₁, u)
-          var"energy_•4" = Decapodes.get_tmp(var"__energy_•4", u)
-          flow_sum_3 = Decapodes.get_tmp(__flow_sum_3, u)
-          energy_Ṫₐ = Decapodes.get_tmp(__energy_Ṫₐ, u)
-          var"flow_•6" = Decapodes.get_tmp(var"__flow_•6", u)
-          var"flow_•19" = Decapodes.get_tmp(var"__flow_•19", u)
-          var"flow_•24" = Decapodes.get_tmp(var"__flow_•24", u)
-          flow_sum_1 = Decapodes.get_tmp(__flow_sum_1, u)
-          flow_sum_2 = Decapodes.get_tmp(__flow_sum_2, u)
-          Ṫ = Decapodes.get_tmp(__Ṫ, u)
-          var"flow_•1" = Decapodes.get_tmp(var"__flow_•1", u)
-          var"flow_•18" = Decapodes.get_tmp(var"__flow_•18", u)
-          var"flow_•23" = Decapodes.get_tmp(var"__flow_•23", u)
-          ṗ = Decapodes.get_tmp(__ṗ, u)
-          var"flow_•11" = Decapodes.get_tmp(var"__flow_•11", u)
-          var"flow_•10" = Decapodes.get_tmp(var"__flow_•10", u)
-          V̇ = Decapodes.get_tmp(__V̇, u)
           mul!(var"flow_•9", var"GenSim-M_⋆₁", V)
           mul!(var"flow_•15", var"GenSim-M_GenSim-ConMat_1", V)
           mul!(Gensim_Var_5, var"GenSim-M_GenSim-ConMat_1", V)
@@ -679,7 +646,7 @@ function simulate(mesh, operators, hodge = GeometricHodge())
           getproperty(du, :T) .= Ṫ
       end
 end
-fₘ = simulate(sd, generate)
+fₘ = simulate(sd, generate, GeometricHodge())
 
 u₀ = ComponentArray(V=v, flow_G=g, T=c_objs, p=p)
 
@@ -695,17 +662,14 @@ soln = solve(prob, Tsit5(), progress=true, progress_steps=1, dtmax=8e-4, saveat=
 
 # fₘ(u₀, u₀, constants_and_parameters, 0)
 
-densities(t) = soln(t).p ./ (R₀ * soln(t).T)
-inv_hdg_0 = inv_hodge_star(Val{0}, sd)
-hdg_1 = ⋆(Val{1}, sd)
-magnitudes(t) = sqrt.(abs.(1e-4 .+ inv_hdg_0*pd_wedge(Val{(1,1)}, sd, soln(t).V, hdg_1 * soln(t).V)))
+densities(t) = Array(soln(t).p ./ (R₀ * soln(t).T))
 begin
   frames = 90
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1])
   msh = CairoMakie.mesh!(ax, s, color=densities(0) , colormap=:seismic, colorrange=extrema(densities(0)))
   Colorbar(fig[1,2], msh)
-  CairoMakie.record(fig, "CHT_3.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
+  CairoMakie.record(fig, "CHT_cuda.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
       msh.color = densities(t)
   end
 end

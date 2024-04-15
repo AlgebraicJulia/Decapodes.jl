@@ -1,3 +1,4 @@
+using Catlab
 using CombinatorialSpaces
 using ComponentArrays
 using OrdinaryDiffEq
@@ -7,7 +8,6 @@ using Base.Iterators
 using Catlab
 using MLStyle
 import Catlab.Programs.GenerateJuliaPrograms: compile
-
 
 const gensim_in_place_stub = Symbol("GenSim-M")
 
