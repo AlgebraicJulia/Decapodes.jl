@@ -109,6 +109,16 @@ begin
   to_graphviz(HeatXFer)
 end
 
+## Mesh Creation
+
+s = EmbeddedDeltaSet2D("examples/diff_adv/su2_mesh_square_small_51.stl");
+sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s);
+subdivide_duals!(sd, Barycenter());
+if ⋆(Val{1}, sd)[1,1] < 0.0
+  orient_component!(s, 1, false)
+end;
+
+
 ## Special Ops
 
 begin
@@ -167,31 +177,38 @@ begin
   wedge_mat(::Type{Val{(1,1)}}, s) = CuSparseMatrixCSC(2.0 * (support_to_tri(s)*diag_vols(s)*edge_to_support(s)))
   wedge_mat(::Type{Val{(2,0)}}, s) = CuSparseMatrixCSC(support_to_tri(s)*diag_vols(s)*tri_to_support(s))
 
-  wedge_edge(::Type{Val{(1,1)}}, s) = CuSparseMatrixCSC(dual_boundary(Val{2}, s) * 2.0 * (support_to_tri(s)*(diag_vols(s)*edge_to_support(s))))
-  wedge_edge(::Type{Val{(2,0)}}, s) = CuSparseMatrixCSC(dual_boundary(Val{2}, s) * support_to_tri(s)*(diag_vols(s)*tri_to_support(s)))
+  wedge_mat_11 = wedge_mat(Val{(1,1)},sd)
+  wedge_mat_20 = wedge_mat(Val{(2,0)},sd)
 
-  function pd_wedge!(x, ::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat(Val{(1,1)}, s)), caches=[CUDA.zeros(nv(s)), CUDA.zeros(ne(s))], kw...)
+  # wedge_edge(::Type{Val{(1,1)}}, s) = CuSparseMatrixCSC(dual_boundary(Val{2}, s) * 2.0 * (support_to_tri(s)*(diag_vols(s)*edge_to_support(s))))
+  # wedge_edge(::Type{Val{(2,0)}}, s) = CuSparseMatrixCSC(dual_boundary(Val{2}, s) * support_to_tri(s)*(diag_vols(s)*tri_to_support(s)))
+
+  dual_boundary_2 = CuSparseMatrixCSC{Float64}(dual_boundary(Val{2}, sd))
+  wedge_edge(::Type{Val{(1,1)}}, s) = dual_boundary_2 * wedge_mat_11
+  wedge_edge(::Type{Val{(2,0)}}, s) = dual_boundary_2 * wedge_mat_20
+
+  function pd_wedge!(x, ::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat_11), caches=[CUDA.zeros(nv(s)), CUDA.zeros(ne(s))], kw...)
     broadcast!(*, caches[2], α, β)
     mul!(x, wedge_t[(1,1)], caches[2])
   end
 
-  function pd_wedge(::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat(Val{(1,1)}, s)), caches=[CUDA.zeros(nv(s)), CUDA.zeros(ne(s))], kw...)
+  #= function pd_wedge(::Type{Val{(1,1)}}, s, α, β; wedge_t = Dict((1,1)=>wedge_mat_11), caches=[CUDA.zeros(nv(s)), CUDA.zeros(ne(s))], kw...)
     broadcast!(*, caches[2], α, β)
     wedge_t[(1,1)] * caches[2]
   end
 
-  function pd_wedge(::Type{Val{(2,0)}}, s, α, β; wedge_t = Dict((2,0)=>wedge_mat(Val{(2,0)},s)), kw...)
+  function pd_wedge(::Type{Val{(2,0)}}, s, α, β; wedge_t = Dict((2,0)=>wedge_mat_20), kw...)
     wedge_t[(2,0)] * (α .* β)
   end
 
   function pd_wedge(::Type{Val{(0,2)}}, s, α, β; wedge_t = nothing, kw...)
     α .* β
-  end
+  end =#
 
   function init_wedge_ops(s)
     (d_mat=Dict(:d₁=>CuSparseMatrixCSC(d(Val{1}, s)), :dual_d₀=>CuSparseMatrixCSC(dual_derivative(Val{0}, s))),
     wedge_e=Dict((1,1)=>wedge_edge(Val{(1,1)},s), (2,0)=>wedge_edge(Val{(2,0)},s)),
-    wedge_t=Dict((1,1)=>wedge_mat(Val{(1,1)}, s), (2,0)=>wedge_mat(Val{(2,0)},s)),
+    wedge_t=Dict((1,1)=>wedge_mat_11, (2,0)=>wedge_mat_20),
     caches=[CUDA.zeros(Float64, nv(s)), CUDA.zeros(Float64, ne(s)), CUDA.zeros(Float64, ntriangles(s))])
   end
 
@@ -286,34 +303,6 @@ begin
   end
 end
 
-# TODO: Produce the implementations of these DEC operators
-
-# # Lie derivative between two primal 1-forms
-# Lie1Imp′ = @decapode ExtendedOperators begin
-#   (F1, F1′, Ḟ1)::Form1{X}
-#   Ḟ1 == i₀′(F1, d₁{X}(F1′)) + d₀{X}(i₁′(F1, F1′))
-# end
-# lie1_imp′ = diag2dwd(Lie1Imp′, in_vars = [:F1, :F1′], out_vars = [:Ḟ1])
-# rules[:L₁′] = lie1_imp′
-
-# # Internal product between a primal 1-form and a primal 2-form
-# I0Imp′ = @decapode ExtendedOperators begin
-#   (F1, Ḟ1)::Form1{X}
-#   F2::Form2{X}
-#   Ḟ1 == neg₁(∧₁₀′(F1, ⋆₂{X}(F2)))
-# end
-# i0_imp′ = diag2dwd(I0Imp′, in_vars = [:F1, :F2], out_vars = [:Ḟ1])
-# rules[:i₀′] = i0_imp′
-
-# # Internal product between two primal 1-forms
-# I1Imp′ = @decapode ExtendedOperators begin
-#   (F1, F1′)::Form1{X}
-#   F0::Form0{X}
-#   F0 == ⋆₀⁻¹{X}(∧₁₁′(F1, ⋆₁{X}(F1′)))
-# end
-# i1_imp′ = diag2dwd(I1Imp′, in_vars = [:F1, :F1′], out_vars = [:F0])
-# rules[:i₁′] = i1_imp′
-
 ## Constants
 
 begin
@@ -345,14 +334,6 @@ begin
   e2p = e2t * R₀
   t2e = 1/e2t
 end
-## Mesh Creation
-
-s = EmbeddedDeltaSet2D("examples/diff_adv/su2_mesh_square_small_51.stl");
-sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s);
-subdivide_duals!(sd, Barycenter());
-if ⋆(Val{1}, sd)[1,1] < 0.0
-  orient_component!(s, 1, false)
-end;
 
 ## BoundaryConditions
 
@@ -369,7 +350,7 @@ begin
   cyl_bound = vcat(map(locs) do loc
       findall(p -> (0.5^2 - 1e-4 <= ((p[1] - loc[1])^2 + (p[2] - loc[2])^2) <= 0.5^2 + 1e-4),s[:point])
   end...)
-  fuzzy_boundary = unique(vcat(incident(s, cyl_bound, :∂v1)..., incident(s, cyl_bound, :∂v0)...))
+  # fuzzy_boundary = unique(vcat(incident(s, cyl_bound, :∂v1)..., incident(s, cyl_bound, :∂v0)...))
   # cyl_bound_edge = filter(e -> (s[e, :∂v1] ∈ cyl_bound)&&(s[e, :∂v0] ∈ cyl_bound), fuzzy_boundary)
   cyl_inner = CuArray(filter(p -> !(p ∈ cyl_bound), cyl))
   # slip_edge = filter!(p -> !(p ∈ cyl_bound_edge), cyl_edge)
@@ -412,7 +393,7 @@ begin
   end
 
   ∂₀ = boundary_inds(Val{0}, sd)
-  ∂₁ = boundary_inds(Val{1}, sd)
+  # ∂₁ = boundary_inds(Val{1}, sd)
 
   ∂ₒ₀ = ∂₀[findall(p-> -9 <= p[1] <= 20 && -9 <= p[2] <= 9, s[∂₀, :point])]
   cu_∂ₒ₀ = CuArray(∂ₒ₀)
@@ -427,21 +408,21 @@ begin
   ∂ᵦ₀ = ∂₀[findall(p-> p[2] <= by + 1e-4, s[∂₀, :point])]
   ∂ₑ₀ = vcat(∂ₗ₀, ∂ᵣ₀, ∂ₜ₀, ∂ᵦ₀)
 
-  ∂ₗ₁ = bound_edges(s, ∂ₗ₀)
-  ∂ᵣ₁ = bound_edges(s, ∂ᵣ₀)
-  ∂ₑ₁ = bound_edges(s, ∂ₑ₀)
+  # ∂ₗ₁ = bound_edges(s, ∂ₗ₀)
+  # ∂ᵣ₁ = bound_edges(s, ∂ᵣ₀)
+  # ∂ₑ₁ = bound_edges(s, ∂ₑ₀)
 
-  ∂₁₊ = adj_edges(s, ∂₀)
+  # ∂₁₊ = adj_edges(s, ∂₀)
 
-  ∂ₗ₁₊ = adj_edges(s, ∂ₗ₀)
-  ∂ᵣ₁₊ = adj_edges(s, ∂ᵣ₀)
+  # ∂ₗ₁₊ = adj_edges(s, ∂ₗ₀)
+  # ∂ᵣ₁₊ = adj_edges(s, ∂ᵣ₀)
   ∂ₑ₁₊ = adj_edges(s, ∂ₑ₀)
   ∂_points = unique(vcat(s[∂ₑ₁₊, :∂v0], s[∂ₑ₁₊, :∂v1]))
   ∂ₑ₁₊ = bound_edges(s, ∂_points)
   cu_∂ₑ₁₊ = CuArray(∂ₑ₁₊)
 
-  ∂ₗ₀₊ = unique(vcat(s[∂ₗ₁₊, :∂v1], s[∂ₗ₁₊, :∂v0]))
-  ∂ᵣ₀₊ = unique(vcat(s[∂ᵣ₁₊, :∂v1], s[∂ᵣ₁₊, :∂v0]))
+  # ∂ₗ₀₊ = unique(vcat(s[∂ₗ₁₊, :∂v1], s[∂ₗ₁₊, :∂v0]))
+  # ∂ᵣ₀₊ = unique(vcat(s[∂ᵣ₁₊, :∂v1], s[∂ᵣ₁₊, :∂v0]))
   ∂ₑ₀₊ = CuArray(unique(vcat(s[∂ₑ₁₊, :∂v1], s[∂ₑ₁₊, :∂v0])))
 
   c_objs = CuArray(fill(288.15, nv(s)))
@@ -461,39 +442,59 @@ cache_mat = Dict(:t2c => tri2comp(s, v2comp), :e2c => edge2comp(s, v2comp), :cro
                  :α_cache => CUDA.zeros(Float64, ntriangles(sd)*3), :β_cache => CUDA.zeros(Float64, ntriangles(sd)*3))
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :∂ₚ => (x) -> begin
-            x[∂ₑ₀₊] .= 0
-            x[cyl_inner] .= 0
+    :∂ₚ => begin 
+    boundary = vcat(∂ₑ₀₊, cyl_inner)
+      (x) -> begin
+            # x[∂ₑ₀₊] .= 0
+            # x[cyl_inner] .= 0
+            x[boundary] .= 0
             x
-          end
+      end
+    end
     :avg₀₁ => x -> m_avg * x
     :∂ₜₐ => (x) -> begin
       x[cyl_inner] .= 0
       x
     end
-    :∂ᵥ => (x) -> begin
-      x[cyl_edge] .= 0
-      x[cu_∂ₑ₁₊] .= 0
-      x
+    :∂ᵥ => begin 
+    boundary = vcat(cyl_edge, cu_∂ₑ₁₊)
+      (x) -> begin
+        # x[cyl_edge] .= 0
+        # x[cu_∂ₑ₁₊] .= 0
+        x[boundary] .= 0
+        x
+      end
     end
-    :∂ᵣ => (x) -> begin
-      x[∂ₑ₀₊] .= 0
-      x[cu_∂ₒ₀] .= 0
+    :∂ᵣ => begin 
+    boundary = vcat(∂ₑ₀₊, cu_∂ₒ₀)
+      (x) -> begin
+        # x[∂ₑ₀₊] .= 0
+        # x[cu_∂ₒ₀] .= 0
+        x[boundary] .= 0
+      end
     end
-    :∧₁₀′ => (α, β) -> begin
+    #= :∧₁₀′ => (α, β) -> begin
       x = CUDA.zeros(Float64, ne(sd))
       cp_2_1!(x, β, α, cache_mat)
       x
     end
-    :∧₁₁′ => (α, β) -> begin
+    =#
+    :∧₁₀′ => (x, α, β) -> begin
+      cp_2_1!(x, β, α, cache_mat)
+    end
+    #= :∧₁₁′ => (α, β) -> begin
       x = CUDA.zeros(Float64, nv(sd))
       pd_wedge!(x, Val{(1,1)}, sd, α, β; wedge_cache...)
       x
+    =#
+    :∧₁₁′ => (x, α, β) -> begin
+      pd_wedge!(x, Val{(1,1)}, sd, α, β; wedge_cache...)
     end
     x => error("Unmatched operator $my_symbol")
   end
   return op
 end
+
 function simulate(mesh, operators, hodge = GeometricHodge())
   #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:577 =#
   #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:578 =#
@@ -512,7 +513,8 @@ function simulate(mesh, operators, hodge = GeometricHodge())
       ∂ᵥ = operators(mesh, :∂ᵥ)
       ∂ᵣ = operators(mesh, :∂ᵣ)
       ∂ₚ = operators(mesh, :∂ₚ)
-      avg₀₁ = operators(mesh, :avg₀₁)
+      # avg₀₁ = operators(mesh, :avg₀₁)
+      avg₀₁ = avg_mat(Val{(0,1)}, sd)
       ∂ₜₐ = operators(mesh, :∂ₜₐ)
       (∧₁₀′) = operators(mesh, :∧₁₀′)
       (∧₁₁′) = operators(mesh, :∧₁₁′)
@@ -574,6 +576,13 @@ function simulate(mesh, operators, hodge = GeometricHodge())
       var"flow_•11" = CuVector{Float64}(undef, nparts(mesh, :E))
       var"flow_•10" = CuVector{Float64}(undef, nparts(mesh, :E))
       V̇ = CuVector{Float64}(undef, nparts(mesh, :E))
+
+      var"flow_•3" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•8" = CuVector{Float64}(undef, nparts(mesh, :V))
+      var"flow_•21" = CuVector{Float64}(undef, nparts(mesh, :V))
+      var"flow_•17" = CuVector{Float64}(undef, nparts(mesh, :E))
+      var"flow_•26" = CuVector{Float64}(undef, nparts(mesh, :E))
+
   end
   #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:581 =#
   f(du, u, p, t) = begin
@@ -604,11 +613,14 @@ function simulate(mesh, operators, hodge = GeometricHodge())
           mul!(var"diffusion_•3", var"GenSim-M_d₀", T)
           mul!(Gensim_Var_12, var"GenSim-M_GenSim-ConMat_6", p)
           mul!(Gensim_Var_15, var"GenSim-M_GenSim-ConMat_6", T)
-          var"flow_•3" = V ∧₁₀′ var"flow_•4"
-          var"flow_•8" = V ∧₁₁′ var"flow_•9"
+          # var"flow_•3" = V ∧₁₀′ var"flow_•4"
+          ∧₁₀′(var"flow_•3", V, var"flow_•4")
+          # var"flow_•8" = V ∧₁₁′ var"flow_•9"
+          ∧₁₁′(var"flow_•8", V, var"flow_•9")
           var"flow_•14" .= var"1" ./ var"3"
           var"flow_•13" .= var"flow_•14" .* var"flow_•15"
-          var"flow_•21" = V ∧₁₁′ var"flow_•22"
+          # var"flow_•21" = V ∧₁₁′ var"flow_•22"
+          ∧₁₁′(var"flow_•21", V, var"flow_•22")
           var"GenSim-M_∧₀₁"(Gensim_Var_13, Gensim_Var_12, V)
           var"energy_•2" .= energy_R₀ .* T
           ρ .= p ./ var"energy_•2"
@@ -616,9 +628,11 @@ function simulate(mesh, operators, hodge = GeometricHodge())
           var"diffusion_•2" .= diffusion_k .* var"diffusion_•3"
           var"flow_•12" .= (.+)(Gensim_Var_1, Gensim_Var_5)
           var"flow_•2" .= (.-)(var"flow_•3")
-          var"flow_•17" = avg₀₁(ρ)
+          # var"flow_•17" = avg₀₁(ρ)
+          mul!(var"flow_•17", avg₀₁, ρ)
           mul!(var"flow_•20", var"GenSim-M_⋆₀⁻¹", var"flow_•21")
-          var"flow_•26" = avg₀₁(ρ)
+          # var"flow_•26" = avg₀₁(ρ)
+          mul!(var"flow_•26", avg₀₁, ρ)
           mul!(Ṫ₁, var"GenSim-M_GenSim-ConMat_4", var"diffusion_•2")
           mul!(var"energy_•4", var"GenSim-M_GenSim-ConMat_4", Gensim_Var_16)
           mul!(flow_sum_3, var"GenSim-M_GenSim-ConMat_4", Gensim_Var_13)
@@ -653,23 +667,23 @@ u₀ = ComponentArray(V=v, flow_G=g, T=c_objs, p=p)
 constants_and_parameters = (energy_R₀=R₀, diffusion_k=k₂, flow_kᵥ=kᵥ)
 
 tₑ = 2.0
-tₑ = 0.2
+tₑ = 0.5
 
 dt = 0.01
 @info "Solving ODE Problem"
 prob = ODEProblem(fₘ, u₀, (0.0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5(), progress=true, progress_steps=1, dtmax=8e-4, saveat=dt, save_idxs=[:V, :flow_G, :T, :p], p=g)
+soln = solve(prob, Tsit5(), progress=true, progress_steps=1, dtmax=8e-4, saveat=dt, save_idxs=[:T, :p], p=g)
 
 # fₘ(u₀, u₀, constants_and_parameters, 0)
 
 densities(t) = Array(soln(t).p ./ (R₀ * soln(t).T))
 begin
-  frames = 90
+  frames = 150
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1])
-  msh = CairoMakie.mesh!(ax, s, color=densities(0) , colormap=:seismic, colorrange=extrema(densities(0)))
+  msh = CairoMakie.mesh!(ax, s, color=densities(0) , colormap=:jet, colorrange=extrema(densities(0)))
   Colorbar(fig[1,2], msh)
-  CairoMakie.record(fig, "CHT_cuda.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
+  CairoMakie.record(fig, "CHT_cuda_3.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
       msh.color = densities(t)
   end
 end
