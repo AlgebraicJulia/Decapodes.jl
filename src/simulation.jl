@@ -519,10 +519,18 @@ function hook_LCO_generate_inplace_expr(computation_name, computation, ::cpu, fl
   return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
 end
 
+function generate_parentheses_multipy(list)
+  if(length(list) == 1)
+      return list[1]
+  else
+      return Expr(:call, :*, list[1], generate_parentheses_multipy(list[2:end]))
+  end
+end
+
 # Adapt this to also write Diagonal Matrices as CuVectors, sparsifying diagonal matrices slows down computations 
 function hook_LCO_generate_inplace_expr(computation_name, computation, ::cuda, float_type::DataType)
   # return :($(add_inplace_stub(computation_name)) = CUDA.CUSPARSE.CuSparseMatrixCSC{$(float_type)}($(Expr(:call, :*, computation...))))
-  return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
+  return :($(add_inplace_stub(computation_name)) = $(generate_parentheses_multipy(computation)))
 end
 
 
