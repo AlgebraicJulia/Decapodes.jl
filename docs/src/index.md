@@ -1,3 +1,5 @@
+![Georges de Prawnm](logo/decapodes_logo.png)
+
 # Decapodes.jl
 
 Decapodes.jl is a framework for developing, composing, and simulating physical systems.
