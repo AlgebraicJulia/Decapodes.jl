@@ -28,42 +28,25 @@ Wave = @decapode begin
 end
 
 function simulate(mesh, operators, hodge = GeometricHodge())
-    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:585 =#
-    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:586 =#
     begin
-        #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:174 =#
-    end
-    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:587 =#
-    begin
-        #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:484 =#
-    end
-    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:588 =#
-    begin
-        #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:226 =#
         var"__•2" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))     
         __Ṫ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
     end
-    #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:589 =#
     f(du, u, p, t) = begin
-            #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:589 =#
-            #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:590 =#
             begin
-                #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:251 =#     
                 U = u.U
                 T = u.T
                 k = p.k
             end
-            #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:591 =#
             var"•2" = Decapodes.get_tmp(var"__•2", u)
             Ṫ = Decapodes.get_tmp(__Ṫ, u)
             var"•2" .= (.-)(k)
             Ṫ .= var"•2" .* U
-            #= c:\Users\georger\Documents\GitHub\Decapodes.jl\src\simulation.jl:592 =#
             getproperty(du, :T) .= Ṫ
             getproperty(du, :U) .= T
         end
 end
-sim = eval(gensim(Wave))
+# sim = eval(gensim(Wave))
 
 U = map(sd[:point]) do (x,_)
     sin(x)
