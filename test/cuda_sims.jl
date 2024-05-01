@@ -27,7 +27,7 @@ end
     ∂ₜ(U) == 100 * Δ(U)
   end
 
-  tₑ = 11.5
+  tₑ = 8.5
   constants_and_parameters = ()
 
   s = loadmesh(Icosphere(4))
@@ -276,7 +276,7 @@ end
          a = 0.94f0,
          ν = 182.5f0)
 
-  tₑ = 5.0f0
+  tₑ = 3.0f0
 
   function circle(n, c)
     s = EmbeddedDeltaSet1D{Bool, Point2D}()
