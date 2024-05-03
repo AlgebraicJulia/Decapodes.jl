@@ -431,26 +431,6 @@ function resolve_types_compiler!(d::SummationDecapode)
   end
 end
 
-#= function replace_negation_with_multiply!(d::SummationDecapode, input_vars)
-  found_negation = false
-  rem_negations = []
-  neg1var = 0
-
-  for (i, op) in enumerate(d[:op1])
-    if(op == :(-) || op == :neg)
-      if(!found_negation)
-        neg1var = add_part!(d, :Var, type = :Literal, name = Symbol("-1.0"))
-        push!(input_vars, Symbol("-1.0"))
-        found_negation = true
-      end
-      push!(rem_negations, i)
-      add_part!(d, :Op2, proj1 = neg1var, proj2 = d[i, :src], res = d[i, :tgt], op2 = :.*)
-    end
-
-  end
-  rem_parts!(d, :Op1, rem_negations)
-end =#
-
 function replace_names_compiler!(d::SummationDecapode)
   dec_op1 = Pair{Symbol, Any}[]
   dec_op2 = Pair{Symbol, Symbol}[(:∧₀₀ => :.*)]
@@ -522,6 +502,8 @@ function hook_LCO_generate_inplace_expr(computation_name, computation, ::cpu, fl
   return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
 end
 
+# Turn multiplication right-associative to prevent CUDA.jl error
+# TODO: Can turn this into left-associative
 function generate_parentheses_multipy(list)
   if(length(list) == 1)
       return list[1]
@@ -547,8 +529,6 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, sta
   d′ = expand_operators(user_d)
   #d′ = average_rewrite(d′)
 
-  # replace_negation_with_multiply!(d′, input_vars)
-
   dec_matrices = Vector{Symbol}();
   alloc_vectors = Vector{AllocVecCall}();
 
@@ -566,7 +546,8 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, sta
   infer_overload_compiler!(d′, dimension)
 
   # This will generate all of the fundemental DEC operators present
-  optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹, :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁])
+  optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹, 
+                                  :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁])
   extra_dec_operators = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
   init_dec_matrices!(d′, dec_matrices, union(optimizable_dec_operators, extra_dec_operators))
@@ -605,10 +586,13 @@ gensim(collate(c); dimension=dimension)
 
 Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
 """
-gensim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = cpu()) = gensim(d, vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype, code_target=code_target)
+gensim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = cpu()) = 
+  gensim(d, vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype, code_target=code_target)
 
-evalsim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = cpu()) = eval(gensim(d, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
-evalsim(d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = cpu()) = eval(gensim(d, input_vars, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
+evalsim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = cpu()) = 
+  eval(gensim(d, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
+evalsim(d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = cpu()) = 
+  eval(gensim(d, input_vars, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
 
 """
 function find_unreachable_tvars(d)
