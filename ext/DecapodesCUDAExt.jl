@@ -90,21 +90,21 @@ function dec_cu_mat_dual_differential(k::Int, sd::HasDeltaSet)
 end
 
 function dec_cu_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where {k}
-  val_pack = dec_cu_p_wedge_product(Tuple{0,k}, sd)
-  ((y, α, g) -> dec_cu_c_wedge_product!(Tuple{0,k}, y, g, α, val_pack),
-    (α, g) -> dec_cu_c_wedge_product(Tuple{0,k}, g, α, val_pack))
+  val_pack = dec_p_wedge_product(Tuple{0,k}, sd, Val{:CUDA})
+  ((y, α, g) -> dec_c_wedge_product!(Tuple{0,k}, y, g, α, val_pack, Val{:CUDA}),
+    (α, g) -> dec_c_wedge_product(Tuple{0,k}, g, α, val_pack, Val{:CUDA}))
 end
 
 function dec_cu_pair_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where {k}
-  val_pack = dec_cu_p_wedge_product(Tuple{0,k}, sd)
-  ((y, f, β) -> dec_cu_c_wedge_product!(Tuple{0,k}, y, f, β, val_pack),
-    (f, β) -> dec_cu_c_wedge_product(Tuple{0,k}, f, β, val_pack))
+  val_pack = dec_p_wedge_product(Tuple{0,k}, sd, Val{:CUDA})
+  ((y, f, β) -> dec_c_wedge_product!(Tuple{0,k}, y, f, β, val_pack, Val{:CUDA}),
+    (f, β) -> dec_c_wedge_product(Tuple{0,k}, f, β, val_pack, Val{:CUDA}))
 end
 
 function dec_cu_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
-  val_pack = dec_cu_p_wedge_product(Tuple{1,1}, sd)
-  ((y, α, β) -> dec_cu_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack),
-    (α, β) -> dec_cu_c_wedge_product(Tuple{1,1}, α, β, val_pack))
+  val_pack = dec_p_wedge_product(Tuple{1,1}, sd, Val{:CUDA})
+  ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack, Val{:CUDA}),
+    (α, β) -> 78dec_c_wedge_product(Tuple{1,1}, α, β, val_pack, Val{:CUDA}))
 end
 
 # TODO: These need to be converted into CuArrays/kernels
