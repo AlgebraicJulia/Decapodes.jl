@@ -18,6 +18,8 @@ using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
 
+## Original implementation can be found at: https://github.com/AlgebraicJulia/DECAPODES-Benchmarks
+
 # Represent component Decapodes.
 Diffusion = @decapode begin
   C::Form0
