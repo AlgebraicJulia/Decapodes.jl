@@ -20,6 +20,8 @@ Point3D = Point3{Float64}
 using CUDA
 using CUDA.CUSPARSE
 
+## Original implementation can be found at: https://github.com/AlgebraicJulia/DECAPODES-Benchmarks
+
 ## Physics
 
 begin 
