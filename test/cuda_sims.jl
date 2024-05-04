@@ -62,7 +62,7 @@ end
 @testset "Heat Equation Float32" begin
   Heat = @decapode begin
     U::Form0
-    ∂ₜ(U) == 100 * Δ(U)
+    ∂ₜ(U) == 100f0 * Δ(U)
   end
 
   tₑ = 11.5f0

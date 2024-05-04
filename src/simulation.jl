@@ -109,15 +109,15 @@ Base.Expr(c::AllocVecCall) = begin
     _ => throw(AllocVecCallError(c))
   end
 
-  hook_ExprAVC_generate_cache_expr(c, resolved_form, c.code_target)
+  hook_AVC_caching(c, resolved_form, c.code_target)
 end
 
-function hook_ExprAVC_generate_cache_expr(c::AllocVecCall, resolved_form::Symbol, ::cpu)
+function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::cpu)
   :($(Symbol(:__,c.name)) = Decapodes.FixedSizeDiffCache(Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form))))))
 end
 
 # TODO: Allow user to overload these hooks with user-defined code_target
-function hook_ExprAVC_generate_cache_expr(c::AllocVecCall, resolved_form::Symbol, ::cuda)
+function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::cuda)
   :($(c.name) = CuVector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end
 
@@ -180,11 +180,12 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con
 
     quote_op = QuoteNode(op)
     mat_op = add_stub(gensim_in_place_stub, op)
-    # Could turn this into a special call
 
-    default_generation = :default_dec_matrix_generate
-    if(code_target isa cuda)
-      default_generation = :default_dec_cu_matrix_generate
+    # TODO: Add support for user-defined code targets
+    default_generation = @match code_target begin
+      ::cpu => :default_dec_matrix_generate
+      ::cuda => :default_dec_cu_matrix_generate
+      _ => "Provided code target $(code_target) is not yet supported in simulations"
     end
 
     def = :(($mat_op, $op) = $(default_generation)(mesh, $quote_op, hodge))
@@ -481,7 +482,7 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
         get!(compute_to_name, compute_key, computation_name)
         push!(con_dec_operators, computation_name)
 
-        expr_line = hook_LCO_generate_inplace_expr(computation_name, computation, code_target, stateeltype)
+        expr_line = hook_LCO_inplace(computation_name, computation, code_target, stateeltype)
         push!(contract_defs.args, expr_line)
 
         expr_line = Expr(Symbol("="), computation_name, Expr(Symbol("->"), :x, Expr(:call, :*, add_inplace_stub(computation_name), :x)))
@@ -498,7 +499,7 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
 end
 
 # TODO: Allow user to overload these hooks with user-defined code_target
-function hook_LCO_generate_inplace_expr(computation_name, computation, ::cpu, float_type::DataType)
+function hook_LCO_inplace(computation_name, computation, ::cpu, float_type::DataType)
   return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
 end
 
@@ -513,7 +514,7 @@ function generate_parentheses_multipy(list)
 end
 
 # Adapt this to also write Diagonal Matrices as CuVectors, sparsifying diagonal matrices slows down computations 
-function hook_LCO_generate_inplace_expr(computation_name, computation, ::cuda, float_type::DataType)
+function hook_LCO_inplace(computation_name, computation, ::cuda, float_type::DataType)
   # return :($(add_inplace_stub(computation_name)) = CUDA.CUSPARSE.CuSparseMatrixCSC{$(float_type)}($(Expr(:call, :*, computation...))))
   return :($(add_inplace_stub(computation_name)) = $(generate_parentheses_multipy(computation)))
 end
