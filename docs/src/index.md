@@ -1,4 +1,4 @@
-![Georges de Prawnm](logo/decapodes_logo.png)
+# <img src='logo/decapodes_logo.svg' width='128' alt='Georges de Prhawnm'> Decapodes.jl
 
 # Decapodes.jl
 
