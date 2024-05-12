@@ -783,3 +783,33 @@ end
   @test sim_Tracer(d_rect, generate, DiagonalHodge()) isa Any
 
 end
+
+@testset "Allocations" begin
+# Test the heat equation Decapode has expected memory allocation.
+Heat = @decapode begin
+  C::Form0
+  D::Constant
+  ∂ₜ(C) == D*Δ(C)
+end
+sim = eval(gensim(Heat))
+s = loadmesh(Icosphere(1))
+sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
+subdivide_duals!(sd, Circumcenter())
+f = sim(sd,nothing)
+u₀ = ComponentArray(
+  C = map(x -> x[3], point(sd)))
+p = (D=1e-1,)
+du = copy(u₀)
+# The first call to the function makes many allocations.
+_ = @allocations f(du, u₀, p, (0,1.0)) # 55259
+_ = @allocated f(du, u₀, p, (0,1.0)) # 3962696
+# Test that subsequent calls make a reasonable amount.
+bytes = @allocated f(du, u₀, p, (0,1.0))
+nallocs = @allocations f(du, u₀, p, (0,1.0))
+@test nallocs == 4
+@test bytes ==
+  sizeof(u₀.C) +
+  sizeof(p.D) +
+  sizeof(Decapodes.FixedSizeDiffCache(Vector{Float64}(undef , nparts(sd, :V))))
+end
+
