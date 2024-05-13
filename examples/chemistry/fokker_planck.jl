@@ -5,8 +5,11 @@
 # gradient of (some potential) Ψ.
 
 # Load libraries.
-using Catlab, CombinatorialSpaces, Decapodes
-using GLMakie, LinearAlgebra, MLStyle, MultiScaleArrays, OrdinaryDiffEq
+using Catlab, CombinatorialSpaces, Decapodes, DiagrammaticEquations
+using CairoMakie, ComponentArrays, LinearAlgebra, MLStyle, MultiScaleArrays, OrdinaryDiffEq
+using GeometryBasics: Point3
+Point3D = Point3{Float64}
+using Arpack
 
 # Specify physics.
 Fokker_Planck = @decapode begin
@@ -15,56 +18,58 @@ Fokker_Planck = @decapode begin
   ∂ₜ(ρ) == ∘(⋆,d,⋆)(d(Ψ)∧ρ) + β⁻¹*Δ(ρ)
 end
 
-Fokker_Planck = expand_operators(Fokker_Planck)
-infer_types!(Fokker_Planck)
-resolve_overloads!(Fokker_Planck)
-
 # Specify domain.
-s′ = loadmesh(Icosphere(4))
-s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
-subdivide_duals!(s, Barycenter())
-
-# Specify initial conditions.
-Ψ = map(point(s)) do (x,y,z)
-  abs(y)
-end
-ρ = fill(1/nv(s), nv(s))
-constants_and_parameters = (β⁻¹ = -0.001,)
-u₀ = construct(PhysicsState, [VectorForm(Ψ), VectorForm(ρ)], Float64[], [:Ψ, :ρ])
+s = loadmesh(Icosphere(6));
+sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s);
+subdivide_duals!(sd, Barycenter());
 
 # Compile.
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    _ => default_dec_generate(sd, my_symbol)
-  end
-  return (args...) ->  op(args...)
-end
 sim = eval(gensim(Fokker_Planck))
-fₘ = sim(s, generate)
+fₘ = sim(sd, nothing)
+
+# Specify initial conditions.
+# Ψ must be a smooth function. Choose an interesting eigenfunction.
+Δ0 = Δ(0,sd)
+Ψ = real.(eigs(Δ0, nev=32, which=:LR)[2][:,32])
+# We require that ρ integrated over the surface is 1, since it is a PDF.
+# On a sphere where ρ(x,y,z) is proportional to the x-coordinate, that means divide by 2π.
+ρ = map(point(sd)) do (x,y,z)
+  abs(x)
+end / 2π
+
+constants_and_parameters = (β⁻¹ = 1e-2,)
+u₀ = ComponentArray(Ψ=Ψ, ρ=ρ)
 
 # Run.
-tₑ = 1.0
+tₑ = 20.0
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5())
+soln = solve(prob, Tsit5(), progress=true, progress_steps=1)
 
-findnode(soln(0), :ρ)
-findnode(soln(tₑ), :ρ)
+# Verify that the PDF is still a PDF.
+s0 = dec_hodge_star(0,sd);
+@info sum(s0 * soln(0).ρ)
+@info sum(s0 * soln(tₑ).ρ) # ρ integrates to 1
+@info any(soln(tₑ).ρ .≤ 0) # ρ is nonzero
 
 # Save solution data.
 @save "fokker_planck.jld2" soln
 
 # Create GIF
-begin
-frames = 800
-# Initial frame
-fig = GLMakie.Figure(resolution = (800, 800))
-p1 = GLMakie.mesh(fig[1,1], s′, color=findnode(soln(0), :ρ), colormap=:jet, colorrange=extrema(findnode(soln(0), :ρ)))
-Colorbar(fig[1,2], colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
+function save_gif(file_name, soln)
+  time = Observable(0.0)
+  fig = Figure()
+  Label(fig[1, 1, Top()], @lift("ρ at $($time)"), padding = (0, 0, 5, 0))
+  ax = LScene(fig[1,1], scenekw=(lights=[],))
+  msh = CairoMakie.mesh!(ax, s,
+    color=@lift(soln($time).ρ),
+    colorrange=(0,1),
+    colormap=:jet)
 
-# Animation
-record(fig, "fokker_planck.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
-    p1.plot.color = findnode(soln(t), :ρ)
+  Colorbar(fig[1,2], msh)
+  frames = range(0.0, tₑ; length=21)
+  record(fig, file_name, frames; framerate = 10) do t
+    time[] = t
+  end
 end
-
-end
+save_gif("fokker_planck.gif", soln)
 
