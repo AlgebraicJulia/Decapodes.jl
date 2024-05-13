@@ -1,4 +1,4 @@
-# <img src='logo/decapodes_logo.svg' width='128' alt='Georges de Prhawnm'> Decapodes.jl
+<img src='logo/decapodes_logo.svg' width='128' alt='Georges de Prhawnm'>
 
 # Decapodes.jl
 
