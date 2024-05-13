@@ -1,5 +1,3 @@
-<img src='logo/decapodes_logo.svg' width='128' alt='Georges de Prhawnm'>
-
 # Decapodes.jl
 
 Decapodes.jl is a framework for developing, composing, and simulating physical systems.
