@@ -23,7 +23,7 @@ Heat = @decapode begin
     ∂ₜ(U) == 100 * Δ(U)
 end
 
-sim = eval(gensim(Heat, code_target=cuda()))
+sim = eval(gensim(Heat, code_target=CUDATarget()))
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin

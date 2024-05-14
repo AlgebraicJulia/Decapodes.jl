@@ -13,8 +13,8 @@ const gensim_in_place_stub = Symbol("GenSim-M")
 
 abstract type GenerationTarget end
 
-struct cpu <: GenerationTarget end
-struct cuda <: GenerationTarget end
+struct CPUTarget <: GenerationTarget end
+struct CUDATarget <: GenerationTarget end
 
 abstract type AbstractCall end
 
@@ -112,12 +112,12 @@ Base.Expr(c::AllocVecCall) = begin
   hook_AVC_caching(c, resolved_form, c.code_target)
 end
 
-function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::cpu)
+function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CPUTarget)
   :($(Symbol(:__,c.name)) = Decapodes.FixedSizeDiffCache(Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form))))))
 end
 
 # TODO: Allow user to overload these hooks with user-defined code_target
-function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::cuda)
+function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CUDATarget)
   :($(c.name) = CuVector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end
 
@@ -167,7 +167,7 @@ end
 add_inplace_stub(var_name::Symbol) = add_stub(gensim_in_place_stub, var_name)
 
 # This will be the function and matrix generation
-function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = cpu())
+function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = CPUTarget())
   assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^, :.>, :.<, :.≤, :.≥])
   defined_ops = Set()
 
@@ -183,8 +183,8 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con
 
     # TODO: Add support for user-defined code targets
     default_generation = @match code_target begin
-      ::cpu => :default_dec_matrix_generate
-      ::cuda => :default_dec_cu_matrix_generate
+      ::CPUTarget => :default_dec_matrix_generate
+      ::CUDATarget => :default_dec_cu_matrix_generate
       _ => "Provided code target $(code_target) is not yet supported in simulations"
     end
 
@@ -262,7 +262,7 @@ function set_tanvars_code(d::AbstractNamedDecapode)
   return stmts
 end
 
-function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}; dimension=2, stateeltype=Float64, code_target=cpu())
+function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}; dimension=2, stateeltype=Float64, code_target=CPUTarget())
   # Get the Vars of the inputs (probably state Vars).
   visited_Var = falses(nparts(d, :Var))
 
@@ -412,7 +412,7 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
   end
 
   cache_exprs = []
-  if(code_target isa cpu)
+  if(code_target isa CPUTarget)
     cache_exprs = map(alloc_vectors) do vec
       :($(vec.name) = (Decapodes.get_tmp($(Symbol(:__,vec.name)), u)))
     end
@@ -499,7 +499,7 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
 end
 
 # TODO: Allow user to overload these hooks with user-defined code_target
-function hook_LCO_inplace(computation_name, computation, ::cpu, float_type::DataType)
+function hook_LCO_inplace(computation_name, computation, ::CPUTarget, float_type::DataType)
   return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
 end
 
@@ -514,14 +514,14 @@ function generate_parentheses_multipy(list)
 end
 
 # Adapt this to also write Diagonal Matrices as CuVectors, sparsifying diagonal matrices slows down computations 
-function hook_LCO_inplace(computation_name, computation, ::cuda, float_type::DataType)
+function hook_LCO_inplace(computation_name, computation, ::CUDATarget, float_type::DataType)
   # return :($(add_inplace_stub(computation_name)) = CUDA.CUSPARSE.CuSparseMatrixCSC{$(float_type)}($(Expr(:call, :*, computation...))))
   return :($(add_inplace_stub(computation_name)) = $(generate_parentheses_multipy(computation)))
 end
 
 
 # TODO: Will want to eventually support contracted operations
-function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = cpu())
+function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget())
   # TODO: May want to move this after infer_types if we let users
   # set their own inference rules
   recognize_types(user_d)
@@ -587,12 +587,12 @@ gensim(collate(c); dimension=dimension)
 
 Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
 """
-gensim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = cpu()) = 
+gensim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) = 
   gensim(d, vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype, code_target=code_target)
 
-evalsim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = cpu()) = 
+evalsim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) = 
   eval(gensim(d, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
-evalsim(d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = cpu()) = 
+evalsim(d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) = 
   eval(gensim(d, input_vars, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
 
 """

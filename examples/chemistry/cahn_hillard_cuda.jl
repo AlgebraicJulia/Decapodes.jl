@@ -26,7 +26,7 @@ CahnHillard = @decapode begin
     ∂ₜ(C) == 0.5 * Δ(C.^3 - C - 0.5 * Δ(C))
 end
 
-sim = eval(gensim(CahnHillard, code_target=cuda()))
+sim = eval(gensim(CahnHillard, code_target=CUDATarget()))
   
 fₘ = sim(d_rect, nothing)
 

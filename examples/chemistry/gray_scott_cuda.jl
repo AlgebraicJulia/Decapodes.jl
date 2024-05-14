@@ -59,7 +59,7 @@ constants_and_parameters = (
   rᵥ = 0.005)
 
 # Generate the simulation.
-sim = eval(gensim(GrayScott, code_target=gen_CUDA()))
+sim = eval(gensim(GrayScott, code_target=CUDATarget()))
 fₘ = sim(sd, generate)
 
 # Create problem and run sim for t ∈ [0,tₑ).

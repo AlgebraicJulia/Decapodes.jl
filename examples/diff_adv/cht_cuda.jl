@@ -436,7 +436,7 @@ begin
   p = CuArray([density for p in s[:point]] * (288.15 * R₀))
 end
 m_avg = avg_mat(Val{(0,1)}, sd)
-# sim = eval(gensim(HeatXFer, code_target=cuda()))
+# sim = eval(gensim(HeatXFer, code_target=CUDATarget()))
 
 wedge_cache = init_wedge_ops(sd)
 v2comp = comp_support(sd);

@@ -39,7 +39,7 @@ function circle(n, c)
 end
 s,sd = circle(7, 500)
 
-sim = eval(gensim(Klausmeier, dimension=1, code_target=gen_CUDA()))
+sim = eval(gensim(Klausmeier, dimension=1, code_target=CUDATarget()))
 
 lap_mat = CuSparseMatrixCSC(hodge_star(1,sd) * d(0,sd) * inv_hodge_star(0,sd) * dual_derivative(0,sd))
 function generate(sd, my_symbol; hodge=DiagonalHodge())

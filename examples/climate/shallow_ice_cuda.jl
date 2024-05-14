@@ -133,7 +133,7 @@ end
 # Generate simulation #
 #######################
 
-sim = eval(gensim(ice_dynamics2D, code_target=gen_CUDA()))
+sim = eval(gensim(ice_dynamics2D, code_target=CUDATarget()))
 fₘ = sim(s, generate)
 
 # Pre-compile simulation

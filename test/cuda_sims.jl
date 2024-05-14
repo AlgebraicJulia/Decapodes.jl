@@ -48,7 +48,7 @@ end
   cpu_soln = solve(prob, Tsit5(), save_everystep=false)
 
   # CUDA Setup and Solve
-  cuda_sim = eval(gensim(Heat, code_target=cuda()))
+  cuda_sim = eval(gensim(Heat, code_target=CUDATarget()))
   cuda_fₘ = cuda_sim(sd, nothing, DiagonalHodge())
   
   cuda_u₀ = ComponentArray(U=CuArray{Float64}(U))
@@ -86,7 +86,7 @@ end
   cpu_soln = solve(prob, Tsit5(), save_everystep=false)
 
   # CUDA Setup and Solve
-  cuda_sim = eval(gensim(Heat, code_target=cuda(), stateeltype=Float32))
+  cuda_sim = eval(gensim(Heat, code_target=CUDATarget(), stateeltype=Float32))
   cuda_fₘ = cuda_sim(sd, nothing, DiagonalHodge())
   
   cuda_u₀ = ComponentArray(U=CuArray{Float32}(U))
@@ -153,7 +153,7 @@ end
   cpu_soln = solve(prob, Tsit5())
 
   # CUDA Setup and Solve
-  cuda_sim = eval(gensim(Brusselator, code_target=cuda()))
+  cuda_sim = eval(gensim(Brusselator, code_target=CUDATarget()))
   cuda_fₘ = cuda_sim(sd, nothing, DiagonalHodge())
   
   cuda_u₀ = ComponentArray(U=CuArray(U), V=CuArray(V))
@@ -236,7 +236,7 @@ end
   cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n, :w]);
 
   # CUDA Setup and Solve
-  cuda_sim = eval(gensim(Klausmeier, dimension=1, code_target=cuda()))
+  cuda_sim = eval(gensim(Klausmeier, dimension=1, code_target=CUDATarget()))
   cuda_lap_mat = CuSparseMatrixCSC(lap_mat)
   function cuda_generate(sd, my_symbol; hodge=DiagonalHodge())
     op = @match my_symbol begin
@@ -321,7 +321,7 @@ end
   cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n, :w]);
 
   # CUDA Setup and Solve
-  cuda_sim = eval(gensim(Klausmeier, dimension=1, code_target=cuda(), stateeltype=Float32))
+  cuda_sim = eval(gensim(Klausmeier, dimension=1, code_target=CUDATarget(), stateeltype=Float32))
   cuda_lap_mat = CuSparseMatrixCSC(lap_mat)
   function cuda_generate(sd, my_symbol; hodge=DiagonalHodge())
     op = @match my_symbol begin
