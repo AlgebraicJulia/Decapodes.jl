@@ -333,16 +333,19 @@ end =#
           end
         end
 
+        # TODO: Clean this in another PR (with a @match maybe).
         if(operator == :(*))
           operator = promote_arithmetic_map[operator]
         end
         if(operator == :(-))
           operator = promote_arithmetic_map[operator]
         end
+        if(operator == :(/))
+          operator = promote_arithmetic_map[operator]
+        end
         if(operator == :(^))
           operator = promote_arithmetic_map[operator]
         end
-
 
         visited_2[op] = true
         visited_Var[r] = true
