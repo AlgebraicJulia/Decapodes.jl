@@ -1,8 +1,8 @@
 begin
-    #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:536 =#
+    #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:539 =#
     function simulate(mesh, operators, hodge = GeometricHodge())
-        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:536 =#
-        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:537 =#
+        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:539 =#
+        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:540 =#
         begin
             #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:157 =#
             (var"GenSim-M_dual_d₀", dual_d₀) = default_dec_matrix_generate(mesh, :dual_d₀, hodge)
@@ -16,13 +16,13 @@ begin
             (∧ᵖᵈ₀₁) = operators(mesh, :∧ᵖᵈ₀₁)
             (∧ᵈᵈ₀₁) = operators(mesh, :∧ᵈᵈ₀₁)
         end
-        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:538 =#
+        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:541 =#
         begin
-            #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:453 =#
+            #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:456 =#
             var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_dual_d₁"
             var"GenSim-ConMat_1" = (x->var"GenSim-M_GenSim-ConMat_1" * x)
         end
-        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:539 =#
+        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:542 =#
         begin
             #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:203 =#
             var"__salinity_continuity_•11" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
@@ -67,10 +67,10 @@ begin
             var"__momentum_•2" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
             __momentum_v̇ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
         end
-        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:540 =#
+        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:543 =#
         f(du, u, p, t) = begin
-                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:540 =#
-                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:541 =#
+                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:543 =#
+                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:544 =#
                 begin
                     #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:228 =#
                     v = u.v
@@ -98,7 +98,7 @@ begin
                     var"-1" = -1.0
                     var"-1.0" = -1.0
                 end
-                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:542 =#
+                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:545 =#
                 var"salinity_continuity_•11" = Decapodes.get_tmp(var"__salinity_continuity_•11", u)
                 var"momentum_•14" = Decapodes.get_tmp(var"__momentum_•14", u)
                 var"momentum_•16" = Decapodes.get_tmp(var"__momentum_•16", u)
@@ -198,7 +198,7 @@ begin
                 momentum_sum_3 .= (.+)(var"momentum_•3", var"momentum_•21")
                 var"momentum_•2" .= momentum_sum_3 .- SD
                 momentum_v̇ .= (.+)(var"momentum_•2", momentum_∂tuˢ, momentum_Fᵥ)
-                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:543 =#
+                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:546 =#
                 getproperty(du, :v) .= momentum_v̇
                 getproperty(du, :T) .= temperature_continuity_ċ
                 getproperty(du, :S) .= salinity_continuity_ċ

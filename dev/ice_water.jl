@@ -1,8 +1,8 @@
 begin
-    #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:536 =#
+    #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:539 =#
     function simulate(mesh, operators, hodge = GeometricHodge())
-        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:536 =#
-        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:537 =#
+        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:539 =#
+        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:540 =#
         begin
             #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:157 =#
             (var"GenSim-M_d₀", d₀) = default_dec_matrix_generate(mesh, :d₀, hodge)
@@ -19,9 +19,9 @@ begin
             (∧ᵈᵖ₁₀) = operators(mesh, :∧ᵈᵖ₁₀)
             (∧ᵖᵈ₀₁) = operators(mesh, :∧ᵖᵈ₀₁)
         end
-        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:538 =#
+        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:541 =#
         begin
-            #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:453 =#
+            #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:456 =#
             var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_dual_d₁"
             var"GenSim-ConMat_1" = (x->var"GenSim-M_GenSim-ConMat_1" * x)
             var"GenSim-M_GenSim-ConMat_2" = var"GenSim-M_⋆₁" * var"GenSim-M_d₀" * var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_dual_d₁"
@@ -29,7 +29,7 @@ begin
             var"GenSim-M_GenSim-ConMat_3" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_dual_d₁" * var"GenSim-M_⋆₁"
             var"GenSim-ConMat_3" = (x->var"GenSim-M_GenSim-ConMat_3" * x)
         end
-        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:539 =#
+        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:542 =#
         begin
             #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:203 =#
             var"__glacier_dynamics_dynamics_•5" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
@@ -49,10 +49,10 @@ begin
             __water_dynamics_𝐮̇ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
             __glacier_dynamics_dynamics_ḣ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
         end
-        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:540 =#
+        #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:543 =#
         f(du, u, p, t) = begin
-                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:540 =#
-                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:541 =#
+                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:543 =#
+                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:544 =#
                 begin
                     #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:228 =#
                     ice_thickness = u.ice_thickness
@@ -70,7 +70,7 @@ begin
                     var"-1" = -1.0
                     var"1" = 1.0
                 end
-                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:542 =#
+                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:545 =#
                 var"glacier_dynamics_dynamics_•5" = Decapodes.get_tmp(var"__glacier_dynamics_dynamics_•5", u)
                 var"glacier_dynamics_dynamics_•9" = Decapodes.get_tmp(var"__glacier_dynamics_dynamics_•9", u)
                 glacier_dynamics_dynamics_sum_1 = Decapodes.get_tmp(__glacier_dynamics_dynamics_sum_1, u)
@@ -103,7 +103,7 @@ begin
                 mul!(var"water_dynamics_•9", var"GenSim-M_GenSim-ConMat_1", flow_after)
                 mul!(var"water_dynamics_•5", var"GenSim-M_GenSim-ConMat_2", flow_after)
                 var"glacier_dynamics_dynamics_•11" = ice_thickness .^ glacier_dynamics_dynamics_sum_1
-                var"glacier_dynamics_stress_•1" = var"2" / glacier_dynamics_stress_sum_1
+                var"glacier_dynamics_stress_•1" = var"2" ./ glacier_dynamics_stress_sum_1
                 glacier_dynamics_stress_mult_1 = var"glacier_dynamics_stress_•1" .* glacier_dynamics_stress_A
                 glacier_dynamics_Γ = glacier_dynamics_stress_mult_1 .* var"glacier_dynamics_stress_•2"
                 var"water_dynamics_•2" = ι₁₁(flow_after, flow_after)
@@ -119,7 +119,7 @@ begin
                 var"water_dynamics_•6" .= var"-1" .* var"water_dynamics_•7"
                 water_dynamics_𝐮̇ .= (.+)(var"water_dynamics_•4", var"water_dynamics_•6", water_dynamics_sum_1)
                 mul!(glacier_dynamics_dynamics_ḣ, var"GenSim-M_GenSim-ConMat_3", var"glacier_dynamics_dynamics_•2")
-                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:543 =#
+                #= /home/runner/work/Decapodes.jl/Decapodes.jl/src/simulation.jl:546 =#
                 getproperty(du, :ice_thickness) .= glacier_dynamics_dynamics_ḣ
                 getproperty(du, :flow) .= water_dynamics_𝐮̇
             end
