@@ -16,6 +16,7 @@ using OrdinaryDiffEq
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 using GeometryBasics
+using MKLSparse
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
   hodge = ⋆(k,sd,hodge=hodge)

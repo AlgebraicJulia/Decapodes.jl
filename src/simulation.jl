@@ -7,6 +7,7 @@ using LinearAlgebra
 using Base.Iterators
 using Catlab
 using MLStyle
+using MKLSparse
 import Catlab.Programs.GenerateJuliaPrograms: compile
 
 const gensim_in_place_stub = Symbol("GenSim-M")
