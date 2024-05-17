@@ -45,6 +45,7 @@ makedocs(
   checkdocs = :none,
   pages     = Any[
     "Decapodes.jl" => "index.md",
+    "Vortices" => "navier_stokes/ns.md",
     "Halfar-NS" => "halmo.md",
     "Overview" => "overview.md",
     "Klausmeier" => "klausmeier.md",
@@ -53,7 +54,6 @@ makedocs(
     "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
     "CISM v2.1" => "cism.md",
     "NHS" => "nhs.md",
-    "Cahn-Hilliard" => "cahn_hilliard.md",
     "Equations" => "equations.md",
     "ASCII Operators" => "ascii.md",
     "Misc Features" => "bc_debug.md",
