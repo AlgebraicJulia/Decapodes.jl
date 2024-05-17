@@ -54,7 +54,6 @@ makedocs(
     "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
     "CISM v2.1" => "cism.md",
     "NHS" => "nhs.md",
-    "Cahn-Hilliard" => "cahn_hilliard.md",
     "Equations" => "equations.md",
     "ASCII Operators" => "ascii.md",
     "Misc Features" => "bc_debug.md",
