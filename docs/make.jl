@@ -45,6 +45,7 @@ makedocs(
   checkdocs = :none,
   pages     = Any[
     "Decapodes.jl" => "index.md",
+    "Vortices" => "navier_stokes/ns.md",
     "Halfar-NS" => "halmo.md",
     "Overview" => "overview.md",
     "Klausmeier" => "klausmeier.md",
