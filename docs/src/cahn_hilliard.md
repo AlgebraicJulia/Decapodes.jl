@@ -1,3 +1,4 @@
+<!---
 # The Cahn-Hilliard Equation
 
 For this example Decapodes will model the Cahn-Hilliard equation. This equation describes the evolution of a binary fluid as its two phases seperate out into distinct domains.
@@ -37,7 +38,7 @@ end
 to_graphviz(CahnHilliard)
 ```
 
-In this equation C will represent the concentration of the binary fluid, ranging from -1 to 1 to differentiate between different phases. We also have a diffusion constant D and a constant γ whose square root is the length of the transition regions. This formulation of the Cahn-Hilliard equation was drawn from the Wikipedia page on the topic found here: https://en.wikipedia.org/wiki/Cahn%E2%80%93Hilliard_equation.
+In this equation C will represent the concentration of the binary fluid, ranging from -1 to 1 to differentiate between different phases. We also have a diffusion constant D and a constant γ whose square root is the length of the transition regions. This formulation of the Cahn-Hilliard equation was drawn from the Wikipedia page on the topic found here: <https://en.wikipedia.org/wiki/Cahn%E2%80%93Hilliard_equation>.
 
 ## Loading the Data
 
@@ -101,3 +102,4 @@ create_gif(soln, "CahnHilliard_Rect.gif")
 ```
 
 !["CahnHilliardRes"](CahnHilliard_Rect.gif)
+-->
