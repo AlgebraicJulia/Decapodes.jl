@@ -1,8 +1,5 @@
 # Navier Stokes Vorticity Model
 
-Decapodes can be used to implement
-
-
 This is a discretization of the incompressible Navier Stokes equations using the Discrete Exterior Calculus.
 
 The formulations are based on those given by [Mohamed, Hirani, Samtaney](https://arxiv.org/abs/1508.01166) (in turn from [Marsden, Ratiu, Abraham](https://link.springer.com/book/10.1007/978-1-4612-1029-0)).
@@ -84,7 +81,7 @@ end
 
 Based on the configuration, you can see different results that match the expected solutions from the literature.
 
-Here is one set of results:
+Here is one set of results from using the inviscid Poisson formulation:
 
 ![Vorticity](vort.gif)
 
