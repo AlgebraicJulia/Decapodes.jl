@@ -568,6 +568,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, sta
 
   quote
     function simulate(mesh, operators, hodge=GeometricHodge())
+      is_manifold_like(mesh) || error("The given mesh is not manifold-like. https://algebraicjulia.github.io/CombinatorialSpaces.jl/dev/simplicial_sets/#CombinatorialSpaces.SimplicialSets.is_manifold_like-Tuple{AbstractDeltaSet1D}")
       $func_defs
       $cont_defs
       $vect_defs
