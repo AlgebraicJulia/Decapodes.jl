@@ -6,7 +6,7 @@ The formulations are based on those given by [Mohamed, Hirani, Samtaney](https:/
 
 However, different choices in discretization are chosen for purposes of brevity, to demonstrate novel discretizations of certain operators, and to demonstrate the automated Decapodes workflow.
 
-The different formulations are given in the following decapode expressions.
+The different formulations are given in the following decapode expressions. The full code that generated these results is available in [a julia script](ns.jl). 
 
 ```julia
 eq11_vorticity = @decapode begin
@@ -79,7 +79,7 @@ function point_vortex(pnt::Point3D, cntr::Point3D, p::PointVortexParams)
 end
 ```
 
-Based on the configuration, you can see different results that match the expected solutions from the literature.
+Based on the [configuration](config.toml), you can see different results that match the expected solutions from the literature.
 
 Here is one set of results from using the inviscid Poisson formulation:
 
