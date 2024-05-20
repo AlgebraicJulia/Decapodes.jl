@@ -101,7 +101,7 @@ end)
   end
 )
 
-@docapode("Schoedinger"
+@docapode("Schroedinger"
   ,"https://en.wikipedia.org/wiki/Schrodinger_equation"
   ,"The evolution of the wave function over time."
   ,schroedinger

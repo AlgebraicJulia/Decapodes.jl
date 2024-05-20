@@ -16,4 +16,12 @@ end
   include("simulation.jl")
 end
 
-
+using CUDA
+if CUDA.functional()
+  @testset "CUDA" begin
+    include("cuda_sims.jl")
+  end
+else
+  @info "CUDA tests were not run."
+  @info CUDA.functional(true)
+end

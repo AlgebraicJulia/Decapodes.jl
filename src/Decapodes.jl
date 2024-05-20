@@ -16,9 +16,10 @@ using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 
 export
-flat_op,
-gensim, evalsim, closest_point, compile, compile_env, default_dec_matrix_generate, default_dec_generate, default_dec_generate,
-CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat  
+findname, flat_op,
+gensim, evalsim, closest_point, findnode, compile, compile_env,  PhysicsState,  default_dec_matrix_generate, default_dec_cu_matrix_generate, default_dec_generate, VectorForm,
+CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat,
+CPUTarget, CUDATarget
 
 append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
