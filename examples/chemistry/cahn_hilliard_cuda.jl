@@ -21,12 +21,12 @@ rect = triangulated_grid(100, 100, 0.2, 0.2, Point3D);
 d_rect = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(rect);
 subdivide_duals!(d_rect, Circumcenter());
 
-CahnHillard = @decapode begin
+CahnHilliard = @decapode begin
     C::Form0
     ∂ₜ(C) == 0.5 * Δ(C.^3 - C - 0.5 * Δ(C))
 end
 
-sim = eval(gensim(CahnHillard, code_target=CUDATarget()))
+sim = eval(gensim(CahnHilliard, code_target=CUDATarget()))
   
 fₘ = sim(d_rect, nothing)
 
@@ -51,7 +51,7 @@ begin
     ax = CairoMakie.Axis(fig[1,1])
     msh = CairoMakie.mesh!(ax, rect, color=Array(soln(0).C), colormap=:jet, colorrange=extrema(Array(soln(0).C)))
     Colorbar(fig[1,2], msh)
-    CairoMakie.record(fig, "CahnHillard.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
+    CairoMakie.record(fig, "CahnHilliard.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
       msh.color = Array(soln(t).C)
     end
   end
