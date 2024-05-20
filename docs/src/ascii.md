@@ -24,4 +24,3 @@ Some users may have trouble entering unicode characters like ⋆ or ∂ in their
 | ∇ᵈ       | ∘(⋆,d,⋆)         | \nabla \<tab\> \\^d \<tab\> |
 | ∇x       | ∘(d,⋆)           | \nabla \<tab\> x            |
 | adv(X,Y) | ∘(⋆,d,⋆)(X∧Y)    | adv                         |
-

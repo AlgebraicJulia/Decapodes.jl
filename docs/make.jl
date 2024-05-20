@@ -45,6 +45,7 @@ makedocs(
   pages     = Any[
     "Decapodes.jl" => "index.md",
     # "Vortices" => "navier_stokes/ns.md",
+    "Cahn-Hilliard" => "ch/cahn-hilliard.md",
     # "Halfar-NS" => "halmo.md",
     # "Overview" => "overview.md",
     # "Klausmeier" => "klausmeier.md",
@@ -54,13 +55,13 @@ makedocs(
     # "CISM v2.1" => "cism.md",
     # "NHS" => "nhs.md",
     # "Equations" => "equations.md",
-    # "ASCII Operators" => "ascii.md",
+    "ASCII Operators" => "ascii.md",
     # "Misc Features" => "bc_debug.md",
     # "Pipe Flow" => "poiseuille.md",
     # # "Examples" => Any[
     # #   "examples/cfd_example.md"
     # # ],
-    # "Canonical Models" => "canon.md",
+    "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ]
 )
