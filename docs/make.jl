@@ -6,7 +6,6 @@ using Distributed
 using Decapodes
 using Catlab
 using Catlab.WiringDiagrams
-using AlgebraicPetri
 using CairoMakie
 
 # Set Literate.jl config if not being compiled on recognized service.
@@ -45,23 +44,23 @@ makedocs(
   checkdocs = :none,
   pages     = Any[
     "Decapodes.jl" => "index.md",
-    "Vortices" => "navier_stokes/ns.md",
-    "Halfar-NS" => "halmo.md",
-    "Overview" => "overview.md",
-    "Klausmeier" => "klausmeier.md",
-    "Glacial Flow" => "ice_dynamics.md",
-    "Grigoriev Ice Cap" => "grigoriev.md",
-    "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
-    "CISM v2.1" => "cism.md",
-    "NHS" => "nhs.md",
-    "Equations" => "equations.md",
-    "ASCII Operators" => "ascii.md",
-    "Misc Features" => "bc_debug.md",
-    "Pipe Flow" => "poiseuille.md",
-    # "Examples" => Any[
-    #   "examples/cfd_example.md"
-    # ],
-    "Canonical Models" => "canon.md",
+    # "Vortices" => "navier_stokes/ns.md",
+    # "Halfar-NS" => "halmo.md",
+    # "Overview" => "overview.md",
+    # "Klausmeier" => "klausmeier.md",
+    # "Glacial Flow" => "ice_dynamics.md",
+    # "Grigoriev Ice Cap" => "grigoriev.md",
+    # "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
+    # "CISM v2.1" => "cism.md",
+    # "NHS" => "nhs.md",
+    # "Equations" => "equations.md",
+    # "ASCII Operators" => "ascii.md",
+    # "Misc Features" => "bc_debug.md",
+    # "Pipe Flow" => "poiseuille.md",
+    # # "Examples" => Any[
+    # #   "examples/cfd_example.md"
+    # # ],
+    # "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ]
 )
