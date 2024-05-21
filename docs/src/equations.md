@@ -14,7 +14,6 @@ using Decapodes
 
 The harmonic oscillator can be written in Decapodes in at least three different ways.
 
-
 ```@example Harmonic
 oscillator = @decapode begin
   X::Form0
