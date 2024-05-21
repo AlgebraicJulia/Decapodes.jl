@@ -42,6 +42,7 @@ makedocs(
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
+  pagesonly = true,
   pages     = Any[
     "Decapodes.jl" => "index.md",
     # "Vortices" => "navier_stokes/ns.md",

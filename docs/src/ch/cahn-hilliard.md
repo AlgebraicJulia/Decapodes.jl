@@ -51,7 +51,7 @@ sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s);
 subdivide_duals!(sd, Circumcenter());
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect=1)
-wf = wireframe!(ax, s)
+wf = wireframe!(ax, s; linewidth=1)
 save("CahnHilliard_Rect.png", fig)
 ```
 
