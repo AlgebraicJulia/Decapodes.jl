@@ -50,7 +50,7 @@ makedocs(
     "Cahn-Hilliard" => "ch/cahn-hilliard.md",
     # "Halfar-NS" => "halmo.md",
     # "Overview" => "overview.md",
-    # "Klausmeier" => "klausmeier.md",
+    "Klausmeier" => "klausmeier.md",
     # "Glacial Flow" => "ice_dynamics.md",
     # "Grigoriev Ice Cap" => "grigoriev.md",
     # "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
@@ -60,9 +60,6 @@ makedocs(
     "ASCII Operators" => "ascii.md",
     # "Misc Features" => "bc_debug.md",
     # "Pipe Flow" => "poiseuille.md",
-    # # "Examples" => Any[
-    # #   "examples/cfd_example.md"
-    # # ],
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ]

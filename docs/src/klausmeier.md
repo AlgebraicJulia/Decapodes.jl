@@ -1,10 +1,15 @@
 # Klausmeier
 
+```@setup DEC
+using Dates
+start_time = now()
+```
+
 ```@raw html
 <figure>
     <img src="https://www.cise.ufl.edu/~luke.morris/imgs/somaliland_vegetation.png"
          alt="Somaliland Vegetation">
-    <figcaption>One of the first aerial photographs of British Somaliland (now Somaliland) investigated by W.A. Macfadyen in his 1950 "Vegetation Patterns in the Semi-Desert Plains of British Somaliland"\[1\]. From this point of view, Macfadyen's "vegetation arcs" are plainly visible.</figcaption>
+    <figcaption>One of the first aerial photographs of British Somaliland (now Somaliland) investigated by W.A. Macfadyen in his 1950 "Vegetation Patterns in the Semi-Desert Plains of British Somaliland" [1]. From this point of view, Macfadyen's "vegetation arcs" are plainly visible.</figcaption>
 </figure>
 ```
 
@@ -12,7 +17,7 @@
 
 From aerial photographs in the late 1940s, British ecologist W.A. Macfadyen discovered that vegetation in semi-arid environments often grows in striping patterns, but was unaware of the exact mechanism that causes them. What is especially striking about these "vegetation arcs" is that these stripes appear to climb uphill, with denser plant growth at the leading edge of these traveling waves. Much like how the Mandelbrot set and other interesting fractal patterns can arise from simple sets of rules, these vegetation dynamics can be explained by simple sets of partial differential equations.
 
-The Klausmeier model, given by Christopher Klausmeier in his 1999 paper "Regular and Irregular Patterns in Semiarid Vegetation"\[2\], models such dynamics. Although Macfadyen had discovered these vegetation patterns 50s years prior\[1,3\], defining these dynamics through accessible and physically-meaningful PDEs proved a catalyst for further research. At the time of writing, Klausmeier's paper has been cited 594 times.
+The Klausmeier model, given by Christopher Klausmeier in his 1999 paper *Regular and Irregular Patterns in Semiarid Vegetation*\[2\], models such dynamics. Although Macfadyen had discovered these vegetation patterns 50s years prior\[1,3\], defining these dynamics through accessible and physically-meaningful PDEs proved a catalyst for further research. At the time of writing, Klausmeier's paper has been cited 594 times.
 
 In this document, we will use Decapodes to formally represent these equations. Moreover, we will demonstrate how one can automatically generate simulation that reproduces the dynamics given by a scientist, simply by reading in the equations given in their original publication.
 
@@ -21,23 +26,24 @@ The lofty goal of this document, and of Decapodes itself, is that through both e
 ![Klausmeier GIF](klausmeier.gif)
 
 ## using Decapodes
+
 ```@example DEC
 # Load Dependencies
-using DiagrammaticEquations
-using DiagrammaticEquations.Deca
-using Decapodes
+using CairoMakie
 using Catlab
 using CombinatorialSpaces
-
+using ComponentArrays
+using Decapodes
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Distributions
-using CairoMakie
+using GeometryBasics: Point2
 using JLD2
 using LinearAlgebra
 using MLStyle
-using ComponentArrays
 using OrdinaryDiffEq
-using GeometryBasics: Point2
 Point2D = Point2{Float64}
+nothing # hide
 ```
 
 ## Model Representation
@@ -53,7 +59,7 @@ Hydrodynamics = @decapode begin
   dX::Form1
   (a,ν)::Constant
 
-  ∂ₜ(w) == a - w - w * n^2 + ν * ℒ(dX, w)
+  ∂ₜ(w) == a - w - w * n^2 + ν * L(dX, w)
 end
 
 # See Klausmeier Equation 2.b
@@ -62,10 +68,12 @@ Phytodynamics = @decapode begin
   m::Constant
 
   ∂ₜ(n) == w * n^2 - m*n + Δ(n)
-end # hide
+end
+nothing # hide
 ```
 
 Now that we have our two component models, we can specify a means of composing them via a composition pattern.
+
 ```@example DEC
 # Specify Composition
 compose_klausmeier = @relation () begin
@@ -77,6 +85,7 @@ to_graphviz(compose_klausmeier, box_labels=:name, junction_labels=:variable, pro
 ```
 
 We apply our composition pattern by plugging in component Decapodes, and specifying which internal quantities to share along edges. Decapodes are formalized via the field of Applied Category Theory. A practical consequence here is that we can view a Decapode as a sort of computation graph.
+
 ```@example DEC
 # Apply Composition
 klausmeier_cospan = oapply(compose_klausmeier,
@@ -87,34 +96,9 @@ to_graphviz(Klausmeier)
 ```
 
 With our model now explicitly represented, we have everything we need to automatically generate simulation code. We could write this to an intermediate file and use it later, or we can go ahead and `eval`uate the code in this session.
+
 ```@example DEC
 sim = eval(gensim(Klausmeier, dimension=1))
-```
-
-We discretize our differential operators using the Discrete Exterior Calculus. The DEC is an elegant way of building up more complex differential operators from simpler ones. To demonstrate, we will define the Δ operator by building it up with matrix multiplication of simpler operators. Since most operators in the DEC are matrices, most simulations consist mainly of matrix-vector multiplications, and are thus very fast. We can also cache these 
-
-If this code seems too low level, do not worry. Decapodes defines and caches for you many differential operators behind the scenes, so you do not have to worry about defining your own.
-
-```@example DEC
-function generate(sd, my_symbol; hodge=DiagonalHodge())
-  lap_mat = hodge_star(1,sd) * d(0,sd) * inv_hodge_star(0,sd) * dual_derivative(0,sd)
-  dd_mat = dual_derivative(0,sd)
-  ih_mat = inv_hodge_star(0,sd)
-  h_mat = hodge_star(1,sd)
-  ih_dd_mat = ih_mat * dd_mat
-  op = @match my_symbol begin
-    :Δ => x -> begin
-      lap_mat * x
-    end
-    :ℒ => (x,y) -> begin
-      h_mat * ∧(0,1,sd, ih_dd_mat * y, x)
-    end
-    :^ => (x,y) -> begin
-      x .^ y
-    end
-  end
-  return (args...) -> op(args...)
-end
 ```
 
 We now need a mesh to define our domain. In the 2D case, our CombinatorialSpaces library can read in arbitrary .OBJ files. In 1D, it is often simpler to just generate a mesh on the fly. Since we are running our physics on a circle - i.e periodic boundaries - we will use a simple function that generates it.
@@ -134,12 +118,30 @@ function circle(n, c)
   subdivide_duals!(sd, Circumcenter())
   s,sd
 end
-s,sd = circle(7, 500)
+s,sd = circle(9, 500)
 
 scatter(sd[:point])
 ```
 
+We discretize our differential operators using the Discrete Exterior Calculus. The DEC is an elegant way of building up more complex differential operators from simpler ones. To demonstrate, we will define the Δ operator by building it up with matrix multiplication of simpler operators. Since most operators in the DEC are matrices, most simulations consist mainly of matrix-vector multiplications, and are thus very fast.
+
+If this code seems too low level, do not worry. Decapodes defines and caches for you many differential operators behind the scenes, so you do not have to worry about defining your own.
+
+```@example DEC
+lap_mat = dec_hodge_star(1,sd) * dec_differential(0,sd) * dec_inv_hodge_star(0,sd) * dec_dual_derivative(0,sd)
+
+function generate(sd, my_symbol; hodge=DiagonalHodge())
+  op = @match my_symbol begin
+    :Δ => x -> begin
+      lap_mat * x
+    end
+  end
+  return (args...) -> op(args...)
+end
+```
+
 Let's pass our mesh and methods of generating operators to our simulation code.
+
 ```@example DEC
 # Instantiate Simulation
 fₘ = sim(sd, generate, DiagonalHodge())
@@ -148,6 +150,7 @@ fₘ = sim(sd, generate, DiagonalHodge())
 With our simulation now ready, let's specify initial data to pass to it. We'll define them with plain Julia code.
 
 The most interesting parameter here is our "downhill gradient" `dX`. This parameter defines how steep our slope is. Since our mesh is a circle, and we are setting `dX` to a constant value, this means that "downhill" always points counter-clockwise. Essentially, this is an elegant way of encoding an infinite hill.
+
 ```@example DEC
 # Define Initial Conditions
 n_dist = Normal(pi)
@@ -166,11 +169,12 @@ cs_ps = (phyto_m = 0.45,
 ```
 
 Let's execute our simulation.
+
 ```@example DEC
 # Run Simulation
-tₑ = 600.0
+tₑ = 300.0
 prob = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
-sol = solve(prob, Tsit5())
+sol = solve(prob, Tsit5(), saveat=0.1, save_idxs=[:N, :W])
 sol.retcode
 ```
 
@@ -182,7 +186,8 @@ Let's perform some basic visualization and analysis of our results to verify our
 n = sol(0).N
 nₑ = sol(tₑ).N
 w = sol(0).W
-wₑ = sol(tₑ).W # hide
+wₑ = sol(tₑ).W
+nothing # hide
 ```
 
 ```@example DEC
@@ -205,6 +210,7 @@ save_dynamics(:N, 20, "klausmeier.gif")
 ![Klausmeier](klausmeier.gif)
 
 We can observe a few interesting phenomena that we wanted to capture:
+
 - The vegetation density bands move uphill in traveling waves.
 - The leading edge of the waves is denser than the rest of the band.
 - Over time, the periodicity of the vegetation bands stabilizes.
@@ -216,6 +222,7 @@ We can observe a few interesting phenomena that we wanted to capture:
 Due to the ease of composition of Decapodes, representing the Klausmeier model opens up many areas for future work. For example, we can now compose these dynamics with a model of temperature dynamics informed by the Budyko-Sellers model. We can take advantage of the fact that the Lie derivative generalizes partial derivatives, and model the flow of water according to any vector field. Or, we can extend this model by composing it with a model that can recreate the so-called "leopard pattern" of vegetation, such as an "Interaction-Dispersion" model of vegetation dynamics given by Lejeune et al\[4\].
 
 ## References
+
 \[1\] W. A. Macfadyen, “Vegetation Patterns in the Semi-Desert Plains of British Somaliland,” The Geographical Journal, vol. 116, no. 4/6, p. 199, Oct. 1950, doi: 10.2307/1789384.
 
 \[2\] C. A. Klausmeier, “Regular and Irregular Patterns in Semiarid Vegetation,” Science, vol. 284, no. 5421, pp. 1826–1828, Jun. 1999, doi: 10.1126/science.284.5421.1826.
@@ -223,3 +230,11 @@ Due to the ease of composition of Decapodes, representing the Klausmeier model o
 \[3\] W. A. Macfadyen, “Soil and Vegetation in British Somaliland,” Nature, vol. 165, no. 4186, Art. no. 4186, Jan. 1950, doi: 10.1038/165121a0.
 
 \[4\] O. Lejeune and M. Tlidi, “A Model for the Explanation of Vegetation Stripes (Tiger Bush),” Journal of Vegetation Science, vol. 10, no. 2, pp. 201–208, 1999, doi: 10.2307/3237141.
+
+```@example DEC
+end_time = now() # hide
+elapsed = end_time - start_time # hide
+elapsed_sec = round(elapsed, Dates.Second(1)) # hide
+@info "Documentation completed in $(elapsed_sec)." # hide
+@info "Documentation built at $(end_time)." # hide
+```

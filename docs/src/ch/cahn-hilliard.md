@@ -16,18 +16,18 @@ We first load in our dependencies.
 ```@example DEC
 # AlgebraicJulia Dependencies
 using Catlab
+using CombinatorialSpaces
 using Decapodes
 using DiagrammaticEquations
-using CombinatorialSpaces
 
 # External Dependencies
-using MLStyle
-using ComponentArrays
-using OrdinaryDiffEq
-using LinearAlgebra
 using CairoMakie
-using Random
+using ComponentArrays
 using GeometryBasics
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using Random
 Point3D = Point3{Float64};
 nothing #hide
 ```
