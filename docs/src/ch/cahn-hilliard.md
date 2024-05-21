@@ -1,5 +1,10 @@
 # The Cahn-Hilliard Equation
 
+```@setup DEC
+using Dates
+start_time = now()
+```
+
 For this example Decapodes will model the Cahn-Hilliard equation. This equation describes the evolution of a binary fluid as its two phases separate out into distinct domains.
 
 !["Cahn Hilliard sample"](CahnHilliard_Final.jpg)
@@ -102,3 +107,11 @@ create_gif(soln, "CahnHilliard_Rect.gif")
 ```
 
 !["CahnHilliardRes"](CahnHilliard_Rect.gif)
+
+```@example DEC
+end_time = now() # hide
+elapsed = end_time - start_time # hide
+elapsed_sec = round(elapsed, Dates.Second(1)) # hide
+@info "Documentation completed in $(elapsed_sec)." # hide
+@info "Documentation built at $(end_time)." # hide
+```

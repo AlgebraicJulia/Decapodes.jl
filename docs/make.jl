@@ -1,6 +1,7 @@
 using Documenter
 using Literate
 using Distributed
+using Dates
 
 @info "Loading Decapodes"
 using Decapodes
@@ -45,7 +46,7 @@ makedocs(
   pagesonly = true,
   pages     = Any[
     "Decapodes.jl" => "index.md",
-    # "Vortices" => "navier_stokes/ns.md",
+    "Vortices" => "navier_stokes/ns.md",
     "Cahn-Hilliard" => "ch/cahn-hilliard.md",
     # "Halfar-NS" => "halmo.md",
     # "Overview" => "overview.md",
