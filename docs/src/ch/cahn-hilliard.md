@@ -1,8 +1,8 @@
 # The Cahn-Hilliard Equation
 
-```@setup DEC
-using Dates
-start_time = now()
+```@setup INFO
+include(joinpath(Base.@__DIR__, "..", "..", "docinfo.jl"))
+info = DocInfo.Info()
 ```
 
 For this example Decapodes will model the Cahn-Hilliard equation. This equation describes the evolution of a binary fluid as its two phases separate out into distinct domains.
@@ -108,10 +108,6 @@ create_gif(soln, "CahnHilliard_Rect.gif")
 
 !["CahnHilliardRes"](CahnHilliard_Rect.gif)
 
-```@example DEC
-end_time = now() # hide
-elapsed = end_time - start_time # hide
-elapsed_sec = round(elapsed, Dates.Second(1)) # hide
-@info "Documentation completed in $(elapsed_sec)." # hide
-@info "Documentation built at $(end_time)." # hide
+```@example INFO
+DocInfo.get_report(info) # hide
 ```

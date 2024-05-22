@@ -1,8 +1,8 @@
 # Navier Stokes Vorticity Model
 
-```@setup DEC
-using Dates
-start_time = now()
+```@setup INFO
+include(joinpath(Base.@__DIR__, "..", "..", "docinfo.jl"))
+info = DocInfo.Info()
 ```
 
 This is a discretization of the incompressible Navier Stokes equations using the Discrete Exterior Calculus.
@@ -94,10 +94,6 @@ These vortices should be stable so we should see the same periodic function for 
 
 ![Azimuth Profile](azimuth.png)
 
-```@example DEC
-end_time = now() # hide
-elapsed = end_time - start_time # hide
-elapsed_sec = round(elapsed, Dates.Second(1)) # hide
-@info "Documentation completed in $(elapsed_sec)." # hide
-@info "Documentation built at $(end_time)." # hide
+```@example INFO
+DocInfo.get_report(info) # hide
 ```

@@ -13,9 +13,8 @@ By combining the power of ACT and the DEC, we seek to improve the scientific com
 
 Walkthroughs creating, composing, and solving Decapodes are available in the side-bar of this documentation page. Further example scripts are available in the `examples` folder of the Decapodes.jl GitHub repo, and will be added to this documentation site soon.
 
-## NOTE
-
-This library is currently under active development, and so is not yet at a
-point where a constant API/behavior can be assumed. That being said, if this
-project looks interesting/relevant please contact us and
-[let us know](https://www.algebraicjulia.org/#contributing)!
+!!! note "Under Active Development"
+    This library is currently under active development, and so is not yet at a
+    point where a constant API/behavior can be assumed. That being said, if this
+    project looks interesting/relevant please contact us and
+    [let us know](https://www.algebraicjulia.org/#contributing)!

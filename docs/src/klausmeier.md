@@ -1,8 +1,8 @@
 # Klausmeier
 
-```@setup DEC
-using Dates
-start_time = now()
+```@setup INFO
+include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
 ```
 
 ```@raw html
@@ -231,10 +231,6 @@ Due to the ease of composition of Decapodes, representing the Klausmeier model o
 
 \[4\] O. Lejeune and M. Tlidi, “A Model for the Explanation of Vegetation Stripes (Tiger Bush),” Journal of Vegetation Science, vol. 10, no. 2, pp. 201–208, 1999, doi: 10.2307/3237141.
 
-```@example DEC
-end_time = now() # hide
-elapsed = end_time - start_time # hide
-elapsed_sec = round(elapsed, Dates.Second(1)) # hide
-@info "Documentation completed in $(elapsed_sec)." # hide
-@info "Documentation built at $(end_time)." # hide
+```@example INFO
+DocInfo.get_report(info) # hide
 ```
