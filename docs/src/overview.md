@@ -358,7 +358,6 @@ end
 ```
 
 ![](diff_adv.gif)
-```
 
 ```@example INFO
 DocInfo.get_report(info) # hide
