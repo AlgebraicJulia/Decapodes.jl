@@ -1,5 +1,10 @@
 # Introduction to Decapodes
 
+```@setup INFO
+include(joinpath(@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 Discrete Exterior Calculus Applied to Partial and Ordinary Differential
 Equations (Decapodes) is a diagrammatic language used to express systems of
 ordinary and partial differential equations. The Decapode provides a visual
@@ -353,4 +358,8 @@ end
 ```
 
 ![](diff_adv.gif)
+```
+
+```@example INFO
+DocInfo.get_report(info) # hide
 ```

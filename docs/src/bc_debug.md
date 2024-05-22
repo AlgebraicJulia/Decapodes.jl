@@ -1,5 +1,10 @@
 # Simulation Setup
 
+```@setup INFO
+include(joinpath(@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 This tutorial showcases some of the other features included in the Decapodes.jl
 package. Currently, these features are the treatment of boundary conditions and
 the simulation debugger interface. To begin, we set up the same
@@ -195,3 +200,7 @@ end
 ```
 
 ![](diff_adv_right.gif)
+
+```@example INFO
+DocInfo.get_report(info) # hide
+```

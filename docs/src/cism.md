@@ -1,5 +1,10 @@
 # Replicating the Community Ice Sheet Model v2.1 Halfar Dome Benchmark with Decapodes
 
+```@setup INFO
+include(joinpath(@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 The Decapodes framework takes high-level representations of physics equations and automatically generates solvers.
 
 We do so by translating equations from vector calculus notation to the "discrete exterior calculus" (DEC). This process is roughly about recognizing whether physical quantities represent scalar or vector quantities, and recognizing whether differential operators represent gradient, divergence, and so on.
@@ -372,3 +377,6 @@ Since Decapodes targets high-level representations of physics, it is uniquely su
 
 Further improvements to the Decapodes library are made continuously. We are creating implementations of DEC operators that are constructed and execute faster. And we are in the beginning stages of 3D simulations using the DEC.
 
+```@example INFO
+DocInfo.get_report(info) # hide
+```

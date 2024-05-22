@@ -6,7 +6,6 @@ using Distributed
 using Decapodes
 using Catlab
 using Catlab.WiringDiagrams
-using AlgebraicPetri
 using CairoMakie
 
 # Set Literate.jl config if not being compiled on recognized service.
@@ -43,6 +42,7 @@ makedocs(
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
+  pagesonly = true,
   pages     = Any[
     "Decapodes.jl" => "index.md",
     "Vortices" => "navier_stokes/ns.md",
@@ -58,9 +58,6 @@ makedocs(
     "ASCII Operators" => "ascii.md",
     "Misc Features" => "bc_debug.md",
     "Pipe Flow" => "poiseuille.md",
-    # "Examples" => Any[
-    #   "examples/cfd_example.md"
-    # ],
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ]

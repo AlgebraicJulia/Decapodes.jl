@@ -1,5 +1,10 @@
 # Halfar's model of glacial flow
 
+```@setup INFO
+include(joinpath(@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 Let's model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar's 1981 paper: "On the dynamics of the ice sheets".
 
 ``` @example DEC
@@ -526,3 +531,7 @@ end
 ```
 
 ![IceDynamics2DSphere](ice_dynamics2D_sphere.gif)
+
+```@example INFO
+DocInfo.get_report(info) # hide
+```

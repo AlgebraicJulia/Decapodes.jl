@@ -1,5 +1,10 @@
 # Halfar's model of glacial flow
 
+```@setup INFO
+include(joinpath(@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 Let's model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar's 1981 paper: "On the dynamics of the ice sheets".
 
 Let's run the Halfar shallow ice/ shallow slope model on some "real world" data for ice thickness. Van Tricht et al. in their 2023 communication [Measuring and modelling the ice thickness of the Grigoriev ice cap (Kyrgyzstan) and comparison with global dataset](https://tc.copernicus.org/articles/17/4315/2023/tc-17-4315-2023.html) published ice thickness data on an ice cap and stored their data in a TIF. In this document, we will demonstrate how to parse such data and execute a Decapodes model on these initial conditions.
@@ -247,3 +252,7 @@ We observe the usual Halfar model phenomena of ice "melting". Note that since th
 ![Grigoriev_ICs](grigoriev_ic.png)
 ![Grigoriev_FCs](grigoriev_fc.png)
 ![Grigoriev_Dynamics](grigoriev.gif)
+
+```@example INFO
+DocInfo.get_report(info) # hide
+```

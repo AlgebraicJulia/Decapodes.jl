@@ -1,5 +1,10 @@
 # Budko-Sellers-Halfar
 
+```@setup INFO
+include(joinpath(@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 In this example, we will compose the Budyko-Sellers 1D energy balance model of the Earth's surface temperature with the Halfar model of glacial dynamics. Note that each of these components models is itself a composition of smaller physical models. In this walkthrough, we will compose them together using the same techniques.
 
 ``` @example DEC
@@ -385,3 +390,7 @@ end
 ![BSH_Temperature](budyko_sellers_halfar_T.gif)
 
 ![BSH_IceHeight](budyko_sellers_halfar_h.gif)
+
+```@example INFO
+DocInfo.get_report(info) # hide
+```

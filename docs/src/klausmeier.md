@@ -1,5 +1,10 @@
 # Klausmeier
 
+```@setup INFO
+include(joinpath(@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 ```@raw html
 <figure>
     <img src="https://www.cise.ufl.edu/~luke.morris/imgs/somaliland_vegetation.png"
@@ -223,3 +228,7 @@ Due to the ease of composition of Decapodes, representing the Klausmeier model o
 \[3\] W. A. Macfadyen, “Soil and Vegetation in British Somaliland,” Nature, vol. 165, no. 4186, Art. no. 4186, Jan. 1950, doi: 10.1038/165121a0.
 
 \[4\] O. Lejeune and M. Tlidi, “A Model for the Explanation of Vegetation Stripes (Tiger Bush),” Journal of Vegetation Science, vol. 10, no. 2, pp. 201–208, 1999, doi: 10.2307/3237141.
+
+```@example INFO
+DocInfo.get_report(info) # hide
+```

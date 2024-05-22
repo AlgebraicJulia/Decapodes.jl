@@ -1,5 +1,10 @@
 # Poissuille Flow for Fluid Mechanics
 
+```@setup INFO
+include(joinpath(@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 When modeling a fluid flowing in a pipe, one can ignore the multidimensional structure of the pipe and approximate the system as a 1 dimensional flow along the pipe. The noslip boundary condition and the geometry of the pipe enter a 1D equation in the form of a resistance term.
 
 ```@example Poiseuille
@@ -236,3 +241,7 @@ sol.u
 ```
 
 Notice that the solution contains both a vector of flows and a vector of pressures.
+
+```@example INFO
+DocInfo.get_report(info) # hide
+```

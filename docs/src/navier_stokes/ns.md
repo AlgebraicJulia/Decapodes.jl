@@ -1,5 +1,10 @@
 # Navier Stokes Vorticity Model
 
+```@setup INFO
+include(joinpath(@__DIR__, "..", "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 This is a discretization of the incompressible Navier Stokes equations using the Discrete Exterior Calculus.
 
 The formulations are based on those given by [Mohamed, Hirani, Samtaney](https://arxiv.org/abs/1508.01166) (in turn from [Marsden, Ratiu, Abraham](https://link.springer.com/book/10.1007/978-1-4612-1029-0)).
@@ -88,3 +93,7 @@ Here is one set of results from using the inviscid Poisson formulation:
 These vortices should be stable so we should see the same periodic function for both lines here. The difference between the lines is the accumulated error.
 
 ![Azimuth Profile](azimuth.png)
+
+```@example INFO
+DocInfo.get_report(info) # hide
+```

@@ -1,5 +1,10 @@
 # Implement Oceananigans.jl's NonhydrostaticModel in the Discrete Exterior Calculus
 
+```@setup INFO
+include(joinpath(@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 Let's use Decapodes to implement the [NonhydrostaticModel](https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/) from Oceananigans.jl. We will take the opportunity to demonstrate how we can use our "algebra of model compositions" to encode certain guarantees on the models we generate. We will use the [2D Turbulence](https://clima.github.io/OceananigansDocumentation/stable/generated/two_dimensional_turbulence/) as a guiding example, and use only equations found in the Oceananigans docs to construct our model.
 
 ```@example DEC
@@ -311,3 +316,6 @@ save_speed(false)
 
 ![Speed](speed.gif)
 
+```@example INFO
+DocInfo.get_report(info) # hide
+```
