@@ -1,7 +1,6 @@
 using Documenter
 using Literate
 using Distributed
-using Dates
 
 @info "Loading Decapodes"
 using Decapodes
@@ -49,7 +48,7 @@ makedocs(
     "Vortices" => "navier_stokes/ns.md",
     "Cahn-Hilliard" => "ch/cahn-hilliard.md",
     # "Halfar-NS" => "halmo.md",
-    # "Overview" => "overview.md",
+    "Overview" => "overview.md",
     "Klausmeier" => "klausmeier.md",
     # "Glacial Flow" => "ice_dynamics.md",
     # "Grigoriev Ice Cap" => "grigoriev.md",

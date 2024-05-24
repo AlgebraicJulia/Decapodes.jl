@@ -1,32 +1,34 @@
 # Introduction to Decapodes
 
+```@setup INFO
+include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 Discrete Exterior Calculus Applied to Partial and Ordinary Differential
 Equations (Decapodes) is a diagrammatic language used to express systems of
-ordinary and partial differential equations. The Decapode provides a visual
+ordinary and partial differential equations. Decapodes provides a visual
 framework for understanding the coupling between variables within a PDE or ODE
 system, and a combinatorial data structure for working with them. Below, we
 provide a high-level overview of how Decapodes can be generated and interpreted.
 
 ## Your First Decapode
 
-We begin with the most basic Decapode, one which only includes a single
-variable. In the Decapode graphical paradigm, nodes represent variables and
-arrows represent operators which relate variables to each other. Since the
-Decapode applies this diagrammatic language specifically to the Discrete
+In the Decapodes graphical paradigm, nodes represent variables and
+arrows represent operators which relate variables to each other. Since
+Decapodes applies this diagrammatic language specifically to the Discrete
 Exterior Calculus (DEC), variables are typed by the dimension and orientation
 of the information they contain. So a variable of type `Form0` will be the
-0-dimensional data points on some space, or in a discrete context, the
-values defined on points of a mesh. Similarly, `Form1` will be values
-stored on edges of the mesh, and `Form2` will be values stored on the
-surfaces of the mesh. Below, we provide a very simple Decapode with just a
-single variable `C`.
-and define a convenience function for visualization in later examples.
+0-dimensional data points defined the vertices of a mesh. Similarly, `Form1` will be values
+stored on edges of the mesh and `Form2` will be values stored on the
+surfaces of the mesh.
+
+Below, we provide a Decapode with just a single variable `C` and display it.
 
 ```@example DEC
-using DiagrammaticEquations
-using DiagrammaticEquations.Deca
+using Catlab
 using Decapodes
-using Catlab, Catlab.Graphics
+using DiagrammaticEquations
 
 Variable = @decapode begin
   C::Form0
@@ -36,7 +38,7 @@ to_graphviz(Variable)
 ```
 
 The resulting diagram contains a single node, showing the single variable in
-this system. We can then add a second variable:
+this system. We can add a second variable:
 
 ```@example DEC
 TwoVariables = @decapode begin
@@ -47,24 +49,24 @@ end;
 to_graphviz(TwoVariables)
 ```
 
-And then can add some relationship between them. In this case, we make an
-equation which states that `dC` is the discrete derivative of `C`:
+We can also add a relationship between them. In this case, we make an
+equation which states that `dC` is the derivative of `C`:
 
 ```@example DEC
 Equation = @decapode begin
   C::Form0
   dC::Form1
 
-  dC == d₀(C)
+  dC == d(C)
 end;
 
 to_graphviz(Equation)
 ```
 
 Here, the two nodes represent the two variables, and the arrow between them
-shows how they are related by the discrete derivative.
+shows how they are related by the derivative.
 
-##  A Little More Complicated
+## A Little More Complicated
 
 Now that we've seen how to construct a simple equation, it's time to move on to
 some actual PDE systems! One classic PDE example is the diffusion equation.
@@ -78,36 +80,35 @@ Diffusion = @decapode begin
 
   # Fick's first law
   ϕ ==  k(d₀(C))
+
   # Diffusion equation
   Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
   ∂ₜ(C) == Ċ
+
 end;
 
 to_graphviz(Diffusion)
 ```
 
 The resulting Decapode shows the relationships between the three variables with
-the triangle diagram. Note that these diagrams are automatically layed-out by Graphviz.
+the triangle diagram. Note that these diagrams are automatically layed-out by [Graphviz](https://graphviz.org/).
 
 ## Bring in the Dynamics
 
 Now that we have a reasonably complex PDE, we can demonstrate some of the
 developed tooling for actually solving the PDE. Currently, the tooling will
 automatically generate an explicit method for solving the system (using
-DifferentialEquations.jl to handle time-stepping and instability detection).
+[DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl?tab=readme-ov-file) to handle time-stepping and instability detection).
 
 We begin this process by importing a mesh. The mesh has been pre-generated
-within CombinatorialSpaces, and is generated such that it has periodic boundary
+within [CombinatorialSpaces.jl](https://github.com/AlgebraicJulia/CombinatorialSpaces.jl), and is generated such that it has periodic boundary
 conditions. We will also upload a non-periodic mesh for the sake of
 visualization, as well as a mapping between the points on the periodic and
 non-periodic meshes.
 
-See CombinatorialSpaces.jl for mesh construction and importing utilities.
-
 ```@example DEC
-using Catlab.CategoricalAlgebra
-using CombinatorialSpaces, CombinatorialSpaces.DiscreteExteriorCalculus
 using CairoMakie
+using CombinatorialSpaces
 
 plot_mesh = loadmesh(Rectangle_30x10())
 periodic_mesh = loadmesh(Torus_30x10())
@@ -119,17 +120,12 @@ wireframe!(ax, plot_mesh)
 fig
 ```
 
-With the mesh uploaded, we also need to convert the Decapode into something
-which can be scheduled with explicit time stepping. In order to do this, we take
-every variable which is the time derivative of another variable and trace back
-the operations needed to compute this. This process essentially generates a computation
-graph in the form of a directed wiring diagram.
+Now we create a function which links the names of functions used in the Decapode to their implementations. Note that many DEC operators are already
+defined for you.
 
-Since our diagram is already defined, we just need to define a function which implements each of
-these symbolic operators and pass them to a scheduler for generating the
-function.
+As an example, we chose to define `k` as a function that multiplies an input by `0.05`. We could have alternately chosen to represent `k` as a `Constant` that we multiply by in the Decapode itself.
 
-Note that we chose to define `k` as a function that multiplies by a value `k`. We could have alternately chosen to represent `k` as a Constant that we multiply by in the Decapode itself.
+We then compile the simulation by using `gen_sim` and create functional simulation by calling the evaluated `sim`  with the mesh and our `generate` function.
 
 ```@example DEC
 using MLStyle
@@ -139,17 +135,16 @@ function generate(sd, my_symbol; hodge=DiagonalHodge())
     :k => x -> 0.05*x
     x => error("Unmatched operator $my_symbol")
   end
-  return (args...) -> op(args...)
+  return op
 end
-```
 
-Next, we generate the simulation function using `gen_sim` and set up our
-initial conditions for this problem.
-
-```@example DEC
 sim = eval(gensim(Diffusion))
 fₘ = sim(periodic_mesh, generate, DiagonalHodge())
+```
 
+We go ahead and set up our initial conditions for this problem. In this case we generate a Gaussian and apply it to our mesh.
+
+```@example DEC
 using Distributions
 c_dist = MvNormal([7, 5], [1.5, 1.5])
 c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
@@ -160,7 +155,7 @@ mesh!(ax, plot_mesh; color=c[point_map])
 fig
 ```
 
-Finally, we solve this PDE problem using the `Tsit5()` solver and generate an animation of the result!
+Finally, we solve this PDE problem using the `Tsit5()` solver provided by DifferentialEquations.jl.
 
 ```@example DEC
 using LinearAlgebra
@@ -171,7 +166,12 @@ u₀ = ComponentArray(C=c)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
 sol = solve(prob, Tsit5());
+sol.retcode
+```
 
+Now that the simulation has succeeded we can plot out our results with [CairoMakie.jl](https://github.com/MakieOrg/Makie.jl).
+
+```@example DEC
 # Plot the result
 times = range(0.0, 100.0, length=150)
 colors = [sol(t).C[point_map] for t in times]
@@ -189,12 +189,12 @@ record(fig, "diffusion.gif", range(0.0, 100.0; length=150); framerate = 30) do t
 end
 ```
 
-![](diffusion.gif)
+![Your first Decapode!](diffusion.gif)
 
 ## Merging Multiple Physics
 
 Now that we've seen the basic pipeline, it's time for a more complex example
-that demonstrates some of the benefits reaped from using Catlab.jl as the
+that demonstrates some of the benefits reaped from using [Catlab.jl](https://github.com/AlgebraicJulia/Catlab.jl) as the
 backend to our data structures. In this example, we will take two separate
 physics (diffusion and advection), and combine them together using a
 higher-level composition pattern.
@@ -217,6 +217,7 @@ Advection = @decapode begin
   C::Form0
   ϕ::Form1
   V::Form1
+
   ϕ == ∧₀₁(C,V)
 end
 
@@ -228,19 +229,25 @@ Superposition = @decapode begin
   Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
   ∂ₜ(C) == Ċ
 end
-true # hide
+nothing # hide
 ```
 
-```@example DEC
-to_graphviz(Diffusion)
-```
+The diffusion Decapode.
 
 ```@example DEC
-to_graphviz(Advection)
+to_graphviz(Diffusion) # hide
 ```
 
+The advection Decapode.
+
 ```@example DEC
-to_graphviz(Superposition)
+to_graphviz(Advection) # hide
+```
+
+And the superposition Decapode.
+
+```@example DEC
+to_graphviz(Superposition) # hide
 ```
 
 Next, we define the pattern of composition which we want to compose these
@@ -255,7 +262,7 @@ compose_diff_adv = @relation (C, V) begin
   superposition(ϕ₁, ϕ₂, ϕ, C)
 end
 
-to_graphviz(compose_diff_adv, box_labels=:name, junction_labels=:variable, prog="circo")
+to_graphviz(compose_diff_adv, box_labels=:name, junction_labels=:variable, prog="circo") # hide
 ```
 
 After this, the physics can be composed as follows:
@@ -316,9 +323,6 @@ using MLStyle
 function generate(sd, my_symbol; hodge=DiagonalHodge())
   op = @match my_symbol begin
     :k => x -> 0.05*x
-    :∧₀₁ => (x,y) -> begin
-      ∧(Tuple{0,1}, sd, x,y)
-    end
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
@@ -352,5 +356,8 @@ record(fig, "diff_adv.gif", range(0.0, 100.0; length=150); framerate = 30) do t
 end
 ```
 
-![](diff_adv.gif)
+![Your first composed Decapode!](diff_adv.gif)
+
+```@example INFO
+DocInfo.get_report(info) # hide
 ```
