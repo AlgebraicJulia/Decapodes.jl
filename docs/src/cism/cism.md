@@ -1,5 +1,10 @@
 # Replicating the Community Ice Sheet Model v2.1 Halfar Dome Benchmark with Decapodes
 
+```@setup INFO
+include(joinpath(Base.@__DIR__, "..", "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 The Decapodes framework takes high-level representations of physics equations and automatically generates solvers.
 
 We do so by translating equations from vector calculus notation to the "discrete exterior calculus" (DEC). This process is roughly about recognizing whether physical quantities represent scalar or vector quantities, and recognizing whether differential operators represent gradient, divergence, and so on.
@@ -8,34 +13,32 @@ In this benchmark, we will implement the "small slope approximation" of glacial 
 
 The initial conditions used here are exactly those considered by W. H. Lipscomb et al. in "Description And Evaluation of the Community Ice Sheet Model (CISM) v2.1" (2019).
 
-
 ```@example DEC
 # AlgebraicJulia Dependencies
 using Catlab
-using Catlab.Graphics
 using CombinatorialSpaces
 using Decapodes
 using DiagrammaticEquations
-using DiagrammaticEquations.Deca
 
 # External Dependencies
+using BenchmarkTools
+using CairoMakie
 using ComponentArrays
-using MLStyle
-using LinearAlgebra
-using OrdinaryDiffEq
+using GeometryBasics: Point2, Point3
 using JLD2
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
 using SparseArrays
 using Statistics
-using CairoMakie
-using BenchmarkTools
-using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
-Point3D = Point3{Float64}; # hide
+Point3D = Point3{Float64}
+nothing # hide
 ```
 
 ## Specifying and Composing Physics
 
-!["Halfar Equation 2"](https://cise.ufl.edu/~luke.morris/halfar_eq2.jpg)
+!["Halfar Equation 2"](halfar_eq2.png)
 
 We will translate Halfar's equation into the DEC below. Although the equation given by Halfar is dense, this notation does not allow you to see which operators represent divergence, which components represent diffusivity constants, and so on. In the DEC, there is a small pool of operators, ⋆, d, ∧, ♯, and ♭, which combine according to set rules to encode all of these notions.
 
@@ -60,7 +63,7 @@ end
 to_graphviz(halfar_eq2)
 ```
 
-!["Glen's Law"](https://cise.ufl.edu/~luke.morris/glen_law1.jpg)
+!["Glen's Law"](glens_law.png)
 
 Here, we recognize that Gamma is in fact what glaciologists call "Glen's Flow Law." It states that the strain rate of a sheet of ice can be related to applied stress via a power law. Below, we encode the formulation as it is usually given in the literature, depending explicitly on the gravitational constant, g.
 
@@ -128,7 +131,7 @@ ȳ = mean(p -> p[2], point(s))
 
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
-wf = wireframe!(ax, s)
+wf = wireframe!(ax, s; linewidth=0.5)
 save("ice_mesh.png", fig)
 ```
 
@@ -197,13 +200,12 @@ We provide here the mapping from symbols to differential operators. As more of t
 function generate(sd, my_symbol; hodge=GeometricHodge())
   # We pre-allocate matrices that encode differential operators.
   op = @match my_symbol begin
-    :mag => x -> begin
-      norm.(x)
+    :mag => x -> norm.(x)
+    :♯  => begin
+      sharp_mat = ♯_mat(sd, AltPPSharp())
+      x -> sharp_mat * x
     end
-    :^ => (x,y) -> begin
-      x .^ y
-    end
-    _ => default_dec_matrix_generate(sd, my_symbol, hodge)
+    x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
 end
@@ -240,7 +242,7 @@ tₑ = 200
 # This next run should be fast.
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5())
+soln = solve(prob, Tsit5(), saveat=0.1)
 @show soln.retcode
 @info("Done")
 ```
@@ -250,7 +252,7 @@ We can benchmark the compiled simulation with `@benchmarkable`. This macro runs 
 ```@example DEC
 # Time the simulation
 
-b = @benchmarkable solve(prob, Tsit5())
+b = @benchmarkable solve(prob, Tsit5(), saveat=0.1)
 c = run(b)
 ```
 
@@ -261,7 +263,7 @@ c = run(b)
 
 We recall that these dynamics are of the "shallow slope" and "shallow ice" approximations. So, at the edge of our parabolic dome of ice, we expect increased error as the slope increases. On the interior of the dome, we expect the dynamics to match more closely that given by the analytic model. We will see that the CISM results likewise accumulate error in the same neighborhood.
 
-!["Halfar Small Ice Approximation Quote"](https://cise.ufl.edu/~luke.morris/halfar_small_grad_approximation.jpg)
+!["Halfar Small Ice Approximation Quote"](halfar_quote.png)
 
 ```@example DEC
 # Plot the final conditions
@@ -327,7 +329,7 @@ h_diff = soln(tₑ).dynamics_h - hₐ
 maximum(abs.(h_diff))
 ```
 
-We compute root meand square error (RMSE) as well, both over the entire domain, and *excluding where the ice distribution is 0 in the analytic solution.* (Considering the entire domain decreases the RMSE, while not telling you much about the dynamics in the area of interest.) Note that the official CISM benchmark reports 6.43 and 9.06 RMSE for their two solver implementations.
+We compute root-mean-square error (RMSE) as well, both over the entire domain, and *excluding where the ice distribution is 0 in the analytic solution.* This is done since considering the entire domain decreases the RMSE while not telling you much about the area of interest. Note that the official CISM benchmark reports `6.43` and `9.06` RMSE for their two solver implementations.
 
 ```@example DEC
 # Compute RMSE not considering the "outside".
@@ -364,11 +366,14 @@ For comparison's sake, we paste the results produced by CISM below. We observe t
 
 Not that since the DEC is based on triangulated meshes, the "resolution" of the CISM benchmark and the Decapodes implementation cannot be directly compared. An advantage of the DEC is that we do not need to operate on uniform grids. For example, you could construct a mesh that is finer along the dome edge, where you need more resolution, and coarser as you are farther away from the reach of the ice.
 
-![CISM Results](https://cise.ufl.edu/~luke.morris/cism_results.png)
+![CISM Results](official_res.png)
 
-We saw in this document how to create performant and accurate simulations in the Decapodes framework, and compared against the CISM library . Although we do not expect to be both more performant and accurate compared to every hand-crafted simulation, Decapodes makes up for this difference in terms of development time, flexibility, and composition. For example, the original implementation of the Decapodes shallow ice model took place over a couple of afternoons during a hackathon.
+We saw in this document how to create performant and accurate simulations in the Decapodes framework, and compared against the CISM library . Although we do not expect to be both more performant and accurate compared to every hand-crafted simulation, Decapodes makes up for this difference in terms of development time, flexibility, and composition. For example, the original implementation of the Decapodes shallow ice model took place over a couple of afternoons.
 
 Since Decapodes targets high-level representations of physics, it is uniquely suited to incorporating knowledge from subject matter experts to increase simulation accuracy. This process does not require an ice dynamics expert to edit physics equations that have already been weaved into solver code.
 
 Further improvements to the Decapodes library are made continuously. We are creating implementations of DEC operators that are constructed and execute faster. And we are in the beginning stages of 3D simulations using the DEC.
 
+```@example INFO
+DocInfo.get_report(info) # hide
+```

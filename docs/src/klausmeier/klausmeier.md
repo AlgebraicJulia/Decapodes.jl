@@ -1,14 +1,14 @@
 # Klausmeier
 
 ```@setup INFO
-include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+include(joinpath(Base.@__DIR__, ".." , "..", "docinfo.jl"))
 info = DocInfo.Info()
 ```
 
+![Somaliland Vegetation](somalia.png)
+
 ```@raw html
 <figure>
-    <img src="https://www.cise.ufl.edu/~luke.morris/imgs/somaliland_vegetation.png"
-         alt="Somaliland Vegetation">
     <figcaption>One of the first aerial photographs of British Somaliland (now Somaliland) investigated by W.A. Macfadyen in his 1950 "Vegetation Patterns in the Semi-Desert Plains of British Somaliland" [1]. From this point of view, Macfadyen's "vegetation arcs" are plainly visible.</figcaption>
 </figure>
 ```
