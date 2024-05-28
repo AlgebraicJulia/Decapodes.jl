@@ -1,22 +1,23 @@
 # Simulation Setup
 
+```@setup INFO
+include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 This tutorial showcases some of the other features included in the Decapodes.jl
 package. Currently, these features are the treatment of boundary conditions and
 the simulation debugger interface. To begin, we set up the same
-advection-diffusion problem presented in the Overview section.
+advection-diffusion problem presented in the [Overview](overview.md) section.
 As before, we define the Diffusion, Advection, and Superposition components,
-and now include a BC (Bounday Condition) component. Decapodes.jl interprets any
-`Hom` which begins with a `∂` as a boundary condition. These boundary
-conditions recieve special treatment at the scheduling step. Below we show the
+and now include a Boundary Condition (BC) component. By convention, BCs are encoded in Decapodes by using a `∂` symbol. Below we show the
 graphical rendering of this boundary condition diagram, which we will use to
-impose a Dirichlet condition on the time derivative of concentration at the
+impose a [Dirichlet condition](https://en.wikipedia.org/wiki/Dirichlet_boundary_condition) on the time derivative of concentration at the
 mesh boundary.
 
 ```@example Debug
 using Catlab
-using Catlab.Graphics
 using DiagrammaticEquations
-using DiagrammaticEquations.Deca
 using Decapodes
 
 Diffusion = @decapode begin
@@ -58,7 +59,6 @@ to_graphviz(BoundaryConditions)
 
 As before, we compose these physics components over our wiring diagram.
 
-
 ```@example Debug
 compose_diff_adv = @relation (C, V) begin
   diffusion(C, ϕ₁)
@@ -87,10 +87,9 @@ ensures that this boundary condition holds true for any variables dependent on
 this variable, though also means that the boundary conditions on a variable
 have no immediate impact on the variables this variable is dependent on.
 
-In the visualization below, wee see that the final operation
+In the visualization below, we see that the final operation
 executed on the data is the boundary condition we are enforcing on the change
 in concentration.
-
 
 ```@example Debug
 to_graphviz(DiffusionAdvection)
@@ -101,16 +100,15 @@ boundary conditions and so we will use the `plot_mesh` from the previous
 example instead of the mesh with periodic boundary conditions. Because the mesh
 is only a primal mesh, we also generate and subdivide the dual mesh.
 
-`Rectangle_30x10` is a default mesh that is downloaded via `Artifacts.jl` when a user installs Decapodes. Via CombinatorialSpaces.jl, we can instantiate any `.obj` file of triangulated faces as a simplicial set.
-
 ```@example Debug
-using CombinatorialSpaces, CombinatorialSpaces.DiscreteExteriorCalculus
+using CombinatorialSpaces
 using CairoMakie
 
 plot_mesh = loadmesh(Rectangle_30x10())
 
 # Generate the dual mesh
 plot_mesh_dual = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}(plot_mesh)
+
 # Calculate distances and subdivisions for the dual mesh
 subdivide_duals!(plot_mesh_dual, Circumcenter())
 
@@ -131,8 +129,7 @@ modified initial condition is shown below:
 using LinearAlgebra
 using ComponentArrays
 using MLStyle
-using CombinatorialSpaces.DiscreteExteriorCalculus: ∧
-include("../../examples/boundary_helpers.jl")
+include("boundary_helpers.jl") # TODO: Remove this file
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
@@ -142,12 +139,9 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
       x[boundary] .= 0
       x
     end
-    :∧₀₁ => (x,y) -> begin
-      ∧(Tuple{0,1}, sd, x,y)
-    end
     x => error("Unmatched operator $my_symbol")
   end
-  return (args...) -> op(args...)
+  return op
 end
 
 using Distributions
@@ -194,4 +188,8 @@ record(fig, "diff_adv_right.gif", range(0.0, 100.0; length=150); framerate = 30)
 end
 ```
 
-![](diff_adv_right.gif)
+![Your first BC Decapode!](diff_adv_right.gif)
+
+```@example INFO
+DocInfo.get_report(info) # hide
+```

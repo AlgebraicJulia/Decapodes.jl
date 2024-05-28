@@ -45,20 +45,20 @@ makedocs(
   pagesonly = true,
   pages     = Any[
     "Decapodes.jl" => "index.md",
+    "Overview" => "overview.md",
+    "Equations" => "equations.md",
     "Vortices" => "navier_stokes/ns.md",
     "Cahn-Hilliard" => "ch/cahn-hilliard.md",
-    # "Halfar-NS" => "halmo.md",
-    "Overview" => "overview.md",
     "Klausmeier" => "klausmeier.md",
+    # "Halfar-NS" => "halmo.md",
     # "Glacial Flow" => "ice_dynamics.md",
     # "Grigoriev Ice Cap" => "grigoriev.md",
     # "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
     # "CISM v2.1" => "cism.md",
     # "NHS" => "nhs.md",
-    # "Equations" => "equations.md",
+    # "Pipe Flow" => "poiseuille.md", # TODO: Remove?
+    "Misc Features" => "bc_debug.md",
     "ASCII Operators" => "ascii.md",
-    # "Misc Features" => "bc_debug.md",
-    # "Pipe Flow" => "poiseuille.md",
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ]

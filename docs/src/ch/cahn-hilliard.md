@@ -84,7 +84,7 @@ fₘ = sim(sd, nothing, DiagonalHodge());
 Now that everything is set up and ready, we can solve the equation. We run the simulation for 240 time units to see the long-term evolution of the fluid. Note we only save the solution at intervals of 0.1 time units in order to reduce the memory-footprint of the solve.
 
 ```@example DEC
-tₑ = 240
+tₑ = 200
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants)
 soln = solve(prob, Tsit5(), saveat=0.1);
 soln.retcode

@@ -100,9 +100,9 @@ developed tooling for actually solving the PDE. Currently, the tooling will
 automatically generate an explicit method for solving the system (using
 [DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl?tab=readme-ov-file) to handle time-stepping and instability detection).
 
-We begin this process by importing a mesh. The mesh has been pre-generated
-within [CombinatorialSpaces.jl](https://github.com/AlgebraicJulia/CombinatorialSpaces.jl), and is generated such that it has periodic boundary
-conditions. We will also upload a non-periodic mesh for the sake of
+`Torus_30x10` is a default mesh that is downloaded via `Artifacts.jl` when a user installs [CombinatorialSpaces.jl](https://github.com/AlgebraicJulia/CombinatorialSpaces.jl). If we wanted, we could also instantiate any `.obj` file of triangulated faces as a simplicial set although we do not here.
+
+We will also upload a non-periodic mesh for the sake of
 visualization, as well as a mapping between the points on the periodic and
 non-periodic meshes.
 

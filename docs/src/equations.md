@@ -1,14 +1,16 @@
 # Simple Equations
 
+```@setup INFO
+include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 This tutorial shows how to use Decapodes to represent simple equations. These aren't using any of the Discrete Exterior Calculus or CombinatorialSpaces features of Decapodes. They just are a reference for how to build equations with the `@decapodes` macro and see how they are stored as ACSets.
 
 ```@example Harmonic
 using Catlab
-using Catlab.Graphics
 using CombinatorialSpaces
-using CombinatorialSpaces.ExteriorCalculus
 using DiagrammaticEquations
-using DiagrammaticEquations.Deca
 using Decapodes
 ```
 
@@ -95,3 +97,7 @@ to_graphviz(oscillator)
 ```
 
 Often you will have a linear material where you are scaling by a constant, and a nonlinear version of that material where that scaling is replaced by a generic nonlinear function. This is why we allow Decapodes to represent both of these types of equations.
+
+```@example INFO
+DocInfo.get_report(info) # hide
+```
