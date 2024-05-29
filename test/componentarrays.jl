@@ -3,7 +3,6 @@ using OrdinaryDiffEq
 using GeometryBasics
 using JSON
 using Distributions
-using Artifacts
 # using GLMakie
 
 using Catlab
@@ -175,4 +174,3 @@ soln = solve(prob, Tsit5())
 # record(fig, "diff_adv.gif", range(0.0, tₑ; length=150); framerate = 30) do t
 #     ob.color = findnode(soln(t), :C)[point_map]
 # end
-

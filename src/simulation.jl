@@ -2,9 +2,9 @@ using Base.Iterators
 using Catlab
 using CombinatorialSpaces
 using ComponentArrays
-using GeometryBasics
 using LinearAlgebra
 using MLStyle
+using PreallocationTools
 
 import Catlab.Programs.GenerateJuliaPrograms: compile
 

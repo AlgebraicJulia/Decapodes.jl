@@ -1,8 +1,8 @@
 using Base.Iterators
-using Catlab
 using CombinatorialSpaces
 using Krylov
 using LinearAlgebra
+using SparseArrays
 
 function default_dec_cu_matrix_generate() end;
 
