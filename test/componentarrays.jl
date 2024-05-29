@@ -5,8 +5,7 @@ using JSON
 using Distributions
 # using GLMakie
 
-using Catlab
-using Catlab.CategoricalAlgebra
+using ACSets
 using CombinatorialSpaces
 
 using DiagrammaticEquations

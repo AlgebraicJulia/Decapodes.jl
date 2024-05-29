@@ -2,7 +2,6 @@ module DecapodesCUDAExt
 using CombinatorialSpaces
 using LinearAlgebra
 using Base.Iterators
-using Catlab
 using Krylov
 using CUDA
 using CUDA.CUSPARSE

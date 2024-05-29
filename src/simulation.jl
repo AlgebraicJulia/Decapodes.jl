@@ -1,12 +1,9 @@
 using Base.Iterators
-using Catlab
 using CombinatorialSpaces
 using ComponentArrays
 using LinearAlgebra
 using MLStyle
 using PreallocationTools
-
-import Catlab.Programs.GenerateJuliaPrograms: compile
 
 const gensim_in_place_stub = Symbol("GenSim-M")
 
