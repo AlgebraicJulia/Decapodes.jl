@@ -50,12 +50,12 @@ makedocs(
     "Vortices" => "navier_stokes/ns.md",
     "Cahn-Hilliard" => "ch/cahn-hilliard.md",
     "Klausmeier" => "klausmeier/klausmeier.md",
-    "Glacial Flow" => "ice_dynamics.md",
-    # "Halfar-NS" => "halmo.md",
-    # "Grigoriev Ice Cap" => "grigoriev.md",
-    # "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
     "CISM v2.1" => "cism/cism.md",
-    # "NHS" => "nhs.md",
+    "Glacial Flow" => "ice_dynamics.md",
+    "Grigoriev Ice Cap" => "grigoriev/grigoriev.md",
+    "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
+    # "Halfar-NS" => "halmo.md", # TODO: Remove since results are not interesting?
+    # "NHS" => "nhs.md", # TODO: Simulation is too large/hard
     # "Pipe Flow" => "poiseuille.md", # TODO: Remove?
     "Misc Features" => "bc_debug.md",
     "ASCII Operators" => "ascii.md",

@@ -1,29 +1,33 @@
 # Budko-Sellers-Halfar
 
+```@setup INFO
+include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 In this example, we will compose the Budyko-Sellers 1D energy balance model of the Earth's surface temperature with the Halfar model of glacial dynamics. Note that each of these components models is itself a composition of smaller physical models. In this walkthrough, we will compose them together using the same techniques.
 
 ``` @example DEC
 # AlgebraicJulia Dependencies
 using Catlab
-using Catlab.Graphics
 using CombinatorialSpaces
 using DiagrammaticEquations
-using DiagrammaticEquations.Deca
 using Decapodes
 
 # External Dependencies
-using MLStyle
-using ComponentArrays
-using LinearAlgebra
-using OrdinaryDiffEq
-using JLD2
 using CairoMakie
-using SparseArrays
+using ComponentArrays
 using GeometryBasics: Point2
+using JLD2
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using SparseArrays
 Point2D = Point2{Float64};
+nothing # hide
 ```
 
-We have defined the Halfar ice model in other docs pages, and so will quickly define it here.
+We have defined the [Halfar ice model](ice_dynamics.md) in other docs pages, and so will quickly define it here.
 
 ``` @example DEC
 halfar_eq2 = @decapode begin
@@ -34,6 +38,7 @@ halfar_eq2 = @decapode begin
   ḣ == ∂ₜ(h)
   ḣ == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
 end
+
 glens_law = @decapode begin
   Γ::Form1
   A::Form1
@@ -41,14 +46,17 @@ glens_law = @decapode begin
   
   Γ == (2/(n+2))*A*(ρ*g)^n
 end
+
 ice_dynamics_composition_diagram = @relation () begin
   dynamics(Γ,n)
   stress(Γ,n)
 end
+
 ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
   [Open(halfar_eq2, [:Γ,:n]),
    Open(glens_law, [:Γ,:n])])
 halfar = apex(ice_dynamics_cospan)
+
 to_graphviz(halfar, verbose=false)
 ```
 
@@ -105,7 +113,8 @@ budyko_sellers_composition_diagram = @relation () begin
   diffusion(Tₛ, HT, cosϕᵖ)
   insolation(Q, cosϕᵖ)
 end
-to_graphviz(budyko_sellers_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
+
+to_graphviz(budyko_sellers_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo") # TODO: Make this into a helper
 ```
 
 ``` @example DEC
@@ -117,7 +126,10 @@ budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
    Open(insolation,                   [:Q, :cosϕᵖ])])
 
 budyko_sellers = apex(budyko_sellers_cospan)
-write_json_acset(budyko_sellers, "budyko_sellers.json") # Save this Decapode as a JSON file
+
+# Save this Decapode as a JSON file
+write_json_acset(budyko_sellers, "budyko_sellers.json") 
+
 to_graphviz(budyko_sellers, verbose=false)
 ```
 
@@ -133,6 +145,7 @@ warming = @decapode begin
   A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e7)
 
 end
+
 to_graphviz(warming)
 ```
 
@@ -143,11 +156,10 @@ Observe that Decapodes composition is hierarchical. This composition technique i
 ``` @example DEC
 budyko_sellers_halfar_composition_diagram = @relation () begin
   budyko_sellers(Tₛ)
-
   warming(A, Tₛ)
-
   halfar(A)
 end
+
 to_graphviz(budyko_sellers_halfar_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
 ```
 
@@ -159,6 +171,7 @@ budyko_sellers_halfar_cospan = oapply(budyko_sellers_halfar_composition_diagram,
    Open(warming,        [:A, :Tₛ]),
    Open(halfar,         [:stress_A])])
 budyko_sellers_halfar = apex(budyko_sellers_halfar_cospan)
+
 to_graphviz(budyko_sellers_halfar)
 ```
 
@@ -176,12 +189,12 @@ to_graphviz(budyko_sellers_halfar)
 These dynamics will occur on a 1-D manifold (a line). Points near +-π/2 will represent points near the North/ South poles. Points near 0 represent those at the equator.
 
 ``` @example DEC
-s′ = EmbeddedDeltaSet1D{Bool, Point2D}()
-add_vertices!(s′, 100, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=100), 0))
-add_edges!(s′, 1:nv(s′)-1, 2:nv(s′))
-orient!(s′)
-s = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s′)
-subdivide_duals!(s, Circumcenter())
+s = EmbeddedDeltaSet1D{Bool, Point2D}()
+add_vertices!(s, 100, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=100), 0))
+add_edges!(s, 1:nv(s)-1, 2:nv(s))
+orient!(s)
+sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+subdivide_duals!(sd, Circumcenter())
 ```
 
 ## Define input data
@@ -190,15 +203,16 @@ We need to supply initial conditions to our model. We will use synthetic data he
 
 ``` @example DEC
 # This is a primal 0-form, with values at vertices.
-cosϕᵖ = map(x -> cos(x[1]), point(s′))
+cosϕᵖ = map(x -> cos(x[1]), point(s))
+
 # This is a dual 0-form, with values at edge centers.
-cosϕᵈ = map(edges(s′)) do e
-  (cos(point(s′, src(s′, e))[1]) + cos(point(s′, tgt(s′, e))[1])) / 2
+cosϕᵈ = map(edges(s)) do e
+  (cos(point(s, src(s, e))[1]) + cos(point(s, tgt(s, e))[1])) / 2
 end
 
 α₀ = 0.354
 α₂ = 0.25
-α = map(point(s′)) do ϕ
+α = map(point(s)) do ϕ
   α₀ + α₂*((1/2)*(3*ϕ[1]^2 - 1))
 end
 A = 210
@@ -207,18 +221,18 @@ f = 0.70
 ρ = 1025
 cw = 4186
 H = 70
-C = map(point(s′)) do ϕ
+C = map(point(s)) do ϕ
   f * ρ * cw * H
 end
 D = 0.6
 
 # Isothermal initial conditions:
-Tₛ₀ = map(point(s′)) do ϕ
+Tₛ₀ = map(point(s)) do ϕ
   15
 end
 
 # Visualize initial condition for temperature.
-lines(map(x -> x[1], point(s′)), Tₛ₀)
+lines(map(x -> x[1], point(s)), Tₛ₀)
 ```
 
 ``` @example DEC
@@ -227,12 +241,12 @@ n = 3
 g = 9.8
 
 # Ice height is a primal 0-form, with values at vertices.
-h₀ = map(point(s′)) do (x,_)
+h₀ = map(point(s)) do (x,_)
   (((x)^2)+2.5) / 1e3
 end
 
 # Visualize initial condition for ice sheet height.
-lines(map(x -> x[1], point(s′)), h₀)
+lines(map(x -> x[1], point(s)), h₀)
 ```
 
 ``` @example DEC
@@ -252,11 +266,28 @@ constants_and_parameters = (
   halfar_stress_g = g)
 ```
 
-# Symbols to functions
+## Symbols to functions
 
-The symbols along edges in our Decapode must be mapped to executable functions. In the Discrete Exterior Calculus, all our operators are defined as relations bewteen points, lines, and triangles on meshes known as simplicial sets. Thus, DEC operators are re-usable across any simplicial set.
+The symbols along edges in our Decapode must be mapped to executable functions. In the Discrete Exterior Calculus, all our operators are defined as relations between points, lines, and triangles on meshes known as simplicial sets. Thus, DEC operators are re-usable across any simplicial set.
 
 ``` @example DEC
+function create_average_matrix(sd)
+  I = Vector{Int64}()
+  J = Vector{Int64}()
+  V = Vector{Float64}()
+  for e in 1:ne(sd)
+      append!(J, [sd[e,:∂v0],sd[e,:∂v1]])
+      append!(I, [e,e])
+      append!(V, [0.5, 0.5])
+  end
+  avg_mat = sparse(I,J,V)
+end
+
+# TODO: Move this sharp matrix out of the generate
+function create_sharp_matrix(sd)
+
+end
+
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :♯ => x -> begin
@@ -277,23 +308,11 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
         sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
       end
     end
-    :mag => x -> begin
-      norm.(x)
+    :mag => x -> norm.(x)
+    :avg₀₁ => begin
+      avg_mat = create_average_matrix(sd)
+      x -> avg_mat * x
     end
-    :avg₀₁ => x -> begin
-      I = Vector{Int64}()
-      J = Vector{Int64}()
-      V = Vector{Float64}()
-      for e in 1:ne(s)
-          append!(J, [s[e,:∂v0],s[e,:∂v1]])
-          append!(I, [e,e])
-          append!(V, [0.5, 0.5])
-      end
-      avg_mat = sparse(I,J,V)
-      avg_mat * x
-    end
-    :^ => (x,y) -> x .^ y
-    :* => (x,y) -> x .* y
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
@@ -306,7 +325,7 @@ From our Decapode, we automatically generate a finite difference method solver t
 
 ``` @example DEC
 sim = eval(gensim(budyko_sellers_halfar, dimension=1))
-fₘ = sim(s, generate)
+fₘ = sim(sd, generate)
 ```
 
 ## Run simulation
@@ -315,12 +334,6 @@ We wrap our simulator and initial conditions and solve them with the stability-d
 
 ``` @example DEC
 tₑ = 1e6
-
-# Julia will pre-compile the generated simulation the first time it is run.
-@info("Precompiling Solver")
-prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
-soln = solve(prob, Tsit5())
-soln.retcode != :Unstable || error("Solver was not stable")
 
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
@@ -338,50 +351,59 @@ We can save the solution file to examine later.
 ## Visualize
 
 Quickly examine the final conditions for temperature:
+
 ``` @example DEC
-lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)
+lines(map(x -> x[1], point(s)), soln(tₑ).Tₛ)
 ```
 
 Quickly examine the final conditions for ice height:
+
 ``` @example DEC
-lines(map(x -> x[1], point(s′)), soln(tₑ).halfar_dynamics_h)
+lines(map(x -> x[1], point(s)), soln(tₑ).halfar_dynamics_h)
 ```
 
-Create animated GIFs of the temperature and ice height dynamics:
-``` @example DEC
+<!-- Create animated GIFs of the temperature and ice height dynamics: -->
+<!--TODO: Hide this GIF creation code? -->
+``` @setup DEC
 begin
 # Initial frame
 frames = 100
-fig = Figure(; size = (800, 800))
+fig = Figure()
 ax1 = CairoMakie.Axis(fig[1,1])
-xlims!(ax1, extrema(map(x -> x[1], point(s′))))
+xlims!(ax1, extrema(map(x -> x[1], point(s))))
 ylims!(ax1, extrema(soln(tₑ).Tₛ))
 Label(fig[1,1,Top()], "Surface temperature, Tₛ, [C°]")
-Label(fig[2,1,Top()], "Line plot of temperature from North to South pole, every $(tₑ/frames) time units")
 
 # Animation
 record(fig, "budyko_sellers_halfar_T.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-  lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).Tₛ)
+  lines!(fig[1,1], map(x -> x[1], point(s)), soln(t).Tₛ)
 end
 end
-
+# TODO: There seems to be some instability here
 begin
 # Initial frame
 frames = 100
-fig = Figure(; size = (800, 800))
+fig = Figure()
 ax1 = CairoMakie.Axis(fig[1,1])
-xlims!(ax1, extrema(map(x -> x[1], point(s′))))
+xlims!(ax1, extrema(map(x -> x[1], point(s))))
 ylims!(ax1, extrema(soln(tₑ).halfar_dynamics_h))
 Label(fig[1,1,Top()], "Ice height, h")
-Label(fig[2,1,Top()], "Line plot of ice height from North to South pole, every $(tₑ/frames) time units")
 
 # Animation
 record(fig, "budyko_sellers_halfar_h.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-  lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).halfar_dynamics_h)
+  lines!(fig[1,1], map(x -> x[1], point(s)), soln(t).halfar_dynamics_h)
 end
 end
 ```
 
+Line plot of temperature from North to South pole.
+
 ![BSH_Temperature](budyko_sellers_halfar_T.gif)
 
+Line plot of ice height from North to South pole.
+
 ![BSH_IceHeight](budyko_sellers_halfar_h.gif)
+
+```@example INFO
+DocInfo.get_report(info) # hide
+```

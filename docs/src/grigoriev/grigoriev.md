@@ -1,44 +1,49 @@
 # Halfar's model of glacial flow
 
-Let's model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar's 1981 paper: "On the dynamics of the ice sheets".
+```@setup INFO
+include(joinpath(Base.@__DIR__, ".." , "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
 
-Let's run the Halfar shallow ice/ shallow slope model on some "real world" data for ice thickness. Van Tricht et al. in their 2023 communication [Measuring and modelling the ice thickness of the Grigoriev ice cap (Kyrgyzstan) and comparison with global dataset](https://tc.copernicus.org/articles/17/4315/2023/tc-17-4315-2023.html) published ice thickness data on an ice cap and stored their data in a TIF. In this document, we will demonstrate how to parse such data and execute a Decapodes model on these initial conditions.
+Let's model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar's 1981 paper: "On the dynamics of the ice sheets". <!--- TODO: Need a link for this -->
+
+Let's run the Halfar shallow ice / shallow slope model on some "real world" data for ice thickness. Van Tricht et al. in their 2023 communication [Measuring and modelling the ice thickness of the Grigoriev ice cap (Kyrgyzstan) and comparison with global dataset](https://tc.copernicus.org/articles/17/4315/2023/tc-17-4315-2023.html) published ice thickness data on an ice cap and stored their data in a TIF. In this document, we will demonstrate how to parse such data and execute a Decapodes model on these initial conditions.
 
 For the parameters to Glen's law, we will use those used in the [Community Ice Sheet Model benchmark](https://cise.ufl.edu/~luke.morris/cism.html). Of course, the parameters of this Kyrgyzstani ice cap likely differ from these by quite some amount, but they are a good place to start. Further, this ice cap does not satisfy the "shallow slope" assumption across the entire domain.
 
 ``` @example DEC
 # AlgebraicJulia Dependencies
 using Catlab
-using Catlab.Graphics
 using CombinatorialSpaces
 using DiagrammaticEquations
-using DiagrammaticEquations.Deca
 using Decapodes
 
 # External Dependencies
-using FileIO  
-using Interpolations
-using MLStyle
-using ComponentArrays
-using LinearAlgebra
-using OrdinaryDiffEq
-using JLD2
-using SparseArrays
 using CairoMakie
+using ComponentArrays
+using FileIO  
 using GeometryBasics: Point2
+using Interpolations
+using JLD2
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using SparseArrays
 Point2D = Point2{Float64}
-Point3D = Point3{Float64}; # hide
+Point3D = Point3{Float64};
+nothing # hide
 ```
 
-# Loading a Scientific Dataset
-The ice thickness data is [stored in a TIF](https://zenodo.org/api/records/7735970/files-archive). We have downloaded it locally, and load it using basic `FileIO`.
+## Loading a Scientific Dataset
+
+The ice thickness data is stored in a TIF that can be downloaded [here](https://zenodo.org/api/records/7735970/files-archive). We have downloaded it locally, and load it using basic `FileIO`.
 
 ``` @example DEC
 file_name = "Icethickness_Grigoriev_ice_cap_2021.tif"
 ice_thickness_tif = load(file_name)
 ```
 
-This data may appear to be a simple binary mask, but that is only because values with no ice are set to `-Inf`. We will account for this we interpolate our data.
+This data may visually appear to be a binary mask but that is only because values with no ice are set to `-Inf`. We will account for this we interpolate our data.
 
 We use the `Interpolations.jl` library to interpolate this dataset:
 
@@ -50,7 +55,8 @@ const MIN_Y = 243504.5
 const MAX_Y = 245599.8
 ice_coords = (range(MIN_X, MAX_X, length=size(ice_thickness_tif,1)),
               range(MIN_Y, MAX_Y, length=size(ice_thickness_tif,2)))
-# Note that the tif is set to -floatmax(Float32) where there is no ice.
+
+# Note that the TIF is set to -floatmax(Float32) where there is no ice.
 # For our purposes, this is equivalent to 0.0.
 ice_interp = LinearInterpolation(ice_coords, Float32.(ice_thickness_tif))
 ```
@@ -63,31 +69,31 @@ Let's generate a triangulated grid located at the appropriate coordinates:
 # Specify a resolution:
 RES_Y = (MAX_Y-MIN_Y)/30.0
 RES_X = RES_Y
+
 # Generate the mesh with appropriate dimensions and resolution:
-s′ = triangulated_grid(
-                       MAX_X-MIN_X, MAX_Y-MIN_Y,
-                       RES_X, RES_Y, Point3D)
+s = triangulated_grid(MAX_X-MIN_X, MAX_Y-MIN_Y, RES_X, RES_Y, Point3D)
+
 # Shift it into place:
-s′[:point] = map(x -> x + Point3D(MIN_X, MIN_Y, 0), s′[:point])
-s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
-subdivide_duals!(s, Barycenter())
+s[:point] = map(x -> x + Point3D(MIN_X, MIN_Y, 0), s[:point])
+sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
+subdivide_duals!(sd, Barycenter())
 
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1])
-wf = wireframe!(ax, s)
+wf = wireframe!(ax, sd)
 display(fig)
 ```
 
-The coordinates of a vertex are stored in `s[:point]`. Let's use our interpolator to assign ice thickness values to each vertex in the mesh:
+The coordinates of a vertex are stored in `sd[:point]`. Let's use our interpolator to assign ice thickness values to each vertex in the mesh:
 
 ``` @example DEC
 # These are the values used by the CISM benchmark:
 n = 3
 ρ = 910
 g = 9.8101
-A = fill(1e-16, ne(s))
+A = fill(1e-16, ne(sd))
 
-h₀ = map(s[:point]) do (x,y,_)
+h₀ = map(sd[:point]) do (x,y,_)
   tif_val = ice_interp(x,y)
   # Accommodate for the -∞'s that encode "no ice".
   tif_val < 0.0 ? 0.0 : tif_val
@@ -95,15 +101,14 @@ end
 
 # Store these values to be passed to the solver.
 u₀ = ComponentArray(h=h₀, stress_A=A)
-constants_and_parameters = (
-  n = n,
-  stress_ρ = ρ,
-  stress_g = g,
-  stress_A = A)
+constants_and_parameters = (n = n, stress_ρ = ρ,
+                            stress_g = g, stress_A = A)
+nothing # hide
 ```
 
-# Defining and Composing Models
-For exposition on this Halfar Decapode, see our [Glacial Flow](https://algebraicjulia.github.io/Decapodes.jl/dev/ice_dynamics) docs page. You can skip ahead to the next section.
+## Defining and Composing Models
+
+For exposition on this Halfar Decapode, see our [Glacial Flow](../ice_dynamics.md) docs page. Otherwise, you may skip ahead to the next section.
 
 ``` @example DEC
 halfar_eq2 = @decapode begin
@@ -112,7 +117,7 @@ halfar_eq2 = @decapode begin
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  ḣ == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
 end
 
 glens_law = @decapode begin
@@ -135,67 +140,47 @@ ice_dynamics = apex(ice_dynamics_cospan)
 to_graphviz(ice_dynamics)
 ```
 
-# Define our functions
+## Define our functions
 
 ``` @example DEC
-include("sharp_op.jl")
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  ♯_m = ♯_mat(sd)
-  I = Vector{Int64}()
-  J = Vector{Int64}()
-  V = Vector{Float64}()
-  for e in 1:ne(s)
-      append!(J, [s[e,:∂v0],s[e,:∂v1]])
-      append!(I, [e,e])
-      append!(V, [0.5, 0.5])
-  end
-  avg_mat = sparse(I,J,V)
   op = @match my_symbol begin
-    :♯ => x -> begin
-      ♯(sd, EForm(x))
-    end
-    :mag => x -> begin
-      norm.(x)
-    end
-    :avg₀₁ => x -> begin
-      avg_mat * x
-    end
-    :^ => (x,y) -> x .^ y
-    :* => (x,y) -> x .* y
-    :abs => x -> abs.(x)
-    :show => x -> begin
-      println(x)
-      x
+    :mag => x -> norm.(x)
+    :♯ => begin
+      sharp_mat = ♯_mat(sd, AltPPSharp())
+      x -> sharp_mat * x
     end
     x => error("Unmatched operator $my_symbol")
   end
-  return (args...) -> op(args...)
+  return op
 end
 ```
 
-# Generate simulation
+## Generate simulation
 
 ``` @example DEC
 sim = eval(gensim(ice_dynamics, dimension=2))
-fₘ = sim(s, generate)
+fₘ = sim(sd, generate)
 ```
 
-# Run
+## Run
 
 ``` @example DEC
-tₑ = 1e1
+tₑ = 10
 
 @info("Solving Grigoriev Ice Cap")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
 @show soln.retcode
 @info("Done")
+
 @save "grigoriev.jld2" soln
 ```
 
-# Results and Discussion
-
-``` @example DEC
+## Results and Discussion
+<!--- TODO: Create a better method of handling gif creation. 
+It leads to a lot of code noise. -->
+``` @setup DEC
 # Visualize the initial conditions.
 function plot_ic()
   f = Figure()
@@ -203,7 +188,7 @@ function plot_ic()
             title="Grigoriev Ice Cap Initial Thickness [m]",
             xticks = range(MIN_X, MAX_X; length=5),
             yticks = range(MIN_Y, MAX_Y; length=5))
-  msh = mesh!(ax, s′, color=soln(0.0).h, colormap=:jet)
+  msh = mesh!(ax, s, color=soln(0.0).h, colormap=:jet)
   Colorbar(f[1,2], msh)
   f
 end
@@ -217,7 +202,7 @@ function plot_fc()
             title="Grigoriev Ice Cap Final Thickness [m]",
             xticks = range(MIN_X, MAX_X; length=5),
             yticks = range(MIN_Y, MAX_Y; length=5))
-  msh = mesh!(ax, s′, color=soln(tₑ).h, colormap=:jet)
+  msh = mesh!(ax, s, color=soln(tₑ).h, colormap=:jet)
   Colorbar(f[1,2], msh)
   f
 end
@@ -230,7 +215,7 @@ function save_dynamics(save_file_name)
   h = @lift(soln($time).h)
   f = Figure()
   ax = CairoMakie.Axis(f[1,1], title = @lift("Grigoriev Ice Cap Dynamic Thickness [m] at time $($time)"))
-  gmsh = mesh!(ax, s′, color=h, colormap=:jet,
+  gmsh = mesh!(ax, s, color=h, colormap=:jet,
                colorrange=extrema(soln(tₑ).h))
   #Colorbar(f[1,2], gmsh, limits=extrema(soln(tₑ).h))
   Colorbar(f[1,2], gmsh)
@@ -245,5 +230,11 @@ save_dynamics("grigoriev.gif")
 We observe the usual Halfar model phenomena of ice "melting". Note that since the "shallow slope" approximation does not hold on the boundaries (due to the so-called "ice cliffs" described in the Van Tricht et al. paper), we do not expect the "creep" effect to be physical in this region of the domain. Rather, the Halfar model's predictive power is tuned for the interiors of ice caps and glaciers. Note that we also assume here that the bedrock that the ice rests on is flat. We may in further documents demonstrate how to use topographic data from Digital Elevation Models to inform the elevation of points in the mesh itself.
 
 ![Grigoriev_ICs](grigoriev_ic.png)
+
 ![Grigoriev_FCs](grigoriev_fc.png)
+
 ![Grigoriev_Dynamics](grigoriev.gif)
+
+```@example INFO
+DocInfo.get_report(info) # hide
+```

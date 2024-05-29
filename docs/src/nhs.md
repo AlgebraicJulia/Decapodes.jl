@@ -49,9 +49,10 @@ end
 to_graphviz(momentum)
 ```
 
-Why did we write "StressDivergence" instead of ∇⋅τ, as in the linked equation? According to [this docs page](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/), the user makes a selection of what model to insert in place of the term ∇⋅τ. For example, in [the isotropic case](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity), Oceananigans.jl replaces this term with: ∇⋅τ = nuΔv. Thus, we write StressDivergence, and replace this term with a choice of "turbulence closure" model. Using the "constant isotropic diffusivity" case, we can operate purely in terms of scalar-valued forms.
+Why did we write "StressDivergence" instead of ∇⋅τ, as in the linked equation? According to [this docs page](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/), the user makes a selection of what model to insert in place of the term ∇⋅τ. For example, in [the isotropic case](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity), Oceananigans.jl replaces this term with: ∇⋅τ = *ν*Δv. Thus, we write StressDivergence, and replace this term with a choice of "turbulence closure" model. Using the "constant isotropic diffusivity" case, we can operate purely in terms of scalar-valued forms.
 
 This is [Equation 2: "The tracer conservation equation"](https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-tracer-conservation-equation).
+
 ```@example DEC
 tracer_conservation = @decapode begin
   (c,C,F,FluxDivergence)::DualForm0
@@ -68,6 +69,7 @@ to_graphviz(tracer_conservation)
 ```
 
 This is [Equation 2: "Linear equation of state"](https://clima.github.io/OceananigansDocumentation/stable/physics/buoyancy_and_equations_of_state/#Linear-equation-of-state) of seawater buoyancy.
+
 ```@example DEC
 equation_of_state = @decapode begin
   (b,T,S)::DualForm0
@@ -79,6 +81,7 @@ to_graphviz(equation_of_state)
 ```
 
 This is [Equation 2: "Constant isotropic diffusivity"](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity).
+
 ```@example DEC
 isotropic_diffusivity = @decapode begin
   v::DualForm1
@@ -95,11 +98,12 @@ to_graphviz(isotropic_diffusivity)
 
 ## Compatibility Guarantees via Operadic Composition
 
-Decapodes composition is formally known as an "operad algebra". That means that we don't have to encode our composition in a single UWD and then apply it. Rather, we can define several UWDs, compose those, and then apply those. Of course, since the output of oapply is another Decapode, we could perform an intermediate oapply, if that is convenient.
+Decapodes composition is formally known as an "operad algebra". That means that we don't have to encode our composition in a single undirected wiring diagram (UWD) and then apply it. Rather, we can define several UWDs, compose those, and then apply those. Of course, since the output of oapply is another Decapode, we could perform an intermediate oapply, if that is convenient.
 
 Besides it being convenient to break apart large UWDs into component UWDs, this hierarchical composition can enforce rules on our physical quantities.
 
 For example:
+
 1. We want all the tracers (salinity, temperature, etc.) in our physics to obey the same conservation equation.
 2. We want them to obey the same "turbulence closure", which affects their flux-divergence term.
 3. At the same time, a choice of turbulence closure doesn't just affect (each of) the flux-divergence terms, it also constrains which stress-divergence is physically valid in the momentum equation.
@@ -107,6 +111,7 @@ For example:
 We will use our operad algebra to guarantee model compatibility and physical consistency, guarantees that would be burdensome to fit into a one-off type system.
 
 Here, we specify the equations that any tracer obeys:
+
 ```@example DEC
 tracer_composition = @relation () begin
   # "The turbulence closure selected by the user determines the form of ... diffusive flux divergence"
@@ -117,7 +122,8 @@ end
 to_graphviz(tracer_composition, box_labels=:name, junction_labels=:variable, prog="circo")
 ```
 
- Let's "lock in" isotropic diffusivity by doing an intermediate oapply.
+Let's "lock in" isotropic diffusivity by doing an intermediate oapply.
+
 ```@example DEC
 isotropic_tracer = apex(oapply(tracer_composition, [
   Open(isotropic_diffusivity, [:FluxDivergence, :v, :c]),
@@ -145,7 +151,6 @@ end
 to_graphviz(nonhydrostatic_composition, box_labels=:name, junction_labels=:variable, prog="circo")
 ```
 
-
 ```@example DEC
 isotropic_nonhydrostatic_buoyancy = apex(oapply(nonhydrostatic_composition, [
   Open(momentum,          [:V, :v, :b, :StressDivergence]),
@@ -170,16 +175,16 @@ subdivide_duals!(sd, Barycenter())
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    _ => default_dec_matrix_generate(sd, my_symbol, hodge)
+    _ => default_dec_matrix_generate(sd, my_symbol, hodge) # TODO: Don't do this!
   end
-  return (args...) -> op(args...)
+  return op
 end
 
 open("nhs.jl", "w") do f
-  write(f, string(gensim(expand_operators(isotropic_nonhydrostatic_buoyancy))))
+  write(f, string(gensim(isotropic_nonhydrostatic_buoyancy)))
 end
 sim = include("nhs.jl")
-fₘ = sim(sd, generate)
+fₘ = sim(sd, generate) # TODO: Slow because dual operators take too long
 
 S = map(sd[sd[:tri_center], :dual_point]) do (_,_,_)
   0.0
@@ -237,17 +242,17 @@ constants_and_parameters = (
 We specified our physics, our mesh, and our initial conditions. We have everything we need to execute the simulation.
 
 ```@example DEC
-tₑ = 50
-
 # Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
 prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
 soln = solve(prob, Vern7())
 soln.retcode != :Unstable || error("Solver was not stable")
 
+tₑ = 50
+
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Vern7(), force_dtmin=true, dtmax=0.2, progress=true,progress_steps=1)
+soln = solve(prob, Vern7(), force_dtmin=true, dtmax=0.2)
 @show soln.retcode
 @info("Done")
 ```
@@ -310,4 +315,3 @@ save_speed(false)
 ![Vorticity](vorticity.gif)
 
 ![Speed](speed.gif)
-

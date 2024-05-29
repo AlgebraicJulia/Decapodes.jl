@@ -22,7 +22,7 @@ using OrdinaryDiffEq
 Point3D = Point3{Float64};
 ```
 
-## Specify our models.
+## Specify our models
 
 Our first component is the Mohamed et al. formulation of the incompressible Navier-Stokes equations. We will call the flow here "w". This will be the flow after collisions with glaciers are considered.
 
@@ -259,4 +259,3 @@ end
 ```
 
 ![HalfarMohamedIce](halmo_ice.gif)
-
