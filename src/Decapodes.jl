@@ -16,8 +16,7 @@ using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 
 export
-findname, flat_op,
-gensim, evalsim, closest_point, findnode, compile, compile_env,  PhysicsState,  default_dec_matrix_generate, default_dec_cu_matrix_generate, default_dec_generate, VectorForm,
+gensim, evalsim, compile, compile_env, default_dec_matrix_generate, default_dec_cu_matrix_generate, default_dec_generate,
 CartesianPoint, SpherePoint, r, theta, phi, TangentBasis, θhat, ϕhat,
 CPUTarget, CUDATarget
 

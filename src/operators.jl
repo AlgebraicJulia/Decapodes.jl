@@ -1,10 +1,11 @@
-using CombinatorialSpaces
-using LinearAlgebra
 using Base.Iterators
 using Catlab
+using CombinatorialSpaces
+using Krylov
+using LinearAlgebra
 
 function default_dec_cu_matrix_generate() end;
-  
+
 function default_dec_matrix_generate(sd, my_symbol, hodge)
   op = @match my_symbol begin
 
