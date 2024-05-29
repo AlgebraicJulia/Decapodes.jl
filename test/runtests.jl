@@ -4,10 +4,6 @@ using Test
   include("aqua.jl")
 end
 
-# @testset "Coordinates" begin
-#   include("coordinates.jl")
-# end
-
 @testset "ComponentArrays.jl Integration" begin
   include("componentarrays.jl")
 end
