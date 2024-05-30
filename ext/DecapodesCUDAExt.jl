@@ -108,6 +108,10 @@ function dec_cu_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
     (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack, Val{:CUDA}))
 end
 
+function dec_pair_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
+  throw("Replace me in compiled code with element-wise multiplication (.*)")
+end
+
 # TODO: These need to be converted into CuArrays/kernels
 function dec_cu_sharp_p(sd::HasDeltaSet2D)
   ♯_m = ♯_mat(sd, AltPPSharp())

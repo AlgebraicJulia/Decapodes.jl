@@ -118,6 +118,10 @@ function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
     (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack))
 end
 
+function dec_pair_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
+  throw("Replace me in compiled code with element-wise multiplication (.*)")
+end
+
 function dec_♯_p(sd::HasDeltaSet2D)
   ♯_m = ♯_mat(sd, AltPPSharp())
   x -> ♯_m * x
