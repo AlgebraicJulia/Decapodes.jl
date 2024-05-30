@@ -1,20 +1,14 @@
-using Decapodes
-import Decapodes: compile, gensim
-
 using ACSets
-
-using Test
-
-using MLStyle
 using CombinatorialSpaces
-using GeometryBasics: Point3
-using LinearAlgebra
-using Distributions
 using ComponentArrays
-using OrdinaryDiffEq
+using Decapodes
 using DiagrammaticEquations
-using DiagrammaticEquations.Deca
-using GeometryBasics
+using Distributions
+using GeometryBasics: Point2, Point3
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using Test
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
   hodge = ⋆(k,sd,hodge=hodge)

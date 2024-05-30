@@ -1,19 +1,14 @@
-using ComponentArrays
-using OrdinaryDiffEq
-using GeometryBasics
-using JSON
-using Distributions
-# using GLMakie
-
 using ACSets
 using CombinatorialSpaces
-
-using DiagrammaticEquations
-using DiagrammaticEquations.Deca
+using ComponentArrays
 using Decapodes
-using Test
-using MLStyle
+using DiagrammaticEquations
+using Distributions
+using GeometryBasics: Point3
 using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using Test
 
 C = ones(Float64, 10)
 V = ones(Float64, 100)

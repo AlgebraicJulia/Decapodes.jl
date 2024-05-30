@@ -1,17 +1,15 @@
 using ACSets
+using CUDA, CUDA.CUSPARSE
+using CombinatorialSpaces
+using ComponentArrays
 using Decapodes
 using DiagrammaticEquations
-using CombinatorialSpaces
-using GeometryBasics
-using MLStyle
-using ComponentArrays
-using OrdinaryDiffEq
-using CUDA
-using CUDA.CUSPARSE
-using LinearAlgebra
-using SparseArrays
-using Statistics
 using Distributions
+using GeometryBasics: Point2, Point3
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using Statistics
 using Test
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
