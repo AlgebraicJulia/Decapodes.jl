@@ -45,7 +45,7 @@ makedocs(
   checkdocs = :none,
   pagesonly = true, # TODO: Remove me and add back docs
   pages     = Any[
-    # "Decapodes.jl" => "index.md",
+    "Decapodes.jl" => "index.md",
     # "Vortices" => "navier_stokes/ns.md",
     # "Halfar-NS" => "halmo.md",
     # "Overview" => "overview.md",
