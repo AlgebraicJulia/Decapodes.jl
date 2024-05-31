@@ -188,7 +188,7 @@ record(fig, "diff_adv_right.gif", range(0.0, 100.0; length=150); framerate = 30)
 end
 ```
 
-![Your first BC Decapode!](diff_adv_right.gif)
+![Diffusion-Advection result and your first BC Decapode!](diff_adv_right.gif)
 
 ```@example INFO
 DocInfo.get_report(info) # hide
