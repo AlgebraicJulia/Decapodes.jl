@@ -77,7 +77,7 @@ to_graphviz(glens_law)
 
 ## Composing models
 
-We can use composition to specify how our models come together. In this example, we have two Decapodes, and two quantities that are shared between them.
+We can use [operadic composition](https://arxiv.org/abs/2105.12282) to specify how our models come together. In this example, we have two Decapodes, and two quantities that are shared between them.
 
 ``` @example DEC
 ice_dynamics_composition_diagram = @relation () begin
