@@ -19,8 +19,10 @@ function get_report(info::Info)
   info.finish_time = now()
   elapsed = get_elapsed(info)
   elapsed_sec = round(elapsed, Dates.Second(1))
-  @info "Documentation built in $(elapsed_sec)."
-  @info "Documentation built at $(info.finish_time)."
+  @info "Page built in $(elapsed_sec)."
+  @info "This page was last built at $(info.finish_time)."
 end
+
+draw(deca) = to_graphviz(deca, box_labels=:name, junction_labels=:variable, prog="circo")
 
 end
