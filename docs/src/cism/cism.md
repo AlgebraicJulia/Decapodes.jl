@@ -11,7 +11,7 @@ We do so by translating equations from vector calculus notation to the "discrete
 
 In this benchmark, we will implement the "small slope approximation" of glacial dynamics used by P. Halfar in his 1981 work "On the dynamics of the ice sheets" by taking his original formulation, translating it into the DEC, then providing a mesh and initial conditions. <!-- TODO: Link to paper-->
 
-The initial conditions used here are exactly those considered by W. H. Lipscomb et al. in "Description And Evaluation of the Community Ice Sheet Model (CISM) v2.1" (2019). <!-- TODO: Link to paper-->
+The initial conditions used here are exactly those considered by W. H. Lipscomb et al. in ["Description And Evaluation of the Community Ice Sheet Model (CISM) v2.1" (2019)](https://gmd.copernicus.org/articles/12/387/2019/).
 
 ```@example DEC
 # AlgebraicJulia Dependencies

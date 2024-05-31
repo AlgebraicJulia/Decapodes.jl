@@ -122,14 +122,14 @@ Finally, we define our operators, generate the simulation function, and compute
 the simulation. Note that when we define the boundary condition operator, we
 hardcode the boundary indices and values into the operator itself. We also move
 the initial concentration to the left, so that we are able to see a constant
-concentration on the left boundary which will act as a source in the flow. The
+concentration on the left boundary which will act as a source in the flow. You can find the file for boundary conditions [here](boundary_helpers.jl). The
 modified initial condition is shown below:
 
 ```@example Debug
 using LinearAlgebra
 using ComponentArrays
 using MLStyle
-include("boundary_helpers.jl") # TODO: Remove this file
+include("boundary_helpers.jl")
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin

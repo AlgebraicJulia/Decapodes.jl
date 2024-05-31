@@ -61,7 +61,7 @@ end
 to_graphviz(halfar_eq2)
 ```
 
-And here, a formulation of Glen's law from J.W. Glen's 1958 "The flow law of ice". <!-- TODO: Add a link for this too -->
+And here, a formulation of Glen's law from J.W. Glen's 1958 ["The flow law of ice"](http://go.owu.edu/~chjackso/Climate/papers/Glen_1958_The%20flow%20law%20of%20ice.pdf).
 
 ``` @example DEC
 glens_law = @decapode begin
@@ -176,11 +176,6 @@ function create_average_matrix(sd)
       append!(V, [0.5, 0.5])
   end
   avg_mat = sparse(I,J,V)
-end
-
-# TODO: Move this sharp matrix out of the generate
-function create_sharp_matrix(sd)
-
 end
 
 function generate(sd, my_symbol; hodge=GeometricHodge())

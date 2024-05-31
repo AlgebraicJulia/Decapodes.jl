@@ -1,5 +1,10 @@
 # Canon
 
+```@setup INFO
+include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+info = DocInfo.Info()
+```
+
 ## Physics
 
 ```@autodocs
@@ -26,4 +31,8 @@ Private = false
 ```@autodocs
 Modules = [ Decapodes.Canon.Environment ]
 Private = false
+```
+
+```@example INFO
+DocInfo.get_report(info) # hide
 ```

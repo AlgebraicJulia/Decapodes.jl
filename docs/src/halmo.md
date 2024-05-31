@@ -158,8 +158,6 @@ fₘ = sim(s, generate);
 We can now supply initial conditions:
 
 ```@example DEC
-#TODO: Grab ice data from interpolator.
-
 ice_thickness = map(s[:point]) do (_,_,z)
   z < 0.8*rₑ ? 0 : 1
 end

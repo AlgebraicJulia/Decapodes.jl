@@ -55,7 +55,7 @@ makedocs(
     "Grigoriev Ice Cap" => "grigoriev/grigoriev.md",
     "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
     # "Halfar-NS" => "halmo.md", # TODO: Remove since results are not interesting?
-    # "NHS" => "nhs/nhs.md", # TODO: Simulation is too large/hard
+    "NHS" => "nhs/nhs_lite.md",
     "Pipe Flow" => "poiseuille.md",
     "Misc Features" => "bc_debug.md",
     "ASCII Operators" => "ascii.md",

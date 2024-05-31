@@ -178,8 +178,7 @@ soln = solve(prob, Tsit5())
 ```
 
 ## Results and Discussion
-<!--- TODO: Create a better method of handling gif creation. 
-It leads to a lot of code noise. -->
+
 ``` @setup DEC
 # Visualize the initial conditions.
 function plot_ic()

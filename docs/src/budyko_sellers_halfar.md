@@ -283,11 +283,6 @@ function create_average_matrix(sd)
   avg_mat = sparse(I,J,V)
 end
 
-# TODO: Move this sharp matrix out of the generate
-function create_sharp_matrix(sd)
-
-end
-
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :♯ => x -> begin
@@ -363,7 +358,6 @@ lines(map(x -> x[1], point(s)), soln(tₑ).halfar_dynamics_h)
 ```
 
 <!-- Create animated GIFs of the temperature and ice height dynamics: -->
-<!--TODO: Hide this GIF creation code? -->
 ``` @setup DEC
 begin
 # Initial frame
