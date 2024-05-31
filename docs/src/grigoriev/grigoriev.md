@@ -43,7 +43,7 @@ file_name = "Icethickness_Grigoriev_ice_cap_2021.tif"
 ice_thickness_tif = load(file_name)
 ```
 
-This data may visually appear to be a binary mask but that is only because values with no ice are set to `-Inf`. We will account for this we interpolate our data.
+This data may visually appear to be a binary mask but that is only because values with no ice are set to `-Inf`. We will account for this when interpolate our data.
 
 We use the `Interpolations.jl` library to interpolate this dataset:
 
@@ -81,8 +81,11 @@ subdivide_duals!(sd, Barycenter())
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1])
 wf = wireframe!(ax, s)
-display(fig)
+save("Grigoriev_IceMesh.png", fig)
+nothing # hide
 ```
+
+!["Grigoriev_IceMesh"](Grigoriev_IceMesh.png)
 
 The coordinates of a vertex are stored in `sd[:point]`. Let's use our interpolator to assign ice thickness values to each vertex in the mesh:
 
