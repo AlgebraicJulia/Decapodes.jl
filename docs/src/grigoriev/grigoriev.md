@@ -5,7 +5,7 @@ include(joinpath(Base.@__DIR__, ".." , "..", "docinfo.jl"))
 info = DocInfo.Info()
 ```
 
-Let's model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar's 1981 paper: "On the dynamics of the ice sheets". <!--- TODO: Need a link for this -->
+Let's model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar's 1981 paper: ["On the dynamics of the ice sheets"](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/JC086iC11p11065).
 
 Let's run the Halfar shallow ice / shallow slope model on some "real world" data for ice thickness. Van Tricht et al. in their 2023 communication [Measuring and modelling the ice thickness of the Grigoriev ice cap (Kyrgyzstan) and comparison with global dataset](https://tc.copernicus.org/articles/17/4315/2023/tc-17-4315-2023.html) published ice thickness data on an ice cap and stored their data in a TIF. In this document, we will demonstrate how to parse such data and execute a Decapodes model on these initial conditions.
 
@@ -80,7 +80,7 @@ subdivide_duals!(sd, Barycenter())
 
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1])
-wf = wireframe!(ax, sd)
+wf = wireframe!(ax, s)
 display(fig)
 ```
 
@@ -101,8 +101,10 @@ end
 
 # Store these values to be passed to the solver.
 u₀ = ComponentArray(h=h₀, stress_A=A)
-constants_and_parameters = (n = n, stress_ρ = ρ,
-                            stress_g = g, stress_A = A)
+constants_and_parameters = (n = n, 
+                            stress_ρ = ρ,
+                            stress_g = g, 
+                            stress_A = A)
 nothing # hide
 ```
 

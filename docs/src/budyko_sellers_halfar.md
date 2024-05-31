@@ -357,7 +357,6 @@ Quickly examine the final conditions for ice height:
 lines(map(x -> x[1], point(s)), soln(tₑ).halfar_dynamics_h)
 ```
 
-<!-- Create animated GIFs of the temperature and ice height dynamics: -->
 ``` @setup DEC
 begin
 # Initial frame
@@ -373,7 +372,7 @@ record(fig, "budyko_sellers_halfar_T.gif", range(0.0, tₑ; length=frames); fram
   lines!(fig[1,1], map(x -> x[1], point(s)), soln(t).Tₛ)
 end
 end
-# TODO: There seems to be some instability here
+
 begin
 # Initial frame
 frames = 100

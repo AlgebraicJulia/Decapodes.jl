@@ -5,7 +5,7 @@ include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
 info = DocInfo.Info()
 ```
 
-Let's model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar's 1981 paper: "On the dynamics of the ice sheets". <!-- TODO: Get a link for this -->
+Let's model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar's 1981 paper: ["On the dynamics of the ice sheets"](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/JC086iC11p11065).
 
 ``` @example DEC
 # AlgebraicJulia Dependencies
