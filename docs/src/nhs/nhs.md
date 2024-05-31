@@ -1,6 +1,6 @@
 # Implement Oceananigans.jl's NonhydrostaticModel in the Discrete Exterior Calculus
 
-Let's use Decapodes to implement the [NonhydrostaticModel](https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/) from Oceananigans.jl. We will take the opportunity to demonstrate how we can use our "algebra of model compositions" to encode certain guarantees on the models we generate. We will use the [2D Turbulence](https://clima.github.io/OceananigansDocumentation/stable/generated/two_dimensional_turbulence/) as a guiding example, and use only equations found in the Oceananigans docs to construct our model.
+Let's use Decapodes to implement the [NonhydrostaticModel](https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/) from Oceananigans.jl. We will take the opportunity to demonstrate how we can use our "algebra of model compositions" to encode certain guarantees on the models we generate. We will use the [2D Turbulence](https://clima.github.io/OceananigansDocumentation/stable/generated/two_dimensional_turbulence/) as a guiding example, and use only equations found in the Oceananigans docs to construct our model. <!-- TODO: This last link is broken -->
 
 ```@example DEC
 # AlgebraicJulia Dependencies
@@ -18,9 +18,10 @@ using LinearAlgebra
 using MLStyle
 using OrdinaryDiffEq
 Point3D = Point3{Float64};
+nothing # hide
 ```
 
-## Specify our models.
+## Specify our models
 
 This is [Equation 1: "The momentum conservation equation"](https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-momentum-conservation-equation). This is the first formulation of mutual advection (of v along V, and V along v) that we could find in the exterior calculus.
 
