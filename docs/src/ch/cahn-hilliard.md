@@ -48,7 +48,7 @@ In this equation `C` will represent the concentration of the binary fluid, rangi
 
 ## Loading the Data
 
-We now generate the mesh information. We'll run the equation on a triangulated grid. I hide the mesh visualization code for clarity.
+We now generate the mesh information. We'll run the equation on a triangulated grid. We hide the mesh visualization code for clarity.
 
 ```@example DEC
 s = triangulated_grid(100, 100, 0.5, 0.5, Point3D);

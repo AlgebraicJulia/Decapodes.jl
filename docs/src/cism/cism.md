@@ -9,7 +9,7 @@ The Decapodes framework takes high-level representations of physics equations an
 
 We do so by translating equations from vector calculus notation to the "discrete exterior calculus" (DEC). This process is roughly about recognizing whether physical quantities represent scalar or vector quantities, and recognizing whether differential operators represent gradient, divergence, and so on.
 
-In this benchmark, we will implement the "small slope approximation" of glacial dynamics used by P. Halfar in his 1981 work "On the dynamics of the ice sheets" by taking his original formulation, translating it into the DEC, then providing a mesh and initial conditions. <!-- TODO: Link to paper-->
+In this benchmark, we will implement the "small slope approximation" of glacial dynamics used by P. Halfar in his 1981 work ["On the dynamics of the ice sheets"](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/JC086iC11p11065) by taking his original formulation, translating it into the DEC, then providing a mesh and initial conditions. 
 
 The initial conditions used here are exactly those considered by W. H. Lipscomb et al. in ["Description And Evaluation of the Community Ice Sheet Model (CISM) v2.1" (2019)](https://gmd.copernicus.org/articles/12/387/2019/).
 
