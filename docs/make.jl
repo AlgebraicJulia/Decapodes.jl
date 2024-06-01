@@ -54,7 +54,7 @@ makedocs(
     "Glacial Flow" => "ice_dynamics.md",
     "Grigoriev Ice Cap" => "grigoriev/grigoriev.md",
     "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
-    "Halfar-NS" => "halmo.md",
+    # "Halfar-NS" => "halmo.md",
     "NHS" => "nhs/nhs_lite.md",
     "Pipe Flow" => "poiseuille.md",
     "Misc Features" => "bc_debug.md",
