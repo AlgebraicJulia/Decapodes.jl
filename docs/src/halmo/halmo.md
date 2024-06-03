@@ -1,11 +1,11 @@
 # Couple Ice and Water Dynamics
 
 ```@setup INFO
-include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+include(joinpath(Base.@__DIR__, "..", "..", "docinfo.jl"))
 info = DocInfo.Info()
 ```
 
-Let's use Decapodes to implement the incompressible Navier-Stokes as given by [Mohamed et al.](https://arxiv.org/abs/1508.01166). We will run these dynamics [on the sphere](https://youtu.be/k0hFhAvhHvs?si=Wi9-OgBbAODtxMtb). We will couple this model with Halfar glacier dynamics [on the sphere](https://algebraicjulia.github.io/Decapodes.jl/dev/ice_dynamics/#2-Manifold-in-3D). For the initial conditions of the Halfar ice thickness, we will use scientific dataset for Greenland, much like the scientific dataset used for the [Grigoriev ice cap](grigoriev/grigoriev.md) simulation.
+Let's use Decapodes to implement the incompressible Navier-Stokes as given by [Mohamed et al.](https://arxiv.org/abs/1508.01166). We will run these dynamics [on the sphere](https://youtu.be/k0hFhAvhHvs?si=Wi9-OgBbAODtxMtb). We will couple this model with Halfar glacier dynamics [on the sphere](https://algebraicjulia.github.io/Decapodes.jl/dev/ice_dynamics/#2-Manifold-in-3D). For the initial conditions of the Halfar ice thickness, we will use scientific dataset for Greenland, much like the scientific dataset used for the [Grigoriev ice cap](../grigoriev/grigoriev.md) simulation.
 
 Note that the time scale at which ice creeps is much larger than the time scale at which the water in the ocean would flow. So we can either choose to model a very slow moving fluid around the ice (like a storm on a gas giant), or we can choose to model on a shorter timescale, on which the ice does not move very much.
 
@@ -33,6 +33,7 @@ nothing # hide
 Our first component is the Mohamed et al. formulation of the incompressible Navier-Stokes equations. We will call the flow here "w". This will be the flow after collisions with glaciers are considered.
 
 This is [Equation 10](https://arxiv.org/abs/1508.01166) for N=2.
+
 ```@example DEC
 eq10forN2 = @decapode begin
   (𝐮,w)::DualForm1
