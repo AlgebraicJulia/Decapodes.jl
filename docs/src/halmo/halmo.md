@@ -122,10 +122,7 @@ to_graphviz(ice_dynamics, verbose=false)
 We can now generate our simulation:
 
 ```@example DEC_halmo
-open("ice_water.jl", "w") do f
-  write(f, string(gensim(expand_operators(ice_water))))
-end
-sim = include("ice_water.jl")
+sim = eval(gensim(ice_water))
 ```
 
 ## Meshes and Initial Conditions
