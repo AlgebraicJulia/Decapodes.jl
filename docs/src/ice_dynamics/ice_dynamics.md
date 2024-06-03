@@ -1,7 +1,7 @@
 # Halfar's model of glacial flow
 
 ```@setup INFO
-include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+include(joinpath(Base.@__DIR__, "..", "..", "docinfo.jl"))
 info = DocInfo.Info()
 ```
 

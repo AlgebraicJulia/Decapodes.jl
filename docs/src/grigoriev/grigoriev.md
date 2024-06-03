@@ -113,7 +113,7 @@ nothing # hide
 
 ## Defining and Composing Models
 
-For exposition on this Halfar Decapode, see our [Glacial Flow](../ice_dynamics.md) docs page. Otherwise, you may skip ahead to the next section.
+For exposition on this Halfar Decapode, see our [Glacial Flow](../ice_dynamics/ice_dynamics.md) docs page. Otherwise, you may skip ahead to the next section.
 
 ``` @example DEC
 halfar_eq2 = @decapode begin

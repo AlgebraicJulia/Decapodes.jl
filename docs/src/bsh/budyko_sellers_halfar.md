@@ -1,7 +1,7 @@
 # Budko-Sellers-Halfar
 
 ```@setup INFO
-include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+include(joinpath(Base.@__DIR__, "..", "..","docinfo.jl"))
 info = DocInfo.Info()
 ```
 
@@ -27,7 +27,7 @@ Point2D = Point2{Float64};
 nothing # hide
 ```
 
-We have defined the [Halfar ice model](ice_dynamics.md) in other docs pages, and so will quickly define it here.
+We have defined the [Halfar ice model](../ice_dynamics/ice_dynamics.md) in other docs pages, and so will quickly define it here.
 
 ``` @example DEC
 halfar_eq2 = @decapode begin

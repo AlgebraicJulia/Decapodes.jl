@@ -1,7 +1,7 @@
 # Introduction to Decapodes
 
 ```@setup INFO
-include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+include(joinpath(Base.@__DIR__, "..", "..", "docinfo.jl"))
 info = DocInfo.Info()
 ```
 

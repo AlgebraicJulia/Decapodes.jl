@@ -1,14 +1,14 @@
 # Simulation Setup
 
 ```@setup INFO
-include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+include(joinpath(Base.@__DIR__, "..", "..", "docinfo.jl"))
 info = DocInfo.Info()
 ```
 
 This tutorial showcases some of the other features included in the Decapodes.jl
 package. Currently, these features are the treatment of boundary conditions and
 the simulation debugger interface. To begin, we set up the same
-advection-diffusion problem presented in the [Overview](overview.md) section.
+advection-diffusion problem presented in the [Overview](../overview/overview.md) section.
 As before, we define the Diffusion, Advection, and Superposition components,
 and now include a Boundary Condition (BC) component. By convention, BCs are encoded in Decapodes by using a `∂` symbol. Below we show the
 graphical rendering of this boundary condition diagram, which we will use to
@@ -122,14 +122,14 @@ Finally, we define our operators, generate the simulation function, and compute
 the simulation. Note that when we define the boundary condition operator, we
 hardcode the boundary indices and values into the operator itself. We also move
 the initial concentration to the left, so that we are able to see a constant
-concentration on the left boundary which will act as a source in the flow. You can find the file for boundary conditions [here](boundary_helpers.jl). The
+concentration on the left boundary which will act as a source in the flow. You can find the file for boundary conditions [here](../boundary_helpers.jl). The
 modified initial condition is shown below:
 
 ```@example Debug
 using LinearAlgebra
 using ComponentArrays
 using MLStyle
-include("boundary_helpers.jl")
+include("../boundary_helpers.jl")
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin

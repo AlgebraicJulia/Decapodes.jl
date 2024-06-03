@@ -1,7 +1,7 @@
 # Poissuille Flow for Fluid Mechanics
 
 ```@setup INFO
-include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
+include(joinpath(Base.@__DIR__, "..", "..", "docinfo.jl"))
 info = DocInfo.Info()
 ```
 
@@ -54,11 +54,11 @@ to_graphviz(Poise)
 
 ## Defining the Semantics
 
-In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The `generate` function below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. You can find the file for boundary conditions [here](boundary_helpers.jl).
+In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The `generate` function below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. You can find the file for boundary conditions [here](../boundary_helpers.jl).
 
 ```@example Poiseuille
 using MLStyle
-include("boundary_helpers.jl")
+include("../boundary_helpers.jl")
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
