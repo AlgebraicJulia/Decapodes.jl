@@ -109,7 +109,7 @@ function dec_cu_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
 end
 
 function dec_pair_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
-  throw("Replace me in compiled code with element-wise multiplication (.*)")
+  error("Replace me in compiled code with element-wise multiplication (.*)")
 end
 
 # TODO: These need to be converted into CuArrays/kernels
