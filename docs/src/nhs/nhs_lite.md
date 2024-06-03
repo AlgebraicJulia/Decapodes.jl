@@ -19,6 +19,7 @@ using DiagrammaticEquations
 # External Dependencies
 using CairoMakie
 using ComponentArrays
+using Downloads
 using GeometryBasics: Point3
 using JLD2
 using LinearAlgebra
@@ -176,7 +177,7 @@ We execute these dynamics on the torus explicitly, instead of using a square wit
 # This is a torus with resolution of its dual mesh similar to that
 # used by Oceananigans (explicitly represented as a torus, not as a
 # square with periodic boundary conditions!)
-download("https://cise.ufl.edu/~luke.morris/torus.obj", "torus.obj")
+Downloads.download("https://cise.ufl.edu/~luke.morris/torus.obj", "torus.obj")
 s = EmbeddedDeltaSet2D("torus.obj")
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Barycenter())
