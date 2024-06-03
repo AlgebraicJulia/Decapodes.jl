@@ -9,7 +9,7 @@ Let's use Decapodes to implement the incompressible Navier-Stokes as given by [M
 
 Note that the time scale at which ice creeps is much larger than the time scale at which the water in the ocean would flow. So we can either choose to model a very slow moving fluid around the ice (like a storm on a gas giant), or we can choose to model on a shorter timescale, on which the ice does not move very much.
 
-```@example DEC
+```@example DEC_halmo
 # AlgebraicJulia Dependencies
 using Catlab
 using CombinatorialSpaces
@@ -34,7 +34,7 @@ Our first component is the Mohamed et al. formulation of the incompressible Navi
 
 This is [Equation 10](https://arxiv.org/abs/1508.01166) for N=2.
 
-```@example DEC
+```@example DEC_halmo
 eq10forN2 = @decapode begin
   (𝐮,w)::DualForm1
   (P, 𝑝ᵈ)::DualForm0
@@ -49,7 +49,7 @@ to_graphviz(eq10forN2)
 
 Halfar's equation and Glen's law are composed like so:
 
-```@example DEC
+```@example DEC_halmo
 halfar_eq2 = @decapode begin
   h::Form0
   Γ::Form1
@@ -82,7 +82,7 @@ There are many options, and the choice you make depends on the time-scale and re
 
 An interaction between glacier and water dynamics can look like the following, where `flow_after` is the flow of water after interaction with ice is considered.
 
-```@example DEC
+```@example DEC_halmo
 ice_water_composition_diagram = @relation () begin
   glacier_dynamics(ice_thickness)
   water_dynamics(flow, flow_after)
@@ -96,7 +96,7 @@ We will use the language of Decapodes to encode the dynamics that ice blocks wat
 
 We can detect the ice with a sigmoid function. Where there is ice, we want the flow to be 0, and where there is no ice, we will not impede the flow. We won't consider any further special boundary conditions between ice and water here. Since `h` is a scalar-like quantity, and flow is a vector-like quantity, we can relate them using the wedge product operator from the exterior calculus. We can state these dynamics using the language of Decapodes like so:
 
-```@example DEC
+```@example DEC_halmo
 blocking = @decapode begin
   h::Form0
   (𝐮,w)::DualForm1
@@ -110,7 +110,7 @@ Here, `σ` is a sigmoid function that is 0 when d(h) is 0, and goes to 1 otherwi
 
 We can apply our composition diagram to generate our physics:
 
-```@example DEC
+```@example DEC_halmo
 ice_water = apex(oapply(ice_water_composition_diagram,
   [Open(ice_dynamics, [:dynamics_h]),
    Open(eq10forN2,    [:𝐮, :w]),
@@ -121,7 +121,7 @@ to_graphviz(ice_dynamics, verbose=false)
 
 We can now generate our simulation:
 
-```@example DEC
+```@example DEC_halmo
 open("ice_water.jl", "w") do f
   write(f, string(gensim(expand_operators(ice_water))))
 end
@@ -132,7 +132,7 @@ sim = include("ice_water.jl")
 
 Since we want to demonstrate these physics on the Earth, we will use one of our icosphere discretizations with the appropriate radius.
 
-``` @example DEC
+``` @example DEC_halmo
 rₑ = 6378e3 # [km]
 s = loadmesh(Icosphere(5, rₑ))
 sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
@@ -142,7 +142,7 @@ wireframe(sd)
 
 Let's demonstrate how to add operators by providing the definition of a sigmoid function:
 
-```@example DEC
+```@example DEC_halmo
 sigmoid(x) = (2 ./ (1 .+ exp.(-x*1e2)) .- 1)
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
@@ -158,13 +158,13 @@ end;
 
 Let's combine our mesh with our physics to instantiate our simulation:
 
-```@example DEC
+```@example DEC_halmo
 fₘ = sim(sd, generate);
 ```
 
 We can now supply initial conditions:
 
-```@example DEC
+```@example DEC_halmo
 ice_thickness = map(sd[:point]) do (_,_,z)
   z < 0.8*rₑ ? 0 : 1
 end
@@ -194,7 +194,7 @@ constants_and_parameters = (
 
 We specified our physics, our mesh, and our initial conditions. We have everything we need to execute the simulation.
 
-```@example DEC
+```@example DEC_halmo
 tₑ = 100
 
 # Julia will pre-compile the generated simulation the first time it is run.
@@ -214,7 +214,7 @@ soln = solve(prob, Vern7())
 
 In the DEC, vorticity is encoded with `d⋆`, and speed can be encoded with `norm ♯`. We can use our operators from CombinatorialSpaces.jl to create our GIFs.
 
-```@example DEC
+```@example DEC_halmo
 ihs0 = dec_inv_hodge_star(Val{0}, sd, GeometricHodge())
 dd1 = dec_dual_derivative(1, sd)
 ♯_m = ♯_mat(sd, LLSDDSharp())
@@ -250,7 +250,7 @@ save_vorticity(false)
 
 Let's look at the dynamics of the ice as well:
 
-``` @example DEC
+``` @example DEC_halmo
 begin
   frames = 200
   fig = Figure()

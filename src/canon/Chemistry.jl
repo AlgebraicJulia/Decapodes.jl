@@ -6,7 +6,7 @@ using ..Canon
 using Markdown
 
 @docapode("Brusselator"
-  ,"https://en.wikipedia.org/wiki/brusselator"
+  ,"https://en.wikipedia.org/wiki/Brusselator"
   ,"A model of reaction-diffusion for an oscillatory chemical system."
   ,brusselator
   ,begin
