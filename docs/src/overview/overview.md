@@ -262,7 +262,7 @@ compose_diff_adv = @relation (C, V) begin
   superposition(ϕ₁, ϕ₂, ϕ, C)
 end
 
-to_graphviz(compose_diff_adv, box_labels=:name, junction_labels=:variable, prog="circo") # hide
+draw_composition(compose_diff_adv)
 ```
 
 After this, the physics can be composed as follows:

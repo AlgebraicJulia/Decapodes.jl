@@ -81,7 +81,7 @@ compose_klausmeier = @relation () begin
   hydro(N, W)
 end
 
-to_graphviz(compose_klausmeier, box_labels=:name, junction_labels=:variable, prog="circo")
+draw_composition(compose_klausmeier)
 ```
 
 We apply our composition pattern by plugging in component Decapodes, and specifying which internal quantities to share along edges. Decapodes are formalized via the field of Applied Category Theory. A practical consequence here is that we can view a Decapode as a sort of computation graph.

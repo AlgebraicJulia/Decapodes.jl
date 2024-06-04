@@ -92,7 +92,7 @@ ice_dynamics_composition_diagram = @relation () begin
   dynamics(Γ,n)
   stress(Γ,n)
 end
-to_graphviz(ice_dynamics_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
+draw_composition(ice_dynamics_composition_diagram)
 ```
 
 ```@example DEC

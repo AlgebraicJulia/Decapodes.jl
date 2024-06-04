@@ -114,7 +114,7 @@ budyko_sellers_composition_diagram = @relation () begin
   insolation(Q, cosϕᵖ)
 end
 
-to_graphviz(budyko_sellers_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo") # TODO: Make this into a helper
+draw_composition(budyko_sellers_composition_diagram)
 ```
 
 ``` @example DEC
@@ -160,7 +160,7 @@ budyko_sellers_halfar_composition_diagram = @relation () begin
   halfar(A)
 end
 
-to_graphviz(budyko_sellers_halfar_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
+draw_composition(budyko_sellers_halfar_composition_diagram)
 ```
 
 We apply a composition by plugging in a Decapode for each component. We also specify the internal name of the variables to be used in combining.

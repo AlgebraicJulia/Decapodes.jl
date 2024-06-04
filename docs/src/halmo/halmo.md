@@ -89,7 +89,7 @@ ice_water_composition_diagram = @relation () begin
 
   interaction(ice_thickness, flow, flow_after)
 end
-to_graphviz(ice_water_composition_diagram, box_labels=:name, junction_labels=:variable, prog="circo")
+draw_composition(ice_water_composition_diagram)
 ```
 
 We will use the language of Decapodes to encode the dynamics that ice blocks water from flowing.

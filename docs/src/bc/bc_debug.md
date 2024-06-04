@@ -67,7 +67,7 @@ compose_diff_adv = @relation (C, V) begin
   superposition(ϕ₁, ϕ₂, ϕ, C_up, C)
 end
 
-to_graphviz(compose_diff_adv, box_labels=:name, junction_labels=:variable, prog="circo")
+draw_composition(compose_diff_adv)
 ```
 
 ```@example Debug

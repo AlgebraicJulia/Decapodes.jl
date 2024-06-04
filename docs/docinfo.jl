@@ -23,6 +23,4 @@ function get_report(info::Info)
   @info "This page was last built at $(info.finish_time)."
 end
 
-draw(deca) = to_graphviz(deca, box_labels=:name, junction_labels=:variable, prog="circo")
-
 end

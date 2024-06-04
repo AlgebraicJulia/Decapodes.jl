@@ -120,7 +120,7 @@ tracer_composition = @relation () begin
 
   continuity(FD,v,c)
 end
-to_graphviz(tracer_composition, box_labels=:name, junction_labels=:variable, prog="circo")
+draw_composition(tracer_composition)
 ```
 
 Let's "lock in" isotropic diffusivity by doing an intermediate oapply.
@@ -149,7 +149,7 @@ nonhydrostatic_composition = @relation () begin
   #   => The b term in momentum is that described by the equation of state here.
   eos(b, T, S)
 end
-to_graphviz(nonhydrostatic_composition, box_labels=:name, junction_labels=:variable, prog="circo")
+draw_composition(nonhydrostatic_composition)
 ```
 
 ```@example DEC
