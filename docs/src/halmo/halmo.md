@@ -123,6 +123,9 @@ We can now generate our simulation:
 
 ```@example DEC_halmo
 sim = eval(gensim(ice_water))
+open("file_1", "w") do file
+  write(file, "passed eval(gensim)")
+end
 ```
 
 ## Meshes and Initial Conditions
@@ -135,6 +138,10 @@ s = loadmesh(Icosphere(5, rₑ))
 sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
 subdivide_duals!(sd, Barycenter())
 wireframe(sd)
+open("file_2", "w") do file
+  write(file, "passed wireframe")
+end
+
 ```
 
 Let's demonstrate how to add operators by providing the definition of a sigmoid function:
@@ -151,12 +158,19 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   end
   return op
 end;
+open("file_3", "w") do file
+  write(file, "passed generate")
+end
+
 ```
 
 Let's combine our mesh with our physics to instantiate our simulation:
 
 ```@example DEC_halmo
 fₘ = sim(sd, generate);
+open("file_4", "w") do file
+  write(file, "passed sim")
+end
 ```
 
 We can now supply initial conditions:
@@ -185,6 +199,10 @@ constants_and_parameters = (
   glacier_dynamics_stress_ρ = 910,
   glacier_dynamics_stress_g = 9.8101,
   water_dynamics_μ = 0.01);
+open("file_5", "w") do file
+  write(file, "passed initial")
+end
+
 ```
   
 ## Execute the Simulation
@@ -205,6 +223,11 @@ prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Vern7())
 @show soln.retcode
 @info("Done")
+
+open("file_6", "w") do file
+  write(file, "passed solve")
+end
+
 ```
 
 ## Results
@@ -223,6 +246,11 @@ function speed(α)
   norm.(♯_m * α)
 end
 
+open("file_7", "w") do file
+  write(file, "passed speed")
+end
+
+
 function save_vorticity(is_2d=false)
   frames = 200
   time = Observable(0.0)
@@ -240,10 +268,17 @@ function save_vorticity(is_2d=false)
     time[] = t
   end
 end
-save_vorticity(false)
-```
+open("file_7_1", "w") do file
+  write(file, "compiled vorticity")
+end
 
-![Vorticity](vorticity_ice_water.gif)
+# save_vorticity(false)
+
+open("file_8", "w") do file
+  write(file, "passed vorticity")
+end
+
+```
 
 Let's look at the dynamics of the ice as well:
 
@@ -259,6 +294,11 @@ begin
     msh.color = soln(t).ice_thickness
   end
 end
+
+open("file_9", "w") do file
+  write(file, "passed gif")
+end
+
 ```
 
 ![HalfarMohamedIce](halmo_ice.gif)
