@@ -1,12 +1,10 @@
+@info "Loading Documenter"
 using Documenter
 using Literate
 using Distributed
 
 @info "Loading Decapodes"
 using Decapodes
-using Catlab
-using Catlab.WiringDiagrams
-using CairoMakie
 
 # Set Literate.jl config if not being compiled on recognized service.
 config = Dict{String,String}()
