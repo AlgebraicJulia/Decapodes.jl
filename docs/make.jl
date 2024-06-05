@@ -41,7 +41,8 @@ makedocs(
   doctest   = false,
   checkdocs = :none,
   pagesonly = true,
-  # linkcheck = true,
+  linkcheck = true,
+  linkcheck_ignore = [r"agupubs.onlinelibrary.wiley.com"], # This gives a 403 Forbidden
   pages     = Any[
     "Decapodes.jl" => "index.md",
     "Overview" => "overview/overview.md",
