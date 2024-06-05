@@ -3,8 +3,6 @@ using OrdinaryDiffEq
 using GeometryBasics
 using JSON
 using Distributions
-using Artifacts
-# using GLMakie
 
 using Catlab
 using Catlab.CategoricalAlgebra
