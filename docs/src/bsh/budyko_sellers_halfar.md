@@ -365,6 +365,7 @@ fig = Figure()
 ax1 = CairoMakie.Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s))))
 ylims!(ax1, extrema(soln(tₑ).Tₛ))
+ax1.xlabel = "Line plot of temperature from North to South pole, every $(tₑ/frames) time units"
 Label(fig[1,1,Top()], "Surface temperature, Tₛ, [C°]")
 
 # Animation
@@ -380,6 +381,7 @@ fig = Figure()
 ax1 = CairoMakie.Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s))))
 ylims!(ax1, extrema(soln(tₑ).halfar_dynamics_h))
+ax1.xlabel = "Line plot of temperature from North to South pole, every $(tₑ/frames) time units"
 Label(fig[1,1,Top()], "Ice height, h")
 
 # Animation
@@ -389,11 +391,7 @@ end
 end
 ```
 
-Line plot of temperature from North to South pole.
-
 ![BSH_Temperature](budyko_sellers_halfar_T.gif)
-
-Line plot of ice height from North to South pole.
 
 ![BSH_IceHeight](budyko_sellers_halfar_h.gif)
 
