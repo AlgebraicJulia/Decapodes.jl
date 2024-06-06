@@ -123,15 +123,15 @@ We are done encoding our dynamics. Now, we need to provide a mesh,  initial data
 Our mesh library, CombinatorialSpaces, can interpret arbitrary .OBJ files to run our dynamics on. Here, we use a script that generates a triangulated grid of the resolution used in the CISM benchmark. Note though that the "resolution" of a triangulated and non-triangulated grid is difficult to directly compare.
 
 ```@example DEC
-s′ = triangulated_grid(60_000,100_000,2_000,2_000,Point3D)
-s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s′)
-subdivide_duals!(s, Barycenter())
-x̄ = mean(p -> p[1], point(s))
-ȳ = mean(p -> p[2], point(s))
+s = triangulated_grid(60_000,100_000,2_000,2_000,Point3D)
+sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
+subdivide_duals!(sd, Barycenter())
+x̄ = mean(p -> p[1], point(sd))
+ȳ = mean(p -> p[2], point(sd))
 
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
-wf = wireframe!(ax, s; linewidth=0.5)
+wf = wireframe!(ax, sd; linewidth=0.5)
 save("ice_mesh.png", fig)
 nothing # hide
 ```
@@ -154,7 +154,7 @@ g = 9.8101
 alpha = 1/9
 beta = 1/18
 flwa = 1e-16
-A = fill(1e-16, ne(s))
+A = fill(1e-16, ne(sd))
 
 Gamma = 2.0/(n+2) * flwa * (ρ * g)^n
 t0 = (beta/Gamma) * (7.0/4.0)^3 * (R₀^4 / H^7)
@@ -172,10 +172,10 @@ end
 
 # Set the initial conditions for ice sheet height:
 # Ice height is a primal 0-form. i.e. valued at vertices.
-h₀ = map(x -> height_at_p(x[1], x[2], 0), point(s′))
+h₀ = map(x -> height_at_p(x[1], x[2], 0), point(s))
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
-msh = mesh!(ax, s′, color=h₀, colormap=:jet)
+msh = mesh!(ax, s, color=h₀, colormap=:jet)
 save("ice_initial_conditions.png", fig)
 nothing # hide
 ```
@@ -221,7 +221,7 @@ The `gensim` function takes our high-level representation of the physics equatio
 #######################
 
 sim = eval(gensim(ice_dynamics2D))
-fₘ = sim(s, generate)
+fₘ = sim(sd, generate)
 ```
 
 Julia is a "Just-In-Time" compiled language. That means that functions are compiled the first time they are called, and later calls to those functions skip this step. To get a feel for just how fast this simulation is, we will run the dynamics twice, once for a very short timespan to trigger pre-compilation, and then again for the actual dynamics.
@@ -275,7 +275,7 @@ function plot_final_conditions()
   ax = CairoMakie.Axis(fig[1,1],
     title="Modeled thickness (m) at time 200.0",
     aspect=0.6, xticks = [0, 3e4, 6e4])
-  msh = mesh!(ax, s′, color=soln(200.0).dynamics_h, colormap=:jet)
+  msh = mesh!(ax, s, color=soln(200.0).dynamics_h, colormap=:jet)
   Colorbar(fig[1,2], msh)
   fig
 end
@@ -289,12 +289,12 @@ nothing # hide
 ```@example DEC
 # Plot the final conditions according to the analytic solution.
 function plot_analytic()
-  hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s′))
+  hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s))
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1],
     title="Analytic thickness (m) at time 200.0",
     aspect=0.6, xticks = [0, 3e4, 6e4])
-  msh = mesh!(ax, s′, color=hₐ, colormap=:jet)
+  msh = mesh!(ax, s, color=hₐ, colormap=:jet)
   Colorbar(fig[1,2], msh)
   fig
 end
@@ -308,14 +308,14 @@ nothing # hide
 ```@example DEC
 # Plot the error.
 function plot_error()
-  hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s′))
+  hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s))
   h_diff = soln(tₑ).dynamics_h - hₐ
   extrema(h_diff)
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1],
     title="Modeled thickness - Analytic thickness at time 200.0",
     aspect=0.6, xticks = [0, 3e4, 6e4])
-  msh = mesh!(ax, s′, color=h_diff, colormap=:jet)
+  msh = mesh!(ax, s, color=h_diff, colormap=:jet)
   Colorbar(fig[1,2], msh)
   fig
 end
@@ -330,7 +330,7 @@ We compute below that the maximum absolute error is approximately 89 meters. We 
 
 ```@example DEC
 # Compute max absolute error:
-hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s′))
+hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s))
 h_diff = soln(tₑ).dynamics_h - hₐ
 maximum(abs.(h_diff))
 ```
@@ -339,7 +339,7 @@ We compute root-mean-square (RMS) error as well, both over the entire domain, an
 
 ```@example DEC
 # Compute RMS not considering the "outside".
-hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s′))
+hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s))
 nonzeros = findall(!=(0), hₐ)
 h_diff = soln(tₑ).dynamics_h - hₐ
 rmse = sqrt(sum(map(x -> x*x, h_diff[nonzeros])) / length(nonzeros))
@@ -347,7 +347,7 @@ rmse = sqrt(sum(map(x -> x*x, h_diff[nonzeros])) / length(nonzeros))
 
 ```@example DEC
 # Compute RMS of the entire domain.
-hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s′))
+hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s))
 h_diff = soln(tₑ).dynamics_h - hₐ
 rmse = sqrt(sum(map(x -> x*x, h_diff)) / length(h_diff))
 ```
@@ -358,7 +358,7 @@ begin
   frames = 100
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
-  msh = mesh!(ax, s′, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(tₑ).dynamics_h))
+  msh = mesh!(ax, s, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(tₑ).dynamics_h))
   Colorbar(fig[1,2], msh)
   record(fig, "ice_dynamics_cism.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
     msh.color = soln(t).dynamics_h
