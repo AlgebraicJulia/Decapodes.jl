@@ -209,42 +209,6 @@ soln = solve(prob, Vern7())
 
 ## Results
 
-In the DEC, vorticity is encoded with `d⋆`, and speed can be encoded with `norm ♯`. We can use our operators from CombinatorialSpaces.jl to create our GIFs.
-
-```@example DEC_halmo
-ihs0 = dec_inv_hodge_star(Val{0}, sd, GeometricHodge())
-dd1 = dec_dual_derivative(1, sd)
-♯_m = ♯_mat(sd, LLSDDSharp())
-
-function vorticity(α)
-  ihs0*dd1*α
-end
-
-function speed(α)
-  norm.(♯_m * α)
-end
-
-# function save_vorticity(is_2d=false) #  # hide
-#   frames = 200 # hide
-#   time = Observable(0.0) # hide
-#   fig = Figure(title = @lift("Vorticity at $($time)")) # hide
-#   ax = is_2d ? # hide
-#     CairoMakie.Axis(fig[1,1]) : # hide
-#     LScene(fig[1,1], scenekw=(lights=[],)) # hide
-#   msh = CairoMakie.mesh!(ax, s, # hide
-#     color=@lift(vorticity(soln($time).flow)), # hide
-#     colorrange=extrema(vorticity(soln(tₑ).flow)).*.9, # hide
-#     colormap=:jet) # hide
- # hide
-#   Colorbar(fig[1,2], msh) # hide
-#   record(fig, "vorticity_ice_water.gif", range(0.0, tₑ; length=frames); framerate = 20) do t # hide
-#     time[] = t # hide
-#   end # hide
-# end # hide
-
-# save_vorticity(false) # hide
-```
-
 Let's look at the dynamics of the ice:
 
 ``` @example DEC_halmo
