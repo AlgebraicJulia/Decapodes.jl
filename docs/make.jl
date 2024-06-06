@@ -1,13 +1,10 @@
+@info "Loading Documenter"
 using Documenter
 using Literate
 using Distributed
 
 @info "Loading Decapodes"
 using Decapodes
-using Catlab
-using Catlab.WiringDiagrams
-using AlgebraicPetri
-using CairoMakie
 
 # Set Literate.jl config if not being compiled on recognized service.
 config = Dict{String,String}()
@@ -43,24 +40,25 @@ makedocs(
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
+  pagesonly = true,
+  linkcheck = true,
+  linkcheck_ignore = [r"agupubs.onlinelibrary.wiley.com"], # This gives a 403 Forbidden
   pages     = Any[
     "Decapodes.jl" => "index.md",
+    "Overview" => "overview/overview.md",
+    "Equations" => "equations/equations.md",
     "Vortices" => "navier_stokes/ns.md",
-    "Halfar-NS" => "halmo.md",
-    "Overview" => "overview.md",
-    "Klausmeier" => "klausmeier.md",
-    "Glacial Flow" => "ice_dynamics.md",
-    "Grigoriev Ice Cap" => "grigoriev.md",
-    "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
-    "CISM v2.1" => "cism.md",
-    "NHS" => "nhs.md",
-    "Equations" => "equations.md",
+    "Cahn-Hilliard" => "ch/cahn-hilliard.md",
+    "Klausmeier" => "klausmeier/klausmeier.md",
+    "CISM v2.1" => "cism/cism.md",
+    "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
+    "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
+    "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
+    "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
+    "NHS" => "nhs/nhs_lite.md",
+    "Pipe Flow" => "poiseuille/poiseuille.md",
+    "Misc Features" => "bc/bc_debug.md", # Requires overview
     "ASCII Operators" => "ascii.md",
-    "Misc Features" => "bc_debug.md",
-    "Pipe Flow" => "poiseuille.md",
-    # "Examples" => Any[
-    #   "examples/cfd_example.md"
-    # ],
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ]
