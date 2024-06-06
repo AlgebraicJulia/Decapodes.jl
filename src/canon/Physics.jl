@@ -157,7 +157,7 @@ end)
 )
 
 @docapode("Poiseuille Density"
-  ,"https://en.wikipedia.org/wiki/Hagen-poiseuille_density"
+  ,"https://en.wikipedia.org/wiki/Hagen%E2%80%93Poiseuille_equation"
   ,""
   ,poiseuille_density
   ,begin
