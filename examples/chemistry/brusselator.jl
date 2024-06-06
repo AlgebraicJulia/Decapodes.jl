@@ -52,11 +52,7 @@ resolve_overloads!(Brusselator)
 # Visualize. Note that functions are renamed.
 to_graphviz(Brusselator)
 
-s = loadmesh(Rectangle_30x10());
-scaling_mat = Diagonal([1/maximum(x->x[1], s[:point]),
-                        1/maximum(x->x[2], s[:point]),
-                        1.0]);
-s[:point] = map(x -> scaling_mat*x, s[:point]);
+s = triangulated_grid(1,1,0.008,0.008,Point3D);
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s);
 subdivide_duals!(sd, Circumcenter());
 
@@ -90,13 +86,6 @@ fₘ = sim(sd, nothing, DiagonalHodge())
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
 u₀ = ComponentArray(U=U, V=V)
-
-# Visualize the initial conditions.
-# If GLMakie throws errors, then update your graphics drivers,
-# or use an alternative Makie backend like 
-fig_ic = Figure()
-p1 = mesh(fig_ic[1,2], s, color=u₀.U, colormap=:jet)
-p2 = mesh(fig_ic[1,3], s, color=u₀.V, colormap=:jet)
 
 tₑ = 11.5
 
