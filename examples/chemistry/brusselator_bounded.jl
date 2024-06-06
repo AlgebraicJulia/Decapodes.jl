@@ -26,11 +26,11 @@ Point3D = Point3{Float64}
 
 BrusselatorDynamics = @decapode begin
   ## Values living on vertices.
-  (U, V)::Form0{X} ## State variables.
-  U2V::Form0{X} ## Named intermediate variables.
-  (U̇, V̇)::Form0{X} ## Tangent variables.
-  (α)::Constant{X}
-  (F)::Parameter{X}
+  (U, V)::Form0 ## State variables.
+  U2V::Form0 ## Named intermediate variables.
+  (U̇, V̇)::Form0 ## Tangent variables.
+  (α)::Constant
+  (F)::Parameter
   ## A named intermediate variable.
   U2V == (U .* U) .* V
   ## Specify how to compute the tangent variables.
