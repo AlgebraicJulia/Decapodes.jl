@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Equations · Decapodes.jl</title><meta name="title" content="Equations · Decapodes.jl"/><meta property="og:title" content="Equations · Decapodes.jl"/><meta property="twitter:title" content="Equations · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li class="is-active"><a class="tocitem" href>Equations</a></li><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Equations</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Equations</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/equations/equations.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Simple-Equations"><a class="docs-heading-anchor" href="#Simple-Equations">Simple Equations</a><a id="Simple-Equations-1"></a><a class="docs-heading-anchor-permalink" href="#Simple-Equations" title="Permalink"></a></h1><p>This tutorial shows how to use Decapodes to represent simple equations. These aren&#39;t using any of the Discrete Exterior Calculus or CombinatorialSpaces features of Decapodes. They just are a reference for how to build equations with the <code>@decapodes</code> macro and see how they are stored as ACSets.</p><pre><code class="language-julia hljs">using Catlab
+using CombinatorialSpaces
+using DiagrammaticEquations
+using Decapodes</code></pre><p>The harmonic oscillator can be written in Decapodes in at least three different ways.</p><pre><code class="language-julia hljs">oscillator = @decapode begin
+  X::Form0
+  V::Form0
+
+  ∂ₜ(X) == V
+  ∂ₜ(V) == -k(X)
+end</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:4, TVar:2, Op1:4, Op2:0, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">X</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">V</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">V̇</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">k</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>The default representation is a tabular output as an ACSet. The tables are <code>Var</code> for storing variables (<code>X</code>) and their types (<code>Form0</code>). <code>TVar</code> for identifying a subset of variables that are the tangent variables of the dynamics (<code>Ẋ</code>). The unary operators are stored in <code>Op1</code> and binary operators stored in <code>Op2</code>. If a table is empty, it doesn&#39;t get printed.</p><p>Even though a diagrammatic equation is like a graph, there are no edge tables, because the arity (number of inputs) and coarity (number of outputs) is baked into the operator definitions.</p><p>You can also see the output as a directed graph. The input arrows point to the state variables of the system and the output variables point from the tangent variables. You can see that I have done the differential degree reduction from  <code>x&#39;&#39; = -kx</code> by introducing a velocity term <code>v</code>. Decapodes has some support for derivatives in the visualization layer, so it knows that <code>dX/dt</code> should be called <code>Ẋ</code> and that <code>dẊ/dt</code> should be called <code>Ẋ̇</code>.</p><pre><code class="language-julia hljs">to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="130pt" height="256pt"
+ viewBox="0.00 0.00 129.62 255.64" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 251.64)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-251.64 125.62,-251.64 125.62,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="49.7" cy="-196.03" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="49.7" y="-192.33" font-family="Times,serif" font-size="14.00">X:Ω₀</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="99.7" cy="-123.82" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="99.7" y="-120.12" font-family="Times,serif" font-size="14.00">V:Ω₀</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge5" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M54.23,-185.49C58.66,-176.58 65.85,-163.09 73.7,-152.43 77.6,-147.12 82.42,-141.75 86.85,-137.17"/>
+<polygon fill="black" stroke="black" points="88.17,-138.32 90.44,-133.53 85.68,-135.86 88.17,-138.32"/>
+<text text-anchor="middle" x="79.7" y="-156.23" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="29.7" cy="-123.82" rx="29.9" ry="10.71"/>
+<text text-anchor="middle" x="29.7" y="-120.12" font-family="Times,serif" font-size="14.00">•1:Ω•</text>
+</g>
+<!-- n1&%2345;&gt;n3 -->
+<g id="edge7" class="edge">
+<title>n1&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M45.42,-185.47C43.19,-180.22 40.55,-173.55 38.7,-167.43 35.96,-158.37 33.75,-147.99 32.2,-139.74"/>
+<polygon fill="black" stroke="black" points="33.85,-139.02 31.24,-134.41 30.41,-139.65 33.85,-139.02"/>
+<text text-anchor="middle" x="43.2" y="-156.23" font-family="Times,serif" font-size="14.00">k</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="47.7" cy="-51.61" rx="24.08" ry="10.71"/>
+<text text-anchor="middle" x="47.7" y="-47.91" font-family="Times,serif" font-size="14.00">V̇:Ω•</text>
+</g>
+<!-- n2&%2345;&gt;n4 -->
+<g id="edge6" class="edge">
+<title>n2&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M90.53,-114.04C85.31,-108.82 78.81,-101.91 73.7,-95.21 66.78,-86.14 60.1,-75.14 55.25,-66.58"/>
+<polygon fill="black" stroke="black" points="56.71,-65.62 52.75,-62.11 53.66,-67.33 56.71,-65.62"/>
+<text text-anchor="middle" x="79.7" y="-84.01" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+</g>
+<!-- n2&%2345;&gt;n6 -->
+<g id="edge3" class="edge">
+<title>n2&%2345;&gt;n6</title>
+<path fill="none" stroke="black" d="M97.57,-113.01C92.41,-89.22 79.32,-28.91 75.06,-9.28"/>
+<polygon fill="black" stroke="black" points="76.72,-8.68 73.95,-4.16 73.3,-9.42 76.72,-8.68"/>
+</g>
+<!-- n3&%2345;&gt;n4 -->
+<g id="edge8" class="edge">
+<title>n3&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M32.2,-113.06C35.24,-101.21 40.39,-81.13 43.91,-67.39"/>
+<polygon fill="black" stroke="black" points="45.67,-67.56 45.22,-62.29 42.28,-66.7 45.67,-67.56"/>
+<text text-anchor="middle" x="43.2" y="-84.01" font-family="Times,serif" font-size="14.00">&%2345;</text>
+</g>
+<!-- n4&%2345;&gt;n6 -->
+<g id="edge4" class="edge">
+<title>n4&%2345;&gt;n6</title>
+<path fill="none" stroke="black" d="M52.96,-40.97C58.26,-31.27 66.25,-16.64 70.6,-8.67"/>
+<polygon fill="black" stroke="black" points="72.26,-9.29 73.12,-4.06 69.19,-7.61 72.26,-9.29"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+</g>
+<!-- n5&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n5&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M74.08,-243.46C71.77,-239.06 63.45,-223.23 57.17,-211.26"/>
+<polygon fill="black" stroke="black" points="58.67,-210.35 54.8,-206.74 55.57,-211.98 58.67,-210.35"/>
+</g>
+<!-- n5&%2345;&gt;n2 -->
+<g id="edge2" class="edge">
+<title>n5&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M74.92,-243.61C75.52,-240.76 77.26,-232.5 78.7,-225.64 85.1,-195.09 92.53,-159.32 96.62,-139.65"/>
+<polygon fill="black" stroke="black" points="98.37,-139.81 97.68,-134.55 94.95,-139.09 98.37,-139.81"/>
+</g>
+</g>
+</svg>
+'/><p>In the previous example, we viewed negation and transformation by <code>k</code> as operators. Notice that <code>k</code> appears as an edge in the graph and not as a vertex. You can also use a 2 argument function like multiplication (<code>*</code>). With a constant value for <code>k::Constant</code>. In this case you will see <code>k</code> enter the diagram as a vertex and multiplication with <code>*</code> as a binary operator.</p><pre><code class="language-julia hljs">oscillator = @decapode begin
+  X::Form0
+  V::Form0
+
+  k::Constant
+
+  ∂ₜ(X) == V
+  ∂ₜ(V) == -k*(X)
+end</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:5, TVar:2, Op1:3, Op2:1, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">X</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">V</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">k</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">V̇</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>This gives you a different graphical representation as well. Now we have the cartesian product objects which represent a tupling of two values.</p><pre><code class="language-julia hljs">to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="154pt" height="328pt"
+ viewBox="0.00 0.00 153.62 327.85" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 323.85)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-323.85 149.62,-323.85 149.62,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="45.92" cy="-196.03" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="45.92" y="-192.33" font-family="Times,serif" font-size="14.00">X:Ω₀</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="21.92" cy="-123.82" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="21.92" y="-120.12" font-family="Times,serif" font-size="14.00">V:Ω₀</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge6" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M42.58,-185.27C38.5,-173.32 31.55,-152.99 26.85,-139.24"/>
+<polygon fill="black" stroke="black" points="28.5,-138.66 25.23,-134.5 25.19,-139.8 28.5,-138.66"/>
+<text text-anchor="middle" x="41.92" y="-156.23" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<polygon fill="none" stroke="black" points="112.42,-131.32 63.42,-131.32 63.42,-116.32 112.42,-116.32 112.42,-131.32"/>
+<text text-anchor="middle" x="87.92" y="-120.12" font-family="Times,serif" font-size="14.00">Ω•×Ω₀</text>
+</g>
+<!-- n1&%2345;&gt;n8 -->
+<g id="edge10" class="edge">
+<title>n1&%2345;&gt;n8</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M51.58,-185.56C59.24,-172.76 72.88,-149.96 81.1,-136.23"/>
+<polygon fill="black" stroke="black" points="82.79,-136.81 83.86,-131.62 79.79,-135.01 82.79,-136.81"/>
+<text text-anchor="middle" x="77.42" y="-156.23" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="71.92" cy="-51.61" rx="24.08" ry="10.71"/>
+<text text-anchor="middle" x="71.92" y="-47.91" font-family="Times,serif" font-size="14.00">V̇:Ω•</text>
+</g>
+<!-- n2&%2345;&gt;n5 -->
+<g id="edge7" class="edge">
+<title>n2&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M28.46,-113.64C37.09,-101.51 52.37,-80.06 62.32,-66.09"/>
+<polygon fill="black" stroke="black" points="63.75,-67.1 65.22,-62.01 60.9,-65.07 63.75,-67.1"/>
+<text text-anchor="middle" x="56.92" y="-84.01" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+</g>
+<!-- n2&%2345;&gt;n7 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&gt;n7</title>
+<path fill="none" stroke="black" d="M22.74,-113.01C24.72,-89.22 29.76,-28.91 31.4,-9.28"/>
+<polygon fill="black" stroke="black" points="33.15,-9.29 31.82,-4.16 29.66,-9 33.15,-9.29"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="106.92" cy="-268.25" rx="25" ry="10.71"/>
+<text text-anchor="middle" x="106.92" y="-264.55" font-family="Times,serif" font-size="14.00">k:ΩC</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="115.92" cy="-196.03" rx="29.9" ry="10.71"/>
+<text text-anchor="middle" x="115.92" y="-192.33" font-family="Times,serif" font-size="14.00">•1:Ω•</text>
+</g>
+<!-- n3&%2345;&gt;n4 -->
+<g id="edge8" class="edge">
+<title>n3&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M108.17,-257.48C109.69,-245.64 112.26,-225.56 114.03,-211.82"/>
+<polygon fill="black" stroke="black" points="115.78,-211.89 114.68,-206.71 112.31,-211.45 115.78,-211.89"/>
+<text text-anchor="middle" x="114.42" y="-228.44" font-family="Times,serif" font-size="14.00">&%2345;</text>
+</g>
+<!-- n4&%2345;&gt;n8 -->
+<g id="edge9" class="edge">
+<title>n4&%2345;&gt;n8</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M112.03,-185.27C106.93,-172.5 98.02,-150.14 92.57,-136.49"/>
+<polygon fill="black" stroke="black" points="94.08,-135.55 90.61,-131.55 90.83,-136.84 94.08,-135.55"/>
+<text text-anchor="middle" x="111.42" y="-156.23" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n5&%2345;&gt;n7 -->
+<g id="edge5" class="edge">
+<title>n5&%2345;&gt;n7</title>
+<path fill="none" stroke="black" d="M64.21,-41.43C55.94,-31.59 43.11,-16.32 36.38,-8.31"/>
+<polygon fill="black" stroke="black" points="37.39,-6.79 32.83,-4.08 34.71,-9.04 37.39,-6.79"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+</g>
+<!-- n6&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n6&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M45.92,-315.51C45.92,-305.44 45.92,-241.46 45.92,-211.93"/>
+<polygon fill="black" stroke="black" points="47.67,-211.84 45.92,-206.84 44.17,-211.84 47.67,-211.84"/>
+</g>
+<!-- n6&%2345;&gt;n2 -->
+<g id="edge3" class="edge">
+<title>n6&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M45.5,-315.79C42.27,-307.57 21.33,-253.11 14.92,-206.64 13.63,-197.3 14.38,-194.84 14.92,-185.43 15.82,-169.84 18,-152.1 19.7,-139.87"/>
+<polygon fill="black" stroke="black" points="21.46,-139.85 20.43,-134.66 18,-139.36 21.46,-139.85"/>
+</g>
+<!-- n6&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n6&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M47.43,-315.68C53.43,-310.99 76.06,-293.33 91.62,-281.19"/>
+<polygon fill="black" stroke="black" points="92.93,-282.39 95.79,-277.93 90.78,-279.63 92.93,-282.39"/>
+</g>
+<!-- n8&%2345;&gt;n5 -->
+<g id="edge11" class="edge">
+<title>n8&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M86.39,-116.09C83.85,-104.96 78.73,-82.47 75.31,-67.47"/>
+<polygon fill="black" stroke="black" points="76.95,-66.81 74.13,-62.32 73.54,-67.58 76.95,-66.81"/>
+<text text-anchor="middle" x="84.42" y="-84.01" font-family="Times,serif" font-size="14.00">*</text>
+</g>
+</g>
+</svg>
+'/><p>You can also represent negation as a multiplication by a literal <code>-1</code>.</p><pre><code class="language-julia hljs">oscillator = @decapode begin
+  X::Form0
+  V::Form0
+
+  k::Constant
+
+  ∂ₜ(X) == V
+  ∂ₜ(V) == -1*k*(X)
+end</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:6, TVar:2, Op1:2, Op2:2, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">X</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">V</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">k</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">mult_1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">V̇</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">-1</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Notice that the type bubble for the literal one is <code>ΩL</code>. This means that it is a literal. The literal is also used as the variable name.</p><pre><code class="language-julia hljs">infer_types!(oscillator)
+to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="203pt" height="394pt"
+ viewBox="0.00 0.00 202.58 393.85" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 389.85)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-389.85 198.58,-389.85 198.58,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="50" cy="-196.03" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="50" y="-192.33" font-family="Times,serif" font-size="14.00">X:Ω₀</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="31" cy="-123.82" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="31" y="-120.12" font-family="Times,serif" font-size="14.00">V:Ω₀</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge6" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M47.36,-185.27C44.15,-173.43 38.72,-153.35 35,-139.6"/>
+<polygon fill="black" stroke="black" points="36.61,-138.87 33.62,-134.5 33.24,-139.78 36.61,-138.87"/>
+<text text-anchor="middle" x="49" y="-156.23" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+</g>
+<!-- n10 -->
+<g id="node10" class="node">
+<title>n10</title>
+<polygon fill="none" stroke="black" points="120,-131.32 74,-131.32 74,-116.32 120,-116.32 120,-131.32"/>
+<text text-anchor="middle" x="97" y="-120.12" font-family="Times,serif" font-size="14.00">Ω₀×Ω₀</text>
+</g>
+<!-- n1&%2345;&gt;n10 -->
+<g id="edge12" class="edge">
+<title>n1&%2345;&gt;n10</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M56.34,-185.56C64.98,-172.65 80.44,-149.56 89.6,-135.87"/>
+<polygon fill="black" stroke="black" points="91.12,-136.74 92.45,-131.62 88.22,-134.8 91.12,-136.74"/>
+<text text-anchor="middle" x="85.5" y="-156.23" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="79" cy="-51.61" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="79" y="-47.91" font-family="Times,serif" font-size="14.00">V̇:Ω₀</text>
+</g>
+<!-- n2&%2345;&gt;n5 -->
+<g id="edge7" class="edge">
+<title>n2&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M37.28,-113.64C45.49,-101.62 59.98,-80.43 69.53,-66.45"/>
+<polygon fill="black" stroke="black" points="71.19,-67.13 72.57,-62.01 68.3,-65.15 71.19,-67.13"/>
+<text text-anchor="middle" x="66" y="-84.01" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+</g>
+<!-- n2&%2345;&gt;n8 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&gt;n8</title>
+<path fill="none" stroke="black" d="M31.82,-113.01C33.8,-89.22 38.84,-28.91 40.48,-9.28"/>
+<polygon fill="black" stroke="black" points="42.23,-9.29 40.9,-4.16 38.74,-9 42.23,-9.29"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="97" cy="-334.25" rx="25" ry="10.71"/>
+<text text-anchor="middle" x="97" y="-330.55" font-family="Times,serif" font-size="14.00">k:ΩC</text>
+</g>
+<!-- n9 -->
+<g id="node9" class="node">
+<title>n9</title>
+<polygon fill="none" stroke="black" points="166.5,-272.64 111.5,-272.64 111.5,-257.64 166.5,-257.64 166.5,-272.64"/>
+<text text-anchor="middle" x="139" y="-261.44" font-family="Times,serif" font-size="14.00">ΩL×ΩC</text>
+</g>
+<!-- n3&%2345;&gt;n9 -->
+<g id="edge9" class="edge">
+<title>n3&%2345;&gt;n9</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M102.84,-323.92C110.47,-311.73 123.81,-290.41 131.98,-277.35"/>
+<polygon fill="black" stroke="black" points="133.57,-278.12 134.74,-272.95 130.6,-276.26 133.57,-278.12"/>
+<text text-anchor="middle" x="130.5" y="-294.44" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="139" cy="-196.03" rx="49.49" ry="10.71"/>
+<text text-anchor="middle" x="139" y="-192.33" font-family="Times,serif" font-size="14.00">mult_1:Ω₀</text>
+</g>
+<!-- n4&%2345;&gt;n10 -->
+<g id="edge11" class="edge">
+<title>n4&%2345;&gt;n10</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M133.16,-185.27C125.45,-172.38 111.91,-149.74 103.76,-136.13"/>
+<polygon fill="black" stroke="black" points="105.1,-134.94 101.03,-131.55 102.09,-136.74 105.1,-134.94"/>
+<text text-anchor="middle" x="129.5" y="-156.23" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n5&%2345;&gt;n8 -->
+<g id="edge5" class="edge">
+<title>n5&%2345;&gt;n8</title>
+<path fill="none" stroke="black" d="M71.67,-41.43C63.82,-31.59 51.63,-16.32 45.24,-8.31"/>
+<polygon fill="black" stroke="black" points="46.35,-6.9 41.87,-4.08 43.62,-9.08 46.35,-6.9"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="167" cy="-334.25" rx="27.65" ry="10.71"/>
+<text text-anchor="middle" x="167" y="-330.55" font-family="Times,serif" font-size="14.00">&%2345;1:ΩL</text>
+</g>
+<!-- n6&%2345;&gt;n9 -->
+<g id="edge8" class="edge">
+<title>n6&%2345;&gt;n9</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M162.99,-323.63C157.92,-311.47 149.19,-290.57 143.78,-277.59"/>
+<polygon fill="black" stroke="black" points="145.36,-276.83 141.82,-272.89 142.13,-278.18 145.36,-276.83"/>
+<text text-anchor="middle" x="162.5" y="-294.44" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+</g>
+<!-- n7&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n7&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M44.04,-381.67C44.46,-368.71 48.19,-253.21 49.52,-211.76"/>
+<polygon fill="black" stroke="black" points="51.28,-211.69 49.69,-206.64 47.78,-211.58 51.28,-211.69"/>
+</g>
+<!-- n7&%2345;&gt;n2 -->
+<g id="edge3" class="edge">
+<title>n7&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M41.88,-381.88C33.09,-377.68 0,-360.23 0,-335.25 0,-335.25 0,-335.25 0,-195.03 0,-173.96 11.83,-152.13 20.87,-138.52"/>
+<polygon fill="black" stroke="black" points="22.43,-139.35 23.81,-134.23 19.54,-137.37 22.43,-139.35"/>
+</g>
+<!-- n7&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n7&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M45.31,-381.68C50.45,-377.06 69.64,-359.82 83.13,-347.71"/>
+<polygon fill="black" stroke="black" points="84.56,-348.77 87.11,-344.13 82.22,-346.17 84.56,-348.77"/>
+</g>
+<!-- n9&%2345;&gt;n4 -->
+<g id="edge10" class="edge">
+<title>n9&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M139,-257.46C139,-246.92 139,-226.19 139,-211.97"/>
+<polygon fill="black" stroke="black" points="140.75,-211.69 139,-206.69 137.25,-211.69 140.75,-211.69"/>
+<text text-anchor="middle" x="142.5" y="-228.44" font-family="Times,serif" font-size="14.00">*</text>
+</g>
+<!-- n10&%2345;&gt;n5 -->
+<g id="edge13" class="edge">
+<title>n10&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M95.27,-116.09C92.42,-104.96 86.66,-82.47 82.81,-67.47"/>
+<polygon fill="black" stroke="black" points="84.43,-66.73 81.49,-62.32 81.04,-67.6 84.43,-66.73"/>
+<text text-anchor="middle" x="93.5" y="-84.01" font-family="Times,serif" font-size="14.00">*</text>
+</g>
+</g>
+</svg>
+'/><p>We can allow the material properties to vary over time by changing <code>Constant</code> to <code>Parameter</code>. This is how we tell the simulator that it needs to call <code>k(t)</code> at each time step to get the updated value for <code>k</code> or if it can just reuse that constant <code>k</code> from the initial time step.</p><pre><code class="language-julia hljs">oscillator = @decapode begin
+  X::Form0
+  V::Form0
+
+  k::Parameter
+
+  ∂ₜ(X) == V
+  ∂ₜ(V) == -1*k*(X)
+end</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:6, TVar:2, Op1:2, Op2:2, Σ:0, Summand:0, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">X</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">V</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Parameter</td>
+      <td style = "text-align: right;">k</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">mult_1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">V̇</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">-1</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<pre><code class="language-julia hljs">infer_types!(oscillator)
+to_graphviz(oscillator)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="202pt" height="394pt"
+ viewBox="0.00 0.00 201.58 393.85" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 389.85)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-389.85 197.58,-389.85 197.58,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="50" cy="-196.03" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="50" y="-192.33" font-family="Times,serif" font-size="14.00">X:Ω₀</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="31" cy="-123.82" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="31" y="-120.12" font-family="Times,serif" font-size="14.00">V:Ω₀</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge6" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M47.36,-185.27C44.15,-173.43 38.72,-153.35 35,-139.6"/>
+<polygon fill="black" stroke="black" points="36.61,-138.87 33.62,-134.5 33.24,-139.78 36.61,-138.87"/>
+<text text-anchor="middle" x="49" y="-156.23" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+</g>
+<!-- n10 -->
+<g id="node10" class="node">
+<title>n10</title>
+<polygon fill="none" stroke="black" points="120,-131.32 74,-131.32 74,-116.32 120,-116.32 120,-131.32"/>
+<text text-anchor="middle" x="97" y="-120.12" font-family="Times,serif" font-size="14.00">Ω₀×Ω₀</text>
+</g>
+<!-- n1&%2345;&gt;n10 -->
+<g id="edge12" class="edge">
+<title>n1&%2345;&gt;n10</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M56.34,-185.56C64.98,-172.65 80.44,-149.56 89.6,-135.87"/>
+<polygon fill="black" stroke="black" points="91.12,-136.74 92.45,-131.62 88.22,-134.8 91.12,-136.74"/>
+<text text-anchor="middle" x="85.5" y="-156.23" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="79" cy="-51.61" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="79" y="-47.91" font-family="Times,serif" font-size="14.00">V̇:Ω₀</text>
+</g>
+<!-- n2&%2345;&gt;n5 -->
+<g id="edge7" class="edge">
+<title>n2&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M37.28,-113.64C45.49,-101.62 59.98,-80.43 69.53,-66.45"/>
+<polygon fill="black" stroke="black" points="71.19,-67.13 72.57,-62.01 68.3,-65.15 71.19,-67.13"/>
+<text text-anchor="middle" x="66" y="-84.01" font-family="Times,serif" font-size="14.00">∂ₜ</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+</g>
+<!-- n2&%2345;&gt;n8 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&gt;n8</title>
+<path fill="none" stroke="black" d="M31.82,-113.01C33.8,-89.22 38.84,-28.91 40.48,-9.28"/>
+<polygon fill="black" stroke="black" points="42.23,-9.29 40.9,-4.16 38.74,-9 42.23,-9.29"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="96" cy="-334.25" rx="24.08" ry="10.71"/>
+<text text-anchor="middle" x="96" y="-330.55" font-family="Times,serif" font-size="14.00">k:ΩP</text>
+</g>
+<!-- n9 -->
+<g id="node9" class="node">
+<title>n9</title>
+<polygon fill="none" stroke="black" points="166,-272.64 112,-272.64 112,-257.64 166,-257.64 166,-272.64"/>
+<text text-anchor="middle" x="139" y="-261.44" font-family="Times,serif" font-size="14.00">ΩL×ΩP</text>
+</g>
+<!-- n3&%2345;&gt;n9 -->
+<g id="edge9" class="edge">
+<title>n3&%2345;&gt;n9</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M101.98,-323.92C109.79,-311.73 123.45,-290.41 131.81,-277.35"/>
+<polygon fill="black" stroke="black" points="133.41,-278.11 134.64,-272.95 130.46,-276.22 133.41,-278.11"/>
+<text text-anchor="middle" x="130.5" y="-294.44" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="139" cy="-196.03" rx="49.49" ry="10.71"/>
+<text text-anchor="middle" x="139" y="-192.33" font-family="Times,serif" font-size="14.00">mult_1:Ω₀</text>
+</g>
+<!-- n4&%2345;&gt;n10 -->
+<g id="edge11" class="edge">
+<title>n4&%2345;&gt;n10</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M133.16,-185.27C125.45,-172.38 111.91,-149.74 103.76,-136.13"/>
+<polygon fill="black" stroke="black" points="105.1,-134.94 101.03,-131.55 102.09,-136.74 105.1,-134.94"/>
+<text text-anchor="middle" x="129.5" y="-156.23" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n5&%2345;&gt;n8 -->
+<g id="edge5" class="edge">
+<title>n5&%2345;&gt;n8</title>
+<path fill="none" stroke="black" d="M71.67,-41.43C63.82,-31.59 51.63,-16.32 45.24,-8.31"/>
+<polygon fill="black" stroke="black" points="46.35,-6.9 41.87,-4.08 43.62,-9.08 46.35,-6.9"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="166" cy="-334.25" rx="27.65" ry="10.71"/>
+<text text-anchor="middle" x="166" y="-330.55" font-family="Times,serif" font-size="14.00">&%2345;1:ΩL</text>
+</g>
+<!-- n6&%2345;&gt;n9 -->
+<g id="edge8" class="edge">
+<title>n6&%2345;&gt;n9</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M162.13,-323.63C157.24,-311.47 148.83,-290.57 143.61,-277.59"/>
+<polygon fill="black" stroke="black" points="145.2,-276.87 141.71,-272.89 141.96,-278.18 145.2,-276.87"/>
+<text text-anchor="middle" x="162.5" y="-294.44" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+</g>
+<!-- n7&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n7&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M44.04,-381.67C44.46,-368.71 48.19,-253.21 49.52,-211.76"/>
+<polygon fill="black" stroke="black" points="51.28,-211.69 49.69,-206.64 47.78,-211.58 51.28,-211.69"/>
+</g>
+<!-- n7&%2345;&gt;n2 -->
+<g id="edge3" class="edge">
+<title>n7&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M41.88,-381.88C33.09,-377.68 0,-360.23 0,-335.25 0,-335.25 0,-335.25 0,-195.03 0,-173.96 11.83,-152.13 20.87,-138.52"/>
+<polygon fill="black" stroke="black" points="22.43,-139.35 23.81,-134.23 19.54,-137.37 22.43,-139.35"/>
+</g>
+<!-- n7&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n7&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M45.29,-381.68C50.33,-377.06 69.15,-359.82 82.39,-347.71"/>
+<polygon fill="black" stroke="black" points="83.79,-348.8 86.3,-344.13 81.43,-346.22 83.79,-348.8"/>
+</g>
+<!-- n9&%2345;&gt;n4 -->
+<g id="edge10" class="edge">
+<title>n9&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M139,-257.46C139,-246.92 139,-226.19 139,-211.97"/>
+<polygon fill="black" stroke="black" points="140.75,-211.69 139,-206.69 137.25,-211.69 140.75,-211.69"/>
+<text text-anchor="middle" x="142.5" y="-228.44" font-family="Times,serif" font-size="14.00">*</text>
+</g>
+<!-- n10&%2345;&gt;n5 -->
+<g id="edge13" class="edge">
+<title>n10&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M95.27,-116.09C92.42,-104.96 86.66,-82.47 82.81,-67.47"/>
+<polygon fill="black" stroke="black" points="84.43,-66.73 81.49,-62.32 81.04,-67.6 84.43,-66.73"/>
+<text text-anchor="middle" x="93.5" y="-84.01" font-family="Times,serif" font-size="14.00">*</text>
+</g>
+</g>
+</svg>
+'/><p>Often you will have a linear material where you are scaling by a constant, and a nonlinear version of that material where that scaling is replaced by a generic nonlinear function. This is why we allow Decapodes to represent both of these types of equations.</p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 1 second.
+[ Info: This page was last built at 2024-06-06T20:50:55.571.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../overview/overview/">« Overview</a><a class="docs-footer-nextpage" href="../../navier_stokes/ns/">Vortices »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Thursday 6 June 2024 20:54">Thursday 6 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
