@@ -11,7 +11,7 @@ Decapodes.jl is the synthesis of Applied Category Theory (ACT) techniques for fo
 
 By combining the power of ACT and the DEC, we seek to improve the scientific computing workflow. Decapodes simulations are [hierarchically composable](https://algebraicjulia.github.io/Decapodes.jl/dev/budyko_sellers_halfar/), generalize over [any type of manifold](https://algebraicjulia.github.io/Decapodes.jl/dev/ice_dynamics/), and are [performant and accurate](https://www.cise.ufl.edu/~luke.morris/cism.html) with a declarative domain specific language (DSL) that is [human-readable](https://algebraicjulia.github.io/Decapodes.jl/dev/klausmeier/#Model-Representation).
 
-<img src='https://algebraicjulia.github.io/Decapodes.jl/dev/ice_dynamics_cism.gif' width='512' alt='Community Ice Sheet Halfar Dome'>
+<img src='https://algebraicjulia.github.io/Decapodes.jl/dev/navier_stokes/vort.gif' width='512' alt='Solution of the Vorticity-Formulation of the Incompressible Navier-Stokes Equations'>
 
 # NOTE
 
