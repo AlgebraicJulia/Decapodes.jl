@@ -1,10 +1,11 @@
-using CombinatorialSpaces
-using LinearAlgebra
 using Base.Iterators
-using Catlab
+using CombinatorialSpaces
+using Krylov
+using LinearAlgebra
+using SparseArrays
 
 function default_dec_cu_matrix_generate() end;
-  
+
 function default_dec_matrix_generate(sd, my_symbol, hodge)
   op = @match my_symbol begin
 
@@ -115,6 +116,10 @@ function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
   val_pack = dec_p_wedge_product(Tuple{1,1}, sd)
   ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack),
     (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack))
+end
+
+function dec_pair_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
+  error("Replace me in compiled code with element-wise multiplication (.*)")
 end
 
 function dec_♯_p(sd::HasDeltaSet2D)

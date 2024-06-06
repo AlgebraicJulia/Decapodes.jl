@@ -62,7 +62,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return (args...) ->  op(args...)
 end
 
-#include("coordinates.jl")
+include("coordinates.jl")
 
 radius = 6371+90
 

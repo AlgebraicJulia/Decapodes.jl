@@ -42,7 +42,8 @@ makedocs(
   checkdocs = :none,
   pagesonly = true,
   linkcheck = true,
-  linkcheck_ignore = [r"agupubs.onlinelibrary.wiley.com"], # This gives a 403 Forbidden
+  linkcheck_ignore = [r"agupubs\.onlinelibrary\.wiley\.com", # This gives a 403 Forbidden
+                      r"Decapodes\.jl/dev"], # 404, probably due to bad self-rerference
   pages     = Any[
     "Decapodes.jl" => "index.md",
     "Overview" => "overview/overview.md",

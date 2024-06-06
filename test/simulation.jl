@@ -1,21 +1,14 @@
-using Decapodes
-import Decapodes: compile, gensim
-
-using Catlab
-using Catlab.CategoricalAlgebra
-
-using Test
-
-using MLStyle
+using ACSets
 using CombinatorialSpaces
-using GeometryBasics: Point3
-using LinearAlgebra
-using Distributions
 using ComponentArrays
-using OrdinaryDiffEq
+using Decapodes
 using DiagrammaticEquations
-using DiagrammaticEquations.Deca
-using GeometryBasics
+using Distributions
+using GeometryBasics: Point2, Point3
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using Test
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
   hodge = ⋆(k,sd,hodge=hodge)
@@ -187,7 +180,7 @@ f = eval(gensim(expand_operators(ddp)))
 fₘₚ = f(torus, generate)
 
 @test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
- 
+
 # to solve the ODE over a duration, use the ODEProblem from OrdinaryDiffEq
 # tₑ = 10
 # using OrdinaryDiffEq
@@ -221,7 +214,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
   end
 
   Brusselator = SummationDecapode(parse_decapode(quote
-      (U, V)::Form0{X} 
+      (U, V)::Form0{X}
       (U2V, aTU)::Form0{X}
       (U̇, V̇)::Form0{X}
 
@@ -230,7 +223,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
 
       U2V == (U .* U) .* V
       aTU == α * Δ(U)
-      
+
       U̇ == One + U2V - (4.4 * U) + aTU + F
       V̇ == (3.4 * U) - U2V + aTU
 
@@ -283,13 +276,13 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
     U = map(earth[:point]) do (_,y,_)
       abs(y)
     end
-    
+
     V = map(earth[:point]) do (x,_,_)
       abs(x)
     end
 
     One = ones(nv(earth))
-        
+
     F₁ = map(earth[:point]) do (_,_,z)
       z ≥ 0.8 ? 5.0 : 0.0
     end
@@ -311,13 +304,13 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
       U = map(earth[:point]) do (_,y,_)
         abs(y)
       end
-      
+
       V = map(earth[:point]) do (x,_,_)
         abs(x)
       end
 
       One = ones(nv(earth))
-          
+
       F₁ = map(earth[:point]) do (_,_,z)
         z ≥ 0.8 ? 5.0 : 0.0
       end
@@ -445,7 +438,7 @@ end
     D == d(d(C))
   end
   @test 4 == length(checkForContractionInGensim(single_contract))
-  
+
   sim = eval(gensim(contract_with_summation))
   f = sim(earth, default_dec_generate)
   A = 2 * ones(nv(earth))
@@ -472,7 +465,7 @@ end
     D == d(d(C))
   end
   @test 4 == length(checkForContractionInGensim(single_contract))
-  
+
   sim = eval(gensim(contract_with_op2))
   f = sim(earth, default_dec_generate)
   A = 3 * ones(nv(earth))
@@ -495,7 +488,7 @@ end
     D == ⋆(⋆(B))
   end
   @test 4 == length(checkForContractionInGensim(single_contract))
-  
+
   sim = eval(gensim(later_contraction))
   f = sim(earth, default_dec_generate)
   A = 4 * ones(nv(earth))
@@ -515,7 +508,7 @@ end
     D == d(A)
   end
   @test 0 == length(checkForContractionInGensim(no_contraction))
-  
+
   sim = eval(gensim(no_contraction))
   f = sim(earth, default_dec_generate)
   A = [i for i in 1:nv(earth)]
@@ -535,7 +528,7 @@ end
     D == d(k(A))
   end
   @test 0 == length(checkForContractionInGensim(no_unallowed))
-  
+
   sim = eval(gensim(no_unallowed))
 
   function generate_no_unallowed(sd, my_symbol; hodge=GeometricHodge())
@@ -569,7 +562,7 @@ end
 
     F == A ∧ (C ∧ B)
   end
-  
+
   sim = eval(gensim(wedges01))
 
   f = sim(earth, default_dec_generate)
@@ -583,19 +576,19 @@ end
   f(du, u, constants_and_parameters, 0)
 
   @test du.A == du.B == du.C
-  
+
   # Testing wedge 11 operators function
   wedges11 = @decapode begin
     (A, B)::Form1
     (D, E)::Form2
 
     D == ∂ₜ(A)
-    E == ∂ₜ(B)  
+    E == ∂ₜ(B)
 
     D == A ∧ B
     E == B ∧ A
   end
-  
+
   sim = eval(gensim(wedges11))
 
   f = sim(earth, default_dec_generate)
@@ -618,12 +611,12 @@ end
     (D, E)::Form2
 
     D == ∂ₜ(A)
-    E == ∂ₜ(B)  
+    E == ∂ₜ(B)
 
     D == A ∧ B
     E == B ∧ A
   end
-  
+
   sim = eval(gensim(wedges02))
 
   f = sim(earth, default_dec_generate)
@@ -646,7 +639,7 @@ end
     B == ∂ₜ(A)
     B == ⋆(⋆(A))
   end
-  
+
   sim = eval(gensim(GeoInvHodge1))
 
   f = sim(earth, default_dec_generate)
@@ -657,7 +650,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test all(isapprox.(du.A, -1 * ones(ne(earth))))  
+  @test all(isapprox.(du.A, -1 * ones(ne(earth))))
 
   # Testing Diagonal inverse hodge 1
   DiagonalInvHodge1 = @decapode begin
@@ -666,7 +659,7 @@ end
     B == ∂ₜ(A)
     B == ⋆(⋆(A))
   end
-  
+
   sim = eval(gensim(DiagonalInvHodge1))
 
   f = sim(earth, default_dec_generate, DiagonalHodge())
@@ -677,7 +670,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test all(isapprox.(du.A, -1 * ones(ne(earth))))  
+  @test all(isapprox.(du.A, -1 * ones(ne(earth))))
 
 end
 
@@ -698,16 +691,16 @@ end
     # Testing Diagonal inverse hodge 1
     DiagonalInvHodge1 = @decapode begin
       A::DualForm1
-  
+
       B == ∂ₜ(A)
       B == ⋆(A)
     end
     g = gensim(DiagonalInvHodge1)
     @test gensim(DiagonalInvHodge1).args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
     sim = eval(g)
-  
+
     # Test that no error is thrown here
-    f = sim(line, default_dec_generate, DiagonalHodge())  
+    f = sim(line, default_dec_generate, DiagonalHodge())
 end
 
 @testset "GenSim Compilation" begin
@@ -721,19 +714,19 @@ end
       end
     return op
   end
-  
+
   HeatTransfer = @decapode begin
-    (HT, Tₛ)::Form0      
-    (D, cosϕᵖ, cosϕᵈ)::Constant      
+    (HT, Tₛ)::Form0
+    (D, cosϕᵖ, cosϕᵈ)::Constant
     HT == (D ./ cosϕᵖ) .* (⋆)(d(cosϕᵈ .* (⋆)(d(Tₛ))))
   end
 
   sim_HT = evalsim(HeatTransfer)
   @test sim_HT(d_rect, generate, DiagonalHodge()) isa Any
 
-  Jordan_Kinderlehrer_Otto = @decapode begin 
-    (ρ, Ψ)::Form0       
-    β⁻¹::Constant          
+  Jordan_Kinderlehrer_Otto = @decapode begin
+    (ρ, Ψ)::Form0
+    β⁻¹::Constant
     ∂ₜ(ρ) == (∘(⋆, d, ⋆))(d(Ψ) ∧ ρ) + β⁻¹ * Δ(ρ)
   end
 
@@ -774,7 +767,7 @@ end
   @test sim_LJ(d_rect, generate, DiagonalHodge()) isa Any
 
   Tracer = @decapode begin
-    (c, C, F, c_up)::Form0   
+    (c, C, F, c_up)::Form0
     (v, V, q)::Form1
     c_up == (((-1 * (⋆)(L(v, (⋆)(c))) - (⋆)(L(V, (⋆)(c)))) - (⋆)(L(v, (⋆)(C)))) - (∘(⋆, d, ⋆))(q)) + F
   end
@@ -812,4 +805,3 @@ nallocs = @allocations f(du, u₀, p, (0,1.0))
   sizeof(p.D) +
   sizeof(Decapodes.FixedSizeDiffCache(Vector{Float64}(undef , nparts(sd, :V))))
 end
-

@@ -2,7 +2,6 @@ module DecapodesCUDAExt
 using CombinatorialSpaces
 using LinearAlgebra
 using Base.Iterators
-using Catlab
 using Krylov
 using CUDA
 using CUDA.CUSPARSE
@@ -107,6 +106,10 @@ function dec_cu_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
   val_pack = dec_p_wedge_product(Tuple{1,1}, sd, Val{:CUDA})
   ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack, Val{:CUDA}),
     (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack, Val{:CUDA}))
+end
+
+function dec_pair_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
+  error("Replace me in compiled code with element-wise multiplication (.*)")
 end
 
 # TODO: These need to be converted into CuArrays/kernels

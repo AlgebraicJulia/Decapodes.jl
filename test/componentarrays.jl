@@ -1,19 +1,14 @@
-using ComponentArrays
-using OrdinaryDiffEq
-using GeometryBasics
-using JSON
-using Distributions
-
-using Catlab
-using Catlab.CategoricalAlgebra
+using ACSets
 using CombinatorialSpaces
-
-using DiagrammaticEquations
-using DiagrammaticEquations.Deca
+using ComponentArrays
 using Decapodes
-using Test
-using MLStyle
+using DiagrammaticEquations
+using Distributions
+using GeometryBasics: Point3
 using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using Test
 
 C = ones(Float64, 10)
 V = ones(Float64, 100)
@@ -173,4 +168,3 @@ soln = solve(prob, Tsit5())
 # record(fig, "diff_adv.gif", range(0.0, tₑ; length=150); framerate = 30) do t
 #     ob.color = findnode(soln(t), :C)[point_map]
 # end
-

@@ -1,13 +1,9 @@
-using Catlab
+using Base.Iterators
 using CombinatorialSpaces
 using ComponentArrays
-using OrdinaryDiffEq
-using GeometryBasics
 using LinearAlgebra
-using Base.Iterators
-using Catlab
 using MLStyle
-import Catlab.Programs.GenerateJuliaPrograms: compile
+using PreallocationTools
 
 const gensim_in_place_stub = Symbol("GenSim-M")
 
@@ -18,7 +14,7 @@ struct CUDATarget <: GenerationTarget end
 
 abstract type AbstractCall end
 
-struct UnaryCall <: AbstractCall 
+struct UnaryCall <: AbstractCall
   operator
   equality
   input
@@ -44,7 +40,7 @@ Base.Expr(c::UnaryCall) = begin
   end
 end
 
-struct BinaryCall <: AbstractCall 
+struct BinaryCall <: AbstractCall
   operator
   equality
   input1
@@ -65,7 +61,7 @@ Base.Expr(c::BinaryCall) = begin
   return Expr(c.equality, c.output, Expr(:call, c.operator, c.input1, c.input2))
 end
 
-struct VarargsCall <: AbstractCall 
+struct VarargsCall <: AbstractCall
   operator
   equality
   inputs
@@ -79,7 +75,7 @@ Base.Expr(c::VarargsCall) = begin
   return Expr(c.equality, c.output, Expr(:call, c.operator, c.inputs...))
 end
 
-struct AllocVecCall <: AbstractCall 
+struct AllocVecCall <: AbstractCall
   name
   form
   dimension
@@ -141,7 +137,7 @@ end =#
 
 function is_form(d::SummationDecapode, var_id::Int)
   type = d[var_id, :type]
-  return (type == :Form0 || type == :Form1 || type == :Form2 || 
+  return (type == :Form0 || type == :Form1 || type == :Form2 ||
     type == :DualForm0 || type == :DualForm1 || type == :DualForm2)
 end
 
@@ -345,10 +341,10 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
             operator = promote_arithmetic_map[operator]
             equality = promote_arithmetic_map[equality]
             push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
-          
+
           # TODO: Do we want to support the ability of a user to use the backslash operator?
           elseif(operator == :(*) || operator == :(/) || operator == :.* || operator == :./)
-            # WARNING: This part may break if we add more compiler types that have different 
+            # WARNING: This part may break if we add more compiler types that have different
             # operations for basic and broadcast modes, e.g. matrix multiplication vs broadcast
             if(!is_infer(d, arg1) && !is_infer(d, arg2))
               operator = promote_arithmetic_map[operator]
@@ -547,7 +543,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, sta
   infer_overload_compiler!(d′, dimension)
 
   # This will generate all of the fundemental DEC operators present
-  optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹, 
+  optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
                                   :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁])
   extra_dec_operators = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
@@ -580,19 +576,19 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, sta
   end
 end
 
-gensim(c::Collage; dimension::Int=2) = 
+gensim(c::Collage; dimension::Int=2) =
 gensim(collate(c); dimension=dimension)
 
 """    function gensim(d::AbstractNamedDecapode; dimension::Int=2)
 
 Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
 """
-gensim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) = 
+gensim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) =
   gensim(d, vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype, code_target=code_target)
 
-evalsim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) = 
+evalsim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) =
   eval(gensim(d, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
-evalsim(d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) = 
+evalsim(d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) =
   eval(gensim(d, input_vars, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
 
 """
