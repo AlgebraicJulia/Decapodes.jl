@@ -85,7 +85,7 @@ constants_and_parameters = (
 
 # Generate the simulation.
 sim = evalsim(Brusselator)
-fₘ = sim(sd, nothing)
+fₘ = sim(sd, nothing, DiagonalHodge())
 
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
@@ -157,7 +157,7 @@ constants_and_parameters = (
   F = t -> t ≥ 1.1 ? F₁ : F₂)
 
 # Generate the simulation.
-fₘ = sim(sd, generate)
+fₘ = sim(sd, nothing, DiagonalHodge())
 
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
