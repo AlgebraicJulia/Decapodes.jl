@@ -238,7 +238,7 @@ soln = solve(prob, Tsit5())
 @info("Done")
 ```
 
-We can save our solution file in case we want to examine its contents when this Julia session ends.
+We can save our [solution file](ice_dynamics1D.jld2) in case we want to examine its contents when this Julia session ends.
 
 ``` @example DEC
 @save "ice_dynamics1D.jld2" soln
@@ -293,6 +293,8 @@ We quickly demonstrate how to serialize a Decapode to JSON and read it back in:
 ``` @example DEC
 write_json_acset(ice_dynamics2D, "ice_dynamics2D.json")
 ```
+
+You can view the JSON file [here](ice_dynamics2D.json).
 
 ``` @example DEC
 # When reading back in, we specify that all attributes are "Symbol"s.

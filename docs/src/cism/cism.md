@@ -133,6 +133,7 @@ fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
 wf = wireframe!(ax, s; linewidth=0.5)
 save("ice_mesh.png", fig)
+nothing # hide
 ```
 
 !["Wireframe of the Domain"](ice_mesh.png)
@@ -176,6 +177,7 @@ fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
 msh = mesh!(ax, s′, color=h₀, colormap=:jet)
 save("ice_initial_conditions.png", fig)
+nothing # hide
 ```
 
 !["Initial Conditions"](ice_initial_conditions.png)
@@ -256,8 +258,9 @@ b = @benchmarkable solve(prob, Tsit5(), saveat=0.1)
 c = run(b)
 ```
 
+Here we save the solution information to a [file](ice_dynamics2D.jld2).
+
 ```@example DEC
-# Save the solution information to a file.
 @save "ice_dynamics2D.jld2" soln
 ```
 
@@ -278,6 +281,7 @@ function plot_final_conditions()
 end
 fig = plot_final_conditions()
 save("ice_numeric_solution.png", fig)
+nothing # hide
 ```
 
 !["Numerical Solution"](ice_numeric_solution.png)
@@ -296,6 +300,7 @@ function plot_analytic()
 end
 fig = plot_analytic()
 save("ice_analytic_solution.png", fig)
+nothing # hide
 ```
 
 !["Analytic Solution](ice_analytic_solution.png)
@@ -316,6 +321,7 @@ function plot_error()
 end
 fig = plot_error()
 save("ice_error.png", fig)
+nothing # hide
 ```
 
 !["Numeric Solution - Analytic Solution"](ice_error.png)
@@ -329,10 +335,10 @@ h_diff = soln(tₑ).dynamics_h - hₐ
 maximum(abs.(h_diff))
 ```
 
-We compute root-mean-square error (RMSE) as well, both over the entire domain, and *excluding where the ice distribution is 0 in the analytic solution.* This is done since considering the entire domain decreases the RMSE while not telling you much about the area of interest. Note that the official CISM benchmark reports `6.43` and `9.06` RMSE for their two solver implementations.
+We compute root-mean-square (RMS) error as well, both over the entire domain, and *excluding where the ice distribution is 0 in the analytic solution.* This is done since considering the entire domain decreases the RMS while not telling you much about the area of interest. Note that the official CISM benchmark reports `6.43` and `9.06` RMS for their two solver implementations.
 
 ```@example DEC
-# Compute RMSE not considering the "outside".
+# Compute RMS not considering the "outside".
 hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s′))
 nonzeros = findall(!=(0), hₐ)
 h_diff = soln(tₑ).dynamics_h - hₐ
@@ -340,7 +346,7 @@ rmse = sqrt(sum(map(x -> x*x, h_diff[nonzeros])) / length(nonzeros))
 ```
 
 ```@example DEC
-# Compute RMSE of the entire domain.
+# Compute RMS of the entire domain.
 hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s′))
 h_diff = soln(tₑ).dynamics_h - hₐ
 rmse = sqrt(sum(map(x -> x*x, h_diff)) / length(h_diff))

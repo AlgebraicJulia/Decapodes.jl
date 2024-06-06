@@ -337,7 +337,7 @@ soln = solve(prob, Tsit5())
 @info("Done")
 ```
 
-We can save the solution file to examine later.
+We can save the [solution file](budyko_sellers_halfar.jld2) to examine later.
 
 ``` @example DEC
 @save "budyko_sellers_halfar.jld2" soln
