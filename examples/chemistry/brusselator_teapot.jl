@@ -26,7 +26,7 @@ Brusselator = @decapode begin
 
   U2V == (U*U) * V
   ∂ₜ(U)== 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
-  ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(U))
+  ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
 end
 infer_types!(Brusselator)
 resolve_overloads!(Brusselator)
