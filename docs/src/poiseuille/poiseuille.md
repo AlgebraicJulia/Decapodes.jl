@@ -126,7 +126,7 @@ nothing # hide
 
 Then we solve the equation. Notice that the equilibrium flow is constant down the length of the pipe. This must be true because of conservation of mass. The segments are all the same length and the total flow in must equal the total flow out of each segment.
 
-Note that we do not generate new simulation code for Poiseuille flow with `gensim` again. We somply need to provide our new mesh so that our discrete differential operators can be re-instantiated.
+Note that we do not generate new simulation code for Poiseuille flow with `gensim` again. We simply need to provide our new mesh so that our discrete differential operators can be re-instantiated.
 
 ```@example Poiseuille
 fₘ = sim(sd, generate)
@@ -184,7 +184,7 @@ Decapodes really shines when you want to extend or refine your physics. We will 
 
 Because the pressure is no longer being supplied as a parameter of the system controlled by the operators, we need to introduce a density term and a boundary condition for that density. In this system you can think of forcing a prescribed amount of material per unit time through the openings of the pipe and allowing the flow `q` and the pressure `P` to fluctuate. Before we were enforcing a fixed pressure gradient and and letting the flow fluctuate to achieve equilibrium. In the prior model, we were not accounting for the amount of material that had to flow in order to achieve that (flow, pressure) combination.
 
-The Decapode can be visualized with [Graphviz](https://graphviz.org/), note that the boundary conditions are explicitly represented in the Decapode as operators that implement a masking operation. This is not consistent with the Diagrammatic Equations in Physics paper [PBHF22]. This approach is more directly tied to the computational method and will eventually be replaced with one based on morphisms of diagrams.
+The Decapode can be visualized with [Graphviz](https://graphviz.org/), note that the boundary conditions are explicitly represented in the Decapode as operators that implement a masking operation. This is not consistent with the [Diagrammatic Equations in Physics](https://www.aimspress.com/article/id/62989382ba35de155149669f) paper. This approach is more directly tied to the computational method and will eventually be replaced with one based on morphisms of diagrams.
 
 ```@example Poiseuille
 # μ̃ = negative viscosity per unit area
