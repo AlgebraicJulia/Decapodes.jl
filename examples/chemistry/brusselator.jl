@@ -15,7 +15,6 @@ using CairoMakie
 import CairoMakie: wireframe, mesh, Figure, Axis
 using ComponentArrays
 
-
 using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
@@ -24,20 +23,21 @@ Point3D = Point3{Float64}
 # State variables.
 # Named intermediate variables.
 Brusselator = @decapode begin
-  (U, V)::Form0{X} 
-  (U2V, One)::Form0{X} 
-  (U̇, V̇)::Form0{X}
+  (U, V)::Form0 
+  U2V::Form0 
+  (U̇, V̇)::Form0
   
-  (α)::Constant{X}
-  F::Parameter{X}
+  (α)::Constant
+  F::Parameter
   
   U2V == (U .* U) .* V
   
   U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
-  V̇ == (3.4 * U) - U2V + (α * Δ(U))
+  V̇ == (3.4 * U) - U2V + (α * Δ(V))
   ∂ₜ(U) == U̇
   ∂ₜ(V) == V̇
 end
+
 # Visualize. You must have graphviz installed.
 to_graphviz(Brusselator)
 
@@ -52,31 +52,9 @@ resolve_overloads!(Brusselator)
 # Visualize. Note that functions are renamed.
 to_graphviz(Brusselator)
 
-# TODO: Create square domain of approximately 32x32 vertices.
-s = loadmesh(Rectangle_30x10())
-scaling_mat = Diagonal([1/maximum(x->x[1], s[:point]),
-                        1/maximum(x->x[2], s[:point]),
-                        1.0])
-s[:point] = map(x -> scaling_mat*x, s[:point])
-s[:edge_orientation] = false
-orient!(s)
-# Visualize the mesh.
-wireframe(s)
-sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
-subdivide_duals!(sd, Circumcenter())
-
-# Define how operations map to Julia functions.
-hodge = GeometricHodge()
-Δ₀ = δ(1, sd, hodge=hodge) * d(0, sd)
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    
-    :Δ₀ => x -> Δ₀ * x
-    :.* => (x,y) -> x .* y
-    x => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
+s = triangulated_grid(1,1,0.008,0.008,Point3D);
+sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s);
+subdivide_duals!(sd, Circumcenter());
 
 # Create initial data.
 @assert all(map(sd[:point]) do (x,y)
@@ -91,38 +69,23 @@ V = map(sd[:point]) do (x,_)
   27 * (x *(1-x))^(3/2)
 end
 
-# TODO: Try making this sparse.
 F₁ = map(sd[:point]) do (x,y)
  (x-0.3)^2 + (y-0.6)^2 ≤ (0.1)^2 ? 5.0 : 0.0
 end
-mesh(s, color=F₁, colormap=:jet)
 
-# TODO: Try making this sparse.
 F₂ = zeros(nv(sd))
 
-One = ones(nv(sd))
-
 constants_and_parameters = (
-  fourfour = 4.4,
-  threefour = 3.4,
   α = 0.001,
   F = t -> t ≥ 1.1 ? F₂ : F₁)
 
 # Generate the simulation.
-gensim(expand_operators(Brusselator))
-sim = eval(gensim(expand_operators(Brusselator)))
-fₘ = sim(sd, generate)
+sim = evalsim(Brusselator)
+fₘ = sim(sd, nothing, DiagonalHodge())
 
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
-u₀ = ComponentArray(U=U, V=V, One=One)
-
-# Visualize the initial conditions.
-# If GLMakie throws errors, then update your graphics drivers,
-# or use an alternative Makie backend like 
-fig_ic = Figure()
-p1 = mesh(fig_ic[1,2], s, color=u₀.U, colormap=:jet)
-p2 = mesh(fig_ic[1,3], s, color=u₀.V, colormap=:jet)
+u₀ = ComponentArray(U=U, V=V)
 
 tₑ = 11.5
 
@@ -138,57 +101,30 @@ soln = solve(prob, Tsit5())
 @save "brusselator.jld2" soln
 
 # Visualize the final conditions.
-mesh(s, color=soln(tₑ).U, colormap=:jet)
+fig = Figure()
+ax = Axis(fig[1,1])
+mesh!(ax, s, color=soln(tₑ).U, colormap=:jet)
 
-# BEGIN Gif creation
-begin 
-frames = 100
-fig = Figure(resolution = (1200, 800))
-p1 = mesh(fig[1,2], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
-p2 = mesh(fig[1,4], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
-ax1 = Axis(fig[1,2], width = 400, height = 400)
-ax2 = Axis(fig[1,4], width = 400, height = 400)
-hidedecorations!(ax1)
-hidedecorations!(ax2)
-hidespines!(ax1)
-hidespines!(ax2)
-Colorbar(fig[1,1])
-Colorbar(fig[1,5])
-Label(fig[1,2,Top()], "U")
-Label(fig[1,4,Top()], "V")
-lab1 = Label(fig[1,3], "")
-
-## Animation
-record(fig, "brusselator.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    p1.plot.color = soln(t).U
-    p2.plot.color = soln(t).V
-    lab1.text = @sprintf("%.2f",t)
+function save_dynamics(save_file_name)
+  time = Observable(0.0)
+  u = @lift(soln($time).U)
+  f = Figure()
+  ax = CairoMakie.Axis(f[1,1], title = @lift("Brusselator U Concentration at Time $($time)"))
+  gmsh = mesh!(ax, s, color=u, colormap=:jet,
+               colorrange=extrema(soln(tₑ).U))
+  Colorbar(f[1,2], gmsh)
+  timestamps = range(0, tₑ, step=1e-1)
+  record(f, save_file_name, timestamps; framerate = 15) do t
+    time[] = t
+  end
 end
-
-end 
-# END Gif creation
+save_dynamics("brusselator_U.gif")
 
 # Run on the sphere.
 # You can use lower resolution meshes, such as Icosphere(3).
-s = loadmesh(Icosphere(5))
-s[:edge_orientation] = false
-orient!(s)
-# Visualize the mesh.
-wireframe(s)
-sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
-subdivide_duals!(sd, Circumcenter())
-
-# Define how operations map to Julia functions.
-hodge = GeometricHodge()
-Δ₀ = δ(1, sd, hodge=hodge) * d(0, sd)
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :Δ₀ => x -> Δ₀ * x
-    :.* => (x,y) -> x .* y
-    x => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
+s = loadmesh(Icosphere(7));
+sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s);
+subdivide_duals!(sd, Circumcenter());
 
 # Create initial data.
 U = map(sd[:point]) do (_,y,_)
@@ -199,38 +135,28 @@ V = map(sd[:point]) do (x,_,_)
   abs(x)
 end
 
-# TODO: Try making this sparse.
 F₁ = map(sd[:point]) do (_,_,z)
   z ≥ 0.8 ? 5.0 : 0.0
 end
-mesh(s, color=F₁, colormap=:jet)
 
-# TODO: Try making this sparse.
 F₂ = zeros(nv(sd))
 
-One = ones(nv(sd))
-
 constants_and_parameters = (
-  fourfour = 4.4,
-  threefour = 3.4,
   α = 0.001,
-  F = t -> t ≥ 1.1 ? F₁ : F₂
-  )
+  F = t -> t ≥ 1.1 ? F₁ : F₂)
 
 # Generate the simulation.
-fₘ = sim(sd, generate)
+fₘ = sim(sd, nothing, DiagonalHodge())
 
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
-u₀ = ComponentArray(U=U, V=V, One=One)
+u₀ = ComponentArray(U=U, V=V)
 
 # Visualize the initial conditions.
-# If GLMakie throws errors, then update your graphics drivers,
-# or use an alternative Makie backend like CairoMakie.
-fig_ic = Figure()
-p1 = mesh(fig_ic[1,2], s, color=u₀.U, colormap=:jet)
-p2 = mesh(fig_ic[1,3], s, color=u₀.V, colormap=:jet)
-display(fig_ic)
+fig = Figure()
+ax = LScene(fig[1,1], scenekw=(lights=[],))
+mesh!(ax, s, color=u₀.U, colormap=:jet)
+display(fig)
 
 tₑ = 11.5
 
@@ -246,22 +172,23 @@ soln = solve(prob, Tsit5())
 @save "brusselator_sphere.jld2" soln
 
 # Visualize the final conditions.
-mesh(s, color=soln(tₑ).U, colormap=:jet)
+fig = Figure()
+ax = LScene(fig[1,1], scenekw=(lights=[],))
+mesh!(ax, s, color=soln(tₑ).U, colormap=:jet)
+display(fig)
 
-# BEGIN Gif creation
-begin 
-frames = 800
-fig = Figure(resolution = (1200, 1200))
-p1 = mesh(fig[1,1], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
-p2 = mesh(fig[2,1], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
-Colorbar(fig[1,2])
-Colorbar(fig[2,2])
-
-## Animation
-record(fig, "brusselator_sphere.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
-    p1.plot.color = soln(t).U
-    p2.plot.color = soln(t).V
+function save_dynamics(save_file_name)
+  time = Observable(0.0)
+  u = @lift(soln($time).U)
+  f = Figure()
+  ax = LScene(f[1,1], scenekw=(lights=[],))
+  gmsh = mesh!(ax, s, color=u, colormap=:jet,
+               colorrange=extrema(soln(tₑ).U))
+  Colorbar(f[1,2], gmsh)
+  timestamps = range(0, tₑ, step=1e-1)
+  record(f, save_file_name, timestamps; framerate = 15) do t
+    time[] = t
+  end
 end
+save_dynamics("brusselator_sphere_U.gif")
 
-end 
-# END Gif creation
