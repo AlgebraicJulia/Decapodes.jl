@@ -162,15 +162,21 @@ end
 
 add_inplace_stub(var_name::Symbol) = add_stub(gensim_in_place_stub, var_name)
 
-# This will be the function and matrix generation
+const ARITHMETIC_OPS = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^, :.>, :.<, :.≤, :.≥])
+
+"""
+    compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = CPUTarget())
+
+This creates the symbol to function linking for the simulation output. Those run through the `default_dec` backend
+expect both an in-place and an out-of-place variant in that order. User defined operations only support out-of-place.
+"""
 function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = CPUTarget())
-  assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^, :.>, :.<, :.≤, :.≥])
-  defined_ops = Set()
+  defined_ops = deepcopy(con_dec_operators)
 
   defs = quote end
 
   for op in dec_matrices
-    if(op in defined_ops )
+    if op in defined_ops
       continue
     end
 
@@ -181,7 +187,7 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con
     default_generation = @match code_target begin
       ::CPUTarget => :default_dec_matrix_generate
       ::CUDATarget => :default_dec_cu_matrix_generate
-      _ => "Provided code target $(code_target) is not yet supported in simulations"
+      _ => error("Provided code target $(code_target) is not yet supported in simulations")
     end
 
     def = :(($mat_op, $op) = $(default_generation)(mesh, $quote_op, hodge))
@@ -190,24 +196,9 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con
     push!(defined_ops, op)
   end
 
-  for op in d[:op1]
-    if op == DerivOp
-      continue
-    end
-
-    if(op in con_dec_operators || op in defined_ops || op in assumed_ops)
-      continue
-    end
-
-    ops = QuoteNode(op)
-    def = :($op = operators(mesh, $ops))
-
-    push!(defs.args, def)
-
-    push!(defined_ops, op)
-  end
-  for op in d[:op2]
-    if op in assumed_ops || op in defined_ops
+  # Add in user-defined operations
+  for op in vcat(d[:op1], d[:op2])
+    if op == DerivOp || op in defined_ops || op in ARITHMETIC_OPS
       continue
     end
     ops = QuoteNode(op)
@@ -216,6 +207,7 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con
 
     push!(defined_ops, op)
   end
+
   return defs
 end
 
