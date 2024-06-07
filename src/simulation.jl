@@ -232,13 +232,13 @@ This initalizes all input variables according to their Decapodes type.
 function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{stateeltype}) where stateeltype
   stmts = map(vars) do s
     ssymbl = QuoteNode(s)
-    if all(d[incident(d, s, :name) , :type] .== :Constant)
+    if only(d[incident(d, s, :name) , :type]) == :Constant
       :($s = p.$s)
-    elseif all(d[incident(d, s, :name) , :type] .== :Parameter)
+    elseif only(d[incident(d, s, :name) , :type]) == :Parameter
       :($s = (p.$s)(t))
     elseif all(d[incident(d, s, :name) , :type] .== :Literal)
       # Literals don't need assignments, because they are literals, but we stored them as Symbols.
-      # #TODO: we should fix that upstream so that we don't need this.
+      # TODO: we should fix that upstream so that we don't need this.
       :($s = $(parse(stateeltype, String(s))))
     else
       # TODO: If names are not unique, then the type is assumed to be a
@@ -252,16 +252,41 @@ end
 """
     set_tanvars_code(d::AbstractNamedDecapode)
 
-This is
+This function creates the code that sets the value of the Tvars at the end of the code
 """
-function set_tanvars_code(d::AbstractNamedDecapode)
+function set_tanvars_code(d::AbstractNamedDecapode, code_target::GenerationTarget = CPUTarget())
   tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
   stmts = map(tanvars) do (s,t)
-    ssymb = QuoteNode(s)
-    :(getproperty(du, $ssymb) .= $t)
+    hook_STC_settvar(s, t, code_target)
   end
   return stmts
 end
+
+# TODO: Why do we need a QuoteNode for this?
+"""
+    hook_STC_settvar(src_name::Symbol, tgt_name::Symbol, ::Union{CPUBackend, CUDABackend})
+
+This hook is meant to control how data is set into the tangent variables after a simulation function
+execution. It expects the `state_name`, the name of the original state variable, the `tgt_name` which
+is the name of the variable whose data will be stored and a code target.
+"""
+function hook_STC_settvar(state_name::Symbol, tgt_name::Symbol, ::Union{CPUBackend, CUDABackend})
+  ssymb = QuoteNode(state_name)
+  return :(getproperty(du, $ssymb) .= $tgt_name)
+end
+
+const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
+                                    :(-) => :.-,
+                                    :(*) => :.*,
+                                    :(/) => :./,
+                                    :(^) => :.^,
+                                    :(=) => :.=,
+                                    :.+ => :.+,
+                                    :.- => :.-,
+                                    :.* => :.*,
+                                    :./ => :./,
+                                    :.^ => :.^,
+                                    :.= => :.=)
 
 function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}; dimension=2, stateeltype=Float64, code_target=CPUTarget())
   # Get the Vars of the inputs (probably state Vars).
@@ -276,9 +301,6 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
   visited_1 = falses(nparts(d, :Op1))
   visited_2 = falses(nparts(d, :Op2))
   visited_Σ = falses(nparts(d, :Σ))
-
-  promote_arithmetic_map = Dict(:(+) => :.+, :(-) => :.-, :(*) => :.*, :(/) => :./, :(^) => :.^, :(=) => :.=,
-                                :.+ => :.+, :.- => :.-, :.* => :.*, :./ => :./, :.^ => :.^, :.= => :.=)
 
   # FIXME: this is a quadratic implementation of topological_sort inlined in here.
   op_order = []
@@ -303,15 +325,15 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
         if(operator in optimizable_dec_operators)
           # push!(dec_matrices, operator)
           if(is_form(d, t))
-            equality = promote_arithmetic_map[equality]
+            equality = PROMOTE_ARITHMETIC_MAP[equality]
             operator = add_stub(gensim_in_place_stub, operator)
 
             push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype, code_target))
           end
         elseif(operator == :(-) || operator == :.-)
           if(is_form(d, t))
-            equality = promote_arithmetic_map[equality]
-            operator = promote_arithmetic_map[operator]
+            equality = PROMOTE_ARITHMETIC_MAP[equality]
+            operator = PROMOTE_ARITHMETIC_MAP[operator]
 
             push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype, code_target))
           end
@@ -335,16 +357,11 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
         operator = d[op, :op2]
         equality = :(=)
 
-        # This is meant for wedge products
-        #= if(operator in optimizable_dec_operators)
-          push!(dec_matrices, operator)
-        end =#
-
         # TODO: Check to make sure that this logic never breaks
         if(is_form(d, r))
           if(operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-)
-            operator = promote_arithmetic_map[operator]
-            equality = promote_arithmetic_map[equality]
+            operator = PROMOTE_ARITHMETIC_MAP[operator]
+            equality = PROMOTE_ARITHMETIC_MAP[equality]
             push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
 
           # TODO: Do we want to support the ability of a user to use the backslash operator?
@@ -352,29 +369,29 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
             # WARNING: This part may break if we add more compiler types that have different
             # operations for basic and broadcast modes, e.g. matrix multiplication vs broadcast
             if(!is_infer(d, arg1) && !is_infer(d, arg2))
-              operator = promote_arithmetic_map[operator]
-              equality = promote_arithmetic_map[equality]
+              operator = PROMOTE_ARITHMETIC_MAP[operator]
+              equality = PROMOTE_ARITHMETIC_MAP[equality]
               push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
             end
           elseif(operator in optimizable_dec_operators)
             operator = add_stub(gensim_in_place_stub, operator)
-            equality = promote_arithmetic_map[equality]
+            equality = PROMOTE_ARITHMETIC_MAP[equality]
             push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
           end
         end
 
         # TODO: Clean this in another PR (with a @match maybe).
         if(operator == :(*))
-          operator = promote_arithmetic_map[operator]
+          operator = PROMOTE_ARITHMETIC_MAP[operator]
         end
         if(operator == :(-))
-          operator = promote_arithmetic_map[operator]
+          operator = PROMOTE_ARITHMETIC_MAP[operator]
         end
         if(operator == :(/))
-          operator = promote_arithmetic_map[operator]
+          operator = PROMOTE_ARITHMETIC_MAP[operator]
         end
         if(operator == :(^))
-          operator = promote_arithmetic_map[operator]
+          operator = PROMOTE_ARITHMETIC_MAP[operator]
         end
 
         visited_2[op] = true
@@ -391,18 +408,16 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
         argnames = d[args, :name]
         rname  = d[r, :name]
 
-        operator = :(+)
+        # operator = :(+)
+        operator = :.+
         equality = :(=)
 
         # If result is a known form, broadcast addition
-        # TODO: Also need to tell handler to prealloc
         if(is_form(d, r))
-          operator = promote_arithmetic_map[operator]
-          equality = promote_arithmetic_map[equality]
+          operator = PROMOTE_ARITHMETIC_MAP[operator]
+          equality = PROMOTE_ARITHMETIC_MAP[equality]
           push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
         end
-
-        operator = :(.+)
 
         visited_Σ[op] = true
         visited_Var[r] = true
@@ -412,15 +427,31 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
     end
   end
 
-  cache_exprs = []
-  if(code_target isa CPUTarget)
-    cache_exprs = map(alloc_vectors) do vec
-      :($(vec.name) = (Decapodes.get_tmp($(Symbol(:__,vec.name)), u)))
-    end
+  cache_exprs = Expr[]
+  for alloc_vec in alloc_vectors
+    hook_COM_data_handle!(cache_exprs, alloc_vec, code_target)
   end
 
   eq_exprs = map(Expr, op_order)
   vcat(cache_exprs,eq_exprs)
+end
+
+"""
+    hook_COM_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
+
+This hook determines if preallocated vectors need to be be handled in a special manner everytime
+before a function run. This is useful in the example of using `FixedSizeDiffCache` from `PreallocationTools.jl`.
+
+This hook is passed in `cache_exprs` which is the collection of exprs to be pasted, `alloc_vec` which is an
+'AllocVecCall' that stores information about the allocated vector and a code target.
+"""
+function hook_COM_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
+  line = :($(alloc_vec.name) = (Decapodes.get_tmp($(Symbol(:__,alloc_vec.name)), u)))
+  push!(cache_exprs, line)
+end
+
+function hook_COM_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CUDABackend)
+  return;
 end
 
 # TODO: Add more specific types later for optimization
@@ -483,7 +514,7 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
         get!(compute_to_name, compute_key, computation_name)
         push!(con_dec_operators, computation_name)
 
-        expr_line = hook_LCO_inplace(computation_name, computation, code_target, stateeltype)
+        expr_line = hook_LCO_inplace(computation_name, computation, stateeltype, code_target)
         push!(contract_defs.args, expr_line)
 
         expr_line = Expr(Symbol("="), computation_name, Expr(Symbol("->"), :x, Expr(:call, :*, add_inplace_stub(computation_name), :x)))
@@ -500,66 +531,62 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
 end
 
 # TODO: Allow user to overload these hooks with user-defined code_target
-function hook_LCO_inplace(computation_name, computation, ::CPUBackend, float_type::DataType)
+function hook_LCO_inplace(computation_name::Symbol, computation::Vector{Symbol}, float_type::DataType, ::CPUBackend)
   return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
 end
 
-# Turn multiplication right-associative to prevent CUDA.jl error
-# TODO: Can turn this into left-associative
-function generate_parentheses_multipy(list)
+function generate_parentheses_multiply(list)
   if(length(list) == 1)
       return list[1]
   else
-      return Expr(:call, :*, list[1], generate_parentheses_multipy(list[2:end]))
+      return Expr(:call, :*, generate_parentheses_multiply(list[1:end-1]), list[end])
   end
 end
 
-# Adapt this to also write Diagonal Matrices as CuVectors, sparsifying diagonal matrices slows down computations 
-function hook_LCO_inplace(computation_name, computation, ::CUDABackend, float_type::DataType)
-  # return :($(add_inplace_stub(computation_name)) = CUDA.CUSPARSE.CuSparseMatrixCSC{$(float_type)}($(Expr(:call, :*, computation...))))
-  return :($(add_inplace_stub(computation_name)) = $(generate_parentheses_multipy(computation)))
+function hook_LCO_inplace(computation_name::Symbol, computation::Vector{Symbol}, float_type::DataType, ::CUDABackend)
+  return :($(add_inplace_stub(computation_name)) = $(generate_parentheses_multiply(computation)))
 end
 
 function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget())
   recognize_types(user_d)
 
   # Makes copy
-  d′ = expand_operators(user_d)
+  gen_d = expand_operators(user_d)
 
   dec_matrices = Vector{Symbol}();
   alloc_vectors = Vector{AllocVecCall}();
 
-  vars = get_vars_code(d′, input_vars, stateeltype)
-  tars = set_tanvars_code(d′)
+  vars = get_vars_code(gen_d, input_vars, stateeltype)
+  tars = set_tanvars_code(gen_d, code_target)
 
   # We need to run this after we grab the constants and parameters out
-  infer_overload_compiler!(d′, dimension)
-  resolve_types_compiler!(d′)
-  infer_overload_compiler!(d′, dimension)
+  infer_overload_compiler!(gen_d, dimension)
+  resolve_types_compiler!(gen_d)
+  infer_overload_compiler!(gen_d, dimension)
 
   # This should probably be followed by an expand_operators
-  replace_names_compiler!(d′)
-  open_operators!(d′, dimension = dimension)
-  infer_overload_compiler!(d′, dimension)
+  replace_names_compiler!(gen_d)
+  open_operators!(gen_d, dimension = dimension)
+  infer_overload_compiler!(gen_d, dimension)
 
   # This will generate all of the fundemental DEC operators present
   optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
                                   :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁])
   extra_dec_operators = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
-  init_dec_matrices!(d′, dec_matrices, union(optimizable_dec_operators, extra_dec_operators))
+  init_dec_matrices!(gen_d, dec_matrices, union(optimizable_dec_operators, extra_dec_operators))
 
   # This contracts matrices together into a single matrix
   contracted_dec_operators = Set{Symbol}();
-  contract_operators!(d′, allowable_ops = optimizable_dec_operators)
-  cont_defs = link_contract_operators(d′, contracted_dec_operators, code_target, stateeltype)
+  contract_operators!(gen_d, allowable_ops = optimizable_dec_operators)
+  cont_defs = link_contract_operators(gen_d, contracted_dec_operators, code_target, stateeltype)
 
   union!(optimizable_dec_operators, contracted_dec_operators, extra_dec_operators)
 
   # Compilation of the simulation
-  equations = compile(d′, input_vars, alloc_vectors, optimizable_dec_operators, dimension=dimension, stateeltype=stateeltype, code_target=code_target)
+  equations = compile(gen_d, input_vars, alloc_vectors, optimizable_dec_operators, dimension=dimension, stateeltype=stateeltype, code_target=code_target)
 
-  func_defs = compile_env(d′, dec_matrices, contracted_dec_operators, code_target)
+  func_defs = compile_env(gen_d, dec_matrices, contracted_dec_operators, code_target)
   vect_defs = compile_var(alloc_vectors)
 
   quote
