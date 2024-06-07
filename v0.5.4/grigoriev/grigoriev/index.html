@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Grigoriev Ice Cap · Decapodes.jl</title><meta name="title" content="Grigoriev Ice Cap · Decapodes.jl"/><meta property="og:title" content="Grigoriev Ice Cap · Decapodes.jl"/><meta property="twitter:title" content="Grigoriev Ice Cap · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../equations/equations/">Equations</a></li><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li class="is-active"><a class="tocitem" href>Grigoriev Ice Cap</a><ul class="internal"><li><a class="tocitem" href="#Loading-a-Scientific-Dataset"><span>Loading a Scientific Dataset</span></a></li><li><a class="tocitem" href="#Defining-and-Composing-Models"><span>Defining and Composing Models</span></a></li><li><a class="tocitem" href="#Define-our-functions"><span>Define our functions</span></a></li><li><a class="tocitem" href="#Generate-simulation"><span>Generate simulation</span></a></li><li><a class="tocitem" href="#Run"><span>Run</span></a></li><li><a class="tocitem" href="#Results-and-Discussion"><span>Results and Discussion</span></a></li></ul></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Grigoriev Ice Cap</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Grigoriev Ice Cap</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/grigoriev/grigoriev.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Halfar&#39;s-model-of-glacial-flow"><a class="docs-heading-anchor" href="#Halfar&#39;s-model-of-glacial-flow">Halfar&#39;s model of glacial flow</a><a id="Halfar&#39;s-model-of-glacial-flow-1"></a><a class="docs-heading-anchor-permalink" href="#Halfar&#39;s-model-of-glacial-flow" title="Permalink"></a></h1><p>Let&#39;s model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar&#39;s 1981 paper: <a href="https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/JC086iC11p11065">&quot;On the dynamics of the ice sheets&quot;</a>.</p><p>Let&#39;s run the Halfar shallow ice / shallow slope model on some &quot;real world&quot; data for ice thickness. Van Tricht et al. in their 2023 communication <a href="https://tc.copernicus.org/articles/17/4315/2023/tc-17-4315-2023.html">Measuring and modelling the ice thickness of the Grigoriev ice cap (Kyrgyzstan) and comparison with global dataset</a> published ice thickness data on an ice cap and stored their data in a TIF. In this document, we will demonstrate how to parse such data and execute a Decapodes model on these initial conditions.</p><p>For the parameters to Glen&#39;s law, we will use those used in the <a href="https://cise.ufl.edu/~luke.morris/cism.html">Community Ice Sheet Model benchmark</a>. Of course, the parameters of this Kyrgyzstani ice cap likely differ from these by quite some amount, but they are a good place to start. Further, this ice cap does not satisfy the &quot;shallow slope&quot; assumption across the entire domain.</p><pre><code class="language-julia hljs"># AlgebraicJulia Dependencies
+using Catlab
+using CombinatorialSpaces
+using DiagrammaticEquations
+using Decapodes
+
+# External Dependencies
+using CairoMakie
+using ComponentArrays
+using FileIO
+using GeometryBasics: Point2
+using Interpolations
+using JLD2
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using SparseArrays
+Point2D = Point2{Float64}
+Point3D = Point3{Float64};</code></pre><h2 id="Loading-a-Scientific-Dataset"><a class="docs-heading-anchor" href="#Loading-a-Scientific-Dataset">Loading a Scientific Dataset</a><a id="Loading-a-Scientific-Dataset-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-a-Scientific-Dataset" title="Permalink"></a></h2><p>The ice thickness data is stored in a TIF that can be downloaded <a href="https://zenodo.org/api/records/7735970/files-archive">here</a>. We have downloaded it locally, and load it using basic <code>FileIO</code>.</p><pre><code class="language-julia hljs">file_name = &quot;Icethickness_Grigoriev_ice_cap_2021.tif&quot;
+ice_thickness_tif = load(file_name)</code></pre><img src="20fa5c77.svg" alt="Example block output"/><p>This data may visually appear to be a binary mask but that is only because values with no ice are set to <code>-Inf</code>. We will account for this when interpolate our data.</p><p>We use the <code>Interpolations.jl</code> library to interpolate this dataset:</p><pre><code class="language-julia hljs"># Taking the coordinates to be from the extrema of the measured points:
+const MIN_X = 4648894.5
+const MAX_X = 4652179.7
+const MIN_Y = 243504.5
+const MAX_Y = 245599.8
+ice_coords = (range(MIN_X, MAX_X, length=size(ice_thickness_tif,1)),
+              range(MIN_Y, MAX_Y, length=size(ice_thickness_tif,2)))
+
+# Note that the TIF is set to -floatmax(Float32) where there is no ice.
+# For our purposes, this is equivalent to 0.0.
+ice_interp = LinearInterpolation(ice_coords, Float32.(ice_thickness_tif))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">171×113 extrapolate(scale(interpolate(::Matrix{Float32}, BSpline(Linear())), (4.6488945e6:19.32470588235404:4.6521797e6, 243504.5:18.708035714285714:245599.8)), Throw()) with element type Float32:
+ -3.40282e38  -3.40282e38  -3.40282e38  …  -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38  …  -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+  ⋮                                     ⋱               
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38  …  -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38     -3.40282e38  -3.40282e38
+ -3.40282e38  -3.40282e38  -3.40282e38  …  -3.40282e38  -3.40282e38</code></pre><p>To use this interpolating object <code>ice_interp</code>, we can simply query it for the value at some coordinates: <code>ice_interp(x,y)</code>.</p><p>Let&#39;s generate a triangulated grid located at the appropriate coordinates:</p><pre><code class="language-julia hljs"># Specify a resolution:
+RES_Y = (MAX_Y-MIN_Y)/30.0
+RES_X = RES_Y
+
+# Generate the mesh with appropriate dimensions and resolution:
+s = triangulated_grid(MAX_X-MIN_X, MAX_Y-MIN_Y, RES_X, RES_Y, Point3D)
+
+# Shift it into place:
+s[:point] = map(x -&gt; x + Point3D(MIN_X, MIN_Y, 0), s[:point])
+sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
+subdivide_duals!(sd, Barycenter())
+
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1])
+wf = wireframe!(ax, s)
+save(&quot;Grigoriev_IceMesh.png&quot;, fig)</code></pre><p><img src="../Grigoriev_IceMesh.png" alt="&quot;Grigoriev_IceMesh&quot;"/></p><p>The coordinates of a vertex are stored in <code>sd[:point]</code>. Let&#39;s use our interpolator to assign ice thickness values to each vertex in the mesh:</p><pre><code class="language-julia hljs"># These are the values used by the CISM benchmark:
+n = 3
+ρ = 910
+g = 9.8101
+A = fill(1e-16, ne(sd))
+
+h₀ = map(sd[:point]) do (x,y,_)
+  tif_val = ice_interp(x,y)
+  # Accommodate for the -∞&#39;s that encode &quot;no ice&quot;.
+  tif_val &lt; 0.0 ? 0.0 : tif_val
+end
+
+# Store these values to be passed to the solver.
+u₀ = ComponentArray(h=h₀, stress_A=A)
+constants_and_parameters = (n = n,
+                            stress_ρ = ρ,
+                            stress_g = g,
+                            stress_A = A)</code></pre><h2 id="Defining-and-Composing-Models"><a class="docs-heading-anchor" href="#Defining-and-Composing-Models">Defining and Composing Models</a><a id="Defining-and-Composing-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-and-Composing-Models" title="Permalink"></a></h2><p>For exposition on this Halfar Decapode, see our <a href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a> docs page. Otherwise, you may skip ahead to the next section.</p><pre><code class="language-julia hljs">halfar_eq2 = @decapode begin
+  h::Form0
+  Γ::Form1
+  n::Constant
+
+  ḣ == ∂ₜ(h)
+  ḣ == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
+end
+
+glens_law = @decapode begin
+  Γ::Form1
+  (A,ρ,g,n)::Constant
+
+  Γ == (2/(n+2))*A*(ρ*g)^n
+end
+
+ice_dynamics_composition_diagram = @relation () begin
+  dynamics(h,Γ,n)
+  stress(Γ,n)
+end
+
+ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
+  [Open(halfar_eq2, [:h,:Γ,:n]),
+  Open(glens_law, [:Γ,:n])])
+
+ice_dynamics = apex(ice_dynamics_cospan)
+to_graphviz(ice_dynamics)</code></pre><img src="3f46f9ae.svg" alt="Example block output"/><h2 id="Define-our-functions"><a class="docs-heading-anchor" href="#Define-our-functions">Define our functions</a><a id="Define-our-functions-1"></a><a class="docs-heading-anchor-permalink" href="#Define-our-functions" title="Permalink"></a></h2><pre><code class="language-julia hljs">function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :mag =&gt; x -&gt; norm.(x)
+    :♯ =&gt; begin
+      sharp_mat = ♯_mat(sd, AltPPSharp())
+      x -&gt; sharp_mat * x
+    end
+    x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
+  end
+  return op
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><h2 id="Generate-simulation"><a class="docs-heading-anchor" href="#Generate-simulation">Generate simulation</a><a id="Generate-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-simulation" title="Permalink"></a></h2><pre><code class="language-julia hljs">sim = eval(gensim(ice_dynamics, dimension=2))
+fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#12&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#6#8&quot;, Main.var&quot;#7#9&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}, Decapodes.var&quot;#19#21&quot;{1, Tuple{Matrix{Int32}, UnitRange{Int64}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><h2 id="Run"><a class="docs-heading-anchor" href="#Run">Run</a><a id="Run-1"></a><a class="docs-heading-anchor-permalink" href="#Run" title="Permalink"></a></h2><pre><code class="language-julia hljs">tₑ = 10
+
+@info(&quot;Solving Grigoriev Ice Cap&quot;)
+prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+soln = solve(prob, Tsit5())
+@show soln.retcode
+@info(&quot;Done&quot;)
+
+@save &quot;grigoriev.jld2&quot; soln</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Solving Grigoriev Ice Cap
+soln.retcode = SciMLBase.ReturnCode.Success
+[ Info: Done</code></pre><h2 id="Results-and-Discussion"><a class="docs-heading-anchor" href="#Results-and-Discussion">Results and Discussion</a><a id="Results-and-Discussion-1"></a><a class="docs-heading-anchor-permalink" href="#Results-and-Discussion" title="Permalink"></a></h2><p>We observe the usual Halfar model phenomena of ice &quot;melting&quot;. Note that since the &quot;shallow slope&quot; approximation does not hold on the boundaries (due to the so-called &quot;ice cliffs&quot; described in the Van Tricht et al. paper), we do not expect the &quot;creep&quot; effect to be physical in this region of the domain. Rather, the Halfar model&#39;s predictive power is tuned for the interiors of ice caps and glaciers. Note that we also assume here that the bedrock that the ice rests on is flat. We may in further documents demonstrate how to use topographic data from Digital Elevation Models to inform the elevation of points in the mesh itself.</p><p><img src="../grigoriev_ic.png" alt="Grigoriev_ICs"/></p><p><img src="../grigoriev_fc.png" alt="Grigoriev_FCs"/></p><p><img src="../grigoriev.gif" alt="Grigoriev_Dynamics"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 34 seconds.
+[ Info: This page was last built at 2024-06-07T17:08:10.006.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../ice_dynamics/ice_dynamics/">« Glacial Flow</a><a class="docs-footer-nextpage" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Friday 7 June 2024 17:11">Friday 7 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

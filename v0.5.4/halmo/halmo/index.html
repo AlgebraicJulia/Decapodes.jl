@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Halfar-NS · Decapodes.jl</title><meta name="title" content="Halfar-NS · Decapodes.jl"/><meta property="og:title" content="Halfar-NS · Decapodes.jl"/><meta property="twitter:title" content="Halfar-NS · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../equations/equations/">Equations</a></li><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li class="is-active"><a class="tocitem" href>Halfar-NS</a><ul class="internal"><li><a class="tocitem" href="#Specify-our-models"><span>Specify our models</span></a></li><li><a class="tocitem" href="#Meshes-and-Initial-Conditions"><span>Meshes and Initial Conditions</span></a></li><li><a class="tocitem" href="#Execute-the-Simulation"><span>Execute the Simulation</span></a></li><li><a class="tocitem" href="#Results"><span>Results</span></a></li></ul></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Halfar-NS</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Halfar-NS</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/halmo/halmo.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Couple-Ice-and-Water-Dynamics"><a class="docs-heading-anchor" href="#Couple-Ice-and-Water-Dynamics">Couple Ice and Water Dynamics</a><a id="Couple-Ice-and-Water-Dynamics-1"></a><a class="docs-heading-anchor-permalink" href="#Couple-Ice-and-Water-Dynamics" title="Permalink"></a></h1><p>Let&#39;s use Decapodes to implement the incompressible Navier-Stokes as given by <a href="https://arxiv.org/abs/1508.01166">Mohamed et al.</a>. We will run these dynamics <a href="https://youtu.be/k0hFhAvhHvs?si=Wi9-OgBbAODtxMtb">on the sphere</a>. We will couple this model with Halfar glacier dynamics <a href="https://algebraicjulia.github.io/Decapodes.jl/dev/ice_dynamics/#2-Manifold-in-3D">on the sphere</a>. For the initial conditions of the Halfar ice thickness, we will use an idealized polar ice cap.</p><p>Note that the time scale at which ice creeps is much larger than the time scale at which the water in the ocean would flow. So we can either choose to model a very slow moving fluid around the ice (like a storm on a gas giant), or we can choose to model on a shorter timescale, on which the ice does not move very much.</p><pre><code class="language-julia hljs"># AlgebraicJulia Dependencies
+using Catlab
+using CombinatorialSpaces
+using Decapodes
+using DiagrammaticEquations
+
+# External Dependencies
+using CairoMakie
+using ComponentArrays
+using GeometryBasics: Point3
+using JLD2
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+Point3D = Point3{Float64};</code></pre><h2 id="Specify-our-models"><a class="docs-heading-anchor" href="#Specify-our-models">Specify our models</a><a id="Specify-our-models-1"></a><a class="docs-heading-anchor-permalink" href="#Specify-our-models" title="Permalink"></a></h2><p>Our first component is the Mohamed et al. formulation of the incompressible Navier-Stokes equations. We will call the flow here &quot;w&quot;. This will be the flow after collisions with glaciers are considered.</p><p>This is <a href="https://arxiv.org/abs/1508.01166">Equation 10</a> for N=2.</p><pre><code class="language-julia hljs">eq10forN2 = @decapode begin
+  (𝐮,w)::DualForm1
+  (P, 𝑝ᵈ)::DualForm0
+  μ::Constant
+
+  𝑝ᵈ == P + 0.5 * ι₁₁(w,w)
+
+  ∂ₜ(𝐮) == μ * ∘(d, ⋆, d, ⋆)(w) + (-1)*⋆₁⁻¹(∧ᵈᵖ₁₀(w, ⋆(d(w)))) + d(𝑝ᵈ)
+end
+to_graphviz(eq10forN2)</code></pre><img src="4be6f8cb.svg" alt="Example block output"/><p>Halfar&#39;s equation and Glen&#39;s law are composed like so:</p><pre><code class="language-julia hljs">halfar_eq2 = @decapode begin
+  h::Form0
+  Γ::Form1
+  n::Constant
+
+  ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
+end
+
+glens_law = @decapode begin
+  Γ::Form1
+  (A,ρ,g,n)::Constant
+
+  Γ == (2/(n+2))*A*(ρ*g)^n
+end
+
+ice_dynamics_composition_diagram = @relation () begin
+  dynamics(Γ,n)
+  stress(Γ,n)
+end
+
+ice_dynamics = apex(oapply(ice_dynamics_composition_diagram,
+  [Open(halfar_eq2, [:Γ,:n]),
+   Open(glens_law, [:Γ,:n])]))
+
+to_graphviz(ice_dynamics, verbose=false)</code></pre><img src="f7fcaf98.svg" alt="Example block output"/><p>We now have our dynamics that govern glaciers, and our dynamics that govern water. We need to specify the physics of what happens when glaciers and water interact. There are many options, and the choice you make depends on the time-scale and resolution of the dynamics that you are interested in.</p><p>An interaction between glacier and water dynamics can look like the following, where <code>flow_after</code> is the flow of water after interaction with ice is considered.</p><pre><code class="language-julia hljs">ice_water_composition_diagram = @relation () begin
+  glacier_dynamics(ice_thickness)
+  water_dynamics(flow, flow_after)
+
+  interaction(ice_thickness, flow, flow_after)
+end
+draw_composition(ice_water_composition_diagram)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="663pt" height="306pt"
+ viewBox="0.00 0.00 662.95 305.55" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 301.55)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-301.55 658.95,-301.55 658.95,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="77.7" cy="-141.28" rx="77.91" ry="18"/>
+<text text-anchor="middle" x="77.7" y="-137.58" font-family="Serif" font-size="14.00">glacier_dynamics</text>
+</g>
+<!-- n4 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n4</title>
+<ellipse fill="black" stroke="black" cx="229.91" cy="-141.28" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="206.78" y="-127.58" font-family="Serif" font-size="14.00">ice_thickness</text>
+</g>
+<!-- n1&%2345;&%2345;n4 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n4</title>
+<path fill="none" stroke="black" d="M155.59,-141.28C187.18,-141.28 218.37,-141.28 227.34,-141.28"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="581.96" cy="-141.28" rx="72.99" ry="18"/>
+<text text-anchor="middle" x="581.96" y="-137.58" font-family="Serif" font-size="14.00">water_dynamics</text>
+</g>
+<!-- n5 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="443.18" cy="-2.5" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="425.68" y="-8.8" font-family="Serif" font-size="14.00">flow</text>
+</g>
+<!-- n2&%2345;&%2345;n5 -->
+<g id="edge3" class="edge">
+<title>n2&%2345;&%2345;n5</title>
+<path fill="none" stroke="black" d="M564.38,-123.7C530.25,-89.57 457.25,-16.57 444.96,-4.28"/>
+</g>
+<!-- n6 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="443.18" cy="-280.05" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="405.18" y="-286.35" font-family="Serif" font-size="14.00">flow_after</text>
+</g>
+<!-- n2&%2345;&%2345;n6 -->
+<g id="edge5" class="edge">
+<title>n2&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M564.38,-158.85C530.25,-192.99 457.25,-265.98 444.96,-278.28"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="304.41" cy="-141.28" rx="51.43" ry="18"/>
+<text text-anchor="middle" x="304.41" y="-137.58" font-family="Serif" font-size="14.00">interaction</text>
+</g>
+<!-- n3&%2345;&%2345;n4 -->
+<g id="edge2" class="edge">
+<title>n3&%2345;&%2345;n4</title>
+<path fill="none" stroke="black" d="M253.07,-141.28C244,-141.28 236.23,-141.28 232.42,-141.28"/>
+</g>
+<!-- n3&%2345;&%2345;n5 -->
+<g id="edge4" class="edge">
+<title>n3&%2345;&%2345;n5</title>
+<path fill="none" stroke="black" d="M321.42,-124.26C355.3,-90.39 428.98,-16.71 441.39,-4.29"/>
+</g>
+<!-- n3&%2345;&%2345;n6 -->
+<g id="edge6" class="edge">
+<title>n3&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M321.42,-158.29C355.3,-192.16 428.98,-265.85 441.39,-278.26"/>
+</g>
+</g>
+</svg>
+'/><p>We will use the language of Decapodes to encode the dynamics that ice blocks water from flowing.</p><p>We can detect the ice with a sigmoid function. Where there is ice, we want the flow to be 0, and where there is no ice, we will not impede the flow. We won&#39;t consider any further special boundary conditions between ice and water here. Since <code>h</code> is a scalar-like quantity, and flow is a vector-like quantity, we can relate them using the wedge product operator from the exterior calculus. We can state these dynamics using the language of Decapodes like so:</p><pre><code class="language-julia hljs">blocking = @decapode begin
+  h::Form0
+  (𝐮,w)::DualForm1
+
+  w == (1-σ(h)) ∧ᵖᵈ₀₁ 𝐮
+end
+to_graphviz(blocking)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="179pt" height="425pt"
+ viewBox="0.00 0.00 179.33 425.07" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 421.07)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-421.07 175.33,-421.07 175.33,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="84.7" cy="-365.46" rx="21.84" ry="10.71"/>
+<text text-anchor="middle" x="84.7" y="-361.76" font-family="Times,serif" font-size="14.00">h:Ω₀</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="29.7" cy="-287.03" rx="29.9" ry="10.71"/>
+<text text-anchor="middle" x="29.7" y="-283.33" font-family="Times,serif" font-size="14.00">•1:Ω•</text>
+</g>
+<!-- n1&%2345;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M77.95,-355.09C68.31,-341.68 50.51,-316.95 39.43,-301.56"/>
+<polygon fill="black" stroke="black" points="40.84,-300.52 36.5,-297.48 38,-302.56 40.84,-300.52"/>
+<text text-anchor="middle" x="68.7" y="-322.55" font-family="Times,serif" font-size="14.00">σ</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="148.7" cy="-326.25" rx="22.76" ry="10.71"/>
+<text text-anchor="middle" x="148.7" y="-322.55" font-family="Times,serif" font-size="14.00">𝐮:Ω̃₁</text>
+</g>
+<!-- n10 -->
+<g id="node10" class="node">
+<title>n10</title>
+<polygon fill="none" stroke="black" points="149.2,-87.21 100.2,-87.21 100.2,-72.21 149.2,-72.21 149.2,-87.21"/>
+<text text-anchor="middle" x="124.7" y="-76.01" font-family="Times,serif" font-size="14.00">Ω•×Ω̃₁</text>
+</g>
+<!-- n2&%2345;&gt;n10 -->
+<g id="edge8" class="edge">
+<title>n2&%2345;&gt;n10</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M149.81,-315.3C151.28,-301.21 153.7,-274.64 153.7,-251.93 153.7,-251.93 153.7,-251.93 153.7,-147.82 153.7,-126.57 141.29,-104.41 132.71,-91.62"/>
+<polygon fill="black" stroke="black" points="134.04,-90.46 129.75,-87.35 131.16,-92.46 134.04,-90.46"/>
+<text text-anchor="middle" x="161.2" y="-214.23" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="124.7" cy="-10.61" rx="24.08" ry="10.71"/>
+<text text-anchor="middle" x="124.7" y="-6.91" font-family="Times,serif" font-size="14.00">w:Ω̃₁</text>
+</g>
+<!-- n9 -->
+<g id="node9" class="node">
+<title>n9</title>
+<polygon fill="none" stroke="black" points="117.7,-225.43 65.7,-225.43 65.7,-210.43 117.7,-210.43 117.7,-225.43"/>
+<text text-anchor="middle" x="91.7" y="-214.23" font-family="Times,serif" font-size="14.00">ΩL×Ω•</text>
+</g>
+<!-- n4&%2345;&gt;n9 -->
+<g id="edge5" class="edge">
+<title>n4&%2345;&gt;n9</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M38.32,-276.7C49.78,-264.3 69.97,-242.44 81.96,-229.46"/>
+<polygon fill="black" stroke="black" points="83.3,-230.6 85.41,-225.74 80.73,-228.22 83.3,-230.6"/>
+<text text-anchor="middle" x="75.2" y="-247.23" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="94.7" cy="-148.82" rx="29.9" ry="10.71"/>
+<text text-anchor="middle" x="94.7" y="-145.12" font-family="Times,serif" font-size="14.00">•2:Ω•</text>
+</g>
+<!-- n5&%2345;&gt;n10 -->
+<g id="edge7" class="edge">
+<title>n5&%2345;&gt;n10</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M99,-138.21C104.43,-126.05 113.78,-105.14 119.58,-92.17"/>
+<polygon fill="black" stroke="black" points="121.24,-92.74 121.68,-87.46 118.04,-91.31 121.24,-92.74"/>
+<text text-anchor="middle" x="120.2" y="-109.01" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="101.7" cy="-287.03" rx="24.08" ry="10.71"/>
+<text text-anchor="middle" x="101.7" y="-283.33" font-family="Times,serif" font-size="14.00">1:ΩL</text>
+</g>
+<!-- n6&%2345;&gt;n9 -->
+<g id="edge4" class="edge">
+<title>n6&%2345;&gt;n9</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M100.27,-276.42C98.47,-264.37 95.39,-243.72 93.46,-230.73"/>
+<polygon fill="black" stroke="black" points="95.17,-230.36 92.7,-225.67 91.71,-230.88 95.17,-230.36"/>
+<text text-anchor="middle" x="104.2" y="-247.23" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+</g>
+<!-- n7&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n7&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M117.86,-412.89C114.65,-408.4 102.94,-392 94.34,-379.96"/>
+<polygon fill="black" stroke="black" points="95.66,-378.8 91.33,-375.75 92.82,-380.84 95.66,-378.8"/>
+</g>
+<!-- n7&%2345;&gt;n2 -->
+<g id="edge2" class="edge">
+<title>n7&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M119.12,-412.84C121.75,-405.24 135.91,-364.25 143.65,-341.87"/>
+<polygon fill="black" stroke="black" points="145.4,-342.16 145.37,-336.87 142.09,-341.02 145.4,-342.16"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+</g>
+<!-- n9&%2345;&gt;n5 -->
+<g id="edge6" class="edge">
+<title>n9&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M92,-210.25C92.47,-199.71 93.4,-178.97 94.03,-164.76"/>
+<polygon fill="black" stroke="black" points="95.79,-164.55 94.27,-159.48 92.3,-164.4 95.79,-164.55"/>
+<text text-anchor="middle" x="95.2" y="-181.23" font-family="Times,serif" font-size="14.00">&%2345;</text>
+</g>
+<!-- n10&%2345;&gt;n3 -->
+<g id="edge9" class="edge">
+<title>n10&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M124.7,-72.03C124.7,-61.5 124.7,-40.76 124.7,-26.54"/>
+<polygon fill="black" stroke="black" points="126.45,-26.27 124.7,-21.27 122.95,-26.27 126.45,-26.27"/>
+<text text-anchor="middle" x="140.7" y="-43.01" font-family="Times,serif" font-size="14.00">∧ᵖᵈ₀₁</text>
+</g>
+</g>
+</svg>
+'/><p>Here, <code>σ</code> is a sigmoid function that is 0 when d(h) is 0, and goes to 1 otherwise. We see that <code>w</code> is indeed defined as <code>𝐮</code>, after interacting with the ice boundary is considered.</p><p>We can apply our composition diagram to generate our physics:</p><pre><code class="language-julia hljs">ice_water = apex(oapply(ice_water_composition_diagram,
+  [Open(ice_dynamics, [:dynamics_h]),
+   Open(eq10forN2,    [:𝐮, :w]),
+   Open(blocking,     [:h, :𝐮, :w])]))
+
+to_graphviz(ice_dynamics, verbose=false)</code></pre><img src="f7fcaf98-001.svg" alt="Example block output"/><p>We can now generate our simulation:</p><pre><code class="language-julia hljs">sim = eval(gensim(ice_water))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">simulate (generic function with 2 methods)</code></pre><h2 id="Meshes-and-Initial-Conditions"><a class="docs-heading-anchor" href="#Meshes-and-Initial-Conditions">Meshes and Initial Conditions</a><a id="Meshes-and-Initial-Conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Meshes-and-Initial-Conditions" title="Permalink"></a></h2><p>Since we want to demonstrate these physics on the Earth, we will use one of our icosphere discretizations with the appropriate radius.</p><pre><code class="language-julia hljs">rₑ = 6378e3 # [km]
+s = loadmesh(Icosphere(5, rₑ))
+sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
+subdivide_duals!(sd, Barycenter())
+wireframe(sd)</code></pre><img src="c79bd52c.png" alt="Example block output"/><p>Let&#39;s demonstrate how to add operators by providing the definition of a sigmoid function:</p><pre><code class="language-julia hljs">sigmoid(x) = (2 ./ (1 .+ exp.(-x*1e2)) .- 1)
+function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    # This is a new function.
+    :σ =&gt; sigmoid
+    :mag =&gt; x -&gt; norm.(x)
+    # Remaining operations (such as our differential operators) are built-in.
+    _ =&gt; default_dec_matrix_generate(sd, my_symbol, hodge)
+  end
+  return op
+end;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><p>Let&#39;s combine our mesh with our physics to instantiate our simulation:</p><pre><code class="language-julia hljs">fₘ = sim(sd, generate);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#7&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, CombinatorialSpaces.FastDEC.var&quot;#19#20&quot;{SparseArrays.SparseMatrixCSC{Float64, Int64}}, CombinatorialSpaces.FastDEC.var&quot;#17#18&quot;{SparseArrays.SparseMatrixCSC{Float64, Int64}}, CombinatorialSpaces.FastDEC.var&quot;#32#33&quot;{LinearAlgebra.Diagonal{Float64, Vector{Float64}}, CombinatorialSpaces.FastDEC.var&quot;#21#22&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex2D{Bool, Float64, GeometryBasics.Point{3, Float64}}, CombinatorialSpaces.FastDEC.var&quot;#7#8&quot;{Tuple{Matrix{Int32}, Matrix{Float64}, UnitRange{Int64}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}}, CombinatorialSpaces.FastDEC.var&quot;#30#31&quot;{SparseArrays.UMFPACK.UmfpackLU{Float64, Int32}}}, typeof(Main.sigmoid), Main.var&quot;#9#10&quot;, Decapodes.var&quot;#31#32&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}, Decapodes.var&quot;#19#21&quot;{1, Tuple{Matrix{Int32}, UnitRange{Int64}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#7#9&quot;{SparseArrays.UMFPACK.UmfpackLU{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><p>We can now supply initial conditions:</p><pre><code class="language-julia hljs">ice_thickness = map(sd[:point]) do (_,_,z)
+  z &lt; 0.8*rₑ ? 0 : 1
+end
+
+flow = dec_dual_derivative(0,sd) *
+  map(sd[sd[:tri_center], :dual_point]) do (_,_,z)
+    (rₑ-abs(z))/rₑ
+  end
+
+# There is no water &quot;under&quot; the ice:
+flow = dec_wedge_product_pd(Tuple{0,1},sd)(1 .- sigmoid(ice_thickness), flow)
+
+u₀ = ComponentArray(
+  ice_thickness = ice_thickness,
+  flow = flow,
+  water_dynamics_P = zeros(ntriangles(sd)))
+
+constants_and_parameters = (
+  glacier_dynamics_n = 3,
+  glacier_dynamics_stress_A = fill(1e-16, ne(sd)),
+  glacier_dynamics_stress_ρ = 910,
+  glacier_dynamics_stress_g = 9.8101,
+  water_dynamics_μ = 0.01);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(glacier_dynamics_n = 3, glacier_dynamics_stress_A = [1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16  …  1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16, 1.0e-16], glacier_dynamics_stress_ρ = 910, glacier_dynamics_stress_g = 9.8101, water_dynamics_μ = 0.01)</code></pre><h2 id="Execute-the-Simulation"><a class="docs-heading-anchor" href="#Execute-the-Simulation">Execute the Simulation</a><a id="Execute-the-Simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Execute-the-Simulation" title="Permalink"></a></h2><p>We specified our physics, our mesh, and our initial conditions. We have everything we need to execute the simulation.</p><pre><code class="language-julia hljs">tₑ = 100
+
+# Julia will pre-compile the generated simulation the first time it is run.
+@info(&quot;Precompiling Solver&quot;)
+prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
+soln = solve(prob, Vern7())
+soln.retcode != :Unstable || error(&quot;Solver was not stable&quot;)
+
+@info(&quot;Solving&quot;)
+prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+soln = solve(prob, Vern7())
+@show soln.retcode
+@info(&quot;Done&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Precompiling Solver
+[ Info: Solving
+soln.retcode = SciMLBase.ReturnCode.Success
+[ Info: Done</code></pre><h2 id="Results"><a class="docs-heading-anchor" href="#Results">Results</a><a id="Results-1"></a><a class="docs-heading-anchor-permalink" href="#Results" title="Permalink"></a></h2><p>Let&#39;s look at the dynamics of the ice:</p><pre><code class="language-julia hljs">begin
+  frames = 200
+  fig = Figure()
+  ax = LScene(fig[1,1], scenekw=(lights=[],))
+  msh = CairoMakie.mesh!(ax, s, color=soln(0).ice_thickness, colormap=:jet, colorrange=extrema(soln(0).ice_thickness))
+
+  Colorbar(fig[1,2], msh)
+  record(fig, &quot;halmo_ice.gif&quot;, range(0.0, tₑ; length=frames); framerate = 20) do t
+    msh.color = soln(t).ice_thickness
+  end
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;halmo_ice.gif&quot;</code></pre><p><img src="../halmo_ice.gif" alt="HalfarMohamedIce"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 43 seconds.
+[ Info: This page was last built at 2024-06-07T17:08:53.020.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../bsh/budyko_sellers_halfar/">« Budyko-Sellers-Halfar</a><a class="docs-footer-nextpage" href="../../nhs/nhs_lite/">NHS »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Friday 7 June 2024 17:11">Friday 7 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
