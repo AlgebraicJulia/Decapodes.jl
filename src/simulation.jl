@@ -76,11 +76,11 @@ Base.Expr(c::VarargsCall) = begin
 end
 
 struct AllocVecCall <: AbstractCall
-  name
-  form
-  dimension
-  T
-  code_target
+  name::Symbol
+  form::Symbol
+  dimension::Int
+  T::DataType
+  code_target::GenerationTarget
 end
 
 struct AllocVecCallError <: Exception
@@ -108,6 +108,15 @@ Base.Expr(c::AllocVecCall) = begin
   hook_AVC_caching(c, resolved_form, c.code_target)
 end
 
+"""
+    hook_AVC_caching(c::AllocVecCall)
+
+This hook can be overridden to change the way in which vectors can be preallocated for use by in-place functions.
+The AllocVecCall stores the `name` of the vector, the `form` type, the `dimension` of the simulation, the `T` which is the
+datatype of the vector, and the `code_target` which is used by multiple dispatch to select a hook.
+
+An example overloaded hook signature would be `hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::UserTarget)`
+"""
 function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CPUTarget)
   :($(Symbol(:__,c.name)) = Decapodes.FixedSizeDiffCache(Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form))))))
 end
@@ -115,6 +124,15 @@ end
 # TODO: Allow user to overload these hooks with user-defined code_target
 function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CUDATarget)
   :($(c.name) = CuVector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
+end
+
+"""
+    compile_var(alloc_vectors::Vector{AllocVecCall})
+
+This creates the vector allocations that will be used by the simulation body for in-place operations.
+"""
+function compile_var(alloc_vectors::Vector{AllocVecCall})
+  return quote $(Expr.(alloc_vectors)...) end
 end
 
 #= function get_form_number(d::SummationDecapode, var_id::Int)
@@ -209,10 +227,6 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con
   end
 
   return defs
-end
-
-function compile_var(alloc_vectors::Vector{AllocVecCall})
-  return quote $(Expr.(alloc_vectors)...) end
 end
 
 # This is the block of parameter setting inside f
