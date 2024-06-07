@@ -227,11 +227,15 @@ end
 # TODO: Pass this an extra type parameter that sets the size of the Floats
 get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}) = get_vars_code(d, vars, Float64)
 
+"""
+    get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{stateeltype}) where stateeltype
+
+This initalizes all input variables according to their Decapodes type.
+"""
 function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{stateeltype}) where stateeltype
   stmts = map(vars) do s
     ssymbl = QuoteNode(s)
     if all(d[incident(d, s, :name) , :type] .== :Constant)
-    #if only(d[incident(d, s, :name) , :type]) == :Constant
       :($s = p.$s)
     elseif all(d[incident(d, s, :name) , :type] .== :Parameter)
       :($s = (p.$s)(t))
@@ -248,7 +252,11 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{st
   return quote $(stmts...) end
 end
 
-# This is the setting of the du vector at the end of f
+"""
+    set_tanvars_code(d::AbstractNamedDecapode)
+
+This is
+"""
 function set_tanvars_code(d::AbstractNamedDecapode)
   tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
   stmts = map(tanvars) do (s,t)
@@ -515,16 +523,11 @@ function hook_LCO_inplace(computation_name, computation, ::CUDATarget, float_typ
   return :($(add_inplace_stub(computation_name)) = $(generate_parentheses_multipy(computation)))
 end
 
-
-# TODO: Will want to eventually support contracted operations
 function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget())
-  # TODO: May want to move this after infer_types if we let users
-  # set their own inference rules
   recognize_types(user_d)
 
   # Makes copy
   d′ = expand_operators(user_d)
-  #d′ = average_rewrite(d′)
 
   dec_matrices = Vector{Symbol}();
   alloc_vectors = Vector{AllocVecCall}();
@@ -563,7 +566,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, sta
   vect_defs = compile_var(alloc_vectors)
 
   quote
-    function simulate(mesh, operators, hodge=GeometricHodge())
+    (mesh, operators, hodge=GeometricHodge()) -> begin
       $func_defs
       $cont_defs
       $vect_defs
