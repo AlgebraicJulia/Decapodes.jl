@@ -9,24 +9,23 @@ const gensim_in_place_stub = Symbol("GenSim-M")
 
 abstract type GenerationTarget end
 
-struct CPUTarget <: GenerationTarget end
-struct CUDATarget <: GenerationTarget end
+abstract type CPUBackend <: GenerationTarget end
+abstract type CUDABackend <: GenerationTarget end
+
+struct CPUTarget <: CPUBackend end
+struct CUDATarget <: CUDABackend end
 
 abstract type AbstractCall end
 
 struct UnaryCall <: AbstractCall
-  operator
-  equality
-  input
-  output
+  operator::Union{Symbol, Expr}
+  equality::Symbol
+  input::Symbol
+  output::Symbol
 end
 
-# TODO: Add back support for contract operators
 Base.Expr(c::UnaryCall) = begin
   operator = c.operator
-  #= if isa(operator, AbstractArray)
-    operator = Expr(:call, :∘, reverse(operator)...)
-  end =#
   if(c.equality == :.=)
     if(operator == add_inplace_stub(:⋆₁⁻¹)) # Since inverse hodge Geo is a solver
       Expr(:call, c.operator, c.output, c.input)
@@ -41,19 +40,14 @@ Base.Expr(c::UnaryCall) = begin
 end
 
 struct BinaryCall <: AbstractCall
-  operator
-  equality
-  input1
-  input2
-  output
+  operator::Union{Symbol, Expr}
+  equality::Symbol
+  input1::Symbol
+  input2::Symbol
+  output::Symbol
 end
 
-# TODO: After getting rid of AppCirc2, do we need this check?
 Base.Expr(c::BinaryCall) = begin
-  #= if isa(c.operator, AbstractArray)
-    operator = :(compose($(c.operator)))
-  end =#
-
   # These operators can be done in-place
   if(c.equality == :.= && get_stub(c.operator) == gensim_in_place_stub)
     return Expr(:call, c.operator, c.output, c.input1, c.input2)
@@ -62,16 +56,13 @@ Base.Expr(c::BinaryCall) = begin
 end
 
 struct VarargsCall <: AbstractCall
-  operator
-  equality
-  inputs
-  output
+  operator::Union{Symbol, Expr}
+  equality::Symbol
+  inputs::Vector{Symbol}
+  output::Symbol
 end
 
 Base.Expr(c::VarargsCall) = begin
-  #= if isa(c.operator, AbstractArray)
-    operator = :(compose($(c.operator)))
-  end =#
   return Expr(c.equality, c.output, Expr(:call, c.operator, c.inputs...))
 end
 
@@ -117,12 +108,12 @@ datatype of the vector, and the `code_target` which is used by multiple dispatch
 
 An example overloaded hook signature would be `hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::UserTarget)`
 """
-function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CPUTarget)
+function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CPUBackend)
   :($(Symbol(:__,c.name)) = Decapodes.FixedSizeDiffCache(Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form))))))
 end
 
 # TODO: Allow user to overload these hooks with user-defined code_target
-function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CUDATarget)
+function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CUDABackend)
   :($(c.name) = CuVector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end
 
@@ -203,8 +194,8 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con
 
     # TODO: Add support for user-defined code targets
     default_generation = @match code_target begin
-      ::CPUTarget => :default_dec_matrix_generate
-      ::CUDATarget => :default_dec_cu_matrix_generate
+      ::CPUBackend => :default_dec_matrix_generate
+      ::CUDABackend => :default_dec_cu_matrix_generate
       _ => error("Provided code target $(code_target) is not yet supported in simulations")
     end
 
@@ -509,7 +500,7 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
 end
 
 # TODO: Allow user to overload these hooks with user-defined code_target
-function hook_LCO_inplace(computation_name, computation, ::CPUTarget, float_type::DataType)
+function hook_LCO_inplace(computation_name, computation, ::CPUBackend, float_type::DataType)
   return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
 end
 
@@ -524,7 +515,7 @@ function generate_parentheses_multipy(list)
 end
 
 # Adapt this to also write Diagonal Matrices as CuVectors, sparsifying diagonal matrices slows down computations 
-function hook_LCO_inplace(computation_name, computation, ::CUDATarget, float_type::DataType)
+function hook_LCO_inplace(computation_name, computation, ::CUDABackend, float_type::DataType)
   # return :($(add_inplace_stub(computation_name)) = CUDA.CUSPARSE.CuSparseMatrixCSC{$(float_type)}($(Expr(:call, :*, computation...))))
   return :($(add_inplace_stub(computation_name)) = $(generate_parentheses_multipy(computation)))
 end
