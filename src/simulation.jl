@@ -258,10 +258,13 @@ get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}) = get_vars_code(d,
 This initalizes all input variables according to their Decapodes type.
 """
 function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::GenerationTarget = CPUTarget()) where stateeltype
-  stmts = map(vars) do s
+  stmts = quote end
+  
+  map(vars) do s
     # If name is not unique then error
     found_names_idxs = incident(d, s, :name)
-    if length(found_names_idxs) > 1
+    # TODO: we should handle the case of same literals better
+    if length(found_names_idxs) > 1 && any(d[found_names_idxs, :type] .!== :Literal)
       throw(AmbiguousNameException(s, found_names_idxs))
     end
 
@@ -269,15 +272,16 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{st
 
     # Literals don't need assignments, because they are literals, but we stored them as Symbols.
     # TODO: we should fix that upstream so that we don't need this.
-    @match s_type begin
+    line = @match s_type begin
       :Literal => :($s = $(parse(stateeltype, String(s))))
       :Constant => :($s = p.$s)
       :Parameter => :($s = (p.$s)(t))
       _ => hook_GVC_get_form(s, s_type, code_target) # ! WARNING: This assumes a form
       # _ => throw(InvalidDecaTypeException(s, s_type)) # TODO: Use this for invalid types
     end
+    push!(stmts.args, line)
   end
-  return quote $(stmts...) end
+  return stmts
 end
 
 # TODO: Expand on this to be able to handle vector and ComponentArrays inputs
@@ -291,9 +295,11 @@ end
 This function creates the code that sets the value of the Tvars at the end of the code
 """
 function set_tanvars_code(d::AbstractNamedDecapode, code_target::GenerationTarget = CPUTarget())
+  stmts = quote end
+
   tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
-  stmts = map(tanvars) do (s,t)
-    hook_STC_settvar(s, t, code_target)
+  map(tanvars) do (s,t)
+    push!(stmts.args, hook_STC_settvar(s, t, code_target))
   end
   return stmts
 end
@@ -463,17 +469,22 @@ function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{All
     end
   end
 
-  cache_exprs = Expr[]
-  for alloc_vec in alloc_vectors
-    hook_COM_data_handle!(cache_exprs, alloc_vec, code_target)
+  eq_exprs = Expr.(op_order)
+end
+
+function post_process_vector_allocs(alloc_vecs::Vector{AllocVecCall}, code_target::GenerationTarget)
+  list_exprs = Expr[]
+  map(alloc_vecs) do alloc_vec
+    hook_PPVA_data_handle!(list_exprs, alloc_vec, code_target)
   end
 
-  eq_exprs = map(Expr, op_order)
-  vcat(cache_exprs,eq_exprs)
+  cache_exprs = quote end
+  append!(cache_exprs.args, list_exprs)
+  return cache_exprs
 end
 
 """
-    hook_COM_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
+    hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
 
 This hook determines if preallocated vectors need to be be handled in a special manner everytime
 before a function run. This is useful in the example of using `FixedSizeDiffCache` from `PreallocationTools.jl`.
@@ -481,12 +492,12 @@ before a function run. This is useful in the example of using `FixedSizeDiffCach
 This hook is passed in `cache_exprs` which is the collection of exprs to be pasted, `alloc_vec` which is an
 'AllocVecCall' that stores information about the allocated vector and a code target.
 """
-function hook_COM_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
+function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
   line = :($(alloc_vec.name) = (Decapodes.get_tmp($(Symbol(:__,alloc_vec.name)), u)))
   push!(cache_exprs, line)
 end
 
-function hook_COM_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CUDABackend)
+function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CUDABackend)
   return;
 end
 
@@ -621,6 +632,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars::Vector{Symbol}; dimen
 
   # Compilation of the simulation
   equations = compile(gen_d, input_vars, alloc_vectors, optimizable_dec_operators, dimension=dimension, stateeltype=stateeltype, code_target=code_target)
+  data = post_process_vector_allocs(alloc_vectors, code_target)
 
   func_defs = compile_env(gen_d, dec_matrices, contracted_dec_operators, code_target)
   vect_defs = compile_var(alloc_vectors)
@@ -632,8 +644,9 @@ function gensim(user_d::AbstractNamedDecapode, input_vars::Vector{Symbol}; dimen
       $vect_defs
       f(du, u, p, t) = begin
         $vars
+        $data
         $(equations...)
-        $(tars...)
+        $tars
         return nothing
       end;
     end
