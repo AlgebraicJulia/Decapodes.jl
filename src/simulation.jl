@@ -152,6 +152,14 @@ end
 
 is_form(d::SummationDecapode, var_name::Symbol) = is_form(d, first(incident(d, var_name, :name)))
 
+function getgeneric_type(type::Symbol) 
+  if (type == :Form0 || type == :Form1 || type == :Form2 ||
+    type == :DualForm0 || type == :DualForm1 || type == :DualForm2)
+    return :Form
+  end
+  return type
+end
+
 is_literal(d::SummationDecapode, var_id::Int) = (d[var_id, :type] == :Literal)
 is_literal(d::SummationDecapode, var_name::Symbol) = is_literal(d, first(incident(d, var_name, :name)))
 
@@ -172,6 +180,12 @@ end
 add_inplace_stub(var_name::Symbol) = add_stub(gensim_in_place_stub, var_name)
 
 const ARITHMETIC_OPS = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^, :.>, :.<, :.≤, :.≥])
+
+struct InvalidCodeTargetException <: Exception
+  code_target::GenerationTarget
+end
+
+Base.showerror(io::IO, e::InvalidCodeTargetException) = print(io, "Provided code target $(e.code_target) is not yet supported in simulations")
 
 """
     compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = CPUTarget())
@@ -196,7 +210,7 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con
     default_generation = @match code_target begin
       ::CPUBackend => :default_dec_matrix_generate
       ::CUDABackend => :default_dec_cu_matrix_generate
-      _ => error("Provided code target $(code_target) is not yet supported in simulations")
+      _ => throw(InvalidCodeTargetException(code_target))
     end
 
     def = :(($mat_op, $op) = $(default_generation)(mesh, $quote_op, hodge))
@@ -220,6 +234,20 @@ function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con
   return defs
 end
 
+struct AmbiguousNameException <: Exception
+  name::Symbol
+  indices::Vector{Int}
+end
+
+Base.showerror(io::IO, e::AmbiguousNameException) = print(io, "Name $(e.name) is repeated at indices $(e.indices) and is ambiguous")
+
+struct InvalidDecaTypeException <: Exception
+  name::Symbol
+  type::Symbol
+end
+
+Base.showerror(io::IO, e::InvalidDecaTypeException) = print(io, "Variable $(e.name) has invalid type \"$(e.type)\"")
+
 # This is the block of parameter setting inside f
 # TODO: Pass this an extra type parameter that sets the size of the Floats
 get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}) = get_vars_code(d, vars, Float64)
@@ -229,24 +257,32 @@ get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}) = get_vars_code(d,
 
 This initalizes all input variables according to their Decapodes type.
 """
-function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{stateeltype}) where stateeltype
+function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::GenerationTarget = CPUTarget()) where stateeltype
   stmts = map(vars) do s
-    ssymbl = QuoteNode(s)
-    if only(d[incident(d, s, :name) , :type]) == :Constant
-      :($s = p.$s)
-    elseif only(d[incident(d, s, :name) , :type]) == :Parameter
-      :($s = (p.$s)(t))
-    elseif all(d[incident(d, s, :name) , :type] .== :Literal)
-      # Literals don't need assignments, because they are literals, but we stored them as Symbols.
-      # TODO: we should fix that upstream so that we don't need this.
-      :($s = $(parse(stateeltype, String(s))))
-    else
-      # TODO: If names are not unique, then the type is assumed to be a
-      # form for all of the vars sharing a same name.
-      :($s = u.$s)
+    # If name is not unique then error
+    found_names_idxs = incident(d, s, :name)
+    if length(found_names_idxs) > 1
+      throw(AmbiguousNameException(s, found_names_idxs))
+    end
+
+    s_type = getgeneric_type(d[only(found_names_idxs), :type])
+
+    # Literals don't need assignments, because they are literals, but we stored them as Symbols.
+    # TODO: we should fix that upstream so that we don't need this.
+    @match s_type begin
+      :Literal => :($s = $(parse(stateeltype, String(s))))
+      :Constant => :($s = p.$s)
+      :Parameter => :($s = (p.$s)(t))
+      _ => hook_GVC_get_form(s, s_type, code_target) # ! WARNING: This assumes a form
+      # _ => throw(InvalidDecaTypeException(s, s_type)) # TODO: Use this for invalid types
     end
   end
   return quote $(stmts...) end
+end
+
+# TODO: Expand on this to be able to handle vector and ComponentArrays inputs
+function hook_GVC_get_form(var_name::Symbol, var_type::Symbol, code_target::Union{CPUBackend, CUDABackend})
+  return :($var_name = u.$var_name)
 end
 
 """
@@ -547,7 +583,7 @@ function hook_LCO_inplace(computation_name::Symbol, computation::Vector{Symbol},
   return :($(add_inplace_stub(computation_name)) = $(generate_parentheses_multiply(computation)))
 end
 
-function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget())
+function gensim(user_d::AbstractNamedDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget())
   recognize_types(user_d)
 
   # Makes copy
@@ -556,7 +592,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, sta
   dec_matrices = Vector{Symbol}();
   alloc_vectors = Vector{AllocVecCall}();
 
-  vars = get_vars_code(gen_d, input_vars, stateeltype)
+  vars = get_vars_code(gen_d, input_vars, stateeltype, code_target)
   tars = set_tanvars_code(gen_d, code_target)
 
   # We need to run this after we grab the constants and parameters out
