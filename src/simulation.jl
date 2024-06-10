@@ -14,6 +14,7 @@ abstract type CUDABackend <: GenerationTarget end
 struct CPUTarget <: CPUBackend end
 struct CUDATarget <: CUDABackend end
 
+# TODO: Add exceptions for invalid calls
 abstract type AbstractCall end
 
 struct UnaryCall <: AbstractCall
@@ -23,14 +24,16 @@ struct UnaryCall <: AbstractCall
   output::Symbol
 end
 
+# ! Warning: Do not pass this an inplace function without setting equality to :.=
 Base.Expr(c::UnaryCall) = begin
   operator = c.operator
   if(c.equality == :.=)
+    # TODO: Generalize to inplacable functions
     if(operator == add_inplace_stub(:⋆₁⁻¹)) # Since inverse hodge Geo is a solver
       Expr(:call, c.operator, c.output, c.input)
     elseif(operator == :.-)
       Expr(c.equality, c.output, Expr(:call, operator, c.input))
-    else
+    else # TODO: Add check that this operator is a matrix
       Expr(:call, :mul!, c.output, operator, c.input)
     end
   else
@@ -46,6 +49,7 @@ struct BinaryCall <: AbstractCall
   output::Symbol
 end
 
+# ! Warning: Do not pass this an inplace function without setting equality to :.=, vice versa
 Base.Expr(c::BinaryCall) = begin
   # These operators can be done in-place
   if(c.equality == :.= && get_stub(c.operator) == gensim_in_place_stub)
@@ -98,8 +102,9 @@ Base.Expr(c::AllocVecCall) = begin
   hook_AVC_caching(c, resolved_form, c.code_target)
 end
 
+# TODO: Should maybe have default CPU generation be Vector with PreallocTools being opt-in
 """
-    hook_AVC_caching(c::AllocVecCall)
+    hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CPUBackend)
 
 This hook can be overridden to change the way in which vectors can be preallocated for use by in-place functions.
 The AllocVecCall stores the `name` of the vector, the `form` type, the `dimension` of the simulation, the `T` which is the
