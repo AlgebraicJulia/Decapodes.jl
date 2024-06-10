@@ -1,4 +1,3 @@
-using Base.Iterators
 using CombinatorialSpaces
 using ComponentArrays
 using LinearAlgebra
@@ -664,7 +663,7 @@ gensim(collate(c); dimension=dimension)
 Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
 """
 gensim(d::SummationDecapode; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget()) =
-  gensim(d, vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype, code_target=code_target)
+  gensim(d, vcat(infer_state_names(d), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype, code_target=code_target)
 
 evalsim(d::SummationDecapode; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget()) =
   eval(gensim(d, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
