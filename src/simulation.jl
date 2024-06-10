@@ -271,17 +271,12 @@ function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{statee
       throw(AmbiguousNameException(s, found_names_idxs))
     end
 
+    s_type = is_all_literals ? :Literal : getgeneric_type(d[only(found_names_idxs), :type])
+
     # Literals don't need assignments, because they are literals, but we stored them as Symbols.
     # TODO: we should fix that upstream so that we don't need this.
-    if is_all_literals
-      push!(stmts.args, :($s = $(parse(stateeltype, String(s)))))
-      return
-    end
-
-    s_type = getgeneric_type(d[only(found_names_idxs), :type])
-
     line = @match s_type begin
-      # :Literal => :($s = $(parse(stateeltype, String(s))))
+      :Literal => :($s = $(parse(stateeltype, String(s))))
       :Constant => :($s = p.$s)
       :Parameter => :($s = (p.$s)(t))
       _ => hook_GVC_get_form(s, s_type, code_target) # ! WARNING: This assumes a form
