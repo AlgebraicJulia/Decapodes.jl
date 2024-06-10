@@ -571,6 +571,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2, sta
         $vars
         $(equations...)
         $(tars...)
+        return nothing
       end;
     end
   end
