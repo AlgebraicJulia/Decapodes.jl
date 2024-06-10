@@ -204,7 +204,7 @@ Base.showerror(io::IO, e::InvalidCodeTargetException) = print(io, "Provided code
 This creates the symbol to function linking for the simulation output. Those run through the `default_dec` backend
 expect both an in-place and an out-of-place variant in that order. User defined operations only support out-of-place.
 """
-function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = CPUTarget())
+function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget)
   defined_ops = deepcopy(con_dec_operators)
 
   defs = quote end
@@ -259,16 +259,12 @@ end
 
 Base.showerror(io::IO, e::InvalidDecaTypeException) = print(io, "Variable \"$(e.name)\" has invalid type \"$(e.type)\"")
 
-# This is the block of parameter setting inside f
-# TODO: Pass this an extra type parameter that sets the size of the Floats
-get_vars_code(d::SummationDecapode, vars::Vector{Symbol}) = get_vars_code(d, vars, Float64)
-
 """
     get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}) where stateeltype
 
 This initalizes all input variables according to their Decapodes type.
 """
-function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::GenerationTarget = CPUTarget()) where stateeltype
+function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::GenerationTarget) where stateeltype
   stmts = quote end
 
   map(vars) do s
@@ -308,7 +304,7 @@ end
 
 This function creates the code that sets the value of the Tvars at the end of the code
 """
-function set_tanvars_code(d::SummationDecapode, code_target::GenerationTarget = CPUTarget())
+function set_tanvars_code(d::SummationDecapode, code_target::GenerationTarget)
   stmts = quote end
 
   tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
@@ -344,7 +340,7 @@ const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
                                     :.^ => :.^,
                                     :.= => :.=)
 
-function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}; dimension::Int=2, stateeltype::DataType=Float64, code_target::GenerationTarget=CPUTarget())
+function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::GenerationTarget)
   # Get the Vars of the inputs (probably state Vars).
   visited_Var = falses(nparts(d, :Var))
 
@@ -512,7 +508,7 @@ function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCa
 end
 
 function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CUDABackend)
-  return;
+  return
 end
 
 # TODO: Add more specific types later for optimization
@@ -614,8 +610,8 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   # Makes copy
   gen_d = expand_operators(user_d)
 
-  dec_matrices = Vector{Symbol}();
-  alloc_vectors = Vector{AllocVecCall}();
+  dec_matrices = Vector{Symbol}()
+  alloc_vectors = Vector{AllocVecCall}()
 
   vars = get_vars_code(gen_d, input_vars, stateeltype, code_target)
   tars = set_tanvars_code(gen_d, code_target)
@@ -638,14 +634,14 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   init_dec_matrices!(gen_d, dec_matrices, union(optimizable_dec_operators, extra_dec_operators))
 
   # This contracts matrices together into a single matrix
-  contracted_dec_operators = Set{Symbol}();
+  contracted_dec_operators = Set{Symbol}()
   contract_operators!(gen_d, allowable_ops = optimizable_dec_operators)
   cont_defs = link_contract_operators(gen_d, contracted_dec_operators, stateeltype, code_target)
 
   union!(optimizable_dec_operators, contracted_dec_operators, extra_dec_operators)
 
   # Compilation of the simulation
-  equations = compile(gen_d, input_vars, alloc_vectors, optimizable_dec_operators, dimension=dimension, stateeltype=stateeltype, code_target=code_target)
+  equations = compile(gen_d, input_vars, alloc_vectors, optimizable_dec_operators, dimension, stateeltype, code_target)
   data = post_process_vector_allocs(alloc_vectors, code_target)
 
   func_defs = compile_env(gen_d, dec_matrices, contracted_dec_operators, code_target)

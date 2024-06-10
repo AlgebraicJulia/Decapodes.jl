@@ -102,17 +102,17 @@ DiffusionWithLiteral = @decapode begin
 end
 
 # Verify the variable accessors.
-@test Decapodes.get_vars_code(DiffusionWithConstant, [:k]).args[2] == :(k = p.k)
+@test Decapodes.get_vars_code(DiffusionWithConstant, [:k], Float64, CPUTarget()).args[2] == :(k = p.k)
 @test infer_state_names(DiffusionWithConstant) == [:C, :k]
 
 @test infer_state_names(DiffusionWithParameter) == [:C, :k]
-@test Decapodes.get_vars_code(DiffusionWithParameter, [:k]).args[2] == :(k = p.k(t))
+@test Decapodes.get_vars_code(DiffusionWithParameter, [:k], Float64, CPUTarget()).args[2] == :(k = p.k(t))
 
 @test infer_state_names(DiffusionWithLiteral) == [:C]
 # TODO: Fix proper Expr equality, the Float64 does not equate here
 # @test Decapodes.get_vars_code(DiffusionWithLiteral, [Symbol("3")]).args[2] == :(var"3"::Float64 = 3.0)
-@test Decapodes.get_vars_code(DiffusionWithLiteral, [Symbol("3")]).args[2].args[1] == :(var"3")
-@test Decapodes.get_vars_code(DiffusionWithLiteral, [Symbol("3")]).args[2].args[2] == 3.0
+@test Decapodes.get_vars_code(DiffusionWithLiteral, [Symbol("3")], Float64, CPUTarget()).args[2].args[1] == :(var"3")
+@test Decapodes.get_vars_code(DiffusionWithLiteral, [Symbol("3")], Float64, CPUTarget()).args[2].args[2] == 3.0
 
 # Test that simulations generated from these return the same result.
 f = evalsim(DiffusionWithConstant)
