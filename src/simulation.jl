@@ -17,6 +17,13 @@ struct CUDATarget <: CUDABackend end
 # TODO: Add exceptions for invalid calls
 abstract type AbstractCall end
 
+struct InvalidCallException <: Exception end
+
+Base.showerror(io::IO, e::InvalidCallException) = print(io, "Compiler call being made is not a valid one")
+
+# A catch all if an AbstractCall's child doesn't define `Base.Expr`
+Base.Expr(::AbstractCall) = throw(InvalidCallException)
+
 struct UnaryCall <: AbstractCall
   operator::Union{Symbol, Expr}
   equality::Symbol

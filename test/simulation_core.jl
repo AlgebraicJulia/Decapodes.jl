@@ -206,6 +206,8 @@ end
 @testset "Test hook_AVC_caching" begin
   @test Expr(AllocVecCall(:V, :Form0, 1, Float64, MYTESTTarget())) == :Testing
   @test Expr(AllocVecCall(:V, :Form0, 1, Float64, CPUTarget())) != :Testing
+  @test Expr(AllocVecCall(:V, :Form0, 1, Float64, CUDATarget())) != :Testing
+
 end
 
 end
