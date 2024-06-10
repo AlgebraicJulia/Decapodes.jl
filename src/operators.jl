@@ -1,12 +1,13 @@
 using Base.Iterators
 using CombinatorialSpaces
+import CombinatorialSpaces.DiscreteExteriorCalculus: DiscreteHodge
 using Krylov
 using LinearAlgebra
 using SparseArrays
 
 function default_dec_cu_matrix_generate() end;
 
-function default_dec_matrix_generate(sd, my_symbol, hodge)
+function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge)
   op = @match my_symbol begin
 
     # Regular Hodge Stars
@@ -69,12 +70,12 @@ function default_dec_matrix_generate(sd, my_symbol, hodge)
   return op
 end
 
-function dec_mat_hodge(k, sd::HasDeltaSet, hodge)
+function dec_mat_hodge(k::Int, sd::HasDeltaSet, hodge::DiscreteHodge)
   hodge = dec_hodge_star(k, sd, hodge=hodge)
   return (hodge, x -> hodge * x)
 end
 
-function dec_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge)
+function dec_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge::DiscreteHodge)
   invhodge = dec_inv_hodge_star(k, sd, hodge=hodge)
   return (invhodge, x -> invhodge * x)
 end
@@ -137,7 +138,7 @@ function dec_♭(sd::HasDeltaSet2D)
   x -> ♭_m * x
 end
 
-function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
+function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge=GeometricHodge())
 
   op = @match my_symbol begin
 

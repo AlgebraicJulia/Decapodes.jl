@@ -152,7 +152,7 @@ end
 
 is_form(d::SummationDecapode, var_name::Symbol) = is_form(d, first(incident(d, var_name, :name)))
 
-function getgeneric_type(type::Symbol) 
+function getgeneric_type(type::Symbol)
   if (type == :Form0 || type == :Form1 || type == :Form2 ||
     type == :DualForm0 || type == :DualForm1 || type == :DualForm2)
     return :Form
@@ -188,12 +188,12 @@ end
 Base.showerror(io::IO, e::InvalidCodeTargetException) = print(io, "Provided code target $(e.code_target) is not yet supported in simulations")
 
 """
-    compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = CPUTarget())
+    compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = CPUTarget())
 
 This creates the symbol to function linking for the simulation output. Those run through the `default_dec` backend
 expect both an in-place and an out-of-place variant in that order. User defined operations only support out-of-place.
 """
-function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = CPUTarget())
+function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = CPUTarget())
   defined_ops = deepcopy(con_dec_operators)
 
   defs = quote end
@@ -250,16 +250,16 @@ Base.showerror(io::IO, e::InvalidDecaTypeException) = print(io, "Variable \"$(e.
 
 # This is the block of parameter setting inside f
 # TODO: Pass this an extra type parameter that sets the size of the Floats
-get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}) = get_vars_code(d, vars, Float64)
+get_vars_code(d::SummationDecapode, vars::Vector{Symbol}) = get_vars_code(d, vars, Float64)
 
 """
-    get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{stateeltype}) where stateeltype
+    get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}) where stateeltype
 
 This initalizes all input variables according to their Decapodes type.
 """
-function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::GenerationTarget = CPUTarget()) where stateeltype
+function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::GenerationTarget = CPUTarget()) where stateeltype
   stmts = quote end
-  
+
   map(vars) do s
     # If name is not unique (or not just literals) then error
     found_names_idxs = incident(d, s, :name)
@@ -271,6 +271,8 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{st
       throw(AmbiguousNameException(s, found_names_idxs))
     end
 
+    # Literals don't need assignments, because they are literals, but we stored them as Symbols.
+    # TODO: we should fix that upstream so that we don't need this.
     if is_all_literals
       push!(stmts.args, :($s = $(parse(stateeltype, String(s)))))
       return
@@ -278,8 +280,6 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{st
 
     s_type = getgeneric_type(d[only(found_names_idxs), :type])
 
-    # Literals don't need assignments, because they are literals, but we stored them as Symbols.
-    # TODO: we should fix that upstream so that we don't need this.
     line = @match s_type begin
       # :Literal => :($s = $(parse(stateeltype, String(s))))
       :Constant => :($s = p.$s)
@@ -293,16 +293,16 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{st
 end
 
 # TODO: Expand on this to be able to handle vector and ComponentArrays inputs
-function hook_GVC_get_form(var_name::Symbol, var_type::Symbol, code_target::Union{CPUBackend, CUDABackend})
+function hook_GVC_get_form(var_name::Symbol, var_type::Symbol, ::Union{CPUBackend, CUDABackend})
   return :($var_name = u.$var_name)
 end
 
 """
-    set_tanvars_code(d::AbstractNamedDecapode)
+    set_tanvars_code(d::SummationDecapode)
 
 This function creates the code that sets the value of the Tvars at the end of the code
 """
-function set_tanvars_code(d::AbstractNamedDecapode, code_target::GenerationTarget = CPUTarget())
+function set_tanvars_code(d::SummationDecapode, code_target::GenerationTarget = CPUTarget())
   stmts = quote end
 
   tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
@@ -338,7 +338,7 @@ const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
                                     :.^ => :.^,
                                     :.= => :.=)
 
-function compile(d::SummationDecapode, inputs::Vector, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}; dimension=2, stateeltype=Float64, code_target=CPUTarget())
+function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}; dimension::Int=2, stateeltype::DataType=Float64, code_target::GenerationTarget=CPUTarget())
   # Get the Vars of the inputs (probably state Vars).
   visited_Var = falses(nparts(d, :Var))
 
@@ -550,7 +550,7 @@ function init_dec_matrices!(d::SummationDecapode, dec_matrices::Vector{Symbol}, 
   end
 end
 
-function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol}, code_target::GenerationTarget, stateeltype::DataType)
+function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::GenerationTarget)
 
   contract_defs = quote end
 
@@ -602,7 +602,7 @@ function hook_LCO_inplace(computation_name::Symbol, computation::Vector{Symbol},
   return :($(add_inplace_stub(computation_name)) = $(generate_parentheses_multiply(computation)))
 end
 
-function gensim(user_d::AbstractNamedDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget())
+function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget())
   recognize_types(user_d)
 
   # Makes copy
@@ -634,7 +634,7 @@ function gensim(user_d::AbstractNamedDecapode, input_vars::Vector{Symbol}; dimen
   # This contracts matrices together into a single matrix
   contracted_dec_operators = Set{Symbol}();
   contract_operators!(gen_d, allowable_ops = optimizable_dec_operators)
-  cont_defs = link_contract_operators(gen_d, contracted_dec_operators, code_target, stateeltype)
+  cont_defs = link_contract_operators(gen_d, contracted_dec_operators, stateeltype, code_target)
 
   union!(optimizable_dec_operators, contracted_dec_operators, extra_dec_operators)
 
@@ -664,16 +664,16 @@ end
 gensim(c::Collage; dimension::Int=2) =
 gensim(collate(c); dimension=dimension)
 
-"""    function gensim(d::AbstractNamedDecapode; dimension::Int=2)
+"""    function gensim(d::SummationDecapode; dimension::Int=2)
 
 Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
 """
-gensim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) =
+gensim(d::SummationDecapode; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget()) =
   gensim(d, vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype, code_target=code_target)
 
-evalsim(d::AbstractNamedDecapode; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) =
+evalsim(d::SummationDecapode; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget()) =
   eval(gensim(d, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
-evalsim(d::AbstractNamedDecapode, input_vars; dimension::Int=2, stateeltype = Float64, code_target = CPUTarget()) =
+evalsim(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget()) =
   eval(gensim(d, input_vars, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
 
 """
