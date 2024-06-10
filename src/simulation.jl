@@ -239,14 +239,14 @@ struct AmbiguousNameException <: Exception
   indices::Vector{Int}
 end
 
-Base.showerror(io::IO, e::AmbiguousNameException) = print(io, "Name $(e.name) is repeated at indices $(e.indices) and is ambiguous")
+Base.showerror(io::IO, e::AmbiguousNameException) = print(io, "Name \"$(e.name)\" is repeated at indices $(e.indices) and is ambiguous")
 
 struct InvalidDecaTypeException <: Exception
   name::Symbol
   type::Symbol
 end
 
-Base.showerror(io::IO, e::InvalidDecaTypeException) = print(io, "Variable $(e.name) has invalid type \"$(e.type)\"")
+Base.showerror(io::IO, e::InvalidDecaTypeException) = print(io, "Variable \"$(e.name)\" has invalid type \"$(e.type)\"")
 
 # This is the block of parameter setting inside f
 # TODO: Pass this an extra type parameter that sets the size of the Floats
@@ -261,11 +261,19 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{st
   stmts = quote end
   
   map(vars) do s
-    # If name is not unique then error
+    # If name is not unique (or not just literals) then error
     found_names_idxs = incident(d, s, :name)
     # TODO: we should handle the case of same literals better
-    if length(found_names_idxs) > 1 && any(d[found_names_idxs, :type] .!== :Literal)
+    is_singular = length(found_names_idxs) == 1
+    is_all_literals = all(d[found_names_idxs, :type] .== :Literal)
+
+    if !is_singular && !is_all_literals
       throw(AmbiguousNameException(s, found_names_idxs))
+    end
+
+    if is_all_literals
+      push!(stmts.args, :($s = $(parse(stateeltype, String(s)))))
+      return
     end
 
     s_type = getgeneric_type(d[only(found_names_idxs), :type])
@@ -273,7 +281,7 @@ function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol}, ::Type{st
     # Literals don't need assignments, because they are literals, but we stored them as Symbols.
     # TODO: we should fix that upstream so that we don't need this.
     line = @match s_type begin
-      :Literal => :($s = $(parse(stateeltype, String(s))))
+      # :Literal => :($s = $(parse(stateeltype, String(s))))
       :Constant => :($s = p.$s)
       :Parameter => :($s = (p.$s)(t))
       _ => hook_GVC_get_form(s, s_type, code_target) # ! WARNING: This assumes a form
