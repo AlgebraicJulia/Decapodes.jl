@@ -194,7 +194,7 @@ function add_stub(stub_name::Symbol, var_name::Symbol)
   return Symbol("$(stub_name)_$(var_name)")
 end
 
-# ! Warning: This assumes either a stub was added or the variable doesn't have an "_" itself
+# ! Warning: Bad behavior if not stub was added and  variable has an "_" itself
 function get_stub(var_name::Symbol)
   var_str = String(var_name)
   idx = findfirst("_", var_str)
@@ -363,6 +363,14 @@ const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
                                     :.^ => :.^,
                                     :.= => :.=)
 
+"""
+    compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::GenerationTarget)
+
+Function that compiles the computation body. `d` is the input Decapode, `inputs` is a vector of state variables and literals,
+`alloc_vec` should be empty when passed in, `optimizable_dec_operators` is a collection of all DEC operator symbols that can use special
+in-place methods, `dimension` is the dimension of the problem (usually 1 or 2), `stateeltype` is the type of the state elements
+(usually Float32 or Float64) and `code_target` determines what architecture the code is compiled for (either CPU or CUDA).
+"""
 function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::GenerationTarget)
   # Get the Vars of the inputs (probably state Vars).
   visited_Var = falses(nparts(d, :Var))
@@ -505,6 +513,12 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
   eq_exprs = Expr.(op_order)
 end
 
+"""
+    post_process_vector_allocs(alloc_vecs::Vector{AllocVecCall}, code_target::GenerationTarget)
+
+This deals with any post processing needed by the allocations, like if data needs to be retrieved
+from a special cache.
+"""
 function post_process_vector_allocs(alloc_vecs::Vector{AllocVecCall}, code_target::GenerationTarget)
   list_exprs = Expr[]
   map(alloc_vecs) do alloc_vec
@@ -534,7 +548,12 @@ function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCa
   return
 end
 
-# TODO: Add more specific types later for optimization
+"""
+    resolve_types_compiler!(d::SummationDecapode)
+
+Converts `Constant` and `Parameter` types to `infer` since this is essentially what they are
+to the compiler.
+"""
 function resolve_types_compiler!(d::SummationDecapode)
   d[:type] = map(d[:type]) do x
     if(x == :Constant || x == :Parameter)
@@ -544,12 +563,23 @@ function resolve_types_compiler!(d::SummationDecapode)
   end
 end
 
+"""
+    replace_names_compiler!(d::SummationDecapode)
+
+This makes easy function name conversions in the Decapode
+"""
 function replace_names_compiler!(d::SummationDecapode)
   dec_op1 = Pair{Symbol, Any}[]
   dec_op2 = Pair{Symbol, Symbol}[(:∧₀₀ => :.*)]
   replace_names!(d, dec_op1, dec_op2)
 end
 
+# TODO: This should be extended to accept user rules
+"""
+    infer_overload_compiler!(d::SummationDecapode, dimension::Int)
+
+A combined `infer_types` and `resolve_overloads` pipeline with default DEC rules.
+"""
 function infer_overload_compiler!(d::SummationDecapode, dimension::Int)
   if(dimension == 1)
     infer_types!(d, op1_inf_rules_1D, op2_inf_rules_1D)
@@ -560,6 +590,11 @@ function infer_overload_compiler!(d::SummationDecapode, dimension::Int)
   end
 end
 
+"""
+    init_dec_matrices!(d::SummationDecapode, dec_matrices::Vector{Symbol}, optimizable_dec_operators::Set{Symbol})
+
+Collects all DEC operators that are concrete matrices.
+"""
 function init_dec_matrices!(d::SummationDecapode, dec_matrices::Vector{Symbol}, optimizable_dec_operators::Set{Symbol})
 
   for op1_name in d[:op1]
@@ -575,6 +610,11 @@ function init_dec_matrices!(d::SummationDecapode, dec_matrices::Vector{Symbol}, 
   end
 end
 
+"""
+    link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::GenerationTarget)
+
+Collects arrays of DEC matrices together, replaces the array with a generated function name and computes the contracted multiplication
+"""
 function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::GenerationTarget)
 
   contract_defs = quote end
@@ -639,6 +679,15 @@ end
 
 Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32 or Float64")
 
+"""
+    gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget())
+
+Generates the entire code body for the simulation function. `user_d` is the user passed Decapodes which will left unmodified and 'input_vars' is the collection of
+state variables and literals in the Decapode.
+
+Optional keyword arguments are `dimension` is the dimension of the problem and defaults to 2D, `stateeltype` is the element type of the state forms and defaults to Float64 and `code_target` is the
+intended architecture target for the generated code, defaulting to regular CPU compatiable code.
+"""
 function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget())
 
   (1 <= dimension <= 2) ||
