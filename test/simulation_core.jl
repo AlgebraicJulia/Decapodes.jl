@@ -200,6 +200,7 @@ end
 # Hooking Code Test #
 #####################
 
+# This is just a small test to see that hooking as a general concept works
 import Decapodes: hook_AVC_caching # TODO: Remove this import since this should eventually be exported
 import Decapodes: GenerationTarget
 struct MYTESTTarget <: CPUBackend end
@@ -255,7 +256,7 @@ import Decapodes: get_vars_code, AmbiguousNameException
   # TODO: Remove when Literals are not parsed as symbols anymore
   # Test that literals parse correctly
   let d = @decapode begin end
-    inputs = [Symbol("2")] 
+    inputs = [Symbol("2")]
     add_parts!(d, :Var, 1, name=inputs, type=[:Literal])
     @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(var"2" = 2.0)
   end
@@ -263,7 +264,7 @@ import Decapodes: get_vars_code, AmbiguousNameException
   # Test that all forms parse correctly
   for form in [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2]
     let d = @decapode begin end
-      inputs = [:F] 
+      inputs = [:F]
       add_parts!(d, :Var, 1, name=inputs, type=[form])
       @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(F = u.F)
     end
@@ -287,6 +288,39 @@ import Decapodes: get_vars_code, AmbiguousNameException
     @test_throws AmbiguousNameException get_vars_code(d, [:test], Float64, CPUTarget())
   end
 end
+
+#######################
+# Stub Handling Tests #
+#######################
+
+import Decapodes: add_stub, get_stub, InvalidStubException, NO_STUB_RETURN
+
+@testset "Stub handling" begin
+  reg_stub = :Test
+  empty_stub = Symbol("")
+  uni_stub = Symbol("Τϵστ")
+  tricky_stub = Symbol("Τest")
+
+  # Test add_stub fuctionality
+  let my_stub = :MyStub
+    @test :Test_MyStub == add_stub(reg_stub, my_stub)
+    @test_throws InvalidStubException add_stub(empty_stub, my_stub)
+    @test_throws InvalidStubException add_stub(uni_stub, my_stub)
+    @test_throws InvalidStubException add_stub(tricky_stub, my_stub)
+    @test_throws InvalidStubException add_stub(NO_STUB_RETURN, my_stub)
+  end
+
+  # Test get_stub fuctionality
+  let my_stub = :MyStub
+    @test reg_stub == get_stub(add_stub(reg_stub, my_stub))
+    @test_throws InvalidStubException get_stub(Symbol("_Test"))
+    @test_throws InvalidStubException get_stub(Symbol("_"))
+    @test NO_STUB_RETURN == get_stub(Symbol(""))
+    @test NO_STUB_RETURN == get_stub(Symbol("Test"))
+  end
+
+end
+
 
 ########################
 # gensim Fuzzing Tests #

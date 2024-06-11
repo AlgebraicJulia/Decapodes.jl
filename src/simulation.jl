@@ -4,7 +4,8 @@ using LinearAlgebra
 using MLStyle
 using PreallocationTools
 
-const gensim_in_place_stub = Symbol("GenSim-M")
+const GENSIM_INPLACE_STUB = Symbol("GenSim-M")
+const NO_STUB_RETURN = Symbol("NOSTUB")
 
 abstract type GenerationTarget end
 
@@ -59,7 +60,7 @@ end
 # ! Warning: Do not pass this an inplace function without setting equality to :.=, vice versa
 Base.Expr(c::BinaryCall) = begin
   # These operators can be done in-place
-  if(c.equality == :.= && get_stub(c.operator) == gensim_in_place_stub)
+  if(c.equality == :.= && get_stub(c.operator) == GENSIM_INPLACE_STUB)
     return Expr(:call, c.operator, c.output, c.input1, c.input2)
   end
   return Expr(c.equality, c.output, Expr(:call, c.operator, c.input1, c.input2))
@@ -155,6 +156,7 @@ var_id = first(incident(d, var_name, :name))
 return get_form_number(d, var_id)
 end =#
 
+# TODO: This should be edited when we replace types as symbols with types as Julia types
 function is_form(d::SummationDecapode, var_id::Int)
   type = d[var_id, :type]
   return (type == :Form0 || type == :Form1 || type == :Form2 ||
@@ -177,18 +179,38 @@ is_literal(d::SummationDecapode, var_name::Symbol) = is_literal(d, first(inciden
 is_infer(d::SummationDecapode, var_id::Int) = (d[var_id, :type] == :infer)
 is_infer(d::SummationDecapode, var_name::Symbol) = is_infer(d, first(incident(d, var_name, :name)))
 
-add_stub(stub_name::Symbol, var_name::Symbol) = return Symbol("$(stub_name)_$(var_name)")
+struct InvalidStubException <: Exception
+  stub::Symbol
+end
 
+Base.showerror(io::IO, e::InvalidStubException) = print(io, "Stub \"$(e.stub)\" is invalid")
+
+function add_stub(stub_name::Symbol, var_name::Symbol)
+  # No empty stubs
+  if stub_name == Symbol() || stub_name == NO_STUB_RETURN || !isascii(String(stub_name))
+    throw(InvalidStubException(stub_name))
+  end
+
+  return Symbol("$(stub_name)_$(var_name)")
+end
+
+# ! Warning: This assumes either a stub was added or the variable doesn't have an "_" itself
 function get_stub(var_name::Symbol)
   var_str = String(var_name)
   idx = findfirst("_", var_str)
-  if(isnothing(idx) || first(idx) == 1)
-    return nothing
+
+  if(isnothing(idx))
+    return NO_STUB_RETURN
   end
+
+  if(first(idx) == 1)
+    throw(InvalidStubException(var_name))
+  end
+
   return Symbol(var_str[begin:first(idx) - 1])
 end
 
-add_inplace_stub(var_name::Symbol) = add_stub(gensim_in_place_stub, var_name)
+add_inplace_stub(var_name::Symbol) = add_stub(GENSIM_INPLACE_STUB, var_name)
 
 const ARITHMETIC_OPS = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^, :.>, :.<, :.≤, :.≥])
 
@@ -215,7 +237,7 @@ function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec
     end
 
     quote_op = QuoteNode(op)
-    mat_op = add_stub(gensim_in_place_stub, op)
+    mat_op = add_stub(GENSIM_INPLACE_STUB, op)
 
     # TODO: Add support for user-defined code targets
     default_generation = @match code_target begin
@@ -379,7 +401,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
           # push!(dec_matrices, operator)
           if(is_form(d, t))
             equality = PROMOTE_ARITHMETIC_MAP[equality]
-            operator = add_stub(gensim_in_place_stub, operator)
+            operator = add_stub(GENSIM_INPLACE_STUB, operator)
 
             push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype, code_target))
           end
@@ -427,7 +449,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
               push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
             end
           elseif(operator in optimizable_dec_operators)
-            operator = add_stub(gensim_in_place_stub, operator)
+            operator = add_stub(GENSIM_INPLACE_STUB, operator)
             equality = PROMOTE_ARITHMETIC_MAP[equality]
             push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
           end
@@ -618,11 +640,11 @@ end
 Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32 or Float64")
 
 function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget())
-  
-  (1 <= dimension <= 2) || 
+
+  (1 <= dimension <= 2) ||
     throw(UnsupportedDimensionException(dimension))
 
-  (stateeltype == Float32 || stateeltype == Float64) || 
+  (stateeltype == Float32 || stateeltype == Float64) ||
     throw(UnsupportedStateeltypeException(stateeltype))
 
   recognize_types(user_d)
