@@ -145,7 +145,6 @@ import Decapodes: AllocVecCall
   This function tests that the vector caching usage is correct. Exactly, this tests that
   the form to simplex conversion is correct, that the correct collection is used and that the
   name of the cache is the same the variable.
-
   """
   function test_vector_cache(alloc_vec::AllocVecCall)
     expr = Expr(alloc_vec)
@@ -171,20 +170,26 @@ import Decapodes: AllocVecCall
   end
 
   for type in [Float32, Float64]
+
+    # Test correct data for dimension 1 FixedSizeDiffCache
     for form in [:Form0, :Form1, :DualForm1, :DualForm0]
       test_prealloc_tools(AllocVecCall(:V, form, 1, type, CPUTarget()))
     end
 
+    # Test correct data for dimension 2 FixedSizeDiffCache
     for form in [:Form0, :Form1, :Form2, :DualForm2, :DualForm1, :DualForm0]
       test_prealloc_tools(AllocVecCall(:V, form, 2, type, CPUTarget()))
     end
   end
 
   for type in [Float32, Float64]
+
+    # Test correct data for dimension 1 CuVector
     for form in [:Form0, :Form1, :DualForm1, :DualForm0]
       test_vector_cache(AllocVecCall(:V, form, 1, type, CUDATarget()))
     end
 
+    # Test correct data for dimension 1 CuVector
     for form in [:Form0, :Form1, :Form2, :DualForm2, :DualForm1, :DualForm0]
       test_vector_cache(AllocVecCall(:V, form, 2, type, CUDATarget()))
     end
@@ -195,8 +200,8 @@ end
 # Hooking Code Test #
 #####################
 
-import Decapodes: hook_AVC_caching # TODO: Remove this import since this should be exported
-
+import Decapodes: hook_AVC_caching # TODO: Remove this import since this should eventually be exported
+import Decapodes: GenerationTarget
 struct MYTESTTarget <: CPUBackend end
 
 function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::MYTESTTarget)
@@ -207,6 +212,96 @@ end
   @test Expr(AllocVecCall(:V, :Form0, 1, Float64, MYTESTTarget())) == :Testing
   @test Expr(AllocVecCall(:V, :Form0, 1, Float64, CPUTarget())) != :Testing
   @test Expr(AllocVecCall(:V, :Form0, 1, Float64, CUDATarget())) != :Testing
+end
+
+#####################
+# compile_env Tests #
+#####################
+
+import Decapodes: compile_env, InvalidCodeTargetException
+
+@testset "Test compile_env" begin
+
+  # Test that error throws on unknown code target
+  let d = @decapode begin end
+    struct BadTarget <: GenerationTarget end
+    @test_throws InvalidCodeTargetException compile_env(d, [:test], Set{Symbol}(), BadTarget())
+  end
+
+end
+
+#######################
+# get_vars_code Tests #
+#######################
+
+import Decapodes: get_vars_code, AmbiguousNameException
+
+@testset "Test get_vars_code" begin
+
+  # Test that constants parse correctly
+  let d = @decapode begin end
+    inputs = [:C]
+    add_parts!(d, :Var, 1, name=inputs, type=[:Constant])
+    @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(C = p.C)
+  end
+
+  # Test that parameters parse correctly
+  let d = @decapode begin end
+    inputs = [:P]
+    add_parts!(d, :Var, 1, name=inputs, type=[:Parameter])
+    @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(P = p.P(t))
+  end
+
+  # TODO: Remove when Literals are not parsed as symbols anymore
+  # Test that literals parse correctly
+  let d = @decapode begin end
+    inputs = [Symbol("2")] 
+    add_parts!(d, :Var, 1, name=inputs, type=[:Literal])
+    @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(var"2" = 2.0)
+  end
+
+  # Test that all forms parse correctly
+  for form in [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2]
+    let d = @decapode begin end
+      inputs = [:F] 
+      add_parts!(d, :Var, 1, name=inputs, type=[form])
+      @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(F = u.F)
+    end
+  end
+
+  # Test that duplicated names fails
+  let d = @decapode begin end
+    add_parts!(d, :Var, 2, name=[:A, :A], type=[:Constant, :Constant])
+    @test_throws AmbiguousNameException get_vars_code(d, [:A], Float64, CPUTarget())
+  end
+
+  # Test invalid input var names fails
+  let d = @decapode begin end
+    add_parts!(d, :Var, 2, name=[:A, :A], type=[:Constant, :Constant])
+    @test_throws AmbiguousNameException get_vars_code(d, [:test], Float64, CPUTarget())
+  end
+
+  # Test that duplicated names depends only on names
+  let d = @decapode begin end
+    add_parts!(d, :Var, 2, name=[:A, :A], type=[:Constant, :Literal])
+    @test_throws AmbiguousNameException get_vars_code(d, [:test], Float64, CPUTarget())
+  end
+end
+
+########################
+# gensim Fuzzing Tests #
+########################
+
+import Decapodes: UnsupportedDimensionException, UnsupportedStateeltypeException
+
+@testset "Gensim Fuzzing" begin
+  let d = @decapode begin end
+    @test_throws UnsupportedDimensionException gensim(d, [:test], dimension = 3, stateeltype = Float64, code_target = CPUTarget())
+    @test_throws UnsupportedStateeltypeException gensim(d, [:test], dimension = 2, stateeltype = Int64, code_target = CPUTarget())
+
+    @test_throws UnsupportedDimensionException gensim(d, [:test], dimension = 3, stateeltype = Float64, code_target = CUDATarget())
+    @test_throws UnsupportedStateeltypeException gensim(d, [:test], dimension = 2, stateeltype = Int64, code_target = CUDATarget())
+  end
 end
 
 end

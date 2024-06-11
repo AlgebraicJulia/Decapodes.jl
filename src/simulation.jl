@@ -270,11 +270,12 @@ function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{statee
   map(vars) do s
     # If name is not unique (or not just literals) then error
     found_names_idxs = incident(d, s, :name)
+
     # TODO: we should handle the case of same literals better
     is_singular = length(found_names_idxs) == 1
     is_all_literals = all(d[found_names_idxs, :type] .== :Literal)
 
-    if !is_singular && !is_all_literals
+    if isempty(found_names_idxs) || (!is_singular && !is_all_literals)
       throw(AmbiguousNameException(s, found_names_idxs))
     end
 
@@ -604,7 +605,26 @@ function hook_LCO_inplace(computation_name::Symbol, computation::Vector{Symbol},
   return :($(add_inplace_stub(computation_name)) = $(generate_parentheses_multiply(computation)))
 end
 
+struct UnsupportedDimensionException <: Exception
+  dim::Int
+end
+
+Base.showerror(io::IO, e::UnsupportedDimensionException) = print(io, "Decapodes does not support dimension $(e.dim) simulations")
+
+struct UnsupportedStateeltypeException <: Exception
+  type::DataType
+end
+
+Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32 or Float64")
+
 function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget())
+  
+  (1 <= dimension <= 2) || 
+    throw(UnsupportedDimensionException(dimension))
+
+  (stateeltype == Float32 || stateeltype == Float64) || 
+    throw(UnsupportedStateeltypeException(stateeltype))
+
   recognize_types(user_d)
 
   # Makes copy
