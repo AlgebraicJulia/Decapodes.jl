@@ -271,18 +271,6 @@ constants_and_parameters = (
 The symbols along edges in our Decapode must be mapped to executable functions. In the Discrete Exterior Calculus, all our operators are defined as relations between points, lines, and triangles on meshes known as simplicial sets. Thus, DEC operators are re-usable across any simplicial set.
 
 ``` @example DEC
-function create_average_matrix(sd)
-  I = Vector{Int64}()
-  J = Vector{Int64}()
-  V = Vector{Float64}()
-  for e in 1:ne(sd)
-      append!(J, [sd[e,:∂v0],sd[e,:∂v1]])
-      append!(I, [e,e])
-      append!(V, [0.5, 0.5])
-  end
-  avg_mat = sparse(I,J,V)
-end
-
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :♯ => x -> begin
@@ -304,10 +292,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
       end
     end
     :mag => x -> norm.(x)
-    :avg₀₁ => begin
-      avg_mat = create_average_matrix(sd)
-      x -> avg_mat * x
-    end
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
