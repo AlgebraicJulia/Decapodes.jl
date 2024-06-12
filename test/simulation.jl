@@ -9,6 +9,8 @@ using LinearAlgebra
 using MLStyle
 using OrdinaryDiffEq
 using Test
+Point3D = Point3{Float64}
+flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
   hodge = ⋆(k,sd,hodge=hodge)
@@ -56,56 +58,27 @@ function generate(sd, my_symbol)
 end
 
 @testset "Simulation Generation" begin
-
-DiffusionExprBody =  quote
-    (C, Ċ)::Form0{X}
-    ϕ::Form1{X}
-
-    # Fick's first law
-    ϕ == ∘(k, d₀)(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
-end
-
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = SummationDecapode(diffExpr)
-add_constant!(ddp, :k)
-@test nparts(ddp, :Var) == 4
-
-DiffusionExprBody =  quote
-    (C, Ċ)::Form0{X}
-    ϕ::Form1{X}
-    k::Constant{ℝ}
-
-
-    # Fick's first law
-    ϕ == k * d₀(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
-end
-
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = SummationDecapode(diffExpr)
-
-dec_matrices = Vector{Symbol}()
-alloc_vectors = Vector{Decapodes.AllocVecCall}()
-
-@test Decapodes.get_vars_code(ddp, [:k]).args[2] == :(k = p.k)
-@test infer_state_names(ddp) == [:C, :k]
-
+# Mesh and ICs to use for these tests:
 torus = loadmesh(Torus_30x10())
 c_dist = MvNormal([5, 5], LinearAlgebra.Diagonal(map(abs2, [1.5, 1.5])))
 c = [pdf(c_dist, [p[1], p[2]]) for p in torus[:point]]
-
 u₀ = ComponentArray(C=c)
 du = ComponentArray(C=zero(c))
 
-f = eval(gensim(expand_operators(ddp)))
-fₘₛ = f(torus, generate)
+# Three Decapodes variations, with k as constant, parameter, or literal.
+DiffusionWithConstant = @decapode begin
+  (C, Ċ)::Form0{X}
+  ϕ::Form1{X}
+  k::Constant{ℝ}
 
-DiffusionExprBody =  quote
+  # Fick's first law
+  ϕ == k * d₀(C)
+  # Diffusion equation
+  Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
+  ∂ₜ(C) == Ċ
+end
+
+DiffusionWithParameter = @decapode begin
   (C, Ċ)::Form0{X}
   ϕ::Form1{X}
   k::Parameter{ℝ}
@@ -117,80 +90,53 @@ DiffusionExprBody =  quote
   ∂ₜ(C) == Ċ
 end
 
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = SummationDecapode(diffExpr)
-dec_matrices2 = Vector{Symbol}()
-alloc_vectors2 = Vector{Decapodes.AllocVecCall}()
+DiffusionWithLiteral = @decapode begin
+  (C, Ċ)::Form0{X}
+  ϕ::Form1{X}
 
-@test infer_state_names(ddp) == [:C, :k]
-@test Decapodes.get_vars_code(ddp, [:k]).args[2] == :(k = p.k(t))
-
-f = eval(gensim(expand_operators(ddp)))
-fₘₚ = f(torus, generate)
-
-@test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
-
-DiffusionExprBody =  quote
-    (C, Ċ)::Form0{X}
-    ϕ::Form1{X}
-
-    # Fick's first law
-    ϕ == 3 * d₀(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
+  # Fick's first law
+  ϕ == 3 * d₀(C)
+  # Diffusion equation
+  Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
+  ∂ₜ(C) == Ċ
 end
 
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = SummationDecapode(diffExpr)
+# Verify the variable accessors.
+@test Decapodes.get_vars_code(DiffusionWithConstant, [:k]).args[2] == :(k = p.k)
+@test infer_state_names(DiffusionWithConstant) == [:C, :k]
 
-@test infer_state_names(ddp) == [:C]
+@test infer_state_names(DiffusionWithParameter) == [:C, :k]
+@test Decapodes.get_vars_code(DiffusionWithParameter, [:k]).args[2] == :(k = p.k(t))
+
+@test infer_state_names(DiffusionWithLiteral) == [:C]
 # TODO: Fix proper Expr equality, the Float64 does not equate here
-# @test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2] == :(var"3"::Float64 = 3.0)
-@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[1] == :(var"3")
-@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[2] == 3.0
+# @test Decapodes.get_vars_code(DiffusionWithLiteral, [Symbol("3")]).args[2] == :(var"3"::Float64 = 3.0)
+@test Decapodes.get_vars_code(DiffusionWithLiteral, [Symbol("3")]).args[2].args[1] == :(var"3")
+@test Decapodes.get_vars_code(DiffusionWithLiteral, [Symbol("3")]).args[2].args[2] == 3.0
 
+# Test that simulations generated from these return the same result.
+f = evalsim(DiffusionWithConstant)
+f_with_constant = f(torus, generate)
 
-f = eval(gensim(expand_operators(ddp)))
-fₘₚ = f(torus, generate)
+f = evalsim(DiffusionWithParameter)
+f_with_parameter = f(torus, generate)
 
-@test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
+f = eval(gensim(expand_operators(DiffusionWithLiteral)))
+f_with_literal = f(torus, generate)
 
-DiffusionExprBody =  quote
-    (C, Ċ)::Form0{X}
-    ϕ::Form1{X}
+f_with_constant(du, u₀, (k=3.0,), 0)
+fc_res = copy(du.C)
+f_with_parameter(du, u₀, (k=t->3.0,), 0)
+fp_res = copy(du.C)
+f_with_literal(du, u₀, NamedTuple(), 0)
+fl_res = copy(du.C)
 
-    # Fick's first law
-    ϕ == 3 * d₀(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
-end
-
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = SummationDecapode(diffExpr)
-
-@test infer_state_names(ddp) == [:C]
-# TODO: Fix proper Expr equality, the Float64 does not equate here
-# @test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2] == :(var"3"::Float64 = 3.0)
-@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[1] == :(var"3")
-@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[2] == 3.0
-
-f = eval(gensim(expand_operators(ddp)))
-fₘₚ = f(torus, generate)
-
-@test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
-
-# to solve the ODE over a duration, use the ODEProblem from OrdinaryDiffEq
-# tₑ = 10
-# using OrdinaryDiffEq
-# prob = ODEProblem(fₘₛ,u₀, (0,tₑ), (k=2.0,))
-# soln = solve(prob, Tsit5())
+@test norm(fc_res - fp_res) < 1e-4
+@test norm(fc_res - fl_res) < 1e-4
 end
 
 # Testing done based on the original gensim
-Point3D = Point3{Float64}
-flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
+# -----------------------------------------
 
 # Testing Brusselator
 @testset "Brusselator Simulation" begin
@@ -394,9 +340,9 @@ end
   A = ones(nv(earth))
   u = ComponentArray(A=A)
   constants_and_parameters = ()
-  result = f(u, u, constants_and_parameters, 0)
+  f(u, u, constants_and_parameters, 0)
 
-  @test result == -1 * ones(nv(earth))
+  @test u.A == -1 * ones(nv(earth))
 
 
   # Testing simple contract operations
@@ -799,9 +745,6 @@ _ = @allocated f(du, u₀, p, (0,1.0)) # 3962696
 # Test that subsequent calls make a reasonable amount.
 bytes = @allocated f(du, u₀, p, (0,1.0))
 nallocs = @allocations f(du, u₀, p, (0,1.0))
-@test nallocs == 4
-@test bytes ==
-  sizeof(u₀.C) +
-  sizeof(p.D) +
-  sizeof(Decapodes.FixedSizeDiffCache(Vector{Float64}(undef , nparts(sd, :V))))
+@test nallocs == 3
+@test bytes == 80
 end
