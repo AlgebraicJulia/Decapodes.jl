@@ -134,19 +134,7 @@ constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
   stress_g = g,
-  stress_A = A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(n = 3, stress_ρ = 910, stress_g = 9.8, stress_A = 1.0e-16)</code></pre><h2 id="Define-functions"><a class="docs-heading-anchor" href="#Define-functions">Define functions</a><a id="Define-functions-1"></a><a class="docs-heading-anchor-permalink" href="#Define-functions" title="Permalink"></a></h2><p>In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. In the DEC, there are a handful of operators that one uses to construct all the usual vector calculus operations, namely: ♯, ♭, ∧, d, ⋆. The CombinatorialSpaces.jl library specifies many of these for us.</p><pre><code class="language-julia hljs">function create_average_matrix(sd)
-  I = Vector{Int64}()
-  J = Vector{Int64}()
-  V = Vector{Float64}()
-  for e in 1:ne(sd)
-      append!(J, [sd[e,:∂v0],sd[e,:∂v1]])
-      append!(I, [e,e])
-      append!(V, [0.5, 0.5])
-  end
-  avg_mat = sparse(I,J,V)
-end
-
-function generate(sd, my_symbol; hodge=GeometricHodge())
+  stress_A = A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(n = 3, stress_ρ = 910, stress_g = 9.8, stress_A = 1.0e-16)</code></pre><h2 id="Define-functions"><a class="docs-heading-anchor" href="#Define-functions">Define functions</a><a id="Define-functions-1"></a><a class="docs-heading-anchor-permalink" href="#Define-functions" title="Permalink"></a></h2><p>In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. In the DEC, there are a handful of operators that one uses to construct all the usual vector calculus operations, namely: ♯, ♭, ∧, d, ⋆. The CombinatorialSpaces.jl library specifies many of these for us.</p><pre><code class="language-julia hljs">function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :♯ =&gt; x -&gt; begin
       # This is an implementation of the &quot;sharp&quot; operator from the exterior
@@ -167,15 +155,11 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
       end
     end
     :mag =&gt; x -&gt; norm.(x)
-    :avg₀₁ =&gt; begin
-      avg_mat = create_average_matrix(sd)
-      x -&gt; avg_mat * x
-    end
     x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
   end
   return (args...) -&gt; op(args...)
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><h2 id="Generate-the-simulation"><a class="docs-heading-anchor" href="#Generate-the-simulation">Generate the simulation</a><a id="Generate-the-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-the-simulation" title="Permalink"></a></h2><p>Now, we have everything we need to generate our simulation:</p><pre><code class="language-julia hljs">sim = eval(gensim(ice_dynamics1D, dimension=1))
-fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#28&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#15#25&quot;{Main.var&quot;#14#24&quot;{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, Main.var&quot;#15#25&quot;{Main.var&quot;#13#23&quot;}, Main.var&quot;#15#25&quot;{Main.var&quot;#6#16&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><h2 id="Pre-compile-and-run"><a class="docs-heading-anchor" href="#Pre-compile-and-run">Pre-compile and run</a><a id="Pre-compile-and-run-1"></a><a class="docs-heading-anchor-permalink" href="#Pre-compile-and-run" title="Permalink"></a></h2><p>The first time that you run a function, Julia will pre-compile it, so that later runs will be fast. We&#39;ll solve our simulation for a short time span, to trigger this pre-compilation, and then run it.</p><pre><code class="language-julia hljs">@info(&quot;Precompiling Solver&quot;)
+fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#26&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#14#23&quot;{Main.var&quot;#13#22&quot;}, Main.var&quot;#14#23&quot;{Main.var&quot;#6#15&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><h2 id="Pre-compile-and-run"><a class="docs-heading-anchor" href="#Pre-compile-and-run">Pre-compile and run</a><a id="Pre-compile-and-run-1"></a><a class="docs-heading-anchor-permalink" href="#Pre-compile-and-run" title="Permalink"></a></h2><p>The first time that you run a function, Julia will pre-compile it, so that later runs will be fast. We&#39;ll solve our simulation for a short time span, to trigger this pre-compilation, and then run it.</p><pre><code class="language-julia hljs">@info(&quot;Precompiling Solver&quot;)
 prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
 soln = solve(prob, Tsit5())
 soln.retcode != :Unstable || error(&quot;Solver was not stable&quot;)
@@ -245,15 +229,11 @@ constants_and_parameters = (
       x -&gt; sharp_mat * x
     end
     :mag =&gt; x -&gt; norm.(x)
-    :avg₀₁ =&gt; begin
-      avg_mat = create_average_matrix(sd)
-      x -&gt; avg_mat * x
-    end
     x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
   end
   return (args...) -&gt; op(args...)
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><h2 id="Generate-simulation"><a class="docs-heading-anchor" href="#Generate-simulation">Generate simulation</a><a id="Generate-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-simulation" title="Permalink"></a></h2><pre><code class="language-julia hljs">sim = eval(gensim(ice_dynamics2D, dimension=2))
-fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#50&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#43#47&quot;{Main.var&quot;#42#46&quot;{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, Main.var&quot;#43#47&quot;{Main.var&quot;#41#45&quot;}, Main.var&quot;#43#47&quot;{Main.var&quot;#40#44&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><h2 id="Pre-compile-and-run-2D"><a class="docs-heading-anchor" href="#Pre-compile-and-run-2D">Pre-compile and run 2D</a><a id="Pre-compile-and-run-2D-1"></a><a class="docs-heading-anchor-permalink" href="#Pre-compile-and-run-2D" title="Permalink"></a></h2><pre><code class="language-julia hljs">@info(&quot;Precompiling Solver&quot;)
+fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#46&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#40#43&quot;{Main.var&quot;#39#42&quot;}, Main.var&quot;#40#43&quot;{Main.var&quot;#38#41&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><h2 id="Pre-compile-and-run-2D"><a class="docs-heading-anchor" href="#Pre-compile-and-run-2D">Pre-compile and run 2D</a><a id="Pre-compile-and-run-2D-1"></a><a class="docs-heading-anchor-permalink" href="#Pre-compile-and-run-2D" title="Permalink"></a></h2><pre><code class="language-julia hljs">@info(&quot;Precompiling Solver&quot;)
 # We run for a short timespan to pre-compile.
 prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
 soln = solve(prob, Tsit5())
@@ -282,7 +262,7 @@ fig</code></pre><img src="5e2f04a2.png" alt="Example block output"/><pre><code c
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D.gif&quot;</code></pre><p><img src="../ice_dynamics2D.gif" alt="IceDynamics2D"/></p><h2 id="2-Manifold-in-3D"><a class="docs-heading-anchor" href="#2-Manifold-in-3D">2-Manifold in 3D</a><a id="2-Manifold-in-3D-1"></a><a class="docs-heading-anchor-permalink" href="#2-Manifold-in-3D" title="Permalink"></a></h2><p>We note that just because our physics is happening on a 2-manifold, (a surface), this doesn&#39;t restrict us to the 2D plane. In fact, we can &quot;embed&quot; our 2-manifold in 3D space to simulate a glacial sheets spread across the globe.</p><pre><code class="language-julia hljs">s = loadmesh(Icosphere(3, 10_000))
 sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
 subdivide_duals!(sd, Barycenter())
-wireframe(sd)</code></pre><img src="fdcec3be.png" alt="Example block output"/><pre><code class="language-julia hljs">n = 3
+wireframe(sd)</code></pre><img src="7b439a24.png" alt="Example block output"/><pre><code class="language-julia hljs">n = 3
 ρ = 910
 g = 9.8
 A = 1e-16
@@ -298,14 +278,14 @@ fig = Figure()
 ax = LScene(fig[1,1], scenekw=(lights=[],))
 msh = CairoMakie.mesh!(ax, s, color=h₀, colormap=:jet)
 Colorbar(fig[1,2], msh)
-fig</code></pre><img src="c7cc1688.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
+fig</code></pre><img src="76ef4c08.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
 
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
   stress_g = g,
   stress_A = A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(n = 3, stress_ρ = 910, stress_g = 9.8, stress_A = 1.0e-16)</code></pre><pre><code class="language-julia hljs">sim = eval(gensim(ice_dynamics2D, dimension=2))
-fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#57&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#43#47&quot;{Main.var&quot;#42#46&quot;{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, Main.var&quot;#43#47&quot;{Main.var&quot;#41#45&quot;}, Main.var&quot;#43#47&quot;{Main.var&quot;#40#44&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><p>For brevity&#39;s sake, we&#39;ll skip the pre-compilation cell.</p><pre><code class="language-julia hljs">tₑ = 5e25
+fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#53&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#40#43&quot;{Main.var&quot;#39#42&quot;}, Main.var&quot;#40#43&quot;{Main.var&quot;#38#41&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><p>For brevity&#39;s sake, we&#39;ll skip the pre-compilation cell.</p><pre><code class="language-julia hljs">tₑ = 5e25
 
 @info(&quot;Solving&quot;)
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
@@ -318,7 +298,7 @@ extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)</code></pre><pre cla
 ax = LScene(fig[1,1], scenekw=(lights=[],))
 msh = CairoMakie.mesh!(ax, s, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 Colorbar(fig[1,2], msh)
-fig</code></pre><img src="4256b667.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
+fig</code></pre><img src="8ba7e8f6.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
   frames = 200
   fig = Figure()
   ax = LScene(fig[1,1], scenekw=(lights=[],))
@@ -331,4 +311,4 @@ fig</code></pre><img src="4256b667.png" alt="Example block output"/><pre><code c
     msh.color = soln(t).dynamics_h
   end
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D_sphere.gif&quot;</code></pre><p><img src="../ice_dynamics2D_sphere.gif" alt="IceDynamics2DSphere"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 47 seconds.
-[ Info: This page was last built at 2024-06-12T21:52:22.028.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../cism/cism/">« CISM v2.1</a><a class="docs-footer-nextpage" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Wednesday 12 June 2024 21:53">Wednesday 12 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+[ Info: This page was last built at 2024-06-13T15:12:01.885.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../cism/cism/">« CISM v2.1</a><a class="docs-footer-nextpage" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Thursday 13 June 2024 15:13">Thursday 13 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
