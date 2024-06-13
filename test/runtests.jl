@@ -8,6 +8,10 @@ end
   include("componentarrays.jl")
 end
 
+@testset "Simulation Core" begin
+  include("simulation_core.jl")
+end
+
 @testset "Simulation" begin
   include("simulation.jl")
 end

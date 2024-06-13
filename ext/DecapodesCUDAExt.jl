@@ -1,5 +1,6 @@
 module DecapodesCUDAExt
 using CombinatorialSpaces
+import CombinatorialSpaces.DiscreteExteriorCalculus: DiscreteHodge
 using LinearAlgebra
 using Base.Iterators
 using Krylov
@@ -8,7 +9,7 @@ using CUDA.CUSPARSE
 using MLStyle
 import Decapodes: default_dec_cu_matrix_generate
 
-function default_dec_cu_matrix_generate(sd, my_symbol, hodge)
+function default_dec_cu_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge)
   op = @match my_symbol begin
 
     # Regular Hodge Stars
@@ -46,7 +47,7 @@ function default_dec_cu_matrix_generate(sd, my_symbol, hodge)
 end
 
 # TODO: Update this to better cast hodges
-function dec_cu_mat_hodge(k, sd::HasDeltaSet, hodge)
+function dec_cu_mat_hodge(k::Int, sd::HasDeltaSet, hodge::DiscreteHodge)
   hodge = dec_hodge_star(k, sd, hodge, Val{:CUDA})
   return (hodge, x -> hodge * x)
 end
@@ -61,7 +62,7 @@ function dec_cu_mat_hodge(::Type{Val{1}}, sd::HasDeltaSet, hodge::GeometricHodge
   return (hodge, x -> hodge * x)
 end
 
-function dec_cu_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge)
+function dec_cu_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge::DiscreteHodge)
   invhodge = dec_inv_hodge_star(k, sd, hodge, Val{:CUDA})
   return (invhodge, x -> invhodge * x)
 end
