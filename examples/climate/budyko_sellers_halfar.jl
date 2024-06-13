@@ -39,7 +39,6 @@ warming = @decapode begin
   (Tₛ)::Form0
   (A)::Form1
 
-  ## A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e-17)
   A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e7)
 
 end
@@ -159,18 +158,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     end
     :mag => x -> begin
       norm.(x)
-    end
-    :avg₀₁ => x -> begin
-      I = Vector{Int64}()
-      J = Vector{Int64}()
-      V = Vector{Float64}()
-      for e in 1:ne(s)
-          append!(J, [s[e,:∂v0],s[e,:∂v1]])
-          append!(I, [e,e])
-          append!(V, [0.5, 0.5])
-      end
-      avg_mat = sparse(I,J,V)
-      avg_mat * x
     end
     :^ => (x,y) -> x .^ y
     :* => (x,y) -> x .* y

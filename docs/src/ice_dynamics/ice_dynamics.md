@@ -166,18 +166,6 @@ constants_and_parameters = (
 In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. In the DEC, there are a handful of operators that one uses to construct all the usual vector calculus operations, namely: ♯, ♭, ∧, d, ⋆. The CombinatorialSpaces.jl library specifies many of these for us.
 
 ``` @example DEC
-function create_average_matrix(sd)
-  I = Vector{Int64}()
-  J = Vector{Int64}()
-  V = Vector{Float64}()
-  for e in 1:ne(sd)
-      append!(J, [sd[e,:∂v0],sd[e,:∂v1]])
-      append!(I, [e,e])
-      append!(V, [0.5, 0.5])
-  end
-  avg_mat = sparse(I,J,V)
-end
-
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :♯ => x -> begin
@@ -199,10 +187,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
       end
     end
     :mag => x -> norm.(x)
-    :avg₀₁ => begin
-      avg_mat = create_average_matrix(sd)
-      x -> avg_mat * x
-    end
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
@@ -360,10 +344,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
       x -> sharp_mat * x
     end
     :mag => x -> norm.(x)
-    :avg₀₁ => begin
-      avg_mat = create_average_matrix(sd)
-      x -> avg_mat * x
-    end
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)

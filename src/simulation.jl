@@ -722,7 +722,8 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
 
   # This will generate all of the fundemental DEC operators present
   optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
-                                  :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁])
+                                  :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
+                                  :avg₀₁])
   extra_dec_operators = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
   init_dec_matrices!(gen_d, dec_matrices, union(optimizable_dec_operators, extra_dec_operators))

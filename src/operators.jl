@@ -63,6 +63,9 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
 
     :♭ => dec_♭(sd)
 
+    # Averaging Operator
+    :avg₀₁ => dec_avg₀₁(sd)
+
     :neg => x -> -1 .* x
      _ => error("Unmatched operator $my_symbol")
   end
@@ -136,6 +139,11 @@ end
 function dec_♭(sd::HasDeltaSet2D)
   ♭_m = ♭_mat(sd)
   x -> ♭_m * x
+end
+
+function dec_avg₀₁(sd::HasDeltaSet)
+  avg_mat = avg₀₁_mat(sd)
+  (avg_mat, x -> avg_mat * x)
 end
 
 function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge=GeometricHodge())
