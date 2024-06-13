@@ -17,6 +17,7 @@ Some users may have trouble entering unicode characters like ⋆ or ∂ in their
 | ∧        | wedge      | wedge product, generalizing the cross product |
 | ⋆⁻¹      | star\_inv  | Hodge star, generalizing transpose            |
 | ∘(⋆,d,⋆) | div        | divergence, a.k.a. ∇⋅                         |
+| avg₀₁    | avg_01     | average values stored on endpoints of edges   |
 
 ## Vector Calculus Equivalents
 

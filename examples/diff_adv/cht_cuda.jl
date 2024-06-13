@@ -290,19 +290,6 @@ begin
     mul!(x, matrices[:cross], matrices[:β_cache])
     #x .= matrices[:cross] * ((matrices[:t2c]*α).*(matrices[:e2c]*β))
   end
-
-
-  function avg_mat(::Type{Val{(0,1)}},s)
-    I = Vector{Int64}()
-    J = Vector{Int64}()
-    V = Vector{Float64}()
-    for e in 1:ne(s)
-        append!(J, [s[e,:∂v0],s[e,:∂v1]])
-        append!(I, [e,e])
-        append!(V, [0.5, 0.5])
-    end
-    CuSparseMatrixCSC(sparse(I,J,V))
-  end
 end
 
 ## Constants
@@ -435,7 +422,6 @@ begin
   g = CuArray(♭(sd, DualVectorField(gravity.(sd[triangle_center(sd),:dual_point]))).data);
   p = CuArray([density for p in s[:point]] * (288.15 * R₀))
 end
-m_avg = avg_mat(Val{(0,1)}, sd)
 # sim = eval(gensim(HeatXFer, code_target=CUDATarget()))
 
 wedge_cache = init_wedge_ops(sd)
@@ -453,7 +439,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
             x
       end
     end
-    :avg₀₁ => x -> m_avg * x
     :∂ₜₐ => (x) -> begin
       x[cyl_inner] .= 0
       x
@@ -515,6 +500,7 @@ function simulate(mesh, operators, hodge = GeometricHodge())
       ∂ᵥ = operators(mesh, :∂ᵥ)
       ∂ᵣ = operators(mesh, :∂ᵣ)
       ∂ₚ = operators(mesh, :∂ₚ)
+      # XXX: This auto-generated output was created before the averaging operator was upstreamed in CombinatorialSpaces PR 97.
       # avg₀₁ = operators(mesh, :avg₀₁)
       avg₀₁ = avg_mat(Val{(0,1)}, sd)
       ∂ₜₐ = operators(mesh, :∂ₜₐ)

@@ -36,6 +36,9 @@ function default_dec_cu_matrix_generate(sd, my_symbol, hodge)
     :∧₂₀ => dec_cu_pair_wedge_product(Tuple{2,0}, sd)
     :∧₁₁ => dec_cu_pair_wedge_product(Tuple{1,1}, sd)
 
+    # Averaging Operator
+    :avg₀₁ => dec_cu_avg₀₁(sd)
+
     _ => error("Unmatched operator $my_symbol")
   end
 
@@ -127,4 +130,11 @@ function dec_cu_flat(sd::HasDeltaSet2D)
   ♭_m = ♭_mat(sd)
   x -> ♭_m * x
 end
+
+function dec_cu_avg₀₁(sd::HasDeltaSet)
+  # TODO: Cast this in the CombinatorialSpaces CUDA extension directly.
+  avg_mat = CuSparseMatrixCSC(avg₀₁_mat(sd))
+  (avg_mat, x -> avg_mat * x)
+end
+
 end
