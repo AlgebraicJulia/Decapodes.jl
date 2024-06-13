@@ -7,15 +7,15 @@ using PreallocationTools
 const GENSIM_INPLACE_STUB = Symbol("GenSim-M")
 const NO_STUB_RETURN = Symbol("NOSTUB")
 
-abstract type GenerationTarget end
+abstract type AbstractGenerationTarget end
 
-abstract type CPUBackend <: GenerationTarget end
-abstract type CUDABackend <: GenerationTarget end
+abstract type CPUBackend <: AbstractGenerationTarget end
+abstract type CUDABackend <: AbstractGenerationTarget end
 
 struct CPUTarget <: CPUBackend end
 struct CUDATarget <: CUDABackend end
 
-# TODO: Add exceptions for invalid calls
+# TODO: Make it so AbstractCall code terminates into an error, not into default code
 abstract type AbstractCall end
 
 struct InvalidCallException <: Exception end
@@ -32,7 +32,7 @@ struct UnaryCall <: AbstractCall
   output::Symbol
 end
 
-# ! Warning: Do not pass this an inplace function without setting equality to :.=
+# ! WARNING: Do not pass this an inplace function without setting equality to :.=
 Base.Expr(c::UnaryCall) = begin
   operator = c.operator
   if(c.equality == :.=)
@@ -57,7 +57,7 @@ struct BinaryCall <: AbstractCall
   output::Symbol
 end
 
-# ! Warning: Do not pass this an inplace function without setting equality to :.=, vice versa
+# ! WARNING: Do not pass this an inplace function without setting equality to :.=, vice versa
 Base.Expr(c::BinaryCall) = begin
   # These operators can be done in-place
   if(c.equality == :.= && get_stub(c.operator) == GENSIM_INPLACE_STUB)
@@ -82,10 +82,10 @@ struct AllocVecCall <: AbstractCall
   form::Symbol
   dimension::Int
   T::DataType
-  code_target::GenerationTarget
+  code_target::AbstractGenerationTarget
 end
 
-struct AllocVecCallError <: Exception
+struct AllocVecCallException <: Exception
   c::AllocVecCall
 end
 
@@ -104,7 +104,7 @@ Base.Expr(c::AllocVecCall) = begin
     (:Form1, 1) => :E
     (:DualForm0, 1) => :E
     (:DualForm1, 1) => :V
-    _ => throw(AllocVecCallError(c))
+    _ => throw(AllocVecCallException(c))
   end
 
   hook_AVC_caching(c, resolved_form, c.code_target)
@@ -150,7 +150,7 @@ end
   return -1
 end
 
-# WARNING: This may not work if names are not unique, use above instead
+# ! WARNING: This may not work if names are not unique, use above instead
 function get_form_number(d::SummationDecapode, var_name::Symbol)
 var_id = first(incident(d, var_name, :name))
 return get_form_number(d, var_id)
@@ -194,7 +194,8 @@ function add_stub(stub_name::Symbol, var_name::Symbol)
   return Symbol("$(stub_name)_$(var_name)")
 end
 
-# ! Warning: Bad behavior if not stub was added and  variable has an "_" itself
+# ! WARNING: The variable names will be picked up as a stub if no stub was added and the
+# ! variable has an "_" itself
 function get_stub(var_name::Symbol)
   var_str = String(var_name)
   idx = findfirst("_", var_str)
@@ -215,26 +216,24 @@ add_inplace_stub(var_name::Symbol) = add_stub(GENSIM_INPLACE_STUB, var_name)
 const ARITHMETIC_OPS = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^, :.>, :.<, :.≤, :.≥])
 
 struct InvalidCodeTargetException <: Exception
-  code_target::GenerationTarget
+  code_target::AbstractGenerationTarget
 end
 
 Base.showerror(io::IO, e::InvalidCodeTargetException) = print(io, "Provided code target $(e.code_target) is not yet supported in simulations")
 
 """
-    compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget = CPUTarget())
+    compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget)
 
 This creates the symbol to function linking for the simulation output. Those run through the `default_dec` backend
 expect both an in-place and an out-of-place variant in that order. User defined operations only support out-of-place.
 """
-function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget)
+function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::AbstractGenerationTarget)
   defined_ops = deepcopy(con_dec_operators)
 
   defs = quote end
 
   for op in dec_matrices
-    if op in defined_ops
-      continue
-    end
+    op in defined_ops && continue
 
     quote_op = QuoteNode(op)
     mat_op = add_stub(GENSIM_INPLACE_STUB, op)
@@ -272,7 +271,13 @@ struct AmbiguousNameException <: Exception
   indices::Vector{Int}
 end
 
-Base.showerror(io::IO, e::AmbiguousNameException) = print(io, "Name \"$(e.name)\" is repeated at indices $(e.indices) and is ambiguous")
+Base.showerror(io::IO, e::AmbiguousNameException) = begin
+  if isempty(e.indices)
+    print(io, "Name \"$(e.name)\" is does not exist")
+  else
+    print(io, "Name \"$(e.name)\" is repeated at indices $(e.indices) and is ambiguous")
+  end
+end
 
 struct InvalidDecaTypeException <: Exception
   name::Symbol
@@ -282,14 +287,14 @@ end
 Base.showerror(io::IO, e::InvalidDecaTypeException) = print(io, "Variable \"$(e.name)\" has invalid type \"$(e.type)\"")
 
 """
-    get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}) where stateeltype
+    get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::GenerationTarget) where stateeltype
 
 This initalizes all input variables according to their Decapodes type.
 """
-function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::GenerationTarget) where stateeltype
+function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::AbstractGenerationTarget) where stateeltype
   stmts = quote end
 
-  map(vars) do s
+  foreach(vars) do s
     # If name is not unique (or not just literals) then error
     found_names_idxs = incident(d, s, :name)
 
@@ -327,11 +332,11 @@ end
 
 This function creates the code that sets the value of the Tvars at the end of the code
 """
-function set_tanvars_code(d::SummationDecapode, code_target::GenerationTarget)
+function set_tanvars_code(d::SummationDecapode, code_target::AbstractGenerationTarget)
   stmts = quote end
 
   tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
-  map(tanvars) do (s,t)
+  foreach(tanvars) do (s,t)
     push!(stmts.args, hook_STC_settvar(s, t, code_target))
   end
   return stmts
@@ -371,7 +376,7 @@ Function that compiles the computation body. `d` is the input Decapode, `inputs`
 in-place methods, `dimension` is the dimension of the problem (usually 1 or 2), `stateeltype` is the type of the state elements
 (usually Float32 or Float64) and `code_target` determines what architecture the code is compiled for (either CPU or CUDA).
 """
-function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::GenerationTarget)
+function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget)
   # Get the Vars of the inputs (probably state Vars).
   visited_Var = falses(nparts(d, :Var))
 
@@ -451,8 +456,8 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
 
           # TODO: Do we want to support the ability of a user to use the backslash operator?
           elseif(operator == :(*) || operator == :(/) || operator == :.* || operator == :./)
-            # WARNING: This part may break if we add more compiler types that have different
-            # operations for basic and broadcast modes, e.g. matrix multiplication vs broadcast
+            # ! WARNING: This part may break if we add more compiler types that have different
+            # ! operations for basic and broadcast modes, e.g. matrix multiplication vs broadcast
             if(!is_infer(d, arg1) && !is_infer(d, arg2))
               operator = PROMOTE_ARITHMETIC_MAP[operator]
               equality = PROMOTE_ARITHMETIC_MAP[equality]
@@ -521,9 +526,9 @@ end
 This deals with any post processing needed by the allocations, like if data needs to be retrieved
 from a special cache.
 """
-function post_process_vector_allocs(alloc_vecs::Vector{AllocVecCall}, code_target::GenerationTarget)
+function post_process_vector_allocs(alloc_vecs::Vector{AllocVecCall}, code_target::AbstractGenerationTarget)
   list_exprs = Expr[]
-  map(alloc_vecs) do alloc_vec
+  foreach(alloc_vecs) do alloc_vec
     hook_PPVA_data_handle!(list_exprs, alloc_vec, code_target)
   end
 
@@ -610,7 +615,7 @@ end
 
 Collects arrays of DEC matrices together, replaces the array with a generated function name and computes the contracted multiplication
 """
-function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::GenerationTarget)
+function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::AbstractGenerationTarget)
 
   contract_defs = quote end
 
@@ -677,13 +682,13 @@ Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapode
 """
     gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget())
 
-Generates the entire code body for the simulation function. `user_d` is the user passed Decapodes which will left unmodified and 'input_vars' is the collection of
+Generates the entire code body for the simulation function. `user_d` is the user passed Decapodes which will be left unmodified and 'input_vars' is the collection of
 state variables and literals in the Decapode.
 
-Optional keyword arguments are `dimension` is the dimension of the problem and defaults to 2D, `stateeltype` is the element type of the state forms and defaults to Float64 and `code_target` is the
-intended architecture target for the generated code, defaulting to regular CPU compatiable code.
+Optional keyword arguments are `dimension`, which is the dimension of the problem and defaults to 2D, `stateeltype`, which is the element type of the state forms and
+defaults to Float64 and `code_target`, which is the intended architecture target for the generated code, defaulting to regular CPU compatible code.
 """
-function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget())
+function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget())
 
   (1 <= dimension <= 2) ||
     throw(UnsupportedDimensionException(dimension))
@@ -759,12 +764,12 @@ gensim(collate(c); dimension=dimension)
 
 Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
 """
-gensim(d::SummationDecapode; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget()) =
+gensim(d::SummationDecapode; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget()) =
   gensim(d, vcat(infer_state_names(d), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype, code_target=code_target)
 
-evalsim(d::SummationDecapode; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget()) =
+evalsim(d::SummationDecapode; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget()) =
   eval(gensim(d, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
-evalsim(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget()) =
+evalsim(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget()) =
   eval(gensim(d, input_vars, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
 
 """

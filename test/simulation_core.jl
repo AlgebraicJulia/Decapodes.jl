@@ -202,7 +202,7 @@ end
 
 # This is just a small test to see that hooking as a general concept works
 import Decapodes: hook_AVC_caching # TODO: Remove this import since this should eventually be exported
-import Decapodes: GenerationTarget
+import Decapodes: AbstractGenerationTarget
 struct MYTESTTarget <: CPUBackend end
 
 function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::MYTESTTarget)
@@ -225,7 +225,7 @@ import Decapodes: compile_env, InvalidCodeTargetException
 
   # Test that error throws on unknown code target
   let d = @decapode begin end
-    struct BadTarget <: GenerationTarget end
+    struct BadTarget <: AbstractGenerationTarget end
     @test_throws InvalidCodeTargetException compile_env(d, [:test], Set{Symbol}(), BadTarget())
   end
 
