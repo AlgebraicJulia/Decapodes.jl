@@ -189,7 +189,7 @@ end
          a = 0.94,
          ν = 182.5)
 
-  tₑ = 1.0
+  tₑ = 2.5
 
   function circle(n, c)
     s = EmbeddedDeltaSet1D{Bool, Point2D}()
@@ -274,7 +274,7 @@ end
          a = 0.94f0,
          ν = 182.5f0)
 
-  tₑ = 1.0f0
+  tₑ = 2.5f0
 
   function circle(n, c)
     s = EmbeddedDeltaSet1D{Bool, Point2D}()
