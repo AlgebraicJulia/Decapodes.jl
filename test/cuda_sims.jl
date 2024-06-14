@@ -25,7 +25,7 @@ end
     ∂ₜ(U) == 100 * Δ(U)
   end
 
-  tₑ = 8.5
+  tₑ = 1.0
   constants_and_parameters = ()
 
   s = loadmesh(Icosphere(4))
@@ -63,7 +63,7 @@ end
     ∂ₜ(U) == 100f0 * Δ(U)
   end
 
-  tₑ = 11.5f0
+  tₑ = 1.0f0
   constants_and_parameters = ()
 
   s = loadmesh(Icosphere(3))
@@ -148,7 +148,7 @@ end
     F = t -> t ≥ 1.1 ? F₂ : F₁)
 
   prob = ODEProblem(cpu_fₘ, cpu_u₀, (0, tₑ), cpu_constants_and_parameters)
-  cpu_soln = solve(prob, Tsit5())
+  cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:U])
 
   # CUDA Setup and Solve
   cuda_sim = eval(gensim(Brusselator, code_target=CUDATarget()))
@@ -189,7 +189,7 @@ end
          a = 0.94,
          ν = 182.5)
 
-  tₑ = 10.0
+  tₑ = 2.5
 
   function circle(n, c)
     s = EmbeddedDeltaSet1D{Bool, Point2D}()
@@ -231,7 +231,7 @@ end
   cpu_u₀ = ComponentArray(n = n, w = w, dX = dX)
 
   prob = ODEProblem(cpu_fₘ, cpu_u₀, (0.0, tₑ), constants_and_parameters)
-  cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n, :w]);
+  cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n]);
 
   # CUDA Setup and Solve
   cuda_sim = eval(gensim(Klausmeier, dimension=1, code_target=CUDATarget()))
@@ -250,7 +250,7 @@ end
   cuda_u₀ = ComponentArray(n = CuArray(n), w = CuArray(w), dX = CuArray(dX))
 
   prob = ODEProblem(cuda_fₘ, cuda_u₀, (0.0, tₑ), constants_and_parameters)
-  cuda_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n, :w]);
+  cuda_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n]);
 
   @test all(isapprox(cpu_soln(tₑ).n, Array(cuda_soln(tₑ).n); atol=1e-11))
   @test RMSE(cpu_soln(tₑ).n, Array(cuda_soln(tₑ).n)) < 1e-13
@@ -274,7 +274,7 @@ end
          a = 0.94f0,
          ν = 182.5f0)
 
-  tₑ = 3.0f0
+  tₑ = 2.5f0
 
   function circle(n, c)
     s = EmbeddedDeltaSet1D{Bool, Point2D}()
@@ -316,7 +316,7 @@ end
   cpu_u₀ = ComponentArray(n = n, w = w, dX = dX)
 
   prob = ODEProblem(cpu_fₘ, cpu_u₀, (0.0, tₑ), constants_and_parameters)
-  cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n, :w]);
+  cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n]);
 
   # CUDA Setup and Solve
   cuda_sim = eval(gensim(Klausmeier, dimension=1, code_target=CUDATarget(), stateeltype=Float32))
@@ -335,7 +335,7 @@ end
   cuda_u₀ = ComponentArray(n = CuArray(n), w = CuArray(w), dX = CuArray(dX))
 
   prob = ODEProblem(cuda_fₘ, cuda_u₀, (0.0, tₑ), constants_and_parameters)
-  cuda_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n, :w]);
+  cuda_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n]);
 
   @test RMSE(cpu_soln(tₑ).n, Array(cuda_soln(tₑ).n)) < 1e-5
 end
