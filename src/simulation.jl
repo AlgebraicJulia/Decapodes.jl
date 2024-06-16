@@ -376,7 +376,7 @@ Function that compiles the computation body. `d` is the input Decapode, `inputs`
 in-place methods, `dimension` is the dimension of the problem (usually 1 or 2), `stateeltype` is the type of the state elements
 (usually Float32 or Float64) and `code_target` determines what architecture the code is compiled for (either CPU or CUDA).
 """
-function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget)
+function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, can_prealloc::Bool)
   # Get the Vars of the inputs (probably state Vars).
   visited_Var = falses(nparts(d, :Var))
 
@@ -412,7 +412,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
         tname = d[t, :name]
 
         # TODO: Check to see if this is a DEC operator
-        if is_form(d, t)
+        if can_prealloc && is_form(d, t)
           if operator in optimizable_dec_operators
             equality = PROMOTE_ARITHMETIC_MAP[equality]
             operator = add_stub(GENSIM_INPLACE_STUB, operator)
@@ -444,7 +444,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
         equality = :(=)
 
         # TODO: Check to make sure that this logic never breaks
-        if is_form(d, r)
+        if can_prealloc && is_form(d, r)
           if operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-
             operator = PROMOTE_ARITHMETIC_MAP[operator]
             equality = PROMOTE_ARITHMETIC_MAP[equality]
@@ -499,7 +499,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
         equality = :(=)
 
         # If result is a known form, broadcast addition
-        if is_form(d, r)
+        if can_prealloc && is_form(d, r)
           operator = PROMOTE_ARITHMETIC_MAP[operator]
           equality = PROMOTE_ARITHMETIC_MAP[equality]
           push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
@@ -684,7 +684,7 @@ state variables and literals in the Decapode.
 Optional keyword arguments are `dimension`, which is the dimension of the problem and defaults to 2D, `stateeltype`, which is the element type of the state forms and
 defaults to Float64 and `code_target`, which is the intended architecture target for the generated code, defaulting to regular CPU compatible code.
 """
-function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget())
+function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), can_prealloc::Bool = true)
 
   (1 <= dimension <= 2) ||
     throw(UnsupportedDimensionException(dimension))
@@ -732,7 +732,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   union!(optimizable_dec_operators, contracted_dec_operators, extra_dec_operators)
 
   # Compilation of the simulation
-  equations = compile(gen_d, input_vars, alloc_vectors, optimizable_dec_operators, dimension, stateeltype, code_target)
+  equations = compile(gen_d, input_vars, alloc_vectors, optimizable_dec_operators, dimension, stateeltype, code_target, can_prealloc)
   data = post_process_vector_allocs(alloc_vectors, code_target)
 
   func_defs = compile_env(gen_d, dec_matrices, contracted_dec_operators, code_target)
