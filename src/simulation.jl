@@ -35,11 +35,11 @@ end
 # ! WARNING: Do not pass this an inplace function without setting equality to :.=
 Base.Expr(c::UnaryCall) = begin
   operator = c.operator
-  if(c.equality == :.=)
+  if c.equality == :.=
     # TODO: Generalize to inplacable functions
-    if(operator == add_inplace_stub(:⋆₁⁻¹)) # Since inverse hodge Geo is a solver
+    if operator == add_inplace_stub(:⋆₁⁻¹) # Since inverse hodge Geo is a solver
       Expr(:call, c.operator, c.output, c.input)
-    elseif(operator == :.-)
+    elseif operator == :.-
       Expr(c.equality, c.output, Expr(:call, operator, c.input))
     else # TODO: Add check that this operator is a matrix
       Expr(:call, :mul!, c.output, operator, c.input)
@@ -60,7 +60,7 @@ end
 # ! WARNING: Do not pass this an inplace function without setting equality to :.=, vice versa
 Base.Expr(c::BinaryCall) = begin
   # These operators can be done in-place
-  if(c.equality == :.= && get_stub(c.operator) == GENSIM_INPLACE_STUB)
+  if c.equality == :.= && get_stub(c.operator) == GENSIM_INPLACE_STUB
     return Expr(:call, c.operator, c.output, c.input1, c.input2)
   end
   return Expr(c.equality, c.output, Expr(:call, c.operator, c.input1, c.input2))
@@ -140,11 +140,11 @@ end
 
 #= function get_form_number(d::SummationDecapode, var_id::Int)
   type = d[var_id, :type]
-  if(type == :Form0)
+  if type == :Form0
     return 0
-  elseif(type == :Form1)
+  elseif type == :Form1
     return 1
-  elseif(type == :Form2)
+  elseif type == :Form2
     return 2
   end
   return -1
@@ -200,11 +200,11 @@ function get_stub(var_name::Symbol)
   var_str = String(var_name)
   idx = findfirst("_", var_str)
 
-  if(isnothing(idx))
+  if isnothing(idx)
     return NO_STUB_RETURN
   end
 
-  if(first(idx) == 1)
+  if first(idx) == 1
     throw(InvalidStubException(var_name))
   end
 
@@ -412,19 +412,15 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
         tname = d[t, :name]
 
         # TODO: Check to see if this is a DEC operator
-        if(operator in optimizable_dec_operators)
-          # push!(dec_matrices, operator)
-          if(is_form(d, t))
+        if is_form(d, t)
+          if operator in optimizable_dec_operators
             equality = PROMOTE_ARITHMETIC_MAP[equality]
             operator = add_stub(GENSIM_INPLACE_STUB, operator)
-
             push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype, code_target))
-          end
-        elseif(operator == :(-) || operator == :.-)
-          if(is_form(d, t))
+
+          elseif operator == :(-) || operator == :.-
             equality = PROMOTE_ARITHMETIC_MAP[equality]
             operator = PROMOTE_ARITHMETIC_MAP[operator]
-
             push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype, code_target))
           end
         end
@@ -448,22 +444,22 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
         equality = :(=)
 
         # TODO: Check to make sure that this logic never breaks
-        if(is_form(d, r))
-          if(operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-)
+        if is_form(d, r)
+          if operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-
             operator = PROMOTE_ARITHMETIC_MAP[operator]
             equality = PROMOTE_ARITHMETIC_MAP[equality]
             push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
 
           # TODO: Do we want to support the ability of a user to use the backslash operator?
-          elseif(operator == :(*) || operator == :(/) || operator == :.* || operator == :./)
+          elseif operator == :(*) || operator == :(/) || operator == :.* || operator == :./
             # ! WARNING: This part may break if we add more compiler types that have different
             # ! operations for basic and broadcast modes, e.g. matrix multiplication vs broadcast
-            if(!is_infer(d, arg1) && !is_infer(d, arg2))
+            if !is_infer(d, arg1) && !is_infer(d, arg2)
               operator = PROMOTE_ARITHMETIC_MAP[operator]
               equality = PROMOTE_ARITHMETIC_MAP[equality]
               push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
             end
-          elseif(operator in optimizable_dec_operators)
+          elseif operator in optimizable_dec_operators
             operator = add_stub(GENSIM_INPLACE_STUB, operator)
             equality = PROMOTE_ARITHMETIC_MAP[equality]
             push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
@@ -471,16 +467,16 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
         end
 
         # TODO: Clean this in another PR (with a @match maybe).
-        if(operator == :(*))
+        if operator == :(*)
           operator = PROMOTE_ARITHMETIC_MAP[operator]
         end
-        if(operator == :(-))
+        if operator == :(-)
           operator = PROMOTE_ARITHMETIC_MAP[operator]
         end
-        if(operator == :(/))
+        if operator == :(/)
           operator = PROMOTE_ARITHMETIC_MAP[operator]
         end
-        if(operator == :(^))
+        if operator == :(^)
           operator = PROMOTE_ARITHMETIC_MAP[operator]
         end
 
@@ -503,7 +499,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
         equality = :(=)
 
         # If result is a known form, broadcast addition
-        if(is_form(d, r))
+        if is_form(d, r)
           operator = PROMOTE_ARITHMETIC_MAP[operator]
           equality = PROMOTE_ARITHMETIC_MAP[equality]
           push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
@@ -563,7 +559,7 @@ to the compiler.
 """
 function resolve_types_compiler!(d::SummationDecapode)
   d[:type] = map(d[:type]) do x
-    if(x == :Constant || x == :Parameter)
+    if x == :Constant || x == :Parameter
       return :infer
     end
     return x
@@ -604,7 +600,7 @@ Collects all DEC operators that are concrete matrices.
 """
 function init_dec_matrices!(d::SummationDecapode, dec_matrices::Vector{Symbol}, optimizable_dec_operators::Set{Symbol})
   for op_name in vcat(d[:op1], d[:op2])
-    if(op_name in optimizable_dec_operators)
+    if op_name in optimizable_dec_operators
       push!(dec_matrices, op_name)
     end
   end
@@ -629,7 +625,7 @@ function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Sy
       compute_key = join(computation, " * ")
 
       computation_name = get(compute_to_name, compute_key, :Error)
-      if(computation_name == :Error)
+      if computation_name == :Error
         computation_name = add_stub(Symbol("GenSim-ConMat"), Symbol(curr_id))
         get!(compute_to_name, compute_key, computation_name)
         push!(con_dec_operators, computation_name)
@@ -656,7 +652,7 @@ function hook_LCO_inplace(computation_name::Symbol, computation::Vector{Symbol},
 end
 
 function generate_parentheses_multiply(list)
-  if(length(list) == 1)
+  if length(list) == 1
       return list[1]
   else
       return Expr(:call, :*, generate_parentheses_multiply(list[1:end-1]), list[end])
@@ -758,6 +754,8 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   end
 end
 
+gather_inputs(d::SummationDecapode) = vcat(infer_state_names(d), d[incident(d, :Literal, :type), :name])
+
 gensim(c::Collage; dimension::Int=2) =
 gensim(collate(c); dimension=dimension)
 
@@ -765,13 +763,10 @@ gensim(collate(c); dimension=dimension)
 
 Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
 """
-gensim(d::SummationDecapode; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget()) =
-  gensim(d, vcat(infer_state_names(d), d[incident(d, :Literal, :type), :name]), dimension=dimension, stateeltype=stateeltype, code_target=code_target)
+gensim(d::SummationDecapode; kwargs...) =
+  gensim(d, gather_inputs(d); kwargs...)
 
-evalsim(d::SummationDecapode; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget()) =
-  eval(gensim(d, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
-evalsim(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget()) =
-  eval(gensim(d, input_vars, dimension=dimension, stateeltype=stateeltype, code_target=code_target))
+evalsim(args...; kwargs...) = eval(gensim(args...; kwargs...))
 
 """
 function find_unreachable_tvars(d)
