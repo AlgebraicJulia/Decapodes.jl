@@ -115,6 +115,7 @@ end
 
 save_dynamics("brusselator_explicit.gif")
 
+# This begins the demonstration of using implicit solvers
 sim = evalsim(Brusselator, can_prealloc=false)
 fₘ = sim(sd, nothing, DiagonalHodge())
 
@@ -131,6 +132,7 @@ soln = solve(prob, FBDF(linsolve = KLUFactorization()), progress=true, progress_
 @info("Done")
 
 save_dynamics("brusselator_implicit.gif")
+# This ends the demonstration of using implicit solvers
 
 # Run on the sphere.
 # You can use lower resolution meshes, such as Icosphere(3).
