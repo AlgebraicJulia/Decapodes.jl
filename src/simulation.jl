@@ -222,7 +222,7 @@ end
 Base.showerror(io::IO, e::InvalidCodeTargetException) = print(io, "Provided code target $(e.code_target) is not yet supported in simulations")
 
 """
-    compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::GenerationTarget)
+    compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::AbstractGenerationTarget)
 
 This creates the symbol to function linking for the simulation output. Those run through the `default_dec` backend
 expect both an in-place and an out-of-place variant in that order. User defined operations only support out-of-place.
@@ -287,7 +287,7 @@ end
 Base.showerror(io::IO, e::InvalidDecaTypeException) = print(io, "Variable \"$(e.name)\" has invalid type \"$(e.type)\"")
 
 """
-    get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::GenerationTarget) where stateeltype
+    get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::AbstractGenerationTarget) where stateeltype
 
 This initalizes all input variables according to their Decapodes type.
 """
@@ -369,12 +369,13 @@ const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
                                     :.= => :.=)
 
 """
-    compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::GenerationTarget)
+    compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, can_prealloc::Bool)
 
 Function that compiles the computation body. `d` is the input Decapode, `inputs` is a vector of state variables and literals,
 `alloc_vec` should be empty when passed in, `optimizable_dec_operators` is a collection of all DEC operator symbols that can use special
 in-place methods, `dimension` is the dimension of the problem (usually 1 or 2), `stateeltype` is the type of the state elements
-(usually Float32 or Float64) and `code_target` determines what architecture the code is compiled for (either CPU or CUDA).
+(usually Float32 or Float64), `code_target` determines what architecture the code is compiled for (either CPU or CUDA), and `can_prealloc`
+which is set to `true` by default and determines if intermediate results can be preallocated..
 """
 function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, can_prealloc::Bool)
   # Get the Vars of the inputs (probably state Vars).
@@ -517,7 +518,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
 end
 
 """
-    post_process_vector_allocs(alloc_vecs::Vector{AllocVecCall}, code_target::GenerationTarget)
+    post_process_vector_allocs(alloc_vecs::Vector{AllocVecCall}, code_target::AbstractGenerationTarget)
 
 This deals with any post processing needed by the allocations, like if data needs to be retrieved
 from a special cache.
@@ -607,7 +608,7 @@ function init_dec_matrices!(d::SummationDecapode, dec_matrices::Vector{Symbol}, 
 end
 
 """
-    link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::GenerationTarget)
+    link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::AbstractGenerationTarget)
 
 Collects arrays of DEC matrices together, replaces the array with a generated function name and computes the contracted multiplication
 """
@@ -676,13 +677,14 @@ end
 Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32 or Float64")
 
 """
-    gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::GenerationTarget = CPUTarget())
+    gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), can_prealloc::Bool = true)
 
 Generates the entire code body for the simulation function. `user_d` is the user passed Decapodes which will be left unmodified and 'input_vars' is the collection of
 state variables and literals in the Decapode.
 
 Optional keyword arguments are `dimension`, which is the dimension of the problem and defaults to 2D, `stateeltype`, which is the element type of the state forms and
-defaults to Float64 and `code_target`, which is the intended architecture target for the generated code, defaulting to regular CPU compatible code.
+defaults to Float64, `code_target`, which is the intended architecture target for the generated code, defaulting to regular CPU compatible code, and 'can_prealloc' which
+is set to `true` by default and determines if intermediate results can be preallocated.
 """
 function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), can_prealloc::Bool = true)
 

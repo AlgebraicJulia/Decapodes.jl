@@ -1,19 +1,17 @@
 using Catlab
-using Catlab.Graphics
 using CombinatorialSpaces
-using CombinatorialSpaces.ExteriorCalculus
 using DiagrammaticEquations
-using DiagrammaticEquations.Deca
 using Decapodes
 using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
-using Logging
 using JLD2
 using Printf
 using CairoMakie
 import CairoMakie: wireframe, mesh, Figure, Axis
 using ComponentArrays
+using Symbolics
+using LinearSolve
 
 using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
@@ -23,15 +21,15 @@ Point3D = Point3{Float64}
 # State variables.
 # Named intermediate variables.
 Brusselator = @decapode begin
-  (U, V)::Form0 
-  U2V::Form0 
+  (U, V)::Form0
+  U2V::Form0
   (U̇, V̇)::Form0
-  
+
   (α)::Constant
   F::Parameter
-  
+
   U2V == (U .* U) .* V
-  
+
   U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
   V̇ == (3.4 * U) - U2V + (α * Δ(V))
   ∂ₜ(U) == U̇
@@ -77,7 +75,7 @@ F₂ = zeros(nv(sd))
 
 constants_and_parameters = (
   α = 0.001,
-  F = t -> t ≥ 1.1 ? F₂ : F₁)
+  F = t -> t ≥ 1.1 ? F₁ : F₂)
 
 # Generate the simulation.
 sim = evalsim(Brusselator)
@@ -89,10 +87,6 @@ u₀ = ComponentArray(U=U, V=V)
 
 tₑ = 11.5
 
-@info("Precompiling Solver")
-prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
-soln = solve(prob, Tsit5())
-soln.retcode != :Unstable || error("Solver was not stable")
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
@@ -101,7 +95,7 @@ soln = solve(prob, Tsit5())
 @save "brusselator.jld2" soln
 
 # Visualize the final conditions.
-fig = Figure()
+fig = Figure();
 ax = Axis(fig[1,1])
 mesh!(ax, s, color=soln(tₑ).U, colormap=:jet)
 
@@ -118,7 +112,25 @@ function save_dynamics(save_file_name)
     time[] = t
   end
 end
-save_dynamics("brusselator_U.gif")
+
+save_dynamics("brusselator_explicit.gif")
+
+sim = evalsim(Brusselator, can_prealloc=false)
+fₘ = sim(sd, nothing, DiagonalHodge())
+
+u₀ = ComponentArray(U=U, V=V)
+
+du₀ = copy(u₀)
+jac_sparsity = Symbolics.jacobian_sparsity((du, u) -> fₘ(du, u, constants_and_parameters, 0.0), du₀, u₀)
+
+f = ODEFunction(fₘ; jac_prototype = float.(jac_sparsity))
+tₑ = 11.5
+@info("Solving")
+prob = ODEProblem(f, u₀, (0, tₑ), constants_and_parameters)
+soln = solve(prob, FBDF(linsolve = KLUFactorization()), progress=true, progress_steps=1, saveat=0.1);
+@info("Done")
+
+save_dynamics("brusselator_implicit.gif")
 
 # Run on the sphere.
 # You can use lower resolution meshes, such as Icosphere(3).
@@ -160,10 +172,6 @@ display(fig)
 
 tₑ = 11.5
 
-@info("Precompiling Solver")
-prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
-soln = solve(prob, Tsit5())
-soln.retcode != :Unstable || error("Solver was not stable")
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
@@ -191,4 +199,3 @@ function save_dynamics(save_file_name)
   end
 end
 save_dynamics("brusselator_sphere_U.gif")
-
