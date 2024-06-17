@@ -541,7 +541,7 @@ This hook determines if preallocated vectors need to be be handled in a special 
 before a function run. This is useful in the example of using `FixedSizeDiffCache` from `PreallocationTools.jl`.
 
 This hook is passed in `cache_exprs` which is the collection of exprs to be pasted, `alloc_vec` which is an
-'AllocVecCall' that stores information about the allocated vector and a code target.
+`AllocVecCall` that stores information about the allocated vector and a code target.
 """
 function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
   line = :($(alloc_vec.name) = (Decapodes.get_tmp($(Symbol(:__,alloc_vec.name)), u)))
@@ -679,16 +679,28 @@ Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapode
 """
     gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), can_prealloc::Bool = true)
 
-Generates the entire code body for the simulation function. `user_d` is the user passed Decapodes which will be left unmodified and 'input_vars' is the collection of
-state variables and literals in the Decapode.
+Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol 
+to operator mappings to return a simulator that can be used to solve the represented equations given initial conditions.
+  
+**Arguments:**
+  
+`user_d`: The user passed Decapode for which simulation code will be generated. (This is not modified) 
 
-Optional keyword arguments are `dimension`, which is the dimension of the problem and defaults to 2D, `stateeltype`, which is the element type of the state forms and
-defaults to Float64, `code_target`, which is the intended architecture target for the generated code, defaulting to regular CPU compatible code, and 'can_prealloc' which
-is set to `true` by default and determines if intermediate results can be preallocated.
+`input_vars` is the collection of variables whose values are known at the beginning of the simulation. (Defaults to all state variables and literals in the Decapode)
+
+**Keyword arguments:**
+
+`dimension`: The dimension of the problem. (Defaults to `2`)(Must be `1` or `2`)
+
+`stateeltype`: The element type of the state forms. (Defaults to `Float64`)(Must be `Float32` or `Float64`)
+
+`code_target`: The intended architecture target for the generated code. (Defaults to `CPUTarget()`)(Use `CUDATarget()` for NVIDIA CUDA GPUs)
+
+`can_prealloc`: Enables(`true`)/disables(`false`) pre-allocation optimizations, some solver functions require this be disabled. (Defaults to `true`)
 """
 function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), can_prealloc::Bool = true)
 
-  (1 <= dimension <= 2) ||
+  (dimension == 1 || dimension == 2) ||
     throw(UnsupportedDimensionException(dimension))
 
   (stateeltype == Float32 || stateeltype == Float64) ||
@@ -761,10 +773,6 @@ gather_inputs(d::SummationDecapode) = vcat(infer_state_names(d), d[incident(d, :
 gensim(c::Collage; dimension::Int=2) =
 gensim(collate(c); dimension=dimension)
 
-"""    function gensim(d::SummationDecapode; dimension::Int=2)
-
-Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
-"""
 gensim(d::SummationDecapode; kwargs...) =
   gensim(d, gather_inputs(d); kwargs...)
 
