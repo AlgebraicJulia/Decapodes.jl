@@ -133,6 +133,22 @@ fl_res = copy(du.C)
 
 @test norm(fc_res - fp_res) < 1e-4
 @test norm(fc_res - fl_res) < 1e-4
+
+# Test same but with no preallocating
+
+f = evalsim(DiffusionWithLiteral, preallocate=false)
+f_noalloc = f(torus, generate)
+
+f = evalsim(DiffusionWithLiteral)
+f_alloc = f(torus, generate)
+
+f_noalloc(du, u₀, NamedTuple(), 0)
+f_nal = copy(du.C)
+f_alloc(du, u₀, NamedTuple(), 0)
+f_al = copy(du.C)
+
+@test f_nal == f_al
+
 end
 
 # Testing done based on the original gensim
@@ -412,17 +428,20 @@ end
   end
   @test 4 == length(checkForContractionInGensim(single_contract))
 
-  sim = eval(gensim(contract_with_op2))
-  f = sim(earth, default_dec_generate)
-  A = 3 * ones(nv(earth))
-  E_dec = ones(nv(earth))
-  u = ComponentArray(A=A, E=E_dec)
-  du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
-  constants_and_parameters = ()
-  f(du, u, constants_and_parameters, 0)
+  for prealloc in [false, true]
+    let sim = eval(gensim(contract_with_op2, preallocate = prealloc))
+      f = sim(earth, default_dec_generate)
+      A = 3 * ones(nv(earth))
+      E_dec = ones(nv(earth))
+      u = ComponentArray(A=A, E=E_dec)
+      du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
+      constants_and_parameters = ()
+      f(du, u, constants_and_parameters, 0)
 
-  @test du.A == zeros(ntriangles(earth))
-  @test du.E ≈ 9 * ones(nv(earth))
+      @test du.A == zeros(ntriangles(earth))
+      @test du.E ≈ 9 * ones(nv(earth))
+    end
+  end
 
   # Testing contract lines beyond the initial value
   later_contraction = @decapode begin
@@ -509,19 +528,21 @@ end
     F == A ∧ (C ∧ B)
   end
 
-  sim = eval(gensim(wedges01))
+  for prealloc in [false, true]
+    let sim = eval(gensim(wedges01, preallocate=prealloc))
+      f = sim(earth, default_dec_generate)
+      A = ones(nv(earth))
+      B = 2 * ones(nv(earth))
+      C = 3 * ones(ne(earth))
+      u = ComponentArray(A=A, B=B, C=C)
+      du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
 
-  f = sim(earth, default_dec_generate)
-  A = ones(nv(earth))
-  B = 2 * ones(nv(earth))
-  C = 3 * ones(ne(earth))
-  u = ComponentArray(A=A, B=B, C=C)
-  du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
+      constants_and_parameters = ()
+      f(du, u, constants_and_parameters, 0)
 
-  constants_and_parameters = ()
-  f(du, u, constants_and_parameters, 0)
-
-  @test du.A == du.B == du.C
+      @test du.A == du.B == du.C
+    end
+  end
 
   # Testing wedge 11 operators function
   wedges11 = @decapode begin
@@ -725,26 +746,36 @@ end
 
 @testset "Allocations" begin
 # Test the heat equation Decapode has expected memory allocation.
-Heat = @decapode begin
-  C::Form0
-  D::Constant
-  ∂ₜ(C) == D*Δ(C)
+
+for prealloc in [false, true]
+  Heat = @decapode begin
+    C::Form0
+    D::Constant
+    ∂ₜ(C) == D*Δ(C)
+  end
+  sim = eval(gensim(Heat,  preallocate=prealloc))
+  s = loadmesh(Icosphere(1))
+  sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
+  f = sim(sd,nothing)
+  u₀ = ComponentArray(
+    C = map(x -> x[3], point(sd)))
+  p = (D=1e-1,)
+  du = copy(u₀)
+  # The first call to the function makes many allocations.
+  _ = @allocations f(du, u₀, p, (0,1.0)) # 55259
+  _ = @allocated f(du, u₀, p, (0,1.0)) # 3962696
+  # Test that subsequent calls make a reasonable amount.
+  nallocs = @allocations f(du, u₀, p, (0,1.0))
+  bytes = @allocated f(du, u₀, p, (0,1.0))
+
+  if prealloc
+    @test nallocs == 3
+    @test bytes == 80
+  elseif !prealloc
+    @test nallocs == 5
+    @test bytes == 400
+  end
 end
-sim = eval(gensim(Heat))
-s = loadmesh(Icosphere(1))
-sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
-subdivide_duals!(sd, Circumcenter())
-f = sim(sd,nothing)
-u₀ = ComponentArray(
-  C = map(x -> x[3], point(sd)))
-p = (D=1e-1,)
-du = copy(u₀)
-# The first call to the function makes many allocations.
-_ = @allocations f(du, u₀, p, (0,1.0)) # 55259
-_ = @allocated f(du, u₀, p, (0,1.0)) # 3962696
-# Test that subsequent calls make a reasonable amount.
-bytes = @allocated f(du, u₀, p, (0,1.0))
-nallocs = @allocations f(du, u₀, p, (0,1.0))
-@test nallocs == 3
-@test bytes == 80
+
 end
