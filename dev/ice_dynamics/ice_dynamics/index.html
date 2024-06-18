@@ -262,7 +262,7 @@ fig</code></pre><img src="5e2f04a2.png" alt="Example block output"/><pre><code c
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D.gif&quot;</code></pre><p><img src="../ice_dynamics2D.gif" alt="IceDynamics2D"/></p><h2 id="2-Manifold-in-3D"><a class="docs-heading-anchor" href="#2-Manifold-in-3D">2-Manifold in 3D</a><a id="2-Manifold-in-3D-1"></a><a class="docs-heading-anchor-permalink" href="#2-Manifold-in-3D" title="Permalink"></a></h2><p>We note that just because our physics is happening on a 2-manifold, (a surface), this doesn&#39;t restrict us to the 2D plane. In fact, we can &quot;embed&quot; our 2-manifold in 3D space to simulate a glacial sheets spread across the globe.</p><pre><code class="language-julia hljs">s = loadmesh(Icosphere(3, 10_000))
 sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
 subdivide_duals!(sd, Barycenter())
-wireframe(sd)</code></pre><img src="fdcec3be.png" alt="Example block output"/><pre><code class="language-julia hljs">n = 3
+wireframe(sd)</code></pre><img src="7b439a24.png" alt="Example block output"/><pre><code class="language-julia hljs">n = 3
 ρ = 910
 g = 9.8
 A = 1e-16
@@ -278,7 +278,7 @@ fig = Figure()
 ax = LScene(fig[1,1], scenekw=(lights=[],))
 msh = CairoMakie.mesh!(ax, s, color=h₀, colormap=:jet)
 Colorbar(fig[1,2], msh)
-fig</code></pre><img src="c7cc1688.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
+fig</code></pre><img src="76ef4c08.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
 
 constants_and_parameters = (
   n = n,
@@ -298,7 +298,7 @@ extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)</code></pre><pre cla
 ax = LScene(fig[1,1], scenekw=(lights=[],))
 msh = CairoMakie.mesh!(ax, s, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 Colorbar(fig[1,2], msh)
-fig</code></pre><img src="4256b667.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
+fig</code></pre><img src="8ba7e8f6.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
   frames = 200
   fig = Figure()
   ax = LScene(fig[1,1], scenekw=(lights=[],))
@@ -311,4 +311,4 @@ fig</code></pre><img src="4256b667.png" alt="Example block output"/><pre><code c
     msh.color = soln(t).dynamics_h
   end
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D_sphere.gif&quot;</code></pre><p><img src="../ice_dynamics2D_sphere.gif" alt="IceDynamics2DSphere"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 47 seconds.
-[ Info: This page was last built at 2024-06-17T15:55:53.613.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../cism/cism/">« CISM v2.1</a><a class="docs-footer-nextpage" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Monday 17 June 2024 15:57">Monday 17 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+[ Info: This page was last built at 2024-06-18T16:25:37.852.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../cism/cism/">« CISM v2.1</a><a class="docs-footer-nextpage" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Tuesday 18 June 2024 16:27">Tuesday 18 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
