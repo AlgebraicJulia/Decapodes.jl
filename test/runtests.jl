@@ -12,6 +12,10 @@ end
   include("simulation_core.jl")
 end
 
+@testset "Open Operators" begin
+  include("operators.jl")
+end
+
 @testset "Simulation" begin
   include("simulation.jl")
 end
