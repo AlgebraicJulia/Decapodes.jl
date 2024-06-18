@@ -189,34 +189,34 @@ function open_operators!(d::SummationDecapode; dimension::Int=2)
     op1_tgt = d[op1_idx, :tgt]
     op1_name = d[op1_idx, :op1]
 
-    
+
     remove_op1 = @match (op1_name, dimension) begin
       (:Δ₀, 1) => begin
-        remove_op1 = add_De_Rham_1D!(Val{0}, d, op1_src, op1_tgt)
+        add_De_Rham_1D!(Val{0}, d, op1_src, op1_tgt)
         true
       end
       (:Δ₁, 1) => begin
-        remove_op1 = add_De_Rham_1D!(Val{1}, d, op1_src, op1_tgt)
+        add_De_Rham_1D!(Val{1}, d, op1_src, op1_tgt)
         true
       end
       (:Δ₀, 2) => begin
-        remove_op1 = add_De_Rham_2D!(Val{0}, d, op1_src, op1_tgt)
+        add_De_Rham_2D!(Val{0}, d, op1_src, op1_tgt)
         true
       end
       (:Δ₁, 2) => begin
-        remove_op1 = add_De_Rham_2D!(Val{1}, d, op1_src, op1_tgt)
+        add_De_Rham_2D!(Val{1}, d, op1_src, op1_tgt)
         true
       end
       (:Δ₂, 2) => begin
-        remove_op1 = add_De_Rham_2D!(Val{2}, d, op1_src, op1_tgt)
+        add_De_Rham_2D!(Val{2}, d, op1_src, op1_tgt)
         true
       end
       (:δ₁, _) => begin
-        remove_op1 = add_Codiff!(d, op1_src, op1_tgt)
+        add_Codiff!(d, op1_src, op1_tgt)
         true
       end
       (:δ₂, _) => begin
-        remove_op1 = add_Codiff!(d, op1_src, op1_tgt)
+        add_Codiff!(d, op1_src, op1_tgt)
         true
       end
       _ => false
@@ -421,4 +421,3 @@ end
 function add_De_Rham_2D!(::Type{Val{2}}, d::SummationDecapode, src_De_Rham::Int, tgt_De_Rham::Int)
   add_De_Rham_1D!(Val{1}, d, src_De_Rham, tgt_De_Rham)
 end
-
