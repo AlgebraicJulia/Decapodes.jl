@@ -4,11 +4,11 @@
 
     B == Δ₀(A)
   end
-  test_compare = open_operators(laplace_de_rham_0)
+  test_compare = Decapodes.open_operators(laplace_de_rham_0)
   infer_types!(test_compare)
   resolve_overloads!(test_compare)
 
-  open_operators!(laplace_de_rham_0)
+  Decapodes.open_operators!(laplace_de_rham_0)
   infer_types!(laplace_de_rham_0)
   resolve_overloads!(laplace_de_rham_0)
 
@@ -27,7 +27,7 @@ end
 
     C == i₁(A, B)
   end
-  open_operators!(interior_product_1; dimension = 1)
+  Decapodes.open_operators!(interior_product_1; dimension = 1)
   infer_types!(interior_product_1, op1_inf_rules_1D, op2_inf_rules_1D)
   resolve_overloads!(interior_product_1, op1_res_rules_1D, op2_res_rules_1D)
 
@@ -60,7 +60,7 @@ end
 
     C == L₀(B, A)
   end
-  open_operators!(lie_derivative_0; dimension = 1)
+  Decapodes.open_operators!(lie_derivative_0; dimension = 1)
   infer_types!(lie_derivative_0, op1_inf_rules_1D, op2_inf_rules_1D)
   resolve_overloads!(lie_derivative_0, op1_res_rules_1D, op2_res_rules_1D)
 
@@ -93,7 +93,7 @@ end
 
     C == L₁(B, A)
   end
-  open_operators!(lie_derivative_1; dimension = 1)
+  Decapodes.open_operators!(lie_derivative_1; dimension = 1)
   infer_types!(lie_derivative_1, op1_inf_rules_1D, op2_inf_rules_1D)
   resolve_overloads!(lie_derivative_1, op1_res_rules_1D, op2_res_rules_1D)
 
@@ -125,7 +125,7 @@ end
 
     B == δ₁(A)
   end
-  open_operators!(codiff_1, dimension = 1)
+  Decapodes.open_operators!(codiff_1, dimension = 1)
   infer_types!(codiff_1, op1_inf_rules_1D, op2_inf_rules_1D)
   resolve_overloads!(codiff_1, op1_res_rules_1D, op2_res_rules_1D)
 
@@ -156,7 +156,7 @@ end
 
     B == Δ₀(A)
   end
-  open_operators!(laplace_de_rham_0, dimension = 1)
+  Decapodes.open_operators!(laplace_de_rham_0, dimension = 1)
   infer_types!(laplace_de_rham_0, op1_inf_rules_1D, op2_inf_rules_1D)
   resolve_overloads!(laplace_de_rham_0, op1_res_rules_1D, op2_res_rules_1D)
 
@@ -187,7 +187,7 @@ end
 
     B == Δ₁(A)
   end
-  open_operators!(laplace_de_rham_1, dimension = 1)
+  Decapodes.open_operators!(laplace_de_rham_1, dimension = 1)
   infer_types!(laplace_de_rham_1, op1_inf_rules_1D, op2_inf_rules_1D)
   resolve_overloads!(laplace_de_rham_1, op1_res_rules_1D, op2_res_rules_1D)
 
@@ -222,7 +222,7 @@ end
 
     C == i₁(A, B)
   end
-  open_operators!(interior_product_1)
+  Decapodes.open_operators!(interior_product_1)
   infer_types!(interior_product_1)
   resolve_overloads!(interior_product_1)
 
@@ -255,7 +255,7 @@ end
 
     C == i₂(A, B)
   end
-  open_operators!(interior_product_2)
+  Decapodes.open_operators!(interior_product_2)
   infer_types!(interior_product_2)
   resolve_overloads!(interior_product_2)
 
@@ -288,7 +288,7 @@ end
 
     C == L₀(B, A)
   end
-  open_operators!(lie_derivative_0)
+  Decapodes.open_operators!(lie_derivative_0)
   infer_types!(lie_derivative_0)
   resolve_overloads!(lie_derivative_0)
 
@@ -321,7 +321,7 @@ end
 
     C == L₁(B, A)
   end
-  open_operators!(lie_derivative_1)
+  Decapodes.open_operators!(lie_derivative_1)
   infer_types!(lie_derivative_1)
   resolve_overloads!(lie_derivative_1)
 
@@ -354,7 +354,7 @@ end
 
     C == L₂(B, A)
   end
-  open_operators!(lie_derivative_2)
+  Decapodes.open_operators!(lie_derivative_2)
   infer_types!(lie_derivative_2)
   resolve_overloads!(lie_derivative_2)
 
@@ -386,7 +386,7 @@ end
 
     B == δ₁(A)
   end
-  open_operators!(codiff_1)
+  Decapodes.open_operators!(codiff_1)
   infer_types!(codiff_1)
   resolve_overloads!(codiff_1)
 
@@ -418,7 +418,7 @@ end
 
     B == δ₂(A)
   end
-  open_operators!(codiff_2)
+  Decapodes.open_operators!(codiff_2)
   infer_types!(codiff_2)
   resolve_overloads!(codiff_2)
 
@@ -449,7 +449,7 @@ end
 
     B == Δ₀(A)
   end
-  open_operators!(laplace_de_rham_0)
+  Decapodes.open_operators!(laplace_de_rham_0)
   infer_types!(laplace_de_rham_0)
   resolve_overloads!(laplace_de_rham_0)
 
@@ -480,7 +480,7 @@ end
 
     B == Δ₁(A)
   end
-  open_operators!(laplace_de_rham_1)
+  Decapodes.open_operators!(laplace_de_rham_1)
   infer_types!(laplace_de_rham_1)
   resolve_overloads!(laplace_de_rham_1)
 
@@ -511,7 +511,7 @@ end
 
     B == Δ₂(A)
   end
-  open_operators!(laplace_de_rham_2)
+  Decapodes.open_operators!(laplace_de_rham_2)
   infer_types!(laplace_de_rham_2)
   resolve_overloads!(laplace_de_rham_2)
 
