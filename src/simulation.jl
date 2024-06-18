@@ -369,15 +369,15 @@ const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
                                     :.= => :.=)
 
 """
-    compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, can_prealloc::Bool)
+    compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
 
 Function that compiles the computation body. `d` is the input Decapode, `inputs` is a vector of state variables and literals,
 `alloc_vec` should be empty when passed in, `optimizable_dec_operators` is a collection of all DEC operator symbols that can use special
 in-place methods, `dimension` is the dimension of the problem (usually 1 or 2), `stateeltype` is the type of the state elements
-(usually Float32 or Float64), `code_target` determines what architecture the code is compiled for (either CPU or CUDA), and `can_prealloc`
+(usually Float32 or Float64), `code_target` determines what architecture the code is compiled for (either CPU or CUDA), and `preallocate`
 which is set to `true` by default and determines if intermediate results can be preallocated..
 """
-function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, can_prealloc::Bool)
+function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
   # Get the Vars of the inputs (probably state Vars).
   visited_Var = falses(nparts(d, :Var))
 
@@ -413,7 +413,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
         tname = d[t, :name]
 
         # TODO: Check to see if this is a DEC operator
-        if can_prealloc && is_form(d, t)
+        if preallocate && is_form(d, t)
           if operator in optimizable_dec_operators
             equality = PROMOTE_ARITHMETIC_MAP[equality]
             operator = add_stub(GENSIM_INPLACE_STUB, operator)
@@ -445,7 +445,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
         equality = :(=)
 
         # TODO: Check to make sure that this logic never breaks
-        if can_prealloc && is_form(d, r)
+        if preallocate && is_form(d, r)
           if operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-
             operator = PROMOTE_ARITHMETIC_MAP[operator]
             equality = PROMOTE_ARITHMETIC_MAP[equality]
@@ -500,7 +500,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
         equality = :(=)
 
         # If result is a known form, broadcast addition
-        if can_prealloc && is_form(d, r)
+        if preallocate && is_form(d, r)
           operator = PROMOTE_ARITHMETIC_MAP[operator]
           equality = PROMOTE_ARITHMETIC_MAP[equality]
           push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
@@ -677,7 +677,7 @@ end
 Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32 or Float64")
 
 """
-    gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), can_prealloc::Bool = true)
+    gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
 
 Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol 
 to operator mappings to return a simulator that can be used to solve the represented equations given initial conditions.
@@ -696,9 +696,9 @@ to operator mappings to return a simulator that can be used to solve the represe
 
 `code_target`: The intended architecture target for the generated code. (Defaults to `CPUTarget()`)(Use `CUDATarget()` for NVIDIA CUDA GPUs)
 
-`can_prealloc`: Enables(`true`)/disables(`false`) pre-allocation optimizations. Some functions, such as those that determine Jacobian sparsity patterns, may require this to be disabled. (Defaults to `true`)
+`preallocate`: Enables(`true`)/disables(`false`) pre-allocation optimizations. Some functions, such as those that determine Jacobian sparsity patterns, may require this to be disabled. (Defaults to `true`)
 """
-function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), can_prealloc::Bool = true)
+function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
 
   (dimension == 1 || dimension == 2) ||
     throw(UnsupportedDimensionException(dimension))
@@ -746,7 +746,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   union!(optimizable_dec_operators, contracted_dec_operators, extra_dec_operators)
 
   # Compilation of the simulation
-  equations = compile(gen_d, input_vars, alloc_vectors, optimizable_dec_operators, dimension, stateeltype, code_target, can_prealloc)
+  equations = compile(gen_d, input_vars, alloc_vectors, optimizable_dec_operators, dimension, stateeltype, code_target, preallocate)
   data = post_process_vector_allocs(alloc_vectors, code_target)
 
   func_defs = compile_env(gen_d, dec_matrices, contracted_dec_operators, code_target)

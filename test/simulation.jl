@@ -136,7 +136,7 @@ fl_res = copy(du.C)
 
 # Test same but with no preallocating
 
-f = evalsim(DiffusionWithLiteral, can_prealloc=false)
+f = evalsim(DiffusionWithLiteral, preallocate=false)
 f_noalloc = f(torus, generate)
 
 f = evalsim(DiffusionWithLiteral)
@@ -429,7 +429,7 @@ end
   @test 4 == length(checkForContractionInGensim(single_contract))
 
   for prealloc in [false, true]
-    let sim = eval(gensim(contract_with_op2, can_prealloc = prealloc))
+    let sim = eval(gensim(contract_with_op2, preallocate = prealloc))
       f = sim(earth, default_dec_generate)
       A = 3 * ones(nv(earth))
       E_dec = ones(nv(earth))
@@ -529,7 +529,7 @@ end
   end
 
   for prealloc in [false, true]
-    let sim = eval(gensim(wedges01, can_prealloc=prealloc))
+    let sim = eval(gensim(wedges01, preallocate=prealloc))
       f = sim(earth, default_dec_generate)
       A = ones(nv(earth))
       B = 2 * ones(nv(earth))
@@ -753,7 +753,7 @@ for prealloc in [false, true]
     D::Constant
     ∂ₜ(C) == D*Δ(C)
   end
-  sim = eval(gensim(Heat,  can_prealloc=prealloc))
+  sim = eval(gensim(Heat,  preallocate=prealloc))
   s = loadmesh(Icosphere(1))
   sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
   subdivide_duals!(sd, Circumcenter())

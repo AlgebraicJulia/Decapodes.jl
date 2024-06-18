@@ -116,7 +116,7 @@ end
 save_dynamics("brusselator_explicit.gif")
 
 # This begins the demonstration of using implicit solvers
-sim = evalsim(Brusselator, can_prealloc=false)
+sim = evalsim(Brusselator, preallocate=false)
 fₘ = sim(sd, nothing, DiagonalHodge())
 
 u₀ = ComponentArray(U=U, V=V)
