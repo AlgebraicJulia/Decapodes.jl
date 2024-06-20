@@ -17,9 +17,11 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [weakdeps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 
 [extensions]
 DecapodesCUDAExt = "CUDA"
+DecapodesMakieExt = "Makie"
 
 [compat]
 ACSets = "0.2"
@@ -34,6 +36,7 @@ JSON = "0.21"
 Krylov = "0.9.6"
 LinearAlgebra = "1.9"
 MLStyle = "0.4.17"
+Makie = "0.21"
 Markdown = "1.9"
 OrdinaryDiffEq = "6.47"
 PreallocationTools = "0.4"

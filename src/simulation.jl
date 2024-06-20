@@ -375,7 +375,7 @@ Function that compiles the computation body. `d` is the input Decapode, `inputs`
 `alloc_vec` should be empty when passed in, `optimizable_dec_operators` is a collection of all DEC operator symbols that can use special
 in-place methods, `dimension` is the dimension of the problem (usually 1 or 2), `stateeltype` is the type of the state elements
 (usually Float32 or Float64), `code_target` determines what architecture the code is compiled for (either CPU or CUDA), and `preallocate`
-which is set to `true` by default and determines if intermediate results can be preallocated..
+which is set to `true` by default and determines if intermediate results can be preallocated.
 """
 function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
   # Get the Vars of the inputs (probably state Vars).
@@ -679,14 +679,14 @@ Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapode
 """
     gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
 
-Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol 
+Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol
 to operator mappings to return a simulator that can be used to solve the represented equations given initial conditions.
-  
-**Arguments:**
-  
-`user_d`: The user passed Decapode for which simulation code will be generated. (This is not modified) 
 
-`input_vars` is the collection of variables whose values are known at the beginning of the simulation. (Defaults to all state variables and literals in the Decapode)
+**Arguments:**
+
+`user_d`: The user passed Decapode for which simulation code will be generated. (This is not modified)
+
+`input_vars`: is the collection of variables whose values are known at the beginning of the simulation. (Defaults to all state variables and literals in the Decapode)
 
 **Keyword arguments:**
 
