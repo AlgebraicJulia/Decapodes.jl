@@ -37,10 +37,4 @@ function run_simulation(config, fm, u0, ::Val{:Heat})
   prob = ODEProblem(fm, u0, (0, tₑ), ())
 
   soln = solve(prob, Tsit5())
-  
-  open("decapode_results_log.txt", "a") do f
-    write(f, string(config)*"\n")
-    write(f, string(soln.stats)*"\n\n")
-  end
-
 end

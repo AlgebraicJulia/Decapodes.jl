@@ -48,6 +48,12 @@ for target in [CPUTarget(), CUDATarget()]
     sim = setup_benchmark(config, dispatch);
     sd, u0 = create_mesh(config, dispatch);
     fm = create_simulate(config, sd, sim, dispatch);
+    result = run_simulation(config, fm, u0, dispatch)
+
+    open("decapode_results_log.txt", "a") do f
+      write(f, string(config)*"\n")
+      write(f, string(result.stats)*"\n\n")
+    end  
     
     deca_sim_suite[config.name][config.code_target]["Res: $(config.mesh_resolution)"]["Setup"] = @benchmarkable setup_benchmark($config, $dispatch) gctrial=true
     deca_sim_suite[config.name][config.code_target]["Res: $(config.mesh_resolution)"]["Mesh"] = @benchmarkable create_mesh($config, $dispatch) gcsample=true
