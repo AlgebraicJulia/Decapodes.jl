@@ -1,0 +1,15 @@
+[4]
+code_target = "CPUTarget"
+float_type = "Float64"
+
+[1]
+code_target = "CPUTarget"
+float_type = "Float32"
+
+[2]
+code_target = "CPUTarget"
+float_type = "Float32"
+
+[3]
+code_target = "CPUTarget"
+float_type = "Float64"
