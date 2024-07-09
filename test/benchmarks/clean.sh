@@ -2,6 +2,6 @@
 
 rm *.txt
 rm prints/*.txt
-rm final.log
+rm final.md
 rm results/*.json
 rm params/*.json

@@ -8,7 +8,7 @@ function setup_benchmark(config, ::Val{:Heat})
 end
 
 function create_mesh(config, ::Val{:Heat})
-  s = triangulated_grid(100, 100, 1, 1, Point2{config.float_type})
+  s = triangulated_grid(100, 100, config.res, config.res, Point2{config.float_type})
   sd = EmbeddedDeltaDualComplex2D{Bool, config.float_type, Point2{config.float_type}}(s)
   subdivide_duals!(sd, Circumcenter())
 

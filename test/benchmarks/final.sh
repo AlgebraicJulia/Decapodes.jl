@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=FINAL
 #SBATCH --output=finallog_%j.txt
-#SBATCH --mem=500MB
+#SBATCH --mem=4GB
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=grauta@ufl.edu
 #SBATCH --time=01:00:00

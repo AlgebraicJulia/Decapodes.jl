@@ -2,12 +2,21 @@ using TOML
 
 data = Dict()
 
+fields = ["float_type", "code_target", "resolution"]
+
+field_data = Dict("fields" => join(fields, ","))
+push!(data, string(0) => field_data)
+
 count = 1
 for float in ["Float32", "Float64"]
   for target in ["CPUTarget", "CPUTarget"] # Change one to CUDA
-    datum = Dict("float_type" => float, "code_target" => target)
-    push!(data, string(count) => datum)
-    count += 1
+    for resolution in [5, 2, 1]
+      datum = Dict(fields[1] => float,
+                  fields[2] => target,
+                  fields[3] => resolution)
+      push!(data, string(count) => datum)
+      count += 1
+    end
   end
 end
 

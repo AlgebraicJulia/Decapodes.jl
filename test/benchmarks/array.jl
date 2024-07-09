@@ -42,15 +42,18 @@ code_target = @match code_target_data begin
   _ => println("Warning: Code target data $(code_target_data) is not valid, exiting early")
 end
 
-println("Float type: $(float_type), Code target type: $(code_target)")
+resolution = task_config_data["resolution"]
+
+println("Float type: $(float_type), Code target: $(code_target), Resolution: $(resolution)")
 
 struct BenchConfig
   name::String
   float_type::DataType
   code_target
+  res
 end
 
-config = BenchConfig("Heat", float_type, code_target)
+config = BenchConfig("Heat", float_type, code_target, resolution)
 
 include(joinpath("simulations", "Heat.jl"))
 
