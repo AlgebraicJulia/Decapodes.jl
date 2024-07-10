@@ -12,8 +12,9 @@ mkdir -p prints
 mkdir -p results
 mkdir -p params
 
-JOBID=$(sbatch --array=1-12%4 --parsable array.sh $DIR)
+JOBID=$(sbatch --array=1-12%6 --parsable array.sh $DIR)
 
 echo $JOBID
 
 sbatch --dependency=afterok:$JOBID final.sh $DIR
+

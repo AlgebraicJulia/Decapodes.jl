@@ -32,17 +32,26 @@ float_data = task_config_data["float_type"]
 float_type = @match float_data begin
   "Float32" => Float32
   "Float64" => Float64
-  _ => println("Warning: Float data $(float_data) is not valid, exiting early")
+  _ => begin
+    println("Warning: Float data $(float_data) is not valid, exiting early")
+    exit()
+  end
 end
 
 code_target_data = task_config_data["code_target"]
 code_target = @match code_target_data begin
   "CPUTarget" => CPUTarget()
   "CUDATarget" => CUDATarget()
-  _ => println("Warning: Code target data $(code_target_data) is not valid, exiting early")
+  _ => begin
+    println("Warning: Code target data $(code_target_data) is not valid, exiting early")
+    exit()
+  end
 end
 
 resolution = task_config_data["resolution"]
+
+meta_config = all_config_data[string(0)]
+solver_stages = split(meta_config["stages"], ",")
 
 println("Float type: $(float_type), Code target: $(code_target), Resolution: $(resolution)")
 
@@ -64,12 +73,18 @@ dispatch = Val(Symbol(config.name))
 sim = setup_benchmark(config, dispatch);
 sd, u0 = create_mesh(config, dispatch);
 fm = create_simulate(config, sd, sim, dispatch);
-# result = run_simulation(config, fm, u0, dispatch);
+result = run_simulation(config, fm, u0, dispatch);
 
-simulation_suite[task_key]["Setup"] = @benchmarkable setup_benchmark($config, $dispatch) gctrial=true
-simulation_suite[task_key]["Mesh"] = @benchmarkable create_mesh($config, $dispatch) gcsample=true
-simulation_suite[task_key]["Simulate"] = @benchmarkable create_simulate($config, $sd, $sim, $dispatch) gctrial=true
-simulation_suite[task_key]["Solve"] = @benchmarkable run_simulation($config, $fm, $u0, $dispatch) gcsample=true
+remove_wrapper = r"^.*?\((.*?)\)$"
+open(joinpath("results", "stats_$(task_key).txt"), "w") do file
+  to_write = filter(!isspace, match(remove_wrapper, string(result.stats))[1])
+  write(file, to_write)
+end
+
+simulation_suite[task_key][solver_stages[1]] = @benchmarkable setup_benchmark($config, $dispatch) gctrial=true
+simulation_suite[task_key][solver_stages[2]] = @benchmarkable create_mesh($config, $dispatch) gcsample=true
+simulation_suite[task_key][solver_stages[3]] = @benchmarkable create_simulate($config, $sd, $sim, $dispatch) gctrial=true
+simulation_suite[task_key][solver_stages[4]] = @benchmarkable run_simulation($config, $fm, $u0, $dispatch) gcsample=true
 
 params_file_name = joinpath("params", "benchmark_heat_params_$(task_key).json")
 
@@ -80,4 +95,4 @@ if !isfile(params_file_name)
 end
 
 deca_sim_results = run(simulation_suite, verbose = true)
-BenchmarkTools.save(joinpath("results", "benchmark_heat_results_$(task_key).json"), deca_sim_results)
+BenchmarkTools.save(joinpath("results", "benchmarks_$(task_key).json"), deca_sim_results)

@@ -3,8 +3,9 @@ using TOML
 data = Dict()
 
 fields = ["float_type", "code_target", "resolution"]
+stages = ["Setup", "Mesh", "Simulate", "Solve"]
 
-field_data = Dict("fields" => join(fields, ","))
+field_data = Dict("fields" => join(fields, ","), "stages" => join(stages, ","))
 push!(data, string(0) => field_data)
 
 count = 1
