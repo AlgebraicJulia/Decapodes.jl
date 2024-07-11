@@ -5,6 +5,9 @@ using PrettyTables
 using DataFrames
 
 save_dir = ARGS[1]
+sim_name = ARGS[2]
+
+cd(sim_name)
 
 # Collect all benchmark result files from "results" directory
 json_check = r"\.json$"
@@ -14,7 +17,7 @@ txt_check = r"\.txt$"
 txtfiles = sort!(filter(filename -> occursin(txt_check, filename), readdir("results", join=true)))
 
 # Collect config information for indvidual task configs
-all_config_data = TOML.parsefile("benchmarks_config_heat.toml")
+all_config_data = TOML.parsefile("$(sim_name)_cpu.toml")
 
 # Collect meta config information to collect supported fields
 meta_config = all_config_data[string(0)]
@@ -76,13 +79,16 @@ for field_name in reverse(meta_field_names)
   sort!(data_frame, Symbol(field_name))
 end
 
+mkpath(save_dir)
+cd(save_dir)
+
 # Can be used to save table for later use
-CSV.write(joinpath(save_dir, "final.csv"), data_frame)
+CSV.write("final.csv", data_frame)
 # csv_table = CSV.read("final.csv", DataFrame)
 
 # TODO: Can change this backened to be different from markdown
 # Open file where table will be saved
-open(joinpath(save_dir, "final.md"), "w") do results_file
+open("final.md", "w") do results_file
   conf = set_pt_conf(tf = tf_markdown)
   pretty_table_with_conf(conf, results_file, data_frame; header = table_header)
 end

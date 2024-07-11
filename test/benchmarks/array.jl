@@ -12,10 +12,14 @@ using GeometryBasics: Point2, Point3
 # using CUDA, CUDA.CUSPARSE
 
 arrayid = ARGS[1] # Job Array ID
+sim_name = ARGS[2]
+println(sim_name)
 println(arrayid)
+cd(sim_name)
+
 println(pwd())
 
-all_config_data = TOML.parsefile("benchmarks_config_heat.toml")
+all_config_data = TOML.parsefile("$(sim_name)_cpu.toml")
 
 task_key = string(arrayid)
 
@@ -56,24 +60,21 @@ solver_stages = split(meta_config["stages"], ",")
 println("Float type: $(float_type), Code target: $(code_target), Resolution: $(resolution)")
 
 struct BenchConfig
-  name::String
-  float_type::DataType
+  float_type
   code_target
   res
 end
 
-config = BenchConfig("Heat", float_type, code_target, resolution)
+config = BenchConfig(float_type, code_target, resolution)
 
-include(joinpath("simulations", "Heat.jl"))
+include(joinpath(sim_name, "$sim_name.jl"))
 
 simulation_suite = BenchmarkGroup()
 
-dispatch = Val(Symbol(config.name))
-
-sim = setup_benchmark(config, dispatch);
-sd, u0 = create_mesh(config, dispatch);
-fm = create_simulate(config, sd, sim, dispatch);
-result = run_simulation(config, fm, u0, dispatch);
+sim = setup_benchmark(config);
+sd, u0, cnst_param = create_mesh(config);
+fm = create_simulate(config, sd, sim);
+result = run_simulation(config, fm, u0, cnst_param);
 
 remove_wrapper = r"^.*?\((.*?)\)$"
 open(joinpath("results", "stats_$(task_key).txt"), "w") do file
@@ -81,12 +82,12 @@ open(joinpath("results", "stats_$(task_key).txt"), "w") do file
   write(file, to_write)
 end
 
-simulation_suite[task_key][solver_stages[1]] = @benchmarkable setup_benchmark($config, $dispatch) gctrial=true
-simulation_suite[task_key][solver_stages[2]] = @benchmarkable create_mesh($config, $dispatch) gcsample=true
-simulation_suite[task_key][solver_stages[3]] = @benchmarkable create_simulate($config, $sd, $sim, $dispatch) gctrial=true
-simulation_suite[task_key][solver_stages[4]] = @benchmarkable run_simulation($config, $fm, $u0, $dispatch) gcsample=true
+simulation_suite[task_key][solver_stages[1]] = @benchmarkable setup_benchmark($config) gctrial=true
+simulation_suite[task_key][solver_stages[2]] = @benchmarkable create_mesh($config) gcsample=true
+simulation_suite[task_key][solver_stages[3]] = @benchmarkable create_simulate($config, $sd, $sim) gctrial=true
+simulation_suite[task_key][solver_stages[4]] = @benchmarkable run_simulation($config, $fm, $u0, $cnst_param) gcsample=true
 
-params_file_name = joinpath("params", "benchmark_heat_params_$(task_key).json")
+params_file_name = joinpath("params", "params_$(task_key).json")
 
 if !isfile(params_file_name)
   println("Warning: Could not find previous parameters file, regenerating")

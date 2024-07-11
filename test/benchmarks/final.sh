@@ -8,13 +8,9 @@
 
 pwd; hostname; date
 
-cd $1
-
-mkdir -p table_logs/benchmarks_$SLURM_JOB_ID
-
 module load julia 
 
-julia final.jl table_logs/benchmarks_$SLURM_JOB_ID
+julia final.jl table_logs/$SLURM_JOB_ID $1
 
 date
 

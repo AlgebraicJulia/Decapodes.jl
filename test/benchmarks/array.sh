@@ -1,15 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=PRINT
 #SBATCH --output=printlog_%A_%a.txt
-#SBATCH --mem=10gb
+#SBATCH --mem=10GB
 #SBATCH --time=01:00:00
 
 pwd; hostname; date
 
-cd $1
-
 module load julia
 
-julia array.jl $SLURM_ARRAY_TASK_ID
+julia array.jl $SLURM_ARRAY_TASK_ID $1
 
 date
