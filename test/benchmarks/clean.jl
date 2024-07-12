@@ -1,5 +1,5 @@
 # TODO: Can improve by seperating bench and final logs
-file_regex = r"^.*log_(\d+)(?:_\d+)?.txt$"
+file_regex = r"^.*log_(\d+)(?:_\d+)?\.txt$"
 
 file_matches = filter(!isnothing, map(x -> match(file_regex, x), readdir(".")))
 
