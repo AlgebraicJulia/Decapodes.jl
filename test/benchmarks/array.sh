@@ -8,6 +8,6 @@ pwd; hostname; date
 
 module load julia
 
-julia array.jl $SLURM_ARRAY_TASK_ID $1
+julia --proj=. array.jl $SLURM_ARRAY_TASK_ID $1
 
 date

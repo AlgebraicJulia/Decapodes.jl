@@ -10,7 +10,7 @@ pwd; hostname; date
 
 module load julia 
 
-julia final.jl table_logs/$SLURM_JOB_ID $1
+julia --proj=. final.jl table_logs/$SLURM_JOB_ID $1
 
 date
 

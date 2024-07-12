@@ -17,7 +17,7 @@ echo $PWD
 # Add a depot path
 
 echo "Precompiling Julia"
-julia --proj=$DIR -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+julia --proj=$DIR --threads=auto -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
 echo "Finished precompiling Julia"
 
 mkdir -p results
