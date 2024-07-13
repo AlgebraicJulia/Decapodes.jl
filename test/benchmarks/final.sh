@@ -8,11 +8,11 @@
 
 pwd; hostname; date
 
-module load julia 
+module load julia
 
 julia --proj=. final.jl table_logs/$SLURM_JOB_ID $1
 
 date
 
-julia clean.jl
+julia --proj=. clean.jl
 

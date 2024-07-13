@@ -24,8 +24,7 @@ all_config_data = TOML.parsefile("$(sim_name)_cpu.toml")
 task_key = string(arrayid)
 
 if !haskey(all_config_data, task_key)
-  print("Warning: Task with key $(task_key) could not find config data, exiting early")
-  exit()
+  error("Warning: Task with key $(task_key) could not find config data")
 end
 
 task_config_data = all_config_data[task_key]
@@ -36,23 +35,20 @@ float_data = task_config_data["float_type"]
 float_type = @match float_data begin
   "Float32" => Float32
   "Float64" => Float64
-  _ => begin
-    println("Warning: Float data $(float_data) is not valid, exiting early")
-    exit()
-  end
+  "ComplexF32" => ComplexF32
+  "ComplexF64" => ComplexF64
+  _ => error("Float data $(float_data) is not valid, exiting early") 
 end
 
 code_target_data = task_config_data["code_target"]
 code_target = @match code_target_data begin
   "CPUTarget" => CPUTarget()
   "CUDATarget" => CUDATarget()
-  _ => begin
-    println("Warning: Code target data $(code_target_data) is not valid, exiting early")
-    exit()
-  end
+  _ => error("Warning: Code target data $(code_target_data) is not valid, exiting early")
 end
 
-resolution = task_config_data["resolution"]
+# TODO: This won't support Icospheres
+resolution = parse(Float64, task_config_data["resolution"])
 
 meta_config = all_config_data[string(0)]
 solver_stages = split(meta_config["stages"], ",")
