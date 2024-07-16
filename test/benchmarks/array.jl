@@ -9,17 +9,21 @@ using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
 using GeometryBasics: Point2, Point3
-# using CUDA, CUDA.CUSPARSE
+using CUDA, CUDA.CUSPARSE
 
 arrayid = ARGS[1] # Job Array ID
 sim_name = ARGS[2]
+code_target_name = ARGS[3]
+
 println(sim_name)
 println(arrayid)
+println(code_target_name)
+
 cd(sim_name)
 
 println(pwd())
 
-all_config_data = TOML.parsefile("$(sim_name)_cpu.toml")
+all_config_data = TOML.parsefile("$(sim_name)_$(code_target_name).toml")
 
 task_key = string(arrayid)
 
@@ -73,7 +77,7 @@ fm = create_simulate(config, sd, sim);
 result = run_simulation(config, fm, u0, cnst_param);
 
 remove_wrapper = r"^.*?\((.*?)\)$"
-open(joinpath("results", "stats_$(task_key).txt"), "w") do file
+open(joinpath("results", "stats_$(task_key)_$(code_target_name).txt"), "w") do file
   to_write = filter(!isspace, match(remove_wrapper, string(result.stats))[1])
   write(file, to_write)
 end
@@ -83,7 +87,7 @@ simulation_suite[task_key][solver_stages[2]] = @benchmarkable create_mesh($confi
 simulation_suite[task_key][solver_stages[3]] = @benchmarkable create_simulate($config, $sd, $sim) gctrial=true
 simulation_suite[task_key][solver_stages[4]] = @benchmarkable run_simulation($config, $fm, $u0, $cnst_param) gcsample=true
 
-params_file_name = joinpath("params", "params_$(task_key).json")
+params_file_name = joinpath("params", "params_$(task_key)_$(code_target_name).json")
 
 if !isfile(params_file_name)
   println("Warning: Could not find previous parameters file, regenerating")
@@ -92,4 +96,4 @@ if !isfile(params_file_name)
 end
 
 deca_sim_results = run(simulation_suite, verbose = true)
-BenchmarkTools.save(joinpath("results", "benchmarks_$(task_key).json"), deca_sim_results)
+BenchmarkTools.save(joinpath("results", "benchmarks_$(task_key)_$(code_target_name).json"), deca_sim_results)

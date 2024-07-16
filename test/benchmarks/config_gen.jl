@@ -6,7 +6,7 @@ using MLStyle
 using Base.Iterators
 
 const metaconfig_file = "metaconfig.csv"
-const dirty_bit = "dirty.txt"
+const dirty_bit = "clean.txt"
 
 function shorten_code_target(target)
   @match target begin
@@ -65,7 +65,6 @@ function generate_config(csv_row)
   for (idx, config) in enumerate(product(config_store...))
       datum = Dict()
       for (col_idx, val) in enumerate(config)
-        # Offset to avoid reading sim_name
         push!(datum, keys(csv_row)[col_idx] => val)
       end
       push!(data, string(idx) => datum)
@@ -86,10 +85,7 @@ function generate_config(csv_row)
 end
 
 function update_tracker(file_name)
-  open(file_name, "w") do file
-    write(file, "Configuration changed since last run, 
-                please reset stored benchmarking parameters, then delete me")
-  end
+  rm(file_name, force=true)
 end
 
 function run_metaconfig(metaconfig_file)
