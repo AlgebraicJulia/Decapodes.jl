@@ -28,6 +28,7 @@ rm results/*
 
 mkdir -p params
 
+# Change this to clean.txt, check if file exists, else throw out
 TRACKER="dirty.txt"
 if [ -f $TRACKER ]; then
   echo "Config has been regenerated, throwing out tuned parameters"
