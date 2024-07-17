@@ -11,28 +11,11 @@ The formulations are based on those given by [Mohamed, Hirani, Samtaney](https:/
 
 However, different choices in discretization are chosen for purposes of brevity, to demonstrate novel discretizations of certain operators, and to demonstrate the automated Decapodes workflow.
 
-The different formulations are given in the following decapode expressions. The full code that generated these results is available in [a julia script](ns.jl).
+The full code that generated these results is available in [a julia script](ns.jl).
+
+We give the vorticity formulation of the inviscid incompressible Navier-Stokes momentum equation as follows:
 
 ```julia
-eq11_vorticity = @decapode begin
-  d𝐮::DualForm2
-  𝐮::DualForm1
-  μ::Constant
-
-  𝐮 == d₁⁻¹(d𝐮)
-
-  ∂ₜ(d𝐮) == μ * ∘(⋆, d, ⋆, d)(d𝐮) + (-1) * ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
-end
-
-eq11_inviscid_vorticity = @decapode begin
-  d𝐮::DualForm2
-  𝐮::DualForm1
-
-  𝐮 == d₁⁻¹(d𝐮)
-
-  ∂ₜ(d𝐮) ==  (-1) * ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
-end
-
 eq11_inviscid_poisson = @decapode begin
   d𝐮::DualForm2
   𝐮::DualForm1
@@ -43,41 +26,11 @@ eq11_inviscid_poisson = @decapode begin
 
   ∂ₜ(d𝐮) ==  (-1) * ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
 end
-
-eq17_stream = @decapode begin
-  ψ::Form0
-  u::DualForm1
-  v::Form1
-  μ::Constant
-
-  u == ⋆(d(ψ))
-  v == ⋆(u)
-
-  ∂ₜ(ψ) == dsdinv(
-                  μ * ∘(d, ⋆, d, ⋆, d, ⋆, d)(ψ) -
-                  ∘(⋆₁, d̃₁)(v ∧ ∘(d,⋆,d,⋆)(ψ)))
-end
-
-eq17_inviscid_stream = @decapode begin
-  ψ::Form0
-  u::DualForm1
-  v::Form1
-
-  u == ⋆(d(ψ))
-  v == ⋆(u)
-
-  ∂ₜ(ψ) == -1 * dsdinv(∘(⋆₁, d̃₁)(v ∧ ∘(d,⋆,d,⋆)(ψ)))
-end
 ```
 
-Our initial conditions of interest are either Taylor or Point vortices
+Our initial conditions here are Point vortices:
 
 ```julia
-function taylor_vortex(pnt::Point3D, cntr::Point3D, p::TaylorVortexParams)
-  gcd = great_circle_dist(pnt,cntr)
-  (p.G/p.a) * (2 - (gcd/p.a)^2) * exp(0.5 * (1 - (gcd/p.a)^2))
-end
-
 function point_vortex(pnt::Point3D, cntr::Point3D, p::PointVortexParams)
   gcd = great_circle_dist(pnt,cntr)
   p.τ / (cosh(3gcd/p.a)^2)
@@ -90,7 +43,7 @@ Here is one set of results from using the inviscid Poisson formulation:
 
 ![Vorticity](vort.gif)
 
-These vortices should be stable so we should see the same periodic function for both lines here. The difference between the lines is the accumulated error.
+We can visualize the distribution of vorticity at the $\theta = 0.4$ latitude. The difference between the distributions at $t=0$ and $t=12$ is accumulated error.
 
 ![Azimuth Profile](azimuth.png)
 
