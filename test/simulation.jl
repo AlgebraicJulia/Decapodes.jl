@@ -779,3 +779,44 @@ for prealloc in [false, true]
 end
 
 end
+
+@testset "Large Summations" begin
+# Elementwise summations of more than 32 variables are not pre-compiled by our
+# host language.
+
+# Test that (.+)(...) is generated for small sums.
+SmallSum = @decapode begin
+  (A00, A01, A02, A03, A04, A05, A06, A07, A08, A09,
+   A10, A11, A12, A13, A14, A15, A16, A17, A18, A19,
+   A20, A21, A22, A23, A24, A25, A26, A27, A28, A29,
+   A30, A31, A32)::Form0
+
+  ∂ₜ(A00) ==
+          A01 + A02 + A03 + A04 + A05 + A06 + A07 + A08 + A09 +
+    A10 + A11 + A12 + A13 + A14 + A15 + A16 + A17 + A18 + A19 +
+    A20 + A21 + A22 + A23 + A24 + A25 + A26 + A27 + A28 + A29 +
+    A30 + A31 + A32
+end
+needle = "A00̇ .= (.+)(A00, A01, A02, A03, A04, A05, A06, A07, A08, A09, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32)"
+haystack = string(gensim(SmallSum))
+@test occursin(needle, haystack)
+
+# Test that sum([...]) is generated for large sums.
+LargeSum = @decapode begin
+  (A00, A01, A02, A03, A04, A05, A06, A07, A08, A09,
+   A10, A11, A12, A13, A14, A15, A16, A17, A18, A19,
+   A20, A21, A22, A23, A24, A25, A26, A27, A28, A29,
+   A30, A31, A32)::Form0
+
+  ∂ₜ(A00) ==
+          A01 + A02 + A03 + A04 + A05 + A06 + A07 + A08 + A09 +
+    A10 + A11 + A12 + A13 + A14 + A15 + A16 + A17 + A18 + A19 +
+    A20 + A21 + A22 + A23 + A24 + A25 + A26 + A27 + A28 + A29 +
+    A30 + A31 + A32
+end
+needle = "A00̇ .= sum([A00, A01, A02, A03, A04, A05, A06, A07, A08, A09, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32])"
+haystack = string(gensim(LargeSum))
+@test occursin(needle, haystack)
+
+end
+
