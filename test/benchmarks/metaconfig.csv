@@ -1,3 +1,0 @@
-sim_name,code_target,float_type,resolution
-heat,CPUTarget,Float32 Float64,5 2 1 0.8 0.5
-heat,CUDATarget,Float32 Float64,5 2 1 0.8 0.5
