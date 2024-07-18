@@ -51,32 +51,38 @@ import Decapodes: BinaryCall
   end
 end
 
-import Decapodes: VarargsCall
+import Decapodes: SummationCall
 
-@testset "Test VarargsCall" begin
+@testset "Test SummationCall" begin
   # Test equality, 2 inputs
-  @test Expr(VarargsCall(:F, EQUALS, [:x, :y], :z)) == :(z = F(x, y))
+  @test Expr(SummationCall(EQUALS, [:x, :y], :z)) == :(z = (.+)(x, y))
 
   # Test equality, 3 inputs
-  @test Expr(VarargsCall(:F, EQUALS, [:x, :y, :w], :z)) == :(z = F(x, y, w))
+  @test Expr(SummationCall(EQUALS, [:x, :y, :w], :z)) == :(z = (.+)(x, y, w))
 
   # Test equality, 1 input
-  @test Expr(VarargsCall(:F, EQUALS, [:x], :z)) == :(z = F(x))
+  @test Expr(SummationCall(EQUALS, [:x], :z)) == :(z = (.+)(x))
 
   # Test equality, 0 inputs
-  @test Expr(VarargsCall(:F, EQUALS, [], :z)) == :(z = F())
+  @test Expr(SummationCall(EQUALS, [], :z)) == :(z = (.+)())
+  
+  # Test broadcast equality, 33 inputs
+  @test Expr(SummationCall(EQUALS, fill(:x, 33), :z)) == Symbol("z = sum([" * foldl(*, fill("x, ", 32)) * "x])")
 
   # Test broadcast equality, 2 inputs
-  @test Expr(VarargsCall(:F, DOT_EQUALS, [:x, :y], :z)) == :(z .= F(x, y))
+  @test Expr(SummationCall(DOT_EQUALS, [:x, :y], :z)) == :(z .= (.+)(x, y))
 
   # Test broadcast equality, 3 inputs
-  @test Expr(VarargsCall(:F, DOT_EQUALS, [:x, :y, :w], :z)) == :(z .= F(x, y, w))
+  @test Expr(SummationCall(DOT_EQUALS, [:x, :y, :w], :z)) == :(z .= (.+)(x, y, w))
 
   # Test broadcast equality, 1 input
-  @test Expr(VarargsCall(:F, DOT_EQUALS, [:x], :z)) == :(z .= F(x))
+  @test Expr(SummationCall(DOT_EQUALS, [:x], :z)) == :(z .= (.+)(x))
 
   # Test broadcast equality, 0 inputs
-  @test Expr(VarargsCall(:F, DOT_EQUALS, [], :z)) == :(z .= F())
+  @test Expr(SummationCall(DOT_EQUALS, [], :z)) == :(z .= (.+)())
+  
+  # Test broadcast equality, 33 inputs
+  @test Expr(SummationCall(DOT_EQUALS, fill(:x, 33), :z)) == Symbol("z .= sum([" * foldl(*, fill("x, ", 32)) * "x])")
 end
 
 #######################
