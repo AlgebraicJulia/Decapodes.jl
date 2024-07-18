@@ -67,7 +67,7 @@ import Decapodes: SummationCall
   @test Expr(SummationCall(EQUALS, [], :z)) == :(z = (.+)())
   
   # Test broadcast equality, 33 inputs
-  @test Expr(SummationCall(EQUALS, fill(:x, 33), :z)) == Expr(Symbol("z = sum([" * foldl(*, fill("x, ", 32)) * "x])"))
+  @test Expr(SummationCall(EQUALS, fill(:x, 33), :z)) == Meta.parse("z = sum([" * foldl(*, fill("x, ", 32)) * "x])")
 
   # Test broadcast equality, 2 inputs
   @test Expr(SummationCall(DOT_EQUALS, [:x, :y], :z)) == :(z .= (.+)(x, y))
@@ -82,7 +82,7 @@ import Decapodes: SummationCall
   @test Expr(SummationCall(DOT_EQUALS, [], :z)) == :(z .= (.+)())
   
   # Test broadcast equality, 33 inputs
-  @test Expr(SummationCall(DOT_EQUALS, fill(:x, 33), :z)) == Expr(Symbol("z .= sum([" * foldl(*, fill("x, ", 32)) * "x])"))
+  @test Expr(SummationCall(DOT_EQUALS, fill(:x, 33), :z)) == Meta.parse("z .= sum([" * foldl(*, fill("x, ", 32)) * "x])")
 end
 
 #######################
