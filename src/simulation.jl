@@ -66,15 +66,17 @@ Base.Expr(c::BinaryCall) = begin
   return Expr(c.equality, c.output, Expr(:call, c.operator, c.input1, c.input2))
 end
 
-struct VarargsCall <: AbstractCall
-  operator::Union{Symbol, Expr}
+struct SummationCall <: AbstractCall
   equality::Symbol
   inputs::Vector{Symbol}
   output::Symbol
 end
 
-Base.Expr(c::VarargsCall) = begin
-  return Expr(c.equality, c.output, Expr(:call, c.operator, c.inputs...))
+# The output of @code_llvm (.+) of more than 32 variables is inefficient.
+Base.Expr(c::SummationCall) = begin
+  length(c.inputs) ≤ 32 ?
+    Expr(c.equality, c.output, Expr(:call, Expr(:., :+), c.inputs...)) : # (.+)(a,b,c)
+    Expr(c.equality, c.output, Expr(:call, :sum, Expr(:vect, c.inputs...))) # sum([a,b,c])
 end
 
 struct AllocVecCall <: AbstractCall
@@ -508,7 +510,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
 
         visited_Σ[op] = true
         visited_Var[r] = true
-        c = VarargsCall(operator, equality, argnames, rname)
+        c = SummationCall(equality, argnames, rname)
         push!(op_order, c)
       end
     end
