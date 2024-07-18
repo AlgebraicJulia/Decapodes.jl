@@ -66,17 +66,6 @@ Base.Expr(c::BinaryCall) = begin
   return Expr(c.equality, c.output, Expr(:call, c.operator, c.input1, c.input2))
 end
 
-struct VarargsCall <: AbstractCall
-  operator::Union{Symbol, Expr}
-  equality::Symbol
-  inputs::Vector{Symbol}
-  output::Symbol
-end
-
-Base.Expr(c::VarargsCall) = begin
-  return Expr(c.equality, c.output, Expr(:call, c.operator, c.inputs...))
-end
-
 struct SummationCall <: AbstractCall
   equality::Symbol
   inputs::Vector{Symbol}
