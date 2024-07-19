@@ -1,11 +1,9 @@
 module pathfiles
 
 using DrWatson
-@quickactivate "benchmarks"
+@quickactivate :benchmarks
 
 using Test
-
-include(srcdir("paths.jl"))
 
 @testset "Config name generation" begin
     let name = "heat"; arch = "cpu"

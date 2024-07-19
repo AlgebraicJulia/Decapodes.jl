@@ -1,5 +1,6 @@
 name = "benchmarks"
 uuid = "b465d61d-1350-4ef5-9abc-112f9dc9b757"
+version = "0.0.1"
 
 [deps]
 ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
