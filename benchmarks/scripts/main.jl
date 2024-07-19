@@ -1,5 +1,5 @@
 using DrWatson
-@quickactivate "benchmarks"
+@quickactivate :benchmarks
 
 @info "Precompiling Julia"
 using Pkg
@@ -10,25 +10,22 @@ Pkg.precompile()
 using TOML
 
 const sim_name = ARGS[1]
-
 simdir(args...) = srcdir(sim_name, args...)
-paramsdir(args...) = simdir("params", args...)
-resultsdir(args...) = datadir("sims", sim_name, args...)
 
 const tracker = simdir("clean.txt")
 
-mkpath(paramsdir())
-mkpath(resultsdir())
+mkpath(paramsdir(sim_name))
+mkpath(resultsdir(sim_name))
 
 # Force parameter regeneration
-if !isfile(tracker)
-    for file in readdir(paramsdir(), join=true)
-        rm(file)
-    end
-    open(tracker, "w") do file
-        write(file, "Configuration has not been updated, tuning parameters still valid")
-    end
-end
+# if !isfile(tracker)
+#     for file in readdir(paramsdir(), join=true)
+#         rm(file)
+#     end
+#     open(tracker, "w") do file
+#         write(file, "Configuration has not been updated, tuning parameters still valid")
+#     end
+# end
 
 const cpu_config_name = "$(sim_name)_cpu.toml"
 const cuda_config_name = "$(sim_name)_cuda.toml"

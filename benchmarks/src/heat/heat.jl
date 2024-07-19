@@ -10,7 +10,7 @@ function setup_config(task_config_data)
   float_type = parse_float_type(task_config_data["float_type"])
   code_target = parse_code_target(task_config_data["code_target"])
   resolution = Float64(task_config_data["resolution"])
-  println("Float type: $(float_type), Code target: $(code_target), Resolution: $(resolution)")
+  @info "Float type: $(float_type), Code target: $(code_target), Resolution: $(resolution)"
 
   HeatConfig(float_type, code_target, resolution)
 end

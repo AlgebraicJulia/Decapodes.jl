@@ -1,21 +1,13 @@
 using DrWatson
-@quickactivate "benchmarks"
+@quickactivate :benchmarks
 
 using TOML
 using MLStyle
 
-const sim_name = ARGS[1]
-const architecture = ARGS[2]
+const default_config_file = srcdir("main_config.toml")
+# TODO: Simulation is too hard-coded to allow other stages right now
 const stages = ["Setup", "Mesh", "Simulate", "Solve"]
 const tracker = "clean.txt"
-
-function get_code_target()
-    @match architecture begin
-        "cpu" => "CPUTarget"
-        "cuda" => "CUDATarget"
-        _ => error("Second argument should be either 'cpu' or 'cuda'")
-    end
-end
 
 function get_float_types(;just_real=true)
     just_real ? ["Float32", "Float64"] : ["Float32", "Float64", "ComplexF32", "ComplexF64"]
@@ -25,37 +17,56 @@ function update_tracker(file_name)
     rm(file_name, force=true)
 end
 
-simdir(args...) = srcdir(sim_name, args...)
+function process_benchmark_config(configname)
+    benchmark_config = TOML.parsefile(configname)
 
-dictparams(_) = error("You have not yet implemented a parameter dictionary for this simulation")
+    for simulation in keys(benchmark_config)
+        mkpath(srcdir(simulation))
+        simulation_config = benchmark_config[simulation]
 
-function dictparams(::Val{:heat})
-    resolution = [5, 2, 1]
-    code_target = get_code_target()
-    float_type = get_float_types()
-    @strdict resolution code_target float_type
+        for arch in keys(simulation_config)
+            simulation_entry = simulation_config[arch]
+
+            if isempty(simulation_entry)
+                error("Configuration for '$simulation' on '$arch' is defined but empty")
+            end
+            new_simconfig = process_simulation_config(simulation_entry)
+
+            new_configname = get_configname(simulation, arch)
+            open(srcdir(simulation, new_configname), "w") do io
+                TOML.print(io, new_simconfig)
+            end
+
+            # update_tracker(simdir(tracker))
+        end
+    end
+    
 end
 
-function generate_config(filename)
-    mkpath(simdir())
-    params = dict_list(dictparams(Val(Symbol(sim_name))))
+function process_simulation_config(entry)
+    received_params = dict_list(entry)
 
     params_list = Dict()
 
-    meta_data = Dict("fields" => join(keys(first(params)), ","), "stages" => join(stages, ","))
+    # TODO: Remove this maybe, really just needed for final table
+    meta_data = Dict("fields" => join(keys(first(received_params)), ","), "stages" => join(stages, ","))
     push!(params_list, string(0) => meta_data)
 
-    for (idx, param) in enumerate(params)
+    for (idx, param) in enumerate(received_params)
         push!(params_list, string(idx) => param)
     end
 
-    open(joinpath(simdir(), filename), "w") do io
-        TOML.print(io, params_list)
-    end
-
-    update_tracker(simdir(tracker))
+    params_list
 end
 
-generate_config("$(sim_name)_$(architecture).toml")
+if length(ARGS) == 0
+    config_file = default_config_file
+elseif length(ARGS) == 1
+    config_file = ARGS[1]
+else
+    error("Usage: [config file name]")
+end
+
+process_benchmark_config(config_file)
 
 
