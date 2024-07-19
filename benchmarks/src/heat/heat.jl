@@ -1,12 +1,13 @@
+using DrWatson
+@quickactivate :benchmarks
+
 struct HeatConfig
   float_type
   code_target
   res
 end
 
-include(srcdir("param_parsing.jl"))
-
-function setup_config(task_config_data)
+function setup_config(task_config_data::Dict{String, Any})
   float_type = parse_float_type(task_config_data["float_type"])
   code_target = parse_code_target(task_config_data["code_target"])
   resolution = Float64(task_config_data["resolution"])
