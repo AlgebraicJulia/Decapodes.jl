@@ -66,6 +66,8 @@ Additionally, this file should contain the following functions.
 
 Simply run ```scripts/main.sh``` and provide it the name of the desired simulation to benchmark. Note this must match the name provided in the user's config.
 
+Note that it may be the case that a benchmark run will hit an Out-of-Memory error. If that occurs, then you may update the reserved memory in ```scripts/array.sh```. Similarly, you may increase the time requested to run the benchmark.
+
 ## Data Collection and Processing
 
 Once a simulation is run, their outputs will be saved in ```data/sims/"sim_name"```. The benchmark JSON files will contain the full result of the benchmarking run while the stat JLD2 files will contain the solve result statistics from DEStats.
