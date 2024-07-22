@@ -1,5 +1,6 @@
 @info "Loading Documenter"
 using Documenter
+using DocumenterCitations
 using Literate
 using Distributed
 
@@ -30,6 +31,11 @@ end
 #     end
 #   end
 # end
+
+bib = CitationBibliography(
+    joinpath(@__DIR__, "src", "decapodes_documenter.bib");
+    style=:numeric
+)
 
 @info "Building Documenter.jl docs"
 makedocs(
@@ -62,7 +68,8 @@ makedocs(
     "ASCII Operators" => "ascii.md",
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
-  ]
+  ],
+  plugins=[bib]
 )
 
 @info "Deploying docs"
