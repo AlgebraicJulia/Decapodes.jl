@@ -9,9 +9,9 @@ The Decapodes framework takes high-level representations of physics equations an
 
 We do so by translating equations from vector calculus notation to the "discrete exterior calculus" (DEC). This process is roughly about recognizing whether physical quantities represent scalar or vector quantities, and recognizing whether differential operators represent gradient, divergence, and so on.
 
-In this benchmark, we will implement the "small slope approximation" of glacial dynamics used by P. Halfar in his 1981 work ["On the dynamics of the ice sheets"](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/JC086iC11p11065) by taking his original formulation, translating it into the DEC, then providing a mesh and initial conditions.
+In this benchmark, we will implement the "small slope approximation" of glacial dynamics used by P. Halfar in his 1981 work "On the dynamics of the ice sheets"[halfar_dynamics_1981](@cite) by taking his original formulation, translating it into the DEC, then providing a mesh and initial conditions.
 
-The initial conditions used here are exactly those considered by W. H. Lipscomb et al. in ["Description And Evaluation of the Community Ice Sheet Model (CISM) v2.1" (2019)](https://gmd.copernicus.org/articles/12/387/2019/).
+The initial conditions used here are exactly those considered by W. H. Lipscomb et al. in "Description And Evaluation of the Community Ice Sheet Model (CISM) v2.1"[lipscomb_description_2019](@cite).
 
 ```@example DEC
 # AlgebraicJulia Dependencies
@@ -65,7 +65,7 @@ to_graphviz(halfar_eq2)
 
 !["Glen's Law"](glens_law.png)
 
-Here, we recognize that Gamma is in fact what glaciologists call "Glen's Flow Law." It states that the strain rate of a sheet of ice can be related to applied stress via a power law. Below, we encode the formulation as it is usually given in the literature, depending explicitly on the gravitational constant, g.
+Here, we recognize that Gamma is in fact what glaciologists call "Glen's Flow Law"[glen_flow_1958](@cite). It states that the strain rate of a sheet of ice can be related to applied stress via a power law. Below, we encode the formulation as it is usually given in the literature, depending explicitly on the gravitational constant, g.
 
 ```@example DEC
 # Equation 1 from Glen, J. W. THE FLOW LAW OF ICE: A discussion of the
@@ -376,6 +376,11 @@ We saw in this document how to create performant and accurate simulations in the
 Since Decapodes targets high-level representations of physics, it is uniquely suited to incorporating knowledge from subject matter experts to increase simulation accuracy. This process does not require an ice dynamics expert to edit physics equations that have already been weaved into solver code.
 
 Further improvements to the Decapodes library are made continuously. We are creating implementations of DEC operators that are constructed and execute faster. And we are in the beginning stages of 3D simulations using the DEC.
+
+```@bibliography
+Pages = ["cism/cism.md"]
+Canonical = false
+```
 
 ```@example INFO
 DocInfo.get_report(info) # hide
