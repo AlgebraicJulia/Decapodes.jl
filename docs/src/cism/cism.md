@@ -378,7 +378,7 @@ Since Decapodes targets high-level representations of physics, it is uniquely su
 Further improvements to the Decapodes library are made continuously. We are creating implementations of DEC operators that are constructed and execute faster. And we are in the beginning stages of 3D simulations using the DEC.
 
 ```@bibliography
-Pages = ["cism/cism.md"]
+Pages = ["cism.md"]
 Canonical = false
 ```
 
