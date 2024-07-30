@@ -1,3 +1,7 @@
+using DrWatson
+@quickactivate :benchmarks
+using TOML
+
 function process_benchmark_config(configname)
     benchmark_config = TOML.parsefile(configname)
     validate_config(benchmark_config)

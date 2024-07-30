@@ -26,8 +26,7 @@ function get_resultfiles(filename_check)
   resultsdir_filepaths = readdir(resultsdir(sim_name), join=true)
   sort!(filter(filename -> occursin(filename_check, filename), resultsdir_filepaths))
 end
-  
-  
+
 function process_simdata(jld2file, jsonfile, config_data)
   data_row = Dict{String, Any}()
 
@@ -58,7 +57,7 @@ function add_filename!(data_row, filepath, colname::String)
   filename = last(splitpath(filepath))
   push!(data_row, colname => filename)
 end
-  
+
 function add_benchmark_data!(data_row, trial_data, name::String)
   solver_stages = get_solver_stages()
   for stage in solver_stages
@@ -69,4 +68,8 @@ end
 
 function get_benchmark_headername(stage::String, name::String, category::String)
   return stage*" $(name) $(category)"
+end
+
+function get_meta_config_info(benchmark_config)
+  return benchmark_config[string(0)]
 end

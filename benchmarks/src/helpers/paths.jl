@@ -1,12 +1,11 @@
 # Collection of path function mimicking DrWatson's functions
 using DrWatson
 
-export paramsdir, resultsdir, tablesdir, helpersdir, aggdatadir, postprocessdir
+export resultsdir, tablesdir, helpersdir, aggdatadir, postprocessdir
 export get_configname, get_config, get_simfile, get_statsfile, get_benchfile
 
 helpersdir(args...) = srcdir("helpers", args...)
 
-paramsdir(sim_name, args...) = srcdir(sim_name, "params", args...)
 resultsdir(sim_name, args...) = datadir("sims", sim_name, args...)
 
 tablesdir(sim_name, slurm_id, args...) = datadir("exp_pro", sim_name, slurm_id, args...)
