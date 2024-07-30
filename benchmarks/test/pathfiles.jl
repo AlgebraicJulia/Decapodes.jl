@@ -1,14 +1,14 @@
-module pathfiles
+module PathFiles
 
 using DrWatson
 @quickactivate :benchmarks
 
 using Test
 
-@testset "Config name generation" begin
-    let name = "heat"; arch = "cpu"
-        @test "heat_cpu.toml" == get_configname(name, arch)
-    end
+@testset "File names" begin
+  @test "heat_cpu.toml" == get_configname("heat", "cpu")
+  @test occursin("stats_1_cpu.jld2", get_statsfile("1", "heat", "cpu"))
+  @test occursin("benchmarks_1_cpu.json", get_benchfile("1", "heat", "cpu"))
 end
 
 end

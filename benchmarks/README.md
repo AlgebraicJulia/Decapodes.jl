@@ -31,11 +31,11 @@ which auto-activate the project, enable local path handling from DrWatson and pr
 
 ## Establishing Configurations
 
-To establish a set of configurations for a simulation, you should use ```config_generate.jl```, located in the ```src``` directory. This will read either the included ```main_config.toml``` or a user provided file, when the file name is provided as a command line argument, and distribute the configuration information to multiple tasks. 
+To establish a set of configurations for a simulation, you should use ```config_generate.jl```, located in the ```scripts``` directory. This will read either the included ```main_config.toml``` or a user provided file, when the file name is provided as a command line argument, and distribute the configuration information to multiple tasks. 
 
 To use a custom TOML, please follow all the steps below:
 
-0. The user provided TOML must located in the ```scripts``` directory.
+0. The user provided TOML must located in the ```src``` directory.
 1. For a given simulation (heat, brusselator, etc.) and intended architeture (cpu, cuda), include a group in the TOML as `[sim_name.arch]`, where `sim_name` and `arch` are respective names from the previous groups.
 2. Under a group, list all the parameters desired. This should be structured as either `param_name = [val1, val2, val3...]` or `param_name = val`.
 3. Highly recommended parameters to include are ```code_target```, which takes either ```CPUTarget``` or ```CUDATarget```.
@@ -45,6 +45,9 @@ To use a custom TOML, please follow all the steps below:
 Please view ```main_config.toml``` as a guiding example on how to craft your own TOML. 
 
 **Warning**: ```config_generate.jl``` is not called automatically so it is up to you to run the script before launching benchmarks. 
+
+**Warning**: Do not call ```config_generate.jl``` for an actively running simulation since this may unexpectedly affect the running process.
+
 
 ## Creating a Simulation File
 

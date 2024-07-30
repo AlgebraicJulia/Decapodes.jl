@@ -7,9 +7,3 @@ resolution = [5, 2, 1]
 code_target = "CUDATarget"
 float_type = ["Float32", "Float64"]
 resolution = [5, 2, 1]
-
-[brussel.cpu]
-code_target = "CPUTarget"
-float_type = ["Float32", "Float64"]
-resolution = [5, 2, 1]
-

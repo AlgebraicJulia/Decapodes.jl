@@ -37,23 +37,28 @@ end
 
 @info "Running $sim_name on $arch, array id is $task_key"
 
+# Extract data
 all_config_data = TOML.parsefile(get_config(sim_name, arch))
 
 task_config_data = extract_task_config(all_config_data)
-solver_stages = extract_stagenames(all_config_data)
+solver_stages = get_solver_stages()
 
+# Grab user's physics file
 include(get_simfile(sim_name))
 
 config = setup_config(task_config_data)
 
+# Get intermediate variables to use in benchmarking
 sim = setup_benchmark(config);
 sd, u0, cnst_param = create_mesh(config);
 fm = create_simulate(config, sd, sim);
 result = run_simulation(config, fm, u0, cnst_param);
 
+# Save solver statistics
 stats_data = tostringdict(struct2dict(result.stats))
 wsave(get_statsfile(task_key, sim_name, arch), stats_data)
 
+# Setup and run benchmarking
 simulation_suite = BenchmarkGroup()
 
 simulation_suite[task_key][solver_stages[1]] = @benchmarkable setup_benchmark($config) gctrial=true
@@ -61,16 +66,6 @@ simulation_suite[task_key][solver_stages[2]] = @benchmarkable create_mesh($confi
 simulation_suite[task_key][solver_stages[3]] = @benchmarkable create_simulate($config, $sd, $sim) gctrial=true
 simulation_suite[task_key][solver_stages[4]] = @benchmarkable run_simulation($config, $fm, $u0, $cnst_param) gcsample=true
 
-# params_file_name = paramsdir("params_$(task_key)_$(arch).json")
-
-# if !isfile(params_file_name)
-#   @info "Warning: Could not find previous parameters file, regenerating"
-#   tune!(simulation_suite)
-#   BenchmarkTools.save(params_file_name, params(simulation_suite))
-# end
-
-# simulation_params = only(BenchmarkTools.load(params_file_name))
-
 tune!(simulation_suite)
-deca_sim_results = run(simulation_suite, verbose = true)
+deca_sim_results = run(simulation_suite; verbose = true)
 BenchmarkTools.save(get_benchfile(task_key, sim_name, arch), deca_sim_results)
