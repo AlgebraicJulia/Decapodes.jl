@@ -69,7 +69,3 @@ end
 function get_benchmark_headername(stage::String, name::String, category::String)
   return stage*" $(name) $(category)"
 end
-
-function get_meta_config_info(benchmark_config)
-  return benchmark_config[string(0)]
-end

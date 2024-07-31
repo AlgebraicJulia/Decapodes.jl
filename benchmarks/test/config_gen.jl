@@ -27,6 +27,25 @@ using TOML
   @test validate_config(good_toml) === nothing
 end
 
+@testset "Config file loading" begin
+  temp_list = Dict()
+  temp_params = [Dict("test" => 1)]
+  add_meta_data!(temp_list, temp_params)
+  @test temp_list["0"]["fields"] == "test"
+
+  temp_list = Dict()
+  temp_params = dict_list(Dict("test" => [1, 2]))
+  add_task_data!(temp_list, temp_params)
+  @test temp_list["1"]["test"] == 1
+  @test temp_list["2"]["test"] == 2
+
+  init_params = Dict("full_test" => ["a", "b"])
+  temp_list = process_simulation_config(init_params)
+  @test temp_list["0"]["fields"] == "full_test"
+  @test temp_list["1"]["full_test"] == "a"
+  @test temp_list["2"]["full_test"] == "b"
+end
+
 @testset "Parameter parsing" begin
   test_toml = TOML.parse("[physics.cpu]\ntest_val = [2, 3]\ntest_val2 = [10, 11]")
   @test !isempty(test_toml["physics"]["cpu"])

@@ -31,3 +31,7 @@ end
 function get_benchfile(task_key, sim_name, arch)
   return resultsdir(sim_name, "benchmarks_$(task_key)_$(arch).json")
 end
+
+function get_meta_config_info(benchmark_config)
+  return benchmark_config[string(0)]
+end
