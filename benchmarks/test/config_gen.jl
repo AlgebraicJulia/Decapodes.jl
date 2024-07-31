@@ -44,6 +44,7 @@ end
   @test temp_list["0"]["fields"] == "full_test"
   @test temp_list["1"]["full_test"] == "a"
   @test temp_list["2"]["full_test"] == "b"
+  @test get_config_size(temp_list) == 2
 
   init_params = Dict("full_test" => ["a", "b", "c", "d"])
   temp_list = process_simulation_config(init_params)

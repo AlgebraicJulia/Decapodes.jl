@@ -9,7 +9,10 @@ function aggregate_data(slurm_id, sim_name)
   all_arches = get_supported_arches()
   for arch in all_arches
     config_name = get_config(sim_name, arch)
-    isfile(config_name) || continue
+    if !isfile(config_name) 
+      @info "Config file for $arch not found, skipping"
+      continue
+    end
     
     config_data = TOML.parsefile(config_name)
     num_entries = get_config_size(config_data)
@@ -35,8 +38,13 @@ function process_simdata(task_key, arch, benchmark_filepath, solve_stats_filepat
   data_row = Dict{String, Any}()
 
   add_debug_simdata!(data_row, task_key, arch)
-  add_benchmark_data!(data_row, task_key, benchmark_filepath, config_data)
-  add_solver_stats_data!(data_row, solve_stats_filepath)
+  add_config_data!(data_row, task_key, config_data)
+
+  benchmark_data = first(BenchmarkTools.load(benchmark_filepath))
+  add_benchmark_data!(data_row, task_key, benchmark_data)
+
+  stats_data = wload(solve_stats_filepath)
+  add_solver_stats_data!(data_row, stats_data)
 
   data_row
 end
@@ -47,19 +55,19 @@ function add_debug_simdata!(data_row, task_key, arch)
   push!(data_row, "Task ID" => task_key)
 end
 
-function add_benchmark_data!(data_row, task_key, benchmark_filepath, config_data)
-  benchmark_data = first(BenchmarkTools.load(benchmark_filepath))
-
+function add_config_data!(data_row, task_key, config_data)
   merge!(data_row, config_data[task_key]) # Adds sim parameters
+end
 
+function add_benchmark_data!(data_row, task_key, benchmark_data)
   median_trial = median(benchmark_data[task_key])
   min_trial = minimum(benchmark_data[task_key])
 
-  add_benchmark_data!(data_row, median_trial, "Median")
-  add_benchmark_data!(data_row, min_trial, "Minimum")
+  add_trial_data!(data_row, median_trial, "Median")
+  add_trial_data!(data_row, min_trial, "Minimum")
 end
 
-function add_benchmark_data!(data_row, trial_data, name::String)
+function add_trial_data!(data_row, trial_data, name::String)
   solver_stages = get_solver_stages()
   for stage in solver_stages
     push!(data_row, get_benchmark_headername(stage, name, "Time") => trial_data[stage].time)
@@ -68,10 +76,10 @@ function add_benchmark_data!(data_row, trial_data, name::String)
 end
 
 function get_benchmark_headername(stage::String, name::String, category::String)
-  return stage*" $(name) $(category)"
+  return "$(stage) $(name) $(category)"
 end
 
-function add_solver_stats_data!(data_row, solve_stats_filepath)
-  merge!(data_row, wload(solve_stats_filepath))
+function add_solver_stats_data!(data_row, stats_data)
+  merge!(data_row, stats_data)
 end
 
