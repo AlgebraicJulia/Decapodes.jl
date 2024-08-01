@@ -698,7 +698,7 @@ to operator mappings to return a simulator that can be used to solve the represe
 
 `code_target`: The intended architecture target for the generated code. (Defaults to `CPUTarget()`)(Use `CUDATarget()` for NVIDIA CUDA GPUs)
 
-`preallocate`: Enables(`true`)/disables(`false`) pre-allocation optimizations. Some functions, such as those that determine Jacobian sparsity patterns, may require this to be disabled. (Defaults to `true`)
+`preallocate`: Enables(`true`)/disables(`false`) pre-allocated caches for intermediate computations. Some functions, such as those that determine Jacobian sparsity patterns, or perform auto-differentiation, may require this to be disabled. (Defaults to `true`)
 """
 function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
 
