@@ -49,19 +49,20 @@ makedocs(
     "Overview" => "overview/overview.md",
     "Equations" => "equations/equations.md",
     "Vortices" => "navier_stokes/ns.md",
-    "Cahn-Hilliard" => "ch/cahn-hilliard.md",
-    "Klausmeier" => "klausmeier/klausmeier.md",
-    "CISM v2.1" => "cism/cism.md",
-    "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
-    "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
-    "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
-    "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
-    "NHS" => "nhs/nhs_lite.md",
-    "Pipe Flow" => "poiseuille/poiseuille.md",
-    "Misc Features" => "bc/bc_debug.md", # Requires overview
-    "ASCII Operators" => "ascii.md",
-    "Canonical Models" => "canon.md",
-    "Library Reference" => "api.md"
+    "Harmonics" => "harmonics/harmonics.md",
+    # "Cahn-Hilliard" => "ch/cahn-hilliard.md",
+    # "Klausmeier" => "klausmeier/klausmeier.md",
+    # "CISM v2.1" => "cism/cism.md",
+    # "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
+    # "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
+    # "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
+    # "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
+    # "NHS" => "nhs/nhs_lite.md",
+    # "Pipe Flow" => "poiseuille/poiseuille.md",
+    # "Misc Features" => "bc/bc_debug.md", # Requires overview
+    # "ASCII Operators" => "ascii.md",
+    # "Canonical Models" => "canon.md",
+    # "Library Reference" => "api.md"
   ]
 )
 
