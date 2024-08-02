@@ -40,15 +40,16 @@ makedocs(
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
+  draft = true;
   pagesonly = true,
   linkcheck = true,
   linkcheck_ignore = [r"agupubs\.onlinelibrary\.wiley\.com", # This gives a 403 Forbidden
                       r"Decapodes\.jl/dev"], # 404, probably due to bad self-rerference
   pages     = Any[
-    "Decapodes.jl" => "index.md",
-    "Overview" => "overview/overview.md",
+    # "Decapodes.jl" => "index.md",
+    # "Overview" => "overview/overview.md",
     "Equations" => "equations/equations.md",
-    "Vortices" => "navier_stokes/ns.md",
+    # "Vortices" => "navier_stokes/ns.md",
     "Harmonics" => "harmonics/harmonics.md",
     # "Cahn-Hilliard" => "ch/cahn-hilliard.md",
     # "Klausmeier" => "klausmeier/klausmeier.md",
