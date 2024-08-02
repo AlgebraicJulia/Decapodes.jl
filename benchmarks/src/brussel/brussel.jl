@@ -13,6 +13,8 @@ using LinearAlgebra
 using MLStyle
 using OrdinaryDiffEq
 
+using Decapodes.Canon.Chemistry
+
 function pass_simulation_instance()
   return SimulationInstance(setup_config, setup_benchmark, create_mesh, create_simulate, run_simulation)
 end
@@ -33,23 +35,7 @@ function setup_config(task_config_data::Dict{String, Any})
 end
 
 function setup_benchmark(config::BrusselConfig)
-  Brusselator = @decapode begin
-    (U, V)::Form0
-    U2V::Form0
-    (U̇, V̇)::Form0
-
-    (α)::Constant
-    F::Parameter
-
-    U2V == (U .* U) .* V
-
-    U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
-    V̇ == (3.4 * U) - U2V + (α * Δ(V))
-    ∂ₜ(U) == U̇
-    ∂ₜ(V) == V̇
-  end
-
-  eval(gensim(Brusselator, code_target = config.code_target, stateeltype = config.float_type))
+  eval(gensim(brusselator, code_target = config.code_target, stateeltype = config.float_type))
 end
 
 function create_mesh(config::BrusselConfig)
