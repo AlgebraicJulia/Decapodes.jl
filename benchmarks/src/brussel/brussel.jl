@@ -1,21 +1,7 @@
+using Decapodes.Canon.Chemistry
+
 function setup_benchmark(config)
-  Brusselator = @decapode begin
-    (U, V)::Form0
-    U2V::Form0
-    (U̇, V̇)::Form0
-
-    (α)::Constant
-    F::Parameter
-
-    U2V == (U .* U) .* V
-
-    U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
-    V̇ == (3.4 * U) - U2V + (α * Δ(V))
-    ∂ₜ(U) == U̇
-    ∂ₜ(V) == V̇
-  end
-
-  eval(gensim(Brusselator, code_target = config.code_target, stateeltype = config.float_type))
+  eval(gensim(brusselator, code_target = config.code_target, stateeltype = config.float_type))
 end
 
 function create_mesh(config)
