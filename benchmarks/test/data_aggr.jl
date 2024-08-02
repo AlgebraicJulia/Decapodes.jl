@@ -14,21 +14,27 @@ end
 
 @testset "Adding debug data" begin
     data_row_debug = Dict{String, Any}()
-    test_key = "1"
+    sim_name = "heat"
     arch = "cpu"
-    debug_data = add_debug_simdata!(data_row_debug, test_key, arch)
+    tag = "testing"
+    test_key = "1"
+    test_namedata = SimNameData(sim_name, arch, tag, test_key)
+
+    debug_data = add_debug_simdata!(data_row_debug, test_namedata)
 
     debug_vals = values(debug_data)
     @test test_key in debug_vals
-    @test get_statsfile_name(test_key, arch) in debug_vals
-    @test get_benchfile_name(test_key, arch) in debug_vals
+    @test arch in debug_vals
+    @test sim_name in debug_vals
+    @test statsfile_name(test_namedata) in debug_vals
+    @test benchfile_name(test_namedata) in debug_vals
 end
 
 @testset "Adding benchmark data" begin
     test_suite = BenchmarkGroup()
     test_key = "1"
-    for solve in get_solver_stages()
-        test_suite[test_key][solve] = @benchmarkable rand(100) samples=10
+    for stage in solver_stages()
+        test_suite[test_key][stage] = @benchmarkable rand(100) samples=10
     end
     test_run = run(test_suite)
 
@@ -36,9 +42,9 @@ end
     median_test_run = median(test_run[test_key])
     add_trial_data!(data_row_bench, median_test_run, "Median")
 
-    for solve in get_solver_stages()
+    for stage in solver_stages()
         for stat in ["Time", "Mem"]
-            @test get_benchmark_headername(solve, "Median", stat) in keys(data_row_bench)
+            @test get_benchmark_headername(stage, "Median", stat) in keys(data_row_bench)
         end
     end
 end

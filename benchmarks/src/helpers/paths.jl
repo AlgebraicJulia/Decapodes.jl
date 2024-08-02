@@ -3,8 +3,9 @@ using DrWatson
 @quickactivate :benchmarks
 
 export resultsdir, tablesdir, helpersdir, aggdatadir, postprocessdir
-export get_configname, get_config, get_simfile_name, get_simfile, get_statsfile_name, get_statsfile, get_benchfile_name, get_benchfile
-export get_config_size, get_meta_config_info
+export SimNameData, tagfor_run, tagfor_task
+export config_name, config_path, get_simfile_name, get_simfile, statsfile_name, statsfile_path, benchfile_name, benchfile_path, mainconfig_path
+export get_autoconfig_size, get_meta_config_info
 
 helpersdir(args...) = srcdir("helpers", args...)
 
@@ -14,12 +15,33 @@ tablesdir(sim_name, slurm_id, args...) = datadir("exp_pro", sim_name, slurm_id, 
 aggdatadir(sim_name, slurm_id, args...) = tablesdir(sim_name, slurm_id, "autogen", args...)
 postprocessdir(args...) = scriptsdir("post_processing", args...)
 
-function get_configname(sim_name, arch)
-  return "$(sim_name)_$(arch).toml"
+struct SimNameData
+  sim_name::String
+  arch::String
+  tag::String
+  task_key::String
 end
 
-function get_config(sim_name, arch)
-  return srcdir(sim_name, get_configname(sim_name, arch))
+function SimNameData(sim_name::String, arch::String, tag::String)
+  return SimNameData(sim_name, arch, tag, "0")
+end
+
+
+function tagfor_run(simdata::SimNameData)
+  return "$(simdata.sim_name)_$(simdata.arch)_$(simdata.tag)"
+end
+
+function tagfor_task(simdata)
+  return "$(tagfor_run(simdata))_$(simdata.task_key)"
+end
+
+
+function config_name(simdata::SimNameData)
+  return "$(tagfor_run(simdata)).toml"
+end
+
+function config_path(simdata::SimNameData)
+  return srcdir(simdata.sim_name, config_name(simdata))
 end
 
 get_simfile_name(sim_name) = return "$sim_name.jl"
@@ -28,19 +50,21 @@ function get_simfile(sim_name)
   return srcdir(sim_name, get_simfile_name(sim_name))
 end
 
-get_statsfile_name(task_key, arch) = return "stats_$(task_key)_$(arch).jld2"
+mainconfig_path() = srcdir("main_config.toml")
 
-function get_statsfile(task_key, sim_name, arch)
-  return resultsdir(sim_name, get_statsfile_name(task_key, arch))
+statsfile_name(simdata::SimNameData) = return "stats_$(tagfor_task(simdata)).jld2"
+
+function statsfile_path(simdata::SimNameData)
+  return resultsdir(simdata.sim_name, statsfile_name(simdata))
 end
 
-get_benchfile_name(task_key, arch) = return "benchmarks_$(task_key)_$(arch).json"
+benchfile_name(simdata::SimNameData) = return "benchmarks_$(tagfor_task(simdata)).json"
 
-function get_benchfile(task_key, sim_name, arch)
-  return resultsdir(sim_name, get_benchfile_name(task_key, arch))
+function benchfile_path(simdata::SimNameData)
+  return resultsdir(simdata.sim_name, benchfile_name(simdata))
 end
 
-function get_config_size(config_data)
+function get_autoconfig_size(config_data)
   key_list = keys(config_data)
   return length(key_list) - 1 # Don't include meta info
 end

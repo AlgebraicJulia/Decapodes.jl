@@ -1,6 +1,22 @@
 using DrWatson
 @quickactivate :benchmarks
 
+using ACSets
+using CUDA
+using CUDA.CUSPARSE
+using CombinatorialSpaces
+using ComponentArrays
+using Decapodes
+using DiagrammaticEquations
+using GeometryBasics: Point2, Point3
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+
+function pass_simulation_instance()
+  return SimulationInstance(setup_config, setup_benchmark, create_mesh, create_simulate, run_simulation)
+end
+
 struct HeatConfig
   float_type
   code_target

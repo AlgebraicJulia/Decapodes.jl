@@ -8,7 +8,11 @@ pwd; hostname; date
 
 module load julia
 
-julia final.jl $SLURM_JOB_ID $1
+SIMNAME=$1
+ARCH=$2
+TAG=$3
+
+julia final.jl $SLURM_JOB_ID $SIMNAME $ARCH $TAG
 
 date
 

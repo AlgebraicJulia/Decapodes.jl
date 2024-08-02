@@ -10,8 +10,11 @@ using PrettyTables
 const slurm_id = ARGS[1]
 const sim_name = ARGS[2]
 
+main_config_info = TOML.parsefile(mainconfig_path())
+sims_to_process = collect_mainconfig_simentries(sim_name, main_config_info)
+
 # TODO: Have meta config information be in a seperate toml
-config_data = TOML.parsefile(get_config(sim_name, "cpu"))
+config_data = TOML.parsefile(config_path(first(sims_to_process)))
 meta_config = get_meta_config_info(config_data)
 const meta_field_names = split(meta_config["fields"], ",")
 
@@ -19,7 +22,7 @@ const meta_field_names = split(meta_config["fields"], ",")
 # Can create multiple scripts to roughly process data in general ways
 pretty_results = collect_results(aggdatadir(sim_name, slurm_id))
 
-median_times = map(stage -> get_benchmark_headername(stage, "Median", "Time"), get_solver_stages())
+median_times = map(stage -> get_benchmark_headername(stage, "Median", "Time"), solver_stages())
 table_header = vcat(["Task ID", "statsfile", "benchfile"], meta_field_names, median_times, ["nf"])
 
 select!(pretty_results, table_header)

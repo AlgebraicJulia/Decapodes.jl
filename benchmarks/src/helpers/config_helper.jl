@@ -2,8 +2,8 @@ using DrWatson
 @quickactivate :benchmarks
 using TOML
 
-function process_benchmark_config(configname)
-    benchmark_config = TOML.parsefile(configname)
+function process_benchmark_config(config_name)
+    benchmark_config = TOML.parsefile(config_name)
     validate_config(benchmark_config)
     load_save_benchmark_data(benchmark_config)
 end
@@ -42,7 +42,7 @@ function load_save_benchmark_data(benchmark_config)
 
       new_simconfig = process_simulation_config(simulation_entry)
 
-      open(get_config(simulation, arch), "w") do io
+      open(config_path(simulation, arch), "w") do io
         TOML.print(io, new_simconfig)
       end
     end
@@ -50,7 +50,7 @@ function load_save_benchmark_data(benchmark_config)
 end
 
 function validate_arch(arch::String)
-  return arch in get_supported_arches()
+  return arch in supported_arches()
 end
 
 function process_simulation_config(entry)

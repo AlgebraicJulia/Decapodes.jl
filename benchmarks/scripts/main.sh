@@ -1,22 +1,19 @@
 #!/bin/bash
-echo $PWD
 
-if [ $# != 1 ]
+if [ $# != 3 ]
 then
-  echo "Usage: 'simulation name'"
+  echo "Usage: 'sim_name' 'architecture' 'tag'"
   exit 1
 fi
 
-SIMULATION=$1
+SIMNAME=$1
+ARCH=$2
+TAG=$3
 
 # TODO: Need a better way to get the scripts dir path
 DIR=scripts
-
-echo $DIR
 cd $DIR
-
-echo $PWD
 
 module load julia
 
-julia --threads=auto main.jl $SIMULATION
+julia --threads=auto main.jl $SIMNAME $ARCH $TAG

@@ -8,6 +8,10 @@ pwd; hostname; date
 
 module load julia
 
-julia array.jl $SLURM_ARRAY_TASK_ID $1 $2
+SIMNAME=$1
+ARCH=$2
+TAG=$3
+
+julia array.jl $SLURM_ARRAY_TASK_ID $SIMNAME $ARCH $TAG
 
 date

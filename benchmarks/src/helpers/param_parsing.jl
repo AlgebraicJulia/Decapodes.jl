@@ -18,7 +18,7 @@ function parse_code_target(code_target_data)
     @match code_target_data begin
         "CPUTarget" => CPUTarget()
         "CUDATarget" => CUDATarget()
-        _ => error("Code target data $(code_target_data) is not valid")
+        _ => error("Code target data $(code_target_data) is not in list [\"CPUTarget\", \"CUDATarget\"]")
     end
 end
   
@@ -26,6 +26,6 @@ function arch_to_code_target(architecture)
     @match architecture begin
         "cpu" => "CPUTarget"
         "cuda" => "CUDATarget"
-        _ => error("Second argument should be either 'cpu' or 'cuda'")
+        _ => error("Architecture $(architecture) is not in list [\"cpu\", \"cuda\"]")
     end
 end
