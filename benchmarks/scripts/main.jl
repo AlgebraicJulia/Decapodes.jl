@@ -9,6 +9,15 @@ Pkg.precompile()
 
 using TOML
 
+include(helpersdir("config_helper.jl"))
+
+function generate_all_configs()
+    physics_list = readdir(physicsdir())
+    for physics in physics_list
+        process_benchmark_config(physicsdir(physics, physics_config_filename()))
+    end
+end
+
 function run_all_physics()
     physics_list = readdir(physicsdir())
     main_config_info = TOML.parsefile(mainconfig_path())
@@ -90,11 +99,15 @@ function run_single_config!(dependency_ids, sim_namedata::SimNameData)
     push!(dependency_ids, jobid)
 end
 
+
 if length(ARGS) == 0
     @info "Running all sims"
+    generate_all_configs()
     run_all_physics()
 elseif length(ARGS) == 3
     @info "Running single sim"
+    generate_all_configs()
+
     const sim_name = ARGS[1]
     const arch = ARGS[2]
     const tag = ARGS[3]

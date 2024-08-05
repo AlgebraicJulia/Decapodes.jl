@@ -1,3 +1,3 @@
 [heat]
-cpu = ["default"]
-cuda = ["default"]
+cpu = ["test"]
+cuda = ["test"]
