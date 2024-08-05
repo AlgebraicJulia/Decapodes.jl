@@ -1,0 +1,9 @@
+[brussel.cpu.default]
+code_target = "CPUTarget"
+float_type = ["Float32", "Float64"]
+resolution = [0.05, 0.02, 0.01]
+
+[brussel.cuda.default]
+code_target = "CUDATarget"
+float_type = ["Float32", "Float64"]
+resolution = [0.05, 0.02, 0.01]
