@@ -26,34 +26,6 @@ function aggregate_data(slurm_id, sim_name)
   end
 end
 
-function collect_mainconfig_simentries(sim_name, main_config_info)
-  
-  haskey(main_config_info, sim_name) || error("Main config missing $(sim_name) entry")
-  sim_config_info = main_config_info[sim_name]
-
-  entries = SimNameData[]
-  for arch in keys(sim_config_info)
-      for tag in sim_config_info[arch]
-
-          tagged_sim_namedata = SimNameData(sim_name, arch, tag)
-          tagged_sim_config = config_path(tagged_sim_namedata)
-          if !isfile(tagged_sim_config) 
-            @info "Config file for $sim_name on $arch named $tag not found, skipping"
-            continue
-          end
-      
-          tagged_sim_data = TOML.parsefile(tagged_sim_config)
-          num_entries = get_autoconfig_size(tagged_sim_data)
-          for task_id in 1:num_entries
-              task_key = string(task_id)
-              push!(entries, SimNameData(sim_name, arch, tag, task_key))
-          end
-      end
-  end
-
-  entries
-end
-
 function process_simdata(sim_namedata::SimNameData, benchmark_filepath, solve_stats_filepath, config_data)
   data_row = Dict{String, Any}()
 

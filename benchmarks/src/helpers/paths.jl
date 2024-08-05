@@ -2,12 +2,14 @@
 using DrWatson
 @quickactivate :benchmarks
 
-export resultsdir, tablesdir, helpersdir, aggdatadir, postprocessdir
+export physicsdir, resultsdir, tablesdir, helpersdir, aggdatadir, postprocessdir
 export SimNameData, tagfor_run, tagfor_task
 export config_name, config_path, get_simfile_name, get_simfile, statsfile_name, statsfile_path, benchfile_name, benchfile_path, mainconfig_path
 export get_autoconfig_size, get_meta_config_info
 
 helpersdir(args...) = srcdir("helpers", args...)
+
+physicsdir(args...) = srcdir("physics", args...)
 
 resultsdir(sim_name, args...) = datadir("sims", sim_name, args...)
 
@@ -41,13 +43,13 @@ function config_name(simdata::SimNameData)
 end
 
 function config_path(simdata::SimNameData)
-  return srcdir(simdata.sim_name, config_name(simdata))
+  return physicsdir(simdata.sim_name, config_name(simdata))
 end
 
 get_simfile_name(sim_name) = return "$sim_name.jl"
 
 function get_simfile(sim_name)
-  return srcdir(sim_name, get_simfile_name(sim_name))
+  return physicsdir(sim_name, get_simfile_name(sim_name))
 end
 
 mainconfig_path() = srcdir("main_config.toml")

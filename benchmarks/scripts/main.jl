@@ -9,40 +9,104 @@ Pkg.precompile()
 
 using TOML
 
-if length(ARGS) != 3
-    error("Usage: 'sim_name' 'architecture' 'tag'")
+function run_all_physics()
+    physics_list = readdir(physicsdir())
+    main_config_info = TOML.parsefile(mainconfig_path())
+    validate_all_physics(physics_list, main_config_info)
+
+    for physics in physics_list
+        physics_configs = collect_mainconfig_sims(physics, main_config_info)
+        run_single_physics(physics, physics_configs)
+    end
+end
+
+function validate_all_physics(all_physics, main_config_info)
+    for physics in all_physics
+        physics_configs = collect_mainconfig_sims(physics, main_config_info)
+        for config in physics_configs
+            validate_config_instance(config)
+        end
+    end
+end
+
+function validate_config_instance(sim_namedata::SimNameData)
+    sim_name = sim_namedata.sim_name
+
+    is_supported_arch(sim_namedata.arch)  || error("Architecture $(arch) is not in list $(supported_arches())")
+    simfile = get_simfile(sim_name)
+    if !isfile(simfile)
+        error("Simulation file at $(simfile) was not found")
+    end
+
+    config = config_path(sim_namedata)
+    if !isfile(config)
+        error("Config file at $(config) was not found")
+    end
+    return true
+end
+
+function run_single_physics(physics, physics_configs)
+    
+    if isempty(physics_configs)
+        return
+    end
+
+    rm(resultsdir(physics), recursive=true, force=true)
+    mkpath(resultsdir(physics))
+
+    dependency_ids = []
+
+    for config in physics_configs
+        run_single_config!(dependency_ids, config)
+    end
+
+    if isempty(dependency_ids)
+        return
+    end
+
+    run(`sbatch --dependency=afterok:$(join(dependency_ids, ",")) $(scriptsdir("final.sh")) $physics`)
+end
+
+function run_single_config!(dependency_ids, sim_namedata::SimNameData)
+    config_data = TOML.parsefile(config_path(sim_namedata))
+
+    concurrent_jobs = 6
+
+    sim_name = sim_namedata.sim_name
+    arch = sim_namedata.arch
+    tag = sim_namedata.tag
+
+    count = get_autoconfig_size(config_data)
+
+    @info "Running $count $arch tasks"
+
+    if arch == "cpu"
+        jobid = readchomp(`sbatch --array=1-$(count)%$(concurrent_jobs) --parsable --partition=hpg-milan $(scriptsdir("array.sh")) $sim_name $arch $tag`)
+    elseif arch == "cuda"
+        jobid = readchomp(`sbatch --array=1-$(count)%$(concurrent_jobs) --parsable --partition=gpu --gres=gpu:a100:1 $(scriptsdir("array.sh")) $sim_name $arch $tag`)
+    end
+
+    @info "Job ID for $(tagfor_run(sim_namedata)) is: $jobid"
+    push!(dependency_ids, jobid)
+end
+
+if length(ARGS) == 0
+    @info "Running all sims"
+    run_all_physics()
+elseif length(ARGS) == 3
+    @info "Running single sim"
+    const sim_name = ARGS[1]
+    const arch = ARGS[2]
+    const tag = ARGS[3]
+
+    run_physics = SimNameData(sim_name, arch, tag)
+    validate_config_instance(run_physics)
+    run_single_physics(sim_name, [run_physics])
+else
+    error("Usage: ['sim_name' 'architecture' 'tag']")
 end
 
 # @info "Regenerating configuration files"
 # run(`julia --threads=auto config_generate.jl`)
 
-const sim_name = ARGS[1]
-const arch = ARGS[2]
-const tag = ARGS[3]
-is_supported_arch(arch) || error("Architecture $(arch) is not in list $(supported_arches())")
-sim_namedata = SimNameData(sim_name, arch, tag)
-runname = tagfor_run(sim_namedata)
-
-rm(resultsdir(sim_name), recursive=true, force=true)
-mkpath(resultsdir(sim_name))
-
-const config = config_path(sim_namedata)
-dependency_ids = []
-
-const cpu_job_args = "--partition=hpg-milan"
-const cuda_job_args = "--partition=gpu --gres=gpu:a100:1"
-
-if isfile(config)
-    job_args = arch == "cpu" ? cpu_job_args : cuda_job_args
-    config_data = TOML.parsefile(config)
-    count = get_autoconfig_size(config_data)
-    @info "Running $count $arch tasks"
-    jobid = readchomp(`sbatch --array=1-$(count)%6 --parsable $(job_args) $(scriptsdir("array.sh")) $sim_name $arch $tag`)
-    @info "Job ID for $(runname) is: $jobid"
-    push!(dependency_ids, jobid)
-else
-    error("Configuration file for $(runname) could not be found")
-end
-
-run(`sbatch --dependency=afterok:$(join(dependency_ids, ",")) $(scriptsdir("final.sh")) $sim_name $arch $tag`)
 
