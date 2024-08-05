@@ -8,6 +8,7 @@ function process_benchmark_config(config_name)
     load_save_benchmark_data(benchmark_config)
 end
 
+# TODO: Update this to deal with different tagged sims
 # Keep validation seperate to prevent creation of intermediate files/folders if error
 function validate_config(benchmark_config)
   if isempty(benchmark_config)
@@ -18,7 +19,7 @@ function validate_config(benchmark_config)
     simulation_config = benchmark_config[simulation]
 
     for arch in keys(simulation_config)
-      is_valid_arch = validate_arch(arch)
+      is_valid_arch = is_supported_arch(arch)
       if !is_valid_arch
         error("Configuration on '$arch' for '$simulation' is not valid, aborting")
       end
@@ -32,25 +33,25 @@ function validate_config(benchmark_config)
 end
 
 function load_save_benchmark_data(benchmark_config)
-  for simulation in keys(benchmark_config)
+  for physics in keys(benchmark_config)
 
-    mkpath(srcdir(simulation))
-    simulation_config = benchmark_config[simulation]
+    physics_sim_entry = benchmark_config[physics]
 
-    for arch in keys(simulation_config)
-      simulation_entry = simulation_config[arch]
+    for arch in keys(physics_sim_entry)
+      arch_sim_entry = physics_sim_entry[arch]
 
-      new_simconfig = process_simulation_config(simulation_entry)
+      for tag in keys(arch_sim_entry)
+        tagged_sim_entry = arch_sim_entry[tag]
+        new_simconfig = process_simulation_config(tagged_sim_entry)
 
-      open(config_path(simulation, arch), "w") do io
-        TOML.print(io, new_simconfig)
+        sim_namedata = SimNameData(physics, arch, tag)
+        open(config_path(sim_namedata), "w") do io
+          TOML.print(io, new_simconfig)
+        end  
       end
+
     end
   end
-end
-
-function validate_arch(arch::String)
-  return arch in supported_arches()
 end
 
 function process_simulation_config(entry)

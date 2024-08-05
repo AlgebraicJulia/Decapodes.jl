@@ -6,7 +6,7 @@ include(helpersdir("config_helper.jl"))
 using TOML
 using MLStyle
 
-const default_config_file = srcdir("main_config.toml")
+const default_config_file = srcdir("config.toml")
 
 if length(ARGS) == 0
   config_file = default_config_file
