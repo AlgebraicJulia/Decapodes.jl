@@ -75,7 +75,7 @@ constants = (D = 0.5, γ = 0.5);
 fig = Figure() # hide
 ax = CairoMakie.Axis(fig[1,1], aspect=1) # hide
 msh = CairoMakie.mesh!(ax, s, color=C, colormap=:jet, colorrange=extrema(C)) # hide
-Colorbar(fig[1,2], msh)
+Colorbar(fig[1,2], msh) # hide
 save("CahnHilliard_initial.png", fig) # hide
 nothing # hide
 ```
@@ -102,21 +102,18 @@ soln.retcode
 
 And we can see the result as a gif.
 
-```@setup DEC
-function create_gif(solution, file_name)
-  frames = 200
-  fig = Figure()
-  ax = CairoMakie.Axis(fig[1,1])
-  msh = CairoMakie.mesh!(ax, s, color=solution(0).C, colormap=:jet, colorrange=extrema(solution(0).C))
-  Colorbar(fig[1,2], msh)
-  CairoMakie.record(fig, file_name, range(0.0, tₑ; length=frames); framerate = 15) do t
-    msh.color = solution(t).C
-  end
-end
-create_gif(soln, "CahnHilliard_Rect.gif")
+```@example DEC
+dynam = t -> soln(t).C
+frames = 200
+
+mesh_args = (colormap = :jet, colorrange = extrema(dynam(0)))
+record_args = (framerate = 30,)
+
+record_dynamics(dynam, s, "CahnHilliard_Rect.webm", range(0.0, tₑ; length = frames); 
+    mesh_args = mesh_args, record_args = record_args)
 ```
 
-!["CahnHilliardRes"](CahnHilliard_Rect.gif)
+!["CahnHilliardRes"](CahnHilliard_Rect.webm)
 
 ```@example INFO
 DocInfo.get_report(info) # hide
