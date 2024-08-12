@@ -15,7 +15,7 @@ elif [ $# == 0 ]
 then
     julia --threads=auto main.jl
 else
-  echo "Usage: 'sim_name' 'architecture' 'tag'"
+  echo "Usage: ['physics' 'architecture' 'tag']"
   exit 1
 fi
 

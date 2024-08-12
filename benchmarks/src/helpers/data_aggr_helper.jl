@@ -5,25 +5,62 @@ using BenchmarkTools
 using DataFrames
 using JLD2
 
-function aggregate_data(slurm_id, sim_name)
+include(helpersdir("main_config_helper.jl"))
 
-  main_config_info = TOML.parsefile(mainconfig_path())
-  sims_to_process = collect_mainconfig_simentries(sim_name, main_config_info)
+function aggregate_data(slurm_id, physics)
+
+  main_config_info = TOML.parsefile(mainsim_config_path())
+  sims_to_process = collect_mainconfig_simentries(physics, main_config_info)
   for sim_namedata in sims_to_process
 
-    benchmark_filepath = benchfile_path(sim_namedata)
-    solve_stats_filepath = statsfile_path(sim_namedata)
-    if !isfile(benchmark_filepath) || !isfile(solve_stats_filepath)
-      @info "Result file not found for $(sim_namedata.task_key) on $(sim_namedata.arch), skipping"
+    # Meant to work when not all sims in main_config are run
+    if !all_resultfiles_exist(sim_namedata)
+      @info "Result file not found for $(sim_namedata), skipping"
       continue
     end
 
-    config_data = TOML.parsefile(config_path(sim_namedata))
+    benchmark_filepath = benchfile_path(sim_namedata)
+    solve_stats_filepath = statsfile_path(sim_namedata)
+    config_data = TOML.parsefile(simconfig_path(sim_namedata))
 
     aggregated_results = process_simdata(sim_namedata, benchmark_filepath, solve_stats_filepath, config_data)
-    safesave(aggdatadir(sim_name, slurm_id, "results.jld2"), aggregated_results)
+    safesave(aggdatadir(physics, slurm_id, "results.jld2"), aggregated_results)
 
   end
+end
+
+function all_resultfiles_exist(sim_namedata)
+  return isfile(benchfile_path(sim_namedata)) && isfile(statsfile_path(sim_namedata))
+end
+
+# TODO: Come back and clean up this function
+function collect_mainconfig_simentries(physics, main_config_info)
+
+  entries = SimNameData[]
+
+  physics_configurations = collect_entriesfor_physics(main_config_info, physics)
+  for tagged_sim_namedata in physics_configurations
+
+      tagged_sim_config = simconfig_path(tagged_sim_namedata)
+      if !isfile(tagged_sim_config)
+          @info "Config file for $tagged_sim_namedata not found, skipping"
+          continue
+      end
+
+      tagged_sim_data = TOML.parsefile(tagged_sim_config)
+      num_entries = autoconfig_size(tagged_sim_data)
+      for task_id in 1:num_entries
+
+          physics = tagged_sim_namedata.physics
+          arch = tagged_sim_namedata.arch
+          tag = tagged_sim_namedata.tag
+          task_key = string(task_id)
+
+          push!(entries, SimNameData(physics, arch, tag, task_key))
+      end
+  end
+
+  entries
 end
 
 function process_simdata(sim_namedata::SimNameData, benchmark_filepath, solve_stats_filepath, config_data)
@@ -47,7 +84,7 @@ function add_debug_simdata!(data_row, sim_namedata::SimNameData)
   push!(data_row, "Task ID" => sim_namedata.task_key)
   push!(data_row, "Tagged Name" => sim_namedata.tag)
   push!(data_row, "Architecture" => sim_namedata.arch)
-  push!(data_row, "Simulation Name" => sim_namedata.sim_name)
+  push!(data_row, "Simulation Name" => sim_namedata.physics)
 end
 
 function add_config_data!(data_row, task_key, config_data)
@@ -77,4 +114,3 @@ end
 function add_solver_stats_data!(data_row, stats_data)
   merge!(data_row, stats_data)
 end
-

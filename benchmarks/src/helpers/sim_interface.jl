@@ -1,5 +1,3 @@
-# TODO: Do we have anything better solution than a runtime interface?
-
 export SimulationInstance
 
 struct SimulationInstance

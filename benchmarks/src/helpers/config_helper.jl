@@ -2,8 +2,8 @@ using DrWatson
 @quickactivate :benchmarks
 using TOML
 
-function process_benchmark_config(config_name)
-    benchmark_config = TOML.parsefile(config_name)
+function process_benchmark_config(simconfig_path)
+    benchmark_config = TOML.parsefile(simconfig_path)
     validate_config(benchmark_config)
     load_save_benchmark_data(benchmark_config)
 end
@@ -12,7 +12,7 @@ end
 # Keep validation seperate to prevent creation of intermediate files/folders if error
 function validate_config(benchmark_config)
   if isempty(benchmark_config)
-    error("Configuration is empty, aborting")
+    error("Configuration is empty")
   end
 
   for simulation in keys(benchmark_config)
@@ -21,12 +21,12 @@ function validate_config(benchmark_config)
     for arch in keys(simulation_config)
       is_valid_arch = is_supported_arch(arch)
       if !is_valid_arch
-        error("Configuration on '$arch' for '$simulation' is not valid, aborting")
+        error("Configuration on '$arch' for '$simulation' is not valid")
       end
 
       simulation_entry = simulation_config[arch]
       if isempty(simulation_entry)
-        error("Configuration for '$simulation' on '$arch' is defined but empty, aborting")
+        error("Configuration for '$simulation' on '$arch' is defined but empty")
       end
     end
   end
@@ -45,9 +45,9 @@ function load_save_benchmark_data(benchmark_config)
         new_simconfig = process_simulation_config(tagged_sim_entry)
 
         sim_namedata = SimNameData(physics, arch, tag)
-        open(config_path(sim_namedata), "w") do io
+        open(simconfig_path(sim_namedata), "w") do io
           TOML.print(io, new_simconfig)
-        end  
+        end
       end
 
     end
@@ -73,8 +73,4 @@ function add_task_data!(params_list, received_params)
   for (idx, param) in enumerate(received_params)
     push!(params_list, string(idx) => param)
   end
-end
-
-function get_float_types(;just_real::Bool=true)
-  just_real ? ["Float32", "Float64"] : ["Float32", "Float64", "ComplexF32", "ComplexF64"]
 end

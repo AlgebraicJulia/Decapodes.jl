@@ -1,72 +1,86 @@
-# Collection of path function mimicking DrWatson's functions
 using DrWatson
-@quickactivate :benchmarks
+@quickactivate "benchmarks"
 
 export physicsdir, resultsdir, tablesdir, helpersdir, aggdatadir, postprocessdir
-export SimNameData, tagfor_run, tagfor_task
-export config_name, config_path, get_simfile_name, get_simfile, statsfile_name, statsfile_path, benchfile_name, benchfile_path, mainconfig_path
-export get_autoconfig_size, get_meta_config_info
+export tagfor_run, tagfor_task
+export simconfig_name, simconfig_path, physics_filename, physicspath, physicsconfig_path, statsfile_name, statsfile_path, benchfile_name, benchfile_path
+export autoconfig_size, get_meta_config_info
+
+export SimNameData
+import Base.show
 
 helpersdir(args...) = srcdir("helpers", args...)
 
 physicsdir(args...) = srcdir("physics", args...)
 
-resultsdir(sim_name, args...) = datadir("sims", sim_name, args...)
+resultsdir(physics, args...) = datadir("sims", physics, args...)
 
-tablesdir(sim_name, slurm_id, args...) = datadir("exp_pro", sim_name, slurm_id, args...)
-aggdatadir(sim_name, slurm_id, args...) = tablesdir(sim_name, slurm_id, "autogen", args...)
+tablesdir(physics, slurm_id, args...) = datadir("exp_pro", physics, slurm_id, args...)
+aggdatadir(physics, slurm_id, args...) = tablesdir(physics, slurm_id, "autogen", args...)
 postprocessdir(args...) = scriptsdir("post_processing", args...)
 
 struct SimNameData
-  sim_name::String
+  physics::String
   arch::String
   tag::String
   task_key::String
 end
 
-function SimNameData(sim_name::String, arch::String, tag::String)
-  return SimNameData(sim_name, arch, tag, "0")
+function SimNameData(physics::String, arch::String, tag::String)
+  return SimNameData(physics, arch, tag, "0")
 end
 
+function SimNameData(physics::String, arch::String, tag::String, task_id::Int)
+  return SimNameData(physics, arch, tag, string(task_id))
+end
+
+function Base.show(io::IO, snd::SimNameData)
+  if snd.task_key == "0"
+    print(io, "$(snd.physics) on $(snd.arch) tagged as $(snd.tag)")
+  else
+    print(io, "$(snd.physics) on $(snd.arch) tagged as $(snd.tag) running for task $(snd.task_key)")
+  end
+end
 
 function tagfor_run(simdata::SimNameData)
-  return "$(simdata.sim_name)_$(simdata.arch)_$(simdata.tag)"
+  return "$(simdata.physics)_$(simdata.arch)_$(simdata.tag)"
 end
 
 function tagfor_task(simdata)
   return "$(tagfor_run(simdata))_$(simdata.task_key)"
 end
 
-
-function config_name(simdata::SimNameData)
+function simconfig_name(simdata::SimNameData)
   return "$(tagfor_run(simdata)).toml"
 end
 
-function config_path(simdata::SimNameData)
-  return physicsdir(simdata.sim_name, config_name(simdata))
+function simconfig_path(simdata::SimNameData)
+  return physicsdir(simdata.physics, simconfig_name(simdata))
 end
 
-get_simfile_name(sim_name) = return "$sim_name.jl"
+physics_filename(physics) = return "$physics.jl"
 
-function get_simfile(sim_name)
-  return physicsdir(sim_name, get_simfile_name(sim_name))
+function physicspath(physics)
+  return physicsdir(physics, physics_filename(physics))
 end
 
-mainconfig_path() = srcdir("main_config.toml")
+function physicsconfig_path(physics)
+  physicsdir(physics, physics_config_filename())
+end
 
 statsfile_name(simdata::SimNameData) = return "stats_$(tagfor_task(simdata)).jld2"
 
 function statsfile_path(simdata::SimNameData)
-  return resultsdir(simdata.sim_name, statsfile_name(simdata))
+  return resultsdir(simdata.physics, statsfile_name(simdata))
 end
 
 benchfile_name(simdata::SimNameData) = return "benchmarks_$(tagfor_task(simdata)).json"
 
 function benchfile_path(simdata::SimNameData)
-  return resultsdir(simdata.sim_name, benchfile_name(simdata))
+  return resultsdir(simdata.physics, benchfile_name(simdata))
 end
 
-function get_autoconfig_size(config_data)
+function autoconfig_size(config_data)
   key_list = keys(config_data)
   return length(key_list) - 1 # Don't include meta info
 end

@@ -8,19 +8,19 @@ using DataFrames
 using PrettyTables
 
 const slurm_id = ARGS[1]
-const sim_name = ARGS[2]
+const physics = ARGS[2]
 
-main_config_info = TOML.parsefile(mainconfig_path())
-sims_to_process = collect_mainconfig_simentries(sim_name, main_config_info)
+main_config_info = TOML.parsefile(mainsim_config_path())
+sims_to_process = collect_mainconfig_simentries(physics, main_config_info)
 
 # TODO: Have meta config information be in a seperate toml
-config_data = TOML.parsefile(config_path(first(sims_to_process)))
+config_data = TOML.parsefile(simconfig_path(first(sims_to_process)))
 meta_config = get_meta_config_info(config_data)
 const meta_field_names = split(meta_config["fields"], ",")
 
 # TODO: Meant as a basic data processing pipeline
 # Can create multiple scripts to roughly process data in general ways
-pretty_results = collect_results(aggdatadir(sim_name, slurm_id))
+pretty_results = collect_results(aggdatadir(physics, slurm_id))
 
 median_times = map(stage -> get_benchmark_headername(stage, "Median", "Time"), solver_stages())
 table_header = vcat(["Task ID", "statsfile", "benchfile"], meta_field_names, median_times, ["nf"])
@@ -36,10 +36,10 @@ for field_name in reverse(meta_field_names)
   sort!(pretty_results, Symbol(field_name))
 end
 
-mkpath(tablesdir(sim_name, slurm_id))
+mkpath(tablesdir(physics, slurm_id))
 
 # TODO: Can change this backened to be different from markdown
-open(tablesdir(sim_name, slurm_id, "default_output.md"), "w") do results_file
+open(tablesdir(physics, slurm_id, "default_output.md"), "w") do results_file
   conf = set_pt_conf(tf = tf_markdown)
   pretty_table_with_conf(conf, results_file, pretty_results; header = table_header)
 end

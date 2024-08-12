@@ -14,18 +14,18 @@ end
 
 @testset "Adding debug data" begin
     data_row_debug = Dict{String, Any}()
-    sim_name = "heat"
+    physics = "heat"
     arch = "cpu"
     tag = "testing"
     test_key = "1"
-    test_namedata = SimNameData(sim_name, arch, tag, test_key)
+    test_namedata = SimNameData(physics, arch, tag, test_key)
 
     debug_data = add_debug_simdata!(data_row_debug, test_namedata)
 
     debug_vals = values(debug_data)
     @test test_key in debug_vals
     @test arch in debug_vals
-    @test sim_name in debug_vals
+    @test physics in debug_vals
     @test statsfile_name(test_namedata) in debug_vals
     @test benchfile_name(test_namedata) in debug_vals
 end

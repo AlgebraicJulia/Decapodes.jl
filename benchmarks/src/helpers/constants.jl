@@ -1,4 +1,5 @@
-export solver_stages, supported_arches, is_supported_arch, meta_config_id, physics_config_filename
+export solver_stages, supported_arches, is_supported_arch, meta_config_id,
+physics_config_filename, mainsim_config_path
 
 const solver_stages_list = ["Setup", "Mesh", "Simulate", "Solve"]
 solver_stages() = return solver_stages_list
@@ -12,3 +13,6 @@ meta_config_id() = return meta_key
 
 const physconfig_filename = "config.toml"
 physics_config_filename() = return physconfig_filename
+
+const maintoml = "main_config.toml"
+mainsim_config_path() = srcdir(maintoml)

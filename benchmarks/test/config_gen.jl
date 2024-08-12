@@ -9,10 +9,10 @@ using Test
 using TOML
 
 @testset "Config file validation" begin
-  @test validate_arch("cpu")
-  @test validate_arch("cuda")
+  @test is_supported_arch("cpu")
+  @test is_supported_arch("cuda")
 
-  @test !validate_arch("wrongarch")
+  @test !is_supported_arch("wrongarch")
 
   empty_toml = TOML.parse("")
   @test_throws "Configuration is empty" validate_config(empty_toml)
@@ -44,11 +44,11 @@ end
   @test temp_list["0"]["fields"] == "full_test"
   @test temp_list["1"]["full_test"] == "a"
   @test temp_list["2"]["full_test"] == "b"
-  @test get_autoconfig_size(temp_list) == 2
+  @test autoconfig_size(temp_list) == 2
 
   init_params = Dict("full_test" => ["a", "b", "c", "d"])
   temp_list = process_simulation_config(init_params)
-  @test get_autoconfig_size(temp_list) == 4
+  @test autoconfig_size(temp_list) == 4
   @test get_meta_config_info(temp_list)["fields"] == "full_test"
 end
 

@@ -3,48 +3,39 @@ using DrWatson
 
 using TOML
 
-export collect_mainconfig_sims, collect_mainconfig_simentries
-
-function collect_mainconfig_sims(sim_name, main_config_info)
-    entries = SimNameData[]
-    haskey(main_config_info, sim_name) || return entries
-    sim_config_info = main_config_info[sim_name]
-  
-    
-    for arch in keys(sim_config_info)
-        for tag in sim_config_info[arch]
-           push!(entries, SimNameData(sim_name, arch, tag))
-        end
-    end
-
-    return entries
+function collect_entriesfor_physics(main_config_info, physics)
+  entries = SimNameData[]
+  add_entriesfor_physics!(entries, main_config_info, physics)
 end
 
-function collect_mainconfig_simentries(sim_name, main_config_info)
-  
-    entries = SimNameData[]
-    configured_sims = collect_mainconfig_sims(sim_name, main_config_info)
-    for tagged_sim_namedata in configured_sims
-
-        tagged_sim_config = config_path(tagged_sim_namedata)
-        if !isfile(tagged_sim_config) 
-            @info "Config file for $sim_name on $arch named $tag not found, skipping"
-            continue
-        end
-    
-        tagged_sim_data = TOML.parsefile(tagged_sim_config)
-        num_entries = get_autoconfig_size(tagged_sim_data)
-        for task_id in 1:num_entries
-            
-            sim_name = tagged_sim_namedata.sim_name
-            arch = tagged_sim_namedata.arch
-            tag = tagged_sim_namedata.tag
-            task_key = string(task_id)
-
-            push!(entries, SimNameData(sim_name, arch, tag, task_key))
-        end
-    end
-  
-    entries
+function add_entriesfor_physics!(entries, main_config_info, physics)
+  physics_info = main_config_physics_info(main_config_info, physics)
+  for arch in keys(physics_info)
+    add_entriesfor_physics_arch!(entries, physics_info, physics, arch)
+  end
+  return entries
 end
-  
+
+function add_entriesfor_physics_arch!(entries, physics_info, physics, arch)
+  physics_arch_taglist = physics_config_arch_info(physics_info, arch)
+  for tag in physics_arch_taglist
+    add_entryfor_tagged!(entries, physics, arch, tag)
+  end
+  return entries
+end
+
+function add_entryfor_tagged!(entries, physics, arches, tag)
+  push!(entries, SimNameData(physics, arches, tag))
+  return entries
+end
+
+function main_config_physics_info(main_config_info, physics)
+  haskey(main_config_info, physics) || error("Physics $physics does not exist in the provided main configuration")
+  return main_config_info[physics]
+end
+
+function physics_config_arch_info(physics_info, arch)
+  haskey(physics_info, arch) || error("Architecture $arch does not exist in the provided physics entry")
+  physics_arch_taglist = physics_info[arch]
+  return physics_arch_taglist
+end

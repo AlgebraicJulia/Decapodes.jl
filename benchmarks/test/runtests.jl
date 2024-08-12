@@ -4,6 +4,10 @@ using Test
   include("pathfiles.jl")
 end
 
+@testset "Main Config Collection" begin
+  include("main_config.jl")
+end
+
 @testset "Config Generation" begin
   include("config_gen.jl")
 end
