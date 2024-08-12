@@ -55,7 +55,7 @@ function validate_config_instance(sim_namedata::SimNameData)
 end
 
 function run_single_physics(physics, physics_configs)
-    
+
     if isempty(physics_configs)
         return
     end
@@ -118,8 +118,3 @@ elseif length(ARGS) == 3
 else
     error("Usage: ['sim_name' 'architecture' 'tag']")
 end
-
-# @info "Regenerating configuration files"
-# run(`julia --threads=auto config_generate.jl`)
-
-

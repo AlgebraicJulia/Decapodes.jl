@@ -1,0 +1,9 @@
+[cahnhilliard.cpu.test]
+code_target = "CPUTarget"
+float_type = ["Float32", "Float64"]
+resolution = [1, 0.8, 0.5, 0.4]
+
+[cahnhilliard.cuda.test]
+code_target = "CUDATarget"
+float_type = ["Float32", "Float64"]
+resolution = [1, 0.8, 0.5, 0.4]
