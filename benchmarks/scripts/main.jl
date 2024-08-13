@@ -25,7 +25,7 @@ elseif length(ARGS) == 3
     const tag = ARGS[3]
 
     run_physics = SimNameData(physics, arch, tag)
-    validate_config_instance(run_physics)
+    is_valid_config_instance(run_physics)
     run_single_physics(physics, [run_physics])
 else
     error("Usage: ['physics' 'architecture' 'tag']")

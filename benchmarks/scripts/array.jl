@@ -29,7 +29,7 @@ all_config_data = TOML.parsefile(simconfig_path(sim_namedata))
 task_config_data = extract_task_config(all_config_data)
 
 # Grab user's physics file
-include(physicspath(physics))
+include(physicsfile_path(sim_namedata))
 
 sim_instance = pass_simulation_instance()
 

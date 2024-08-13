@@ -4,44 +4,36 @@ using DrWatson
 using TOML
 using MLStyle
 
-include(helpersdir("main_config_helper.jl"))
-include(helpersdir("config_helper.jl"))
+include(helpersdir("physics_config_helper.jl"))
 
 function generate_all_configs()
   for physics in listof_main_physics()
-      process_benchmark_config(physicsconfig_path(physics))
+      generate_configsfor_physics(physics)
   end
 end
 
 function run_all_physics()
-  main_config_info = TOML.parsefile(mainsim_config_path())
+  main_config_info = load_main_config()
   validate_all_physics(main_config_info)
 
   for physics in listof_main_physics()
-      physics_configs = collect_entriesfor_physics(main_config_info, physics)
+      physics_configs = collect_simsfor_physics(main_config_info, physics)
       run_single_physics(physics, physics_configs)
   end
 end
 
-function listof_main_physics()
-  main_config_info = TOML.parsefile(mainsim_config_path())
-  return collect(keys(main_config_info))
-end
-
 function validate_all_physics(main_config_info)
   for physics in listof_main_physics()
-      physics_configs = collect_entriesfor_physics(main_config_info, physics)
+      physics_configs = collect_simsfor_physics(main_config_info, physics)
       for config in physics_configs
-          validate_config_instance(config)
+          is_valid_config_instance(config)
       end
   end
 end
 
-function validate_config_instance(sim_namedata::SimNameData)
-  physics = sim_namedata.physics
-
+function is_valid_config_instance(sim_namedata::SimNameData)
   is_supported_arch(sim_namedata.arch) || error("Architecture $(arch) is not in list $(supported_arches())")
-  simfile = physicspath(physics)
+  simfile = physicsfile_path(sim_namedata)
   if !isfile(simfile)
       error("Simulation file at $(simfile) was not found")
   end

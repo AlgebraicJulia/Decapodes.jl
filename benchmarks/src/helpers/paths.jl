@@ -1,9 +1,12 @@
 using DrWatson
 @quickactivate "benchmarks"
 
+using TOML
+
 export physicsdir, resultsdir, tablesdir, helpersdir, aggdatadir, postprocessdir
 export tagfor_run, tagfor_task
-export simconfig_name, simconfig_path, physics_filename, physicspath, physicsconfig_path, statsfile_name, statsfile_path, benchfile_name, benchfile_path
+export simconfig_name, simconfig_path, physicsfile_name, physicsfile_path, physicsconfig_path, physicsconfig_name, statsfile_name, statsfile_path, benchfile_name, benchfile_path
+export load_simconfig, load_physicsconfig
 export autoconfig_size, get_meta_config_info
 
 export SimNameData
@@ -36,9 +39,9 @@ end
 
 function Base.show(io::IO, snd::SimNameData)
   if snd.task_key == "0"
-    print(io, "$(snd.physics) on $(snd.arch) tagged as $(snd.tag)")
+    print(io, "$(snd.physics) on $(snd.arch) tagged as '$(snd.tag)'")
   else
-    print(io, "$(snd.physics) on $(snd.arch) tagged as $(snd.tag) running for task $(snd.task_key)")
+    print(io, "$(snd.physics) on $(snd.arch) tagged as '$(snd.tag)' running for task $(snd.task_key)")
   end
 end
 
@@ -46,7 +49,7 @@ function tagfor_run(simdata::SimNameData)
   return "$(simdata.physics)_$(simdata.arch)_$(simdata.tag)"
 end
 
-function tagfor_task(simdata)
+function tagfor_task(simdata::SimNameData)
   return "$(tagfor_run(simdata))_$(simdata.task_key)"
 end
 
@@ -54,19 +57,16 @@ function simconfig_name(simdata::SimNameData)
   return "$(tagfor_run(simdata)).toml"
 end
 
-function simconfig_path(simdata::SimNameData)
-  return physicsdir(simdata.physics, simconfig_name(simdata))
-end
+load_simconfig(simdata::SimNameData) = TOML.parsefile(simconfig_path(simdata))
+simconfig_path(simdata::SimNameData) = physicsdir(simdata.physics, simconfig_name(simdata))
 
-physics_filename(physics) = return "$physics.jl"
+physicsfile_name(simdata::SimNameData) = return "$(simdata.physics).jl"
+physicsfile_path(simdata::SimNameData) = physicsdir(simdata.physics, physicsfile_name(simdata))
 
-function physicspath(physics)
-  return physicsdir(physics, physics_filename(physics))
-end
+load_physicsconfig(simdata::SimNameData) = TOML.parsefile(physicsconfig_path(simdata))
+physicsconfig_name() = return "config.toml"
+physicsconfig_path(simdata::SimNameData) = physicsdir(simdata.physics, physicsconfig_name())
 
-function physicsconfig_path(physics)
-  physicsdir(physics, physics_config_filename())
-end
 
 statsfile_name(simdata::SimNameData) = return "stats_$(tagfor_task(simdata)).jld2"
 

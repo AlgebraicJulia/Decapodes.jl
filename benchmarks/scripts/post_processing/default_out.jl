@@ -10,7 +10,7 @@ using PrettyTables
 const slurm_id = ARGS[1]
 const physics = ARGS[2]
 
-main_config_info = TOML.parsefile(mainsim_config_path())
+main_config_info = load_main_config()
 sims_to_process = collect_mainconfig_simentries(physics, main_config_info)
 
 # TODO: Have meta config information be in a seperate toml

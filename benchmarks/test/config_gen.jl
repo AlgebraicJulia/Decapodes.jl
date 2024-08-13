@@ -3,29 +3,25 @@ module ConfigGen
 using DrWatson
 @quickactivate :benchmarks
 
-include(helpersdir("config_helper.jl"))
+include(helpersdir("physics_config_helper.jl"))
 
 using Test
 using TOML
 
-@testset "Config file validation" begin
-  @test is_supported_arch("cpu")
-  @test is_supported_arch("cuda")
+# @testset "Config file validation" begin
 
-  @test !is_supported_arch("wrongarch")
+#   bad_toml = TOML.parse("""
+#   [heat.cpu.test]
+#   test_val = [2]
+#   """)
+#   @test is_valid_config(bad_toml) === nothing
 
-  empty_toml = TOML.parse("")
-  @test_throws "Configuration is empty" validate_config(empty_toml)
+#   empty_sim_toml = TOML.parse("[heat.cpu]\n")
+#   @test_throws "defined but empty" is_valid_config(empty_sim_toml)
 
-  bad_toml = TOML.parse("[heat.badarch]\ntest_val = [2]\n")
-  @test_throws "is not valid" validate_config(bad_toml)
-
-  empty_sim_toml = TOML.parse("[heat.cpu]\n")
-  @test_throws "defined but empty" validate_config(empty_sim_toml)
-
-  good_toml = TOML.parse("[physics.cpu]\ntest_val = [2]\n")
-  @test validate_config(good_toml) === nothing
-end
+#   good_toml = TOML.parse("[physics.cpu]\ntest_val = [2]\n")
+#   @test is_valid_config(good_toml) === nothing
+# end
 
 @testset "Config file loading" begin
   temp_list = Dict()

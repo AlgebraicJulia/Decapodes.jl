@@ -5,11 +5,9 @@ using BenchmarkTools
 using DataFrames
 using JLD2
 
-include(helpersdir("main_config_helper.jl"))
-
 function aggregate_data(slurm_id, physics)
 
-  main_config_info = TOML.parsefile(mainsim_config_path())
+  main_config_info = load_main_config()
   sims_to_process = collect_mainconfig_simentries(physics, main_config_info)
   for sim_namedata in sims_to_process
 
@@ -38,7 +36,7 @@ function collect_mainconfig_simentries(physics, main_config_info)
 
   entries = SimNameData[]
 
-  physics_configurations = collect_entriesfor_physics(main_config_info, physics)
+  physics_configurations = collect_simsfor_physics(main_config_info, physics)
   for tagged_sim_namedata in physics_configurations
 
       tagged_sim_config = simconfig_path(tagged_sim_namedata)
