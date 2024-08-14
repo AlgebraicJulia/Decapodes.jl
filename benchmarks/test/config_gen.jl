@@ -40,11 +40,11 @@ using TOML
   @test temp_list["0"]["fields"] == "full_test"
   @test temp_list["1"]["full_test"] == "a"
   @test temp_list["2"]["full_test"] == "b"
-  @test autoconfig_size(temp_list) == 2
+  @test simconfig_size(temp_list) == 2
 
   init_params = Dict("full_test" => ["a", "b", "c", "d"])
   temp_list = process_simulation_config(init_params)
-  @test autoconfig_size(temp_list) == 4
+  @test simconfig_size(temp_list) == 4
   @test get_meta_config_info(temp_list)["fields"] == "full_test"
 end
 

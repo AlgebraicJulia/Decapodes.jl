@@ -60,9 +60,7 @@ function run_single_physics(physics, physics_configs)
       run_single_config!(dependency_ids, config)
   end
 
-  if isempty(dependency_ids)
-      return
-  end
+  !isempty(dependency_ids) || return
 
   run(`sbatch --dependency=afterok:$(join(dependency_ids, ",")) $(scriptsdir("final.sh")) $physics`)
 end
@@ -76,7 +74,7 @@ function run_single_config!(dependency_ids, sim_namedata::SimNameData)
   arch = sim_namedata.arch
   tag = sim_namedata.tag
 
-  count = autoconfig_size(config_data)
+  count = simconfig_size(config_data)
 
   @info "Running $count $arch tasks"
 

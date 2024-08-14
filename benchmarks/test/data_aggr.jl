@@ -40,10 +40,10 @@ end
 
     data_row_bench = Dict{String, Any}()
     median_test_run = median(test_run[test_key])
-    add_trial_data!(data_row_bench, median_test_run, "Median")
+    add_trial_data!(data_row_bench, "Median", median_test_run)
 
     for stage in solver_stages()
-        for stat in ["Time", "Mem"]
+        for stat in ["time", "memory", "gctime", "allocs"]
             @test get_benchmark_headername(stage, "Median", stat) in keys(data_row_bench)
         end
     end

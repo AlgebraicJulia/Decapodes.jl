@@ -6,7 +6,7 @@ function generate_configsfor_physics(physics)
     simulations = collect_simsfor_physics(physics)
 
     for sim in simulations
-      if !has_config_args(load_physicsconfig(sim), sim)
+      if !has_physicsconfig_args(sim)
         error("Simulation $(sim) does not have a valid configuration entry")
       end
     end
@@ -17,11 +17,15 @@ function generate_configsfor_physics(physics)
 end
 
 function load_save_benchmark_data(sim)
-  task_simconfig = process_simulation_config(access_config_args(load_physicsconfig(sim), sim))
+  all_parameters = physicsconfig_args(sim)
+  task_simconfig = process_simulation_config(all_parameters)
   open(simconfig_path(sim), "w") do io
     TOML.print(io, task_simconfig)
   end
 end
+
+has_physicsconfig_args(sim) = has_config_args(load_physicsconfig(sim), sim)
+physicsconfig_args(sim) = config_args(load_physicsconfig(sim), sim)
 
 function process_simulation_config(entry)
   received_params = dict_list(entry)

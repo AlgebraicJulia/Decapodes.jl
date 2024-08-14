@@ -2,12 +2,16 @@ using DrWatson
 @quickactivate "benchmarks"
 
 using TOML
+using BenchmarkTools
 
 export physicsdir, resultsdir, tablesdir, helpersdir, aggdatadir, postprocessdir
 export tagfor_run, tagfor_task
-export simconfig_name, simconfig_path, physicsfile_name, physicsfile_path, physicsconfig_path, physicsconfig_name, statsfile_name, statsfile_path, benchfile_name, benchfile_path
-export load_simconfig, load_physicsconfig
-export autoconfig_size, get_meta_config_info
+export load_simconfig, simconfig_name, simconfig_path,
+  physicsfile_name, physicsfile_path,
+  load_physicsconfig, physicsconfig_name, physicsconfig_path,
+  load_statsfile, statsfile_name, statsfile_path,
+  load_benchfile, benchfile_name, benchfile_path
+export simconfig_size, get_meta_config_info
 
 export SimNameData
 import Base.show
@@ -45,19 +49,11 @@ function Base.show(io::IO, snd::SimNameData)
   end
 end
 
-function tagfor_run(simdata::SimNameData)
-  return "$(simdata.physics)_$(simdata.arch)_$(simdata.tag)"
-end
-
-function tagfor_task(simdata::SimNameData)
-  return "$(tagfor_run(simdata))_$(simdata.task_key)"
-end
-
-function simconfig_name(simdata::SimNameData)
-  return "$(tagfor_run(simdata)).toml"
-end
+tagfor_run(simdata::SimNameData) = return "$(simdata.physics)_$(simdata.arch)_$(simdata.tag)"
+tagfor_task(simdata::SimNameData) = return "$(tagfor_run(simdata))_$(simdata.task_key)"
 
 load_simconfig(simdata::SimNameData) = TOML.parsefile(simconfig_path(simdata))
+simconfig_name(simdata::SimNameData) = return "$(tagfor_run(simdata)).toml"
 simconfig_path(simdata::SimNameData) = physicsdir(simdata.physics, simconfig_name(simdata))
 
 physicsfile_name(simdata::SimNameData) = return "$(simdata.physics).jl"
@@ -67,24 +63,15 @@ load_physicsconfig(simdata::SimNameData) = TOML.parsefile(physicsconfig_path(sim
 physicsconfig_name() = return "config.toml"
 physicsconfig_path(simdata::SimNameData) = physicsdir(simdata.physics, physicsconfig_name())
 
-
+load_statsfile(simdata::SimNameData) = wload(statsfile_path(simdata))
 statsfile_name(simdata::SimNameData) = return "stats_$(tagfor_task(simdata)).jld2"
+statsfile_path(simdata::SimNameData) = resultsdir(simdata.physics, statsfile_name(simdata))
 
-function statsfile_path(simdata::SimNameData)
-  return resultsdir(simdata.physics, statsfile_name(simdata))
-end
-
+load_benchfile(simdata::SimNameData) = only(BenchmarkTools.load(benchfile_path(simdata)))
 benchfile_name(simdata::SimNameData) = return "benchmarks_$(tagfor_task(simdata)).json"
+benchfile_path(simdata::SimNameData) = resultsdir(simdata.physics, benchfile_name(simdata))
 
-function benchfile_path(simdata::SimNameData)
-  return resultsdir(simdata.physics, benchfile_name(simdata))
-end
 
-function autoconfig_size(config_data)
-  key_list = keys(config_data)
-  return length(key_list) - 1 # Don't include meta info
-end
+simconfig_size(config_data) = return length(keys(config_data)) - 1 # Don't include meta info
 
-function get_meta_config_info(benchmark_config)
-  return benchmark_config[meta_config_id()]
-end
+get_meta_config_info(benchmark_config) = return benchmark_config[meta_config_id()]
