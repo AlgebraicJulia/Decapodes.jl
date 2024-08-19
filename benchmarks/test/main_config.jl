@@ -84,7 +84,7 @@ end
 
   hcpa = SimNameData("heat", "cpu", "a")
   @test has_config_args(main_config_info, hcpa)
-  hcpa_args = config_args(main_config_info, hcpa)
+  hcpa_args = get_config_args(main_config_info, hcpa)
   @test hcpa_args["args"] == "test"
 
   @test is_supported_arch("cpu")
@@ -94,28 +94,28 @@ end
 
   no_entries = SimNameData("heat", "cuda", "c")
   @test has_config_args(main_config_info, no_entries) == false
-  @test_throws "not found in the main config" config_args(main_config_info, no_entries)
+  @test_throws "not found in the main config" get_config_args(main_config_info, no_entries)
 
   no_tag = SimNameData("heat", "cpu", "badtag")
   @test has_config_args(main_config_info, no_tag) == false
-  @test_throws "not found in the main config" config_args(main_config_info, no_tag)
+  @test_throws "not found in the main config" get_config_args(main_config_info, no_tag)
 
   no_arch = SimNameData("not_heat", "cpu", "c")
   @test has_config_args(main_config_info, no_arch) == false
-  @test_throws "not found in the main config" config_args(main_config_info, no_arch)
+  @test_throws "not found in the main config" get_config_args(main_config_info, no_arch)
 
   bad_arch = SimNameData("not_heat", "fake", "c")
   @test has_config_args(main_config_info, bad_arch) == false
-  @test_throws "not found in the main config" config_args(main_config_info, bad_arch)
+  @test_throws "not found in the main config" get_config_args(main_config_info, bad_arch)
 
   no_physics = SimNameData("brussel", "cuda", "c")
   @test has_config_args(main_config_info, no_physics) == false
-  @test_throws "not found in the main config" config_args(main_config_info, no_physics)
+  @test_throws "not found in the main config" get_config_args(main_config_info, no_physics)
 
   empty_toml = TOML.parse("")
   empty_snd = SimNameData("", "", "")
   @test has_config_args(empty_toml, empty_snd) == false
-  @test_throws "not found in the main configuration" config_args(empty_toml, empty_snd)
+  @test_throws "not found in the main configuration" get_config_args(empty_toml, empty_snd)
 end
 
 end

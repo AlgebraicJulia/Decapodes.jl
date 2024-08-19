@@ -25,7 +25,7 @@ function load_save_benchmark_data(sim)
 end
 
 has_physicsconfig_args(sim) = has_config_args(load_physicsconfig(sim), sim)
-physicsconfig_args(sim) = config_args(load_physicsconfig(sim), sim)
+physicsconfig_args(sim) = get_config_args(load_physicsconfig(sim), sim)
 
 function process_simulation_config(entry)
   received_params = dict_list(entry)
