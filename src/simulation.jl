@@ -354,7 +354,7 @@ is the name of the variable whose data will be stored and a code target.
 """
 function hook_STC_settvar(state_name::Symbol, tgt_name::Symbol, ::Union{CPUBackend, CUDABackend})
   ssymb = QuoteNode(state_name)
-  return :(getproperty(du, $ssymb) .= $tgt_name)
+  return :(setproperty!(du, $ssymb, $tgt_name))
 end
 
 const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
