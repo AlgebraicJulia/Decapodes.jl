@@ -742,7 +742,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
 
   # This contracts matrices together into a single matrix
   contracted_dec_operators = Set{Symbol}()
-  contract_operators!(gen_d, allowable_ops = optimizable_dec_operators)
+  contract_operators!(gen_d, white_list = optimizable_dec_operators)
   cont_defs = link_contract_operators(gen_d, contracted_dec_operators, stateeltype, code_target)
 
   union!(optimizable_dec_operators, contracted_dec_operators, extra_dec_operators)
