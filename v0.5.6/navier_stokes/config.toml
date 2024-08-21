@@ -1,0 +1,51 @@
+# Store data here:
+# For archival purposes, select a directory on /orange.
+DATA_DR = "."
+
+# Choose which data to save:
+SAVE_SOLN = true
+PLOT_ICS = true
+PLOT_FCS = true
+
+# Choose a formuation of the physics:
+USE_EQ11 = false
+USE_EQ11_INVISCID = false
+USE_EQ11_POISSON = true
+USE_EQ17 = false
+USE_EQ17_INVISCID = false
+
+# Chose from one of the scenarios or customize one:
+TAYLOR_SCENARIO = false
+SIX_VORTEX_SCENARIO = true
+CUSTOM_SCENARIO = false
+# Parameters for custom scenarios:
+CUSTOM_LAT = 0.4
+CUSTOM_N_VORTS = 6
+CUSTOM_tau = 3.0
+CUSTOM_G = 0.5
+CUSTOM_a = 0.15
+CUSTOM_POINT_VORTEX = true
+CUSTOM_TAYLOR_VORTEX = false
+CUSTOM_TIME = 12.0
+CUSTOM_CLRRNG = [0.0,3.0]
+
+# Which mesh to run the physics on:
+ICO6 = false
+ICO7 = true
+ICO8 = false
+UV = false
+
+# How to subdivide the mesh:
+BARYCENTRIC = false
+CIRCUMCENTRIC = true
+
+# If ssh keys are set up, scp files to a server:
+SCP_ICS = false
+SCP_FCS = false
+# Escape special characters for a Base.Cmd object:
+SERVER_PATH = "rain:~/public_html/imgs/MHS"
+
+# Log to the terminal for REPL runs:
+LOG_TERMINAL = false
+LOG_FILE = true
+

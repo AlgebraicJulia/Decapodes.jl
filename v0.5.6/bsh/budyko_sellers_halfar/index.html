@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Budyko-Sellers-Halfar · Decapodes.jl</title><meta name="title" content="Budyko-Sellers-Halfar · Decapodes.jl"/><meta property="og:title" content="Budyko-Sellers-Halfar · Decapodes.jl"/><meta property="twitter:title" content="Budyko-Sellers-Halfar · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../equations/equations/">Equations</a></li><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li class="is-active"><a class="tocitem" href>Budyko-Sellers-Halfar</a><ul class="internal"><li><a class="tocitem" href="#Warming"><span>Warming</span></a></li><li><a class="tocitem" href="#Composition"><span>Composition</span></a></li><li><a class="tocitem" href="#Defining-the-mesh"><span>Defining the mesh</span></a></li><li><a class="tocitem" href="#Define-input-data"><span>Define input data</span></a></li><li><a class="tocitem" href="#Symbols-to-functions"><span>Symbols to functions</span></a></li><li><a class="tocitem" href="#Simulation-generation"><span>Simulation generation</span></a></li><li><a class="tocitem" href="#Run-simulation"><span>Run simulation</span></a></li><li><a class="tocitem" href="#Visualize"><span>Visualize</span></a></li></ul></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Budyko-Sellers-Halfar</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Budyko-Sellers-Halfar</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/bsh/budyko_sellers_halfar.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Budko-Sellers-Halfar"><a class="docs-heading-anchor" href="#Budko-Sellers-Halfar">Budko-Sellers-Halfar</a><a id="Budko-Sellers-Halfar-1"></a><a class="docs-heading-anchor-permalink" href="#Budko-Sellers-Halfar" title="Permalink"></a></h1><p>In this example, we will compose the Budyko-Sellers 1D energy balance model of the Earth&#39;s surface temperature with the Halfar model of glacial dynamics. Note that each of these components models is itself a composition of smaller physical models. In this walkthrough, we will compose them together using the same techniques.</p><pre><code class="language-julia hljs"># AlgebraicJulia Dependencies
+using Catlab
+using CombinatorialSpaces
+using DiagrammaticEquations
+using Decapodes
+
+# External Dependencies
+using CairoMakie
+using ComponentArrays
+using GeometryBasics: Point2
+using JLD2
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using SparseArrays
+Point2D = Point2{Float64};</code></pre><p>We have defined the <a href="../../ice_dynamics/ice_dynamics/">Halfar ice model</a> in other docs pages, and so will quickly define it here.</p><pre><code class="language-julia hljs">halfar_eq2 = @decapode begin
+  h::Form0
+  Γ::Form1
+  n::Constant
+
+  ḣ == ∂ₜ(h)
+  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+end
+
+glens_law = @decapode begin
+  Γ::Form1
+  A::Form1
+  (ρ,g,n)::Constant
+
+  Γ == (2/(n+2))*A*(ρ*g)^n
+end
+
+ice_dynamics_composition_diagram = @relation () begin
+  dynamics(Γ,n)
+  stress(Γ,n)
+end
+
+ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
+  [Open(halfar_eq2, [:Γ,:n]),
+   Open(glens_law, [:Γ,:n])])
+halfar = apex(ice_dynamics_cospan)
+
+to_graphviz(halfar, verbose=false)</code></pre><img src="6b6fec22.svg" alt="Example block output"/><p>We will introduce the Budyko-Sellers energy balance model in more detail. First, let&#39;s define the composite physics. We will visualize them all in a single diagram without any composition at first:</p><pre><code class="language-julia hljs">energy_balance = @decapode begin
+  (Tₛ, ASR, OLR, HT)::Form0
+  (C)::Constant
+
+  Tₛ̇ == ∂ₜ(Tₛ)
+
+  Tₛ̇ == (ASR - OLR + HT) ./ C
+end
+
+absorbed_shortwave_radiation = @decapode begin
+  (Q, ASR)::Form0
+  α::Constant
+
+  ASR == (1 .- α) .* Q
+end
+
+outgoing_longwave_radiation = @decapode begin
+  (Tₛ, OLR)::Form0
+  (A,B)::Constant
+
+  OLR == A .+ (B .* Tₛ)
+end
+
+heat_transfer = @decapode begin
+  (HT, Tₛ)::Form0
+  (D,cosϕᵖ,cosϕᵈ)::Constant
+
+  HT == (D ./ cosϕᵖ) .* ⋆(d(cosϕᵈ .* ⋆(d(Tₛ))))
+end
+
+insolation = @decapode begin
+  Q::Form0
+  cosϕᵖ::Constant
+
+  Q == 450 * cosϕᵖ
+end
+
+to_graphviz(oplus([energy_balance, absorbed_shortwave_radiation, outgoing_longwave_radiation, heat_transfer, insolation]), directed=false)</code></pre><img src="26875a95.svg" alt="Example block output"/><p>Now let&#39;s compose the Budyko-Sellers model:</p><pre><code class="language-julia hljs">budyko_sellers_composition_diagram = @relation () begin
+  energy(Tₛ, ASR, OLR, HT)
+  absorbed_radiation(Q, ASR)
+  outgoing_radiation(Tₛ, OLR)
+  diffusion(Tₛ, HT, cosϕᵖ)
+  insolation(Q, cosϕᵖ)
+end
+
+draw_composition(budyko_sellers_composition_diagram)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="903pt" height="874pt"
+ viewBox="0.00 0.00 902.56 873.77" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 869.77)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-869.77 898.56,-869.77 898.56,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="390.42" cy="-847.77" rx="34.29" ry="18"/>
+<text text-anchor="middle" x="390.42" y="-844.07" font-family="Serif" font-size="14.00">energy</text>
+</g>
+<!-- n6 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="628.56" cy="-813.53" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="619.06" y="-819.83" font-family="Serif" font-size="14.00">Tₛ</text>
+</g>
+<!-- n1&%2345;&%2345;n6 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M423.53,-843C483.6,-834.37 606.15,-816.75 625.86,-813.91"/>
+</g>
+<!-- n7 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="810.38" cy="-194.29" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="792.38" y="-200.59" font-family="Serif" font-size="14.00">ASR</text>
+</g>
+<!-- n1&%2345;&%2345;n7 -->
+<g id="edge4" class="edge">
+<title>n1&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M401.43,-830.62C465.11,-731.55 784.03,-235.29 808.85,-196.67"/>
+</g>
+<!-- n8 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="878.16" cy="-425.13" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="860.16" y="-431.43" font-family="Serif" font-size="14.00">OLR</text>
+</g>
+<!-- n1&%2345;&%2345;n8 -->
+<g id="edge6" class="edge">
+<title>n1&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M408.36,-832.22C492.57,-759.25 845.89,-453.09 876.1,-426.92"/>
+</g>
+<!-- n9 -->
+<!-- junction -->
+<g id="junction4" class="node">
+<title>n9</title>
+<ellipse fill="black" stroke="black" cx="171.57" cy="-747.82" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="158.07" y="-754.12" font-family="Serif" font-size="14.00">HT</text>
+</g>
+<!-- n1&%2345;&%2345;n9 -->
+<g id="edge8" class="edge">
+<title>n1&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M364.45,-835.91C311.01,-811.5 192.18,-757.23 173.94,-748.9"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="628.56" cy="-36.74" rx="85.89" ry="18"/>
+<text text-anchor="middle" x="628.56" y="-33.04" font-family="Serif" font-size="14.00">absorbed_radiation</text>
+</g>
+<!-- n2&%2345;&%2345;n7 -->
+<g id="edge5" class="edge">
+<title>n2&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M649.06,-54.51C692.9,-92.49 793.01,-179.24 808.38,-192.56"/>
+</g>
+<!-- n10 -->
+<!-- junction -->
+<g id="junction5" class="node">
+<title>n10</title>
+<ellipse fill="black" stroke="black" cx="390.42" cy="-2.5" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="381.92" y="-8.8" font-family="Serif" font-size="14.00">Q</text>
+</g>
+<!-- n2&%2345;&%2345;n10 -->
+<g id="edge10" class="edge">
+<title>n2&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M557.43,-26.51C494.38,-17.45 409.81,-5.29 393.28,-2.91"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="810.38" cy="-655.97" rx="84.36" ry="18"/>
+<text text-anchor="middle" x="810.38" y="-652.27" font-family="Serif" font-size="14.00">outgoing_radiation</text>
+</g>
+<!-- n3&%2345;&%2345;n6 -->
+<g id="edge2" class="edge">
+<title>n3&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M789.88,-673.74C746.04,-711.73 645.93,-798.47 630.55,-811.8"/>
+</g>
+<!-- n3&%2345;&%2345;n8 -->
+<g id="edge7" class="edge">
+<title>n3&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M815.7,-637.86C830.49,-587.48 871.43,-448.06 877.42,-427.64"/>
+</g>
+<!-- n4 -->
+<g id="box4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="41.5" cy="-545.43" rx="41.41" ry="18"/>
+<text text-anchor="middle" x="41.5" y="-541.73" font-family="Serif" font-size="14.00">diffusion</text>
+</g>
+<!-- n4&%2345;&%2345;n6 -->
+<g id="edge3" class="edge">
+<title>n4&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M70.21,-558.54C183.01,-610.05 591.3,-796.51 626.18,-812.44"/>
+</g>
+<!-- n4&%2345;&%2345;n9 -->
+<g id="edge9" class="edge">
+<title>n4&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M52.82,-563.03C81.99,-608.43 158.3,-727.17 170.04,-745.45"/>
+</g>
+<!-- n11 -->
+<!-- junction -->
+<g id="junction6" class="node">
+<title>n11</title>
+<ellipse fill="black" stroke="black" cx="41.5" cy="-304.84" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="19.5" y="-311.14" font-family="Serif" font-size="14.00">cosϕᵖ</text>
+</g>
+<!-- n4&%2345;&%2345;n11 -->
+<g id="edge12" class="edge">
+<title>n4&%2345;&%2345;n11</title>
+<path fill="none" stroke="black" d="M41.5,-527.34C41.5,-475.54 41.5,-328.95 41.5,-307.48"/>
+</g>
+<!-- n5 -->
+<g id="box5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="171.57" cy="-102.44" rx="45.83" ry="18"/>
+<text text-anchor="middle" x="171.57" y="-98.74" font-family="Serif" font-size="14.00">insolation</text>
+</g>
+<!-- n5&%2345;&%2345;n10 -->
+<g id="edge11" class="edge">
+<title>n5&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M201.54,-88.76C256.33,-63.74 368.77,-12.39 387.69,-3.75"/>
+</g>
+<!-- n5&%2345;&%2345;n11 -->
+<g id="edge13" class="edge">
+<title>n5&%2345;&%2345;n11</title>
+<path fill="none" stroke="black" d="M160.26,-120.05C131.08,-165.45 54.77,-284.19 43.03,-302.46"/>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
+  [Open(energy_balance,               [:Tₛ, :ASR, :OLR, :HT]),
+   Open(absorbed_shortwave_radiation, [:Q, :ASR]),
+   Open(outgoing_longwave_radiation,  [:Tₛ, :OLR]),
+   Open(heat_transfer,                [:Tₛ, :HT, :cosϕᵖ]),
+   Open(insolation,                   [:Q, :cosϕᵖ])])
+
+budyko_sellers = apex(budyko_sellers_cospan)
+
+# Save this Decapode as a JSON file
+write_json_acset(budyko_sellers, &quot;budyko_sellers.json&quot;)
+
+to_graphviz(budyko_sellers, verbose=false)</code></pre><img src="ea76c5bb.svg" alt="Example block output"/><h2 id="Warming"><a class="docs-heading-anchor" href="#Warming">Warming</a><a id="Warming-1"></a><a class="docs-heading-anchor-permalink" href="#Warming" title="Permalink"></a></h2><p>We need to specify physically what it means for these two terms to interact. We will say that ice will diffuse faster as temperature increases, and will pick some coefficients that demonstrate interesting dynamics on short timescales.</p><pre><code class="language-julia hljs">warming = @decapode begin
+  Tₛ::Form0
+  A::Form1
+
+  A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e7)
+
+end
+
+to_graphviz(warming)</code></pre><img src="a09449de.svg" alt="Example block output"/><h2 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h2><p>Observe that Decapodes composition is hierarchical. This composition technique is the same as that used in composing each of the Budyko-Sellers and Halfar models.</p><pre><code class="language-julia hljs">budyko_sellers_halfar_composition_diagram = @relation () begin
+  budyko_sellers(Tₛ)
+  warming(A, Tₛ)
+  halfar(A)
+end
+
+draw_composition(budyko_sellers_halfar_composition_diagram)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="585pt" height="44pt"
+ viewBox="0.00 0.00 585.03 44.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 40)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-40 581.03,-40 581.03,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="67.11" cy="-18" rx="67.22" ry="18"/>
+<text text-anchor="middle" x="67.11" y="-14.3" font-family="Serif" font-size="14.00">budyko_sellers</text>
+</g>
+<!-- n4 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n4</title>
+<ellipse fill="black" stroke="black" cx="208.72" cy="-18" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="199.22" y="-24.3" font-family="Serif" font-size="14.00">Tₛ</text>
+</g>
+<!-- n1&%2345;&%2345;n4 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n4</title>
+<path fill="none" stroke="black" d="M134.59,-18C165.37,-18 196.98,-18 206.11,-18"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="325.6" cy="-18" rx="42.27" ry="18"/>
+<text text-anchor="middle" x="325.6" y="-14.3" font-family="Serif" font-size="14.00">warming</text>
+</g>
+<!-- n2&%2345;&%2345;n4 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&%2345;n4</title>
+<path fill="none" stroke="black" d="M283.07,-18C254.61,-18 220.7,-18 211.26,-18"/>
+</g>
+<!-- n5 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="442.48" cy="-18" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="434.98" y="-24.3" font-family="Serif" font-size="14.00">A</text>
+</g>
+<!-- n2&%2345;&%2345;n5 -->
+<g id="edge3" class="edge">
+<title>n2&%2345;&%2345;n5</title>
+<path fill="none" stroke="black" d="M368.13,-18C396.59,-18 430.5,-18 439.94,-18"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="547" cy="-18" rx="30.04" ry="18"/>
+<text text-anchor="middle" x="547" y="-14.3" font-family="Serif" font-size="14.00">halfar</text>
+</g>
+<!-- n3&%2345;&%2345;n5 -->
+<g id="edge4" class="edge">
+<title>n3&%2345;&%2345;n5</title>
+<path fill="none" stroke="black" d="M516.77,-18C490.49,-18 455.1,-18 445.17,-18"/>
+</g>
+</g>
+</svg>
+'/><p>We apply a composition by plugging in a Decapode for each component. We also specify the internal name of the variables to be used in combining.</p><pre><code class="language-julia hljs">budyko_sellers_halfar_cospan = oapply(budyko_sellers_halfar_composition_diagram,
+  [Open(budyko_sellers, [:Tₛ]),
+   Open(warming,        [:A, :Tₛ]),
+   Open(halfar,         [:stress_A])])
+budyko_sellers_halfar = apex(budyko_sellers_halfar_cospan)
+
+to_graphviz(budyko_sellers_halfar)</code></pre><img src="6b508a66.svg" alt="Example block output"/><p>We can perform type inference to determine what kind of differential form each of our variables are. This is done automatically with the <code>dimension=1</code> keyword given to <code>gensim</code>, but we will do it in-place for demonstration purposes.</p><pre><code class="language-julia hljs">budyko_sellers_halfar = expand_operators(budyko_sellers_halfar)
+infer_types!(budyko_sellers_halfar, op1_inf_rules_1D, op2_inf_rules_1D)
+resolve_overloads!(budyko_sellers_halfar, op1_res_rules_1D, op2_res_rules_1D)
+to_graphviz(budyko_sellers_halfar)</code></pre><img src="b4a87a15.svg" alt="Example block output"/><h2 id="Defining-the-mesh"><a class="docs-heading-anchor" href="#Defining-the-mesh">Defining the mesh</a><a id="Defining-the-mesh-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-mesh" title="Permalink"></a></h2><p>These dynamics will occur on a 1-D manifold (a line). Points near +-π/2 will represent points near the North/ South poles. Points near 0 represent those at the equator.</p><pre><code class="language-julia hljs">s = EmbeddedDeltaSet1D{Bool, Point2D}()
+add_vertices!(s, 100, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=100), 0))
+add_edges!(s, 1:nv(s)-1, 2:nv(s))
+orient!(s)
+sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+subdivide_duals!(sd, Circumcenter())</code></pre><h2 id="Define-input-data"><a class="docs-heading-anchor" href="#Define-input-data">Define input data</a><a id="Define-input-data-1"></a><a class="docs-heading-anchor-permalink" href="#Define-input-data" title="Permalink"></a></h2><p>We need to supply initial conditions to our model. We will use synthetic data here.</p><pre><code class="language-julia hljs"># This is a primal 0-form, with values at vertices.
+cosϕᵖ = map(x -&gt; cos(x[1]), point(s))
+
+# This is a dual 0-form, with values at edge centers.
+cosϕᵈ = map(edges(s)) do e
+  (cos(point(s, src(s, e))[1]) + cos(point(s, tgt(s, e))[1])) / 2
+end
+
+α₀ = 0.354
+α₂ = 0.25
+α = map(point(s)) do ϕ
+  α₀ + α₂*((1/2)*(3*ϕ[1]^2 - 1))
+end
+A = 210
+B = 2
+f = 0.70
+ρ = 1025
+cw = 4186
+H = 70
+C = map(point(s)) do ϕ
+  f * ρ * cw * H
+end
+D = 0.6
+
+# Isothermal initial conditions:
+Tₛ₀ = map(point(s)) do ϕ
+  15
+end
+
+# Visualize initial condition for temperature.
+lines(map(x -&gt; x[1], point(s)), Tₛ₀)</code></pre><img src="9aebb73b.png" alt="Example block output"/><pre><code class="language-julia hljs">n = 3
+ρ = 910
+g = 9.8
+
+# Ice height is a primal 0-form, with values at vertices.
+h₀ = map(point(s)) do (x,_)
+  (((x)^2)+2.5) / 1e3
+end
+
+# Visualize initial condition for ice sheet height.
+lines(map(x -&gt; x[1], point(s)), h₀)</code></pre><img src="5392d560.png" alt="Example block output"/><pre><code class="language-julia hljs"># Store these values to be passed to the solver.
+u₀ = ComponentArray(Tₛ=Tₛ₀, halfar_dynamics_h=h₀)
+
+constants_and_parameters = (
+  budyko_sellers_absorbed_radiation_α = α,
+  budyko_sellers_outgoing_radiation_A = A,
+  budyko_sellers_outgoing_radiation_B = B,
+  budyko_sellers_energy_C = C,
+  budyko_sellers_diffusion_D = D,
+  budyko_sellers_cosϕᵖ = cosϕᵖ,
+  budyko_sellers_diffusion_cosϕᵈ = cosϕᵈ,
+  halfar_n = n,
+  halfar_stress_ρ = ρ,
+  halfar_stress_g = g)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(budyko_sellers_absorbed_radiation_α = [1.042230343107338, 1.0097044483518975, 0.9778423473669757, 0.9466440401525731, 0.9161095267086897, 0.8862388070353256, 0.8570318811324809, 0.828488749000155, 0.8006094106383485, 0.7733938660470613  …  0.7733938660470613, 0.8006094106383485, 0.828488749000155, 0.8570318811324809, 0.8862388070353256, 0.9161095267086897, 0.9466440401525731, 0.9778423473669757, 1.0097044483518975, 1.042230343107338], budyko_sellers_outgoing_radiation_A = 210, budyko_sellers_outgoing_radiation_B = 2, budyko_sellers_energy_C = [2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8  …  2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8, 2.1024185e8], budyko_sellers_diffusion_D = 0.6, budyko_sellers_cosϕᵖ = [0.09801714032956077, 0.12757607738957208, 0.15702211050324905, 0.18632918013489802, 0.21547134973054533, 0.24442282867160953, 0.2731579950994198, 0.30165141859038386, 0.32987788266173657, 0.35781240708795353  …  0.35781240708795353, 0.32987788266173657, 0.30165141859038386, 0.2731579950994198, 0.24442282867160953, 0.21547134973054533, 0.18632918013489802, 0.15702211050324905, 0.12757607738957208, 0.09801714032956077], budyko_sellers_diffusion_cosϕᵈ = [0.11279660885956642, 0.14229909394641055, 0.17167564531907353, 0.20090026493272167, 0.22994708920107743, 0.25879041188551466, 0.2874047068449018, 0.3157646506260602, 0.3438451448748451, 0.37162133854801555  …  0.37162133854801555, 0.3438451448748451, 0.3157646506260602, 0.2874047068449018, 0.25879041188551466, 0.22994708920107743, 0.20090026493272167, 0.17167564531907353, 0.14229909394641055, 0.11279660885956642], halfar_n = 3, halfar_stress_ρ = 910, halfar_stress_g = 9.8)</code></pre><h2 id="Symbols-to-functions"><a class="docs-heading-anchor" href="#Symbols-to-functions">Symbols to functions</a><a id="Symbols-to-functions-1"></a><a class="docs-heading-anchor-permalink" href="#Symbols-to-functions" title="Permalink"></a></h2><p>The symbols along edges in our Decapode must be mapped to executable functions. In the Discrete Exterior Calculus, all our operators are defined as relations between points, lines, and triangles on meshes known as simplicial sets. Thus, DEC operators are re-usable across any simplicial set.</p><pre><code class="language-julia hljs">function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :♯ =&gt; x -&gt; begin
+      # This is an implementation of the &quot;sharp&quot; operator from the exterior
+      # calculus, which takes co-vector fields to vector fields.
+      # This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
+      # this operation is not bespoke to this simulation.)
+      e_vecs = map(edges(sd)) do e
+        point(sd, sd[e, :∂v0]) - point(sd, sd[e, :∂v1])
+      end
+      neighbors = map(vertices(sd)) do v
+        union(incident(sd, v, :∂v0), incident(sd, v, :∂v1))
+      end
+      n_vecs = map(neighbors) do es
+        [e_vecs[e] for e in es]
+      end
+      map(neighbors, n_vecs) do es, nvs
+        sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
+      end
+    end
+    :mag =&gt; x -&gt; norm.(x)
+    x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
+  end
+  return (args...) -&gt; op(args...)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><h2 id="Simulation-generation"><a class="docs-heading-anchor" href="#Simulation-generation">Simulation generation</a><a id="Simulation-generation-1"></a><a class="docs-heading-anchor-permalink" href="#Simulation-generation" title="Permalink"></a></h2><p>From our Decapode, we automatically generate a finite difference method solver that performs explicit time-stepping to solve our system of multiphysics equations.</p><pre><code class="language-julia hljs">sim = eval(gensim(budyko_sellers_halfar, dimension=1))
+fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#44&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}, Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><h2 id="Run-simulation"><a class="docs-heading-anchor" href="#Run-simulation">Run simulation</a><a id="Run-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Run-simulation" title="Permalink"></a></h2><p>We wrap our simulator and initial conditions and solve them with the stability-detection and time-stepping methods provided by DifferentialEquations.jl .</p><pre><code class="language-julia hljs">tₑ = 1e6
+
+@info(&quot;Solving&quot;)
+prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+soln = solve(prob, Tsit5())
+@show soln.retcode
+@info(&quot;Done&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Solving
+soln.retcode = SciMLBase.ReturnCode.Success
+[ Info: Done</code></pre><p>We can save the <a href="../budyko_sellers_halfar.jld2">solution file</a> to examine later.</p><pre><code class="language-julia hljs">@save &quot;budyko_sellers_halfar.jld2&quot; soln</code></pre><h2 id="Visualize"><a class="docs-heading-anchor" href="#Visualize">Visualize</a><a id="Visualize-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize" title="Permalink"></a></h2><p>Quickly examine the final conditions for temperature:</p><pre><code class="language-julia hljs">lines(map(x -&gt; x[1], point(s)), soln(tₑ).Tₛ)</code></pre><img src="b19996e2.png" alt="Example block output"/><p>Quickly examine the final conditions for ice height:</p><pre><code class="language-julia hljs">lines(map(x -&gt; x[1], point(s)), soln(tₑ).halfar_dynamics_h)</code></pre><img src="b634c936.png" alt="Example block output"/><p><img src="../budyko_sellers_halfar_T.gif" alt="BSH_Temperature"/></p><p><img src="../budyko_sellers_halfar_h.gif" alt="BSH_IceHeight"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 54 seconds.
+[ Info: This page was last built at 2024-08-21T00:19:51.589.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../grigoriev/grigoriev/">« Grigoriev Ice Cap</a><a class="docs-footer-nextpage" href="../../halmo/halmo/">Halfar-NS »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.6.0 on <span class="colophon-date" title="Wednesday 21 August 2024 00:27">Wednesday 21 August 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
