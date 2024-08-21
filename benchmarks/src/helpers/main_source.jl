@@ -92,7 +92,7 @@ end
 
 function get_slurm_args(main_config_info, snd::SimNameData)
 
-  slurm_args = get_config_arg(main_config_info, snd, "slurm_args")
+  slurm_args = config_arg(main_config_info, snd, "slurm_args")
 
   if isnothing(slurm_args)
     return @match snd.arch begin
@@ -105,6 +105,6 @@ function get_slurm_args(main_config_info, snd::SimNameData)
 end
 
 function get_concur_jobs(main_config_info, snd::SimNameData)
-  job_arg = get_config_arg(main_config_info, snd, "concur_jobs")
+  job_arg = config_arg(main_config_info, snd, "concur_jobs")
   return isnothing(job_arg) ? DEFAULT_MAXJOBS : job_arg
 end

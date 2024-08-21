@@ -3,6 +3,11 @@ code_target = "CPUTarget"
 float_type = ["Float32", "Float64"]
 resolution = [5, 2, 1]
 
+[heat.cpu.test2]
+code_target = "CPUTarget"
+float_type = "Float64"
+resolution = 5
+
 [heat.cuda.test]
 code_target = "CUDATarget"
 float_type = ["Float32", "Float64"]

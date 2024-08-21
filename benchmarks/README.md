@@ -30,7 +30,7 @@ using DrWatson
 @quickactivate :benchmarks
 ```
 
-which auto-activate the project, enable local path handling from DrWatson and provide several helper functions. Note that `@quickactivate` is only usable from within the `benchmarks` directory.
+which auto-activate the project, enable local path handling from DrWatson and provide several helper functions. Note that `@quickactivate :benchmarks` is only usable from within the `benchmarks` directory.
 
 ## Establishing Simulation Configurations
 

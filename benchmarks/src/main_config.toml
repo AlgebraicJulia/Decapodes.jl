@@ -1,3 +1,2 @@
-[heat]
-cpu = ["test"]
-cuda = ["test"]
+[heat.cpu.test]
+[heat.cuda.test]

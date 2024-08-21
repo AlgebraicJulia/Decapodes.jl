@@ -11,7 +11,7 @@ export load_simconfig, simconfig_name, simconfig_path,
   load_physicsconfig, physicsconfig_name, physicsconfig_path,
   load_statsfile, statsfile_name, statsfile_path,
   load_benchfile, benchfile_name, benchfile_path
-export simconfig_size, get_meta_config_info
+export simconfig_size, meta_config_info
 
 export SimNameData
 import Base.show
@@ -74,4 +74,4 @@ benchfile_path(simdata::SimNameData) = resultsdir(simdata.physics, benchfile_nam
 
 simconfig_size(config_data) = return length(keys(config_data)) - 1 # Don't include meta info
 
-get_meta_config_info(benchmark_config) = return benchmark_config[meta_config_id()]
+meta_config_info(benchmark_config) = return benchmark_config[meta_config_id()]

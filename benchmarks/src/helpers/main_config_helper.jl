@@ -4,7 +4,7 @@ using DrWatson
 using TOML
 
 export mainsim_config_path, load_main_config, listof_main_physics,
-  collect_simsfor_physics, has_config_args, get_config_args, get_config_arg
+  collect_simsfor_physics, has_config_args, config_args, config_arg
 
 mainsim_config_path() = srcdir("main_config.toml")
 
@@ -66,19 +66,19 @@ function has_config_args(config_info, snd::SimNameData)
   return !isempty(tag_info)
 end
 
-function get_config_args(config_info, snd::SimNameData)
+function config_args(config_info, snd::SimNameData)
   if !(has_config_args(config_info, snd))
     error("Arguments for $(snd) were not found in the main configuration or provided architecture $(snd.arch) is invalid")
   end
   return config_info[snd.physics][snd.arch][snd.tag]
 end
 
-function get_config_arg(config_info, snd::SimNameData, arg)
+function config_arg(config_info, snd::SimNameData, arg)
   if !has_config_args(config_info, snd)
     return nothing
   end
 
-  args = get_config_args(config_info, snd)
+  args = config_args(config_info, snd)
   if !haskey(args, arg)
     return nothing
   end

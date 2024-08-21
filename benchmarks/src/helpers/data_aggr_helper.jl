@@ -98,12 +98,12 @@ function add_trial_data!(data_row, statistic_name::String, trial_data)
     stage_data = trial_data[stage]
     for field in fieldnames(typeof(stage_data))
       field != :params || continue
-      push!(data_row, get_benchmark_headername(stage, statistic_name, String(field)) => getfield(stage_data, field))
+      push!(data_row, benchmark_headername(stage, statistic_name, String(field)) => getfield(stage_data, field))
     end
   end
 end
 
-function get_benchmark_headername(stage::String, statistic_name::String, category::String)
+function benchmark_headername(stage::String, statistic_name::String, category::String)
   return "$(stage) $(statistic_name) $(category)"
 end
 

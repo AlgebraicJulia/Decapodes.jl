@@ -45,7 +45,7 @@ using TOML
   init_params = Dict("full_test" => ["a", "b", "c", "d"])
   temp_list = process_simulation_config(init_params)
   @test simconfig_size(temp_list) == 4
-  @test get_meta_config_info(temp_list)["fields"] == "full_test"
+  @test meta_config_info(temp_list)["fields"] == "full_test"
 end
 
 @testset "Parameter parsing" begin

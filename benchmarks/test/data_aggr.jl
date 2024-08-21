@@ -9,7 +9,7 @@ using BenchmarkTools
 include(helpersdir("data_aggr_helper.jl"))
 
 @testset "Benchmark names" begin
-    @test get_benchmark_headername("Solve", "Maximum", "Time") == "Solve Maximum Time"
+    @test benchmark_headername("Solve", "Maximum", "Time") == "Solve Maximum Time"
 end
 
 @testset "Adding debug data" begin
@@ -44,7 +44,7 @@ end
 
     for stage in solver_stages()
         for stat in ["time", "memory", "gctime", "allocs"]
-            @test get_benchmark_headername(stage, "Median", stat) in keys(data_row_bench)
+            @test benchmark_headername(stage, "Median", stat) in keys(data_row_bench)
         end
     end
 end
