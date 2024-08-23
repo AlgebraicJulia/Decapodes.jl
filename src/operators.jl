@@ -5,6 +5,30 @@ using Krylov
 using LinearAlgebra
 using SparseArrays
 
+# Define mappings for default DEC operations that are not optimizable.
+# --------------------------------------------------------------------
+function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge=GeometricHodge())
+
+  op = @match my_symbol begin
+
+    :plus => (+)
+    :(-) || :neg => x -> -1 .* x
+    :ln => (x -> log.(x))
+    # Musical Isomorphisms
+    :♯ᵖᵖ => dec_♯_p(sd)
+    :♯ᵈᵈ => dec_♯_d(sd)
+    :♭ᵈᵖ => dec_♭(sd)
+
+    _ => error("Unmatched operator $my_symbol")
+  end
+
+  return (args...) -> op(args...)
+end
+
+function default_dec_cu_generate() end;
+
+# Define mappings for default DEC operations that are optimizable.
+# ----------------------------------------------------------------
 function default_dec_cu_matrix_generate() end;
 
 function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge)
@@ -58,10 +82,10 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     :Δᵈ₁ => Δᵈ(Val{1},sd)
 
     # Musical Isomorphisms
-    :♯ => dec_♯_p(sd)
-    :♯ᵈ => dec_♯_d(sd)
+    :♯ᵖᵖ => dec_♯_p(sd)
+    :♯ᵈᵈ => dec_♯_d(sd)
 
-    :♭ => dec_♭(sd)
+    :♭ᵈᵖ => dec_♭(sd)
 
     # Averaging Operator
     :avg₀₁ => dec_avg₀₁(sd)
@@ -144,20 +168,6 @@ end
 function dec_avg₀₁(sd::HasDeltaSet)
   avg_mat = avg₀₁_mat(sd)
   (avg_mat, x -> avg_mat * x)
-end
-
-function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge=GeometricHodge())
-
-  op = @match my_symbol begin
-
-    :plus => (+)
-    :(-) || :neg => x -> -1 .* x
-    :ln => (x -> log.(x))
-
-    _ => error("Unmatched operator $my_symbol")
-  end
-
-  return (args...) -> op(args...)
 end
 
 function open_operators(d::SummationDecapode; dimension::Int=2)

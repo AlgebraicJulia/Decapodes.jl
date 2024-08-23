@@ -53,11 +53,11 @@ Halfar's equation looks a little disjoint. It seems that the front most terms ar
 # translated into the exterior calculus.
 halfar_eq2 = @decapode begin
   h::Form0
-  Γ::Form1
+  Γ::Form0
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
 end
 
 to_graphviz(halfar_eq2)
@@ -72,7 +72,7 @@ Here, we recognize that Gamma is in fact what glaciologists call "Glen's Flow La
 # assumptions made in glacier theory, their experimental foundations and
 # consequences. (1958)
 glens_law = @decapode begin
-  Γ::Form1
+  Γ::Form0
   (A,ρ,g,n)::Constant
   
   Γ == (2/(n+2))*A*(ρ*g)^n
@@ -154,7 +154,7 @@ g = 9.8101
 alpha = 1/9
 beta = 1/18
 flwa = 1e-16
-A = fill(1e-16, ne(sd))
+A = 1e-16
 
 Gamma = 2.0/(n+2) * flwa * (ρ * g)^n
 t0 = (beta/Gamma) * (7.0/4.0)^3 * (R₀^4 / H^7)
