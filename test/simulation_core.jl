@@ -13,7 +13,7 @@ const DOT_EQUALS =:.=
 # Calling Code Tests #
 ######################
 
-import Decapodes: UnaryCall, add_inplace_stub
+import Decapodes: UnaryCall, inplace
 
 @testset "Test UnaryCall" begin
   # Test equality, basic operator
@@ -34,7 +34,7 @@ import Decapodes: UnaryCall, add_inplace_stub
   @test Expr(UnaryCall(:.-, DOT_EQUALS, :x, :y)) == :(y .= .-x)
 
   # Test broadcast equality, inplace non-matrix method
-  let inplace_op = add_inplace_stub(:⋆₁⁻¹)
+  let inplace_op = inplace(:⋆₁⁻¹)
     @test Expr(UnaryCall(inplace_op, DOT_EQUALS, :x, :y)) == :($inplace_op(y, x))
   end
 end
@@ -46,7 +46,7 @@ import Decapodes: BinaryCall
   @test Expr(BinaryCall(:F, EQUALS, :x, :y, :z)) == :(z = F(x, y))
 
   # Test broadcast equality, inplace operator
-  let inplace_operator = add_inplace_stub(:F)
+  let inplace_operator = inplace(:F)
     @test Expr(BinaryCall(inplace_operator, DOT_EQUALS, :x, :y, :z)) == :($inplace_operator(z, x, y))
   end
 end
