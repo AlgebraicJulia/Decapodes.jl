@@ -30,6 +30,7 @@ sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s);
 subdivide_duals!(sd, Barycenter());
 ```
 
+Compute the Laplacian eigenvectors using [LinearAlgebra.eigen](https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#LinearAlgebra.eigen). This requires making the sparse Laplacian matrix dense with `collect`. Alternatively, use [Arpack.jl](https://arpack.julialinearalgebra.org/stable/).
 
 ```@example Harmonics
 Δ0 = -Δ(0,sd)
