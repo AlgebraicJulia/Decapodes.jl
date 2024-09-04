@@ -1,6 +1,3 @@
-```@meta
-Draft=false
-```
 # Harmonics of the Sphere
 
 This page shows how to use Decapodes tooling to explore the harmonics of a discrete manifold. This isn't using any decapode specific code, but it 

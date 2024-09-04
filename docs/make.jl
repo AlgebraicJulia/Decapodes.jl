@@ -40,30 +40,30 @@ makedocs(
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
-  draft = true;
+  draft = false;
   pagesonly = true,
   linkcheck = true,
   linkcheck_ignore = [r"agupubs\.onlinelibrary\.wiley\.com", # This gives a 403 Forbidden
                       r"Decapodes\.jl/dev"], # 404, probably due to bad self-rerference
   pages     = Any[
-    # "Decapodes.jl" => "index.md",
-    # "Overview" => "overview/overview.md",
+    "Decapodes.jl" => "index.md",
+    "Overview" => "overview/overview.md",
     "Equations" => "equations/equations.md",
-    # "Vortices" => "navier_stokes/ns.md",
+    "Vortices" => "navier_stokes/ns.md",
     "Harmonics" => "harmonics/harmonics.md",
-    # "Cahn-Hilliard" => "ch/cahn-hilliard.md",
-    # "Klausmeier" => "klausmeier/klausmeier.md",
-    # "CISM v2.1" => "cism/cism.md",
-    # "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
-    # "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
-    # "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
-    # "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
-    # "NHS" => "nhs/nhs_lite.md",
-    # "Pipe Flow" => "poiseuille/poiseuille.md",
-    # "Misc Features" => "bc/bc_debug.md", # Requires overview
-    # "ASCII Operators" => "ascii.md",
-    # "Canonical Models" => "canon.md",
-    # "Library Reference" => "api.md"
+    "Cahn-Hilliard" => "ch/cahn-hilliard.md",
+    "Klausmeier" => "klausmeier/klausmeier.md",
+    "CISM v2.1" => "cism/cism.md",
+    "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
+    "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
+    "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
+    "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
+    "NHS" => "nhs/nhs_lite.md",
+    "Pipe Flow" => "poiseuille/poiseuille.md",
+    "Misc Features" => "bc/bc_debug.md", # Requires overview
+    "ASCII Operators" => "ascii.md",
+    "Canonical Models" => "canon.md",
+    "Library Reference" => "api.md"
   ]
 )
 
