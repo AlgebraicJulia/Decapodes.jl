@@ -40,6 +40,7 @@ makedocs(
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
+  draft = false;
   pagesonly = true,
   linkcheck = true,
   linkcheck_ignore = [r"agupubs\.onlinelibrary\.wiley\.com", # This gives a 403 Forbidden
@@ -49,6 +50,7 @@ makedocs(
     "Overview" => "overview/overview.md",
     "Equations" => "equations/equations.md",
     "Vortices" => "navier_stokes/ns.md",
+    "Harmonics" => "harmonics/harmonics.md",
     "Cahn-Hilliard" => "ch/cahn-hilliard.md",
     "Klausmeier" => "klausmeier/klausmeier.md",
     "CISM v2.1" => "cism/cism.md",
