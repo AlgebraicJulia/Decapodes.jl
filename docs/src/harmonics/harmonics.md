@@ -1,7 +1,7 @@
 # Harmonics of the Sphere
 
-This page shows how to use Decapodes tooling to explore the harmonics of a discrete manifold. This isn't using any decapode specific code, but it 
-is emblematic of a more advanced analysis you might want to do on your decapode.
+This page shows how to use Decapodes tooling to explore the harmonics of a discrete manifold. This isn't using any Decapodes specific code, but it 
+is emblematic of a more advanced analysis you might want to do on your Decapode.
 
 In this case we are trying to visualize the roots of the Laplacian on a discrete manifold.
 
@@ -30,7 +30,6 @@ sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s);
 subdivide_duals!(sd, Barycenter());
 ```
 
-Compute the laplacian eigenvectors using [LinearAlgebra.eigen](https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#LinearAlgebra.eigen). This requires making the sparse Laplacian matrix dense with `collect`. Alternatively, use [Arpack.jl](https://arpack.julialinearalgebra.org/stable/).
 
 ```@example Harmonics
 Δ0 = -Δ(0,sd)
