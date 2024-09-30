@@ -32,13 +32,25 @@ using MLStyle
 using Statistics: mean
 
 @info "Defining models"
-mhd = @decapode begin
+_mhd = @decapode begin
     ψ::Form0
     η::DualForm1
     (dη,β)::DualForm2
     # δ = ⋆d⋆
     ∂ₜ(dη) == -1*(∘(⋆₁, dual_d₁)((⋆(dη) ∧₀₁ ♭♯(η)) + (⋆(β) ∧₀₁ ♭♯(∘(⋆, d, ⋆)(β)))))
     ∂ₜ(β) == -1*(∘(⋆₁, dual_d₁)(⋆(β) ∧₀₁ ♭♯(η)))
+    # solve for stream function
+    ψ == ∘(⋆, Δ⁻¹)(dη)
+    η == ⋆(d(ψ))
+end;
+
+mhd = @decapode begin
+    ψ::Form0
+    (η,β)::DualForm1
+    dη::DualForm2
+    # δ = ⋆d⋆ # TODO Luke make primal-dual 1, 0
+    ∂ₜ(dη) == -1*(∘(⋆₁, dual_d₁)((⋆(dη) ∧₀₁ ♭♯(η)) + (♭♯(⋆(β)) ∧ᵈᵈ₁₀ ∘(⋆, d, ⋆)(β))))
+    ∂ₜ(β) == -1*(∘(⋆₂, dual_d₀)(⋆(β) ∧ᵖᵈ₁₁ η))
     # solve for stream function
     ψ == ∘(⋆, Δ⁻¹)(dη)
     η == ⋆(d(ψ))
@@ -109,7 +121,6 @@ begin # ICs
 @info "Setting Initial Conditions"
 
 """    function great_circle_dist(pnt,G,a,cntr)
-
 Compute the length of the shortest path along a sphere, given Cartesian coordinates.
 """
 function great_circle_dist(pnt1::Point3D, pnt2::Point3D)
@@ -129,7 +140,6 @@ struct PointVortexParams <: AbstractVortexParams
 end
 
 """    function taylor_vortex(pnt::Point3D, cntr::Point3D, p::TaylorVortexParams)
-
 Compute the value of a Taylor vortex at the given point.
 """
 function taylor_vortex(pnt::Point3D, cntr::Point3D, p::TaylorVortexParams)
@@ -138,7 +148,6 @@ function taylor_vortex(pnt::Point3D, cntr::Point3D, p::TaylorVortexParams)
 end
 
 """    function point_vortex(pnt::Point3D, cntr::Point3D, p::PointVortexParams)
-
 Compute the value of a smoothed point vortex at the given point.
 """
 function point_vortex(pnt::Point3D, cntr::Point3D, p::PointVortexParams)
@@ -152,7 +161,6 @@ point_vortex(sd::HasDeltaSet, cntr::Point3D, p::PointVortexParams) =
   map(x -> point_vortex(x, cntr, p), point(sd))
 
 """    function ring_centers(lat, n)
-
 Find n equispaced points at the given latitude.
 """
 function ring_centers(lat, n)
@@ -165,9 +173,7 @@ function ring_centers(lat, n)
 end
 
 """    function vort_ring(lat, n_vorts, p::T, formula) where {T<:AbstractVortexParams}
-
 Compute vorticity as primal 0-forms for a ring of vortices.
-
 Specify the latitude, number of vortices, and a formula for computing vortex strength centered at a point.
 """
 function vort_ring(lat, n_vorts, p::T, formula) where {T<:AbstractVortexParams}
@@ -175,11 +181,8 @@ function vort_ring(lat, n_vorts, p::T, formula) where {T<:AbstractVortexParams}
 end
 
 """    function vort_ring(lat, n_vorts, p::PointVortexParams, formula)
-
 Compute vorticity as primal 0-forms for a ring of vortices.
-
 Specify the latitude, number of vortices, and a formula for computing vortex strength centered at a point.
-
 Additionally, place a counter-balance vortex at the South Pole such that the integral of vorticity is 0.
 """
 function vort_ring(lat, n_vorts, p::PointVortexParams, formula)
@@ -194,7 +197,6 @@ X =  # Six equidistant points at latitude θ=0.4.
   vort_ring(0.4, 6, PointVortexParams(3.0, 0.15), point_vortex)
 
 """    function solve_poisson(vort::VForm)
-
 Compute the stream function by solving the Poisson equation.
 """
 function solve_poisson(vort::VForm)
@@ -216,11 +218,13 @@ integral_of_curl(curl::DualForm{2}) = sum(curl.data)
 # i.e. (sum ∘ ⋆₀) computes a Riemann sum.
 integral_of_curl(curl::VForm) = integral_of_curl(DualForm{2}(s0*curl.data))
 
-  vort_ring(0.4, 6, PointVortexParams(3.0, 0.15), point_vortex)
-u₀ = ComponentArray(dη = s0*X, β = s0*X)
+# X is a primal 0, 
+vort_ring(0.4, 6, PointVortexParams(3.0, 0.15), point_vortex)
+u₀ = ComponentArray(dη = s0*X, β = 1e-9*s1*d0*X)
 
 constants_and_parameters = (
   μ = 0.001,)
+# TODO Units are probably heinous for u₀
 
 @info "RMS of divergence of initial velocity: $(∘(RMS, div, curl_stream)(ψ))"
 @info "Integral of initial curl: $(integral_of_curl(VForm(X)))"
@@ -243,12 +247,12 @@ end # ICs
 # u₀ = ComponentArray(dη = dual2, β = β, );
 
 @info("Solving")
-tₑ = 10.0; 
+tₑ = 1.0; 
 
 prob = ODEProblem(f, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob,
   Tsit5(),
-  dtmax = 0.01,
+  dtmax = 1e-3,
   dense=false,
   progress=true, progress_steps=1);
 
@@ -265,5 +269,5 @@ function save_gif(file_name, soln)
       time[] = t
     end
 end
-save_gif("vid2.mp4", soln)
+save_gif("vid3.mp4", soln)
  
