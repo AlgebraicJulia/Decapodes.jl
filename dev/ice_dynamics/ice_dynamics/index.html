@@ -174,7 +174,42 @@ soln = solve(prob, Tsit5())
 @info(&quot;Done&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Precompiling Solver
 [ Info: Solving
 soln.retcode = SciMLBase.ReturnCode.Success
-[ Info: Done</code></pre><p>We can save our <a href="../ice_dynamics1D.jld2">solution file</a> in case we want to examine its contents when this Julia session ends.</p><pre><code class="language-julia hljs">@save &quot;ice_dynamics1D.jld2&quot; soln</code></pre><h2 id="Visualize"><a class="docs-heading-anchor" href="#Visualize">Visualize</a><a id="Visualize-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize" title="Permalink"></a></h2><p>Let&#39;s examine the final conditions:</p><pre><code class="language-julia hljs">fig,ax,ob = lines(map(x -&gt; x[1], point(s)), soln(tₑ).dynamics_h, linewidth=5)
+[ Info: Done</code></pre><p>We can save our <a href="../ice_dynamics1D.jld2">solution file</a> in case we want to examine its contents when this Julia session ends.</p><pre><code class="language-julia hljs">@save &quot;ice_dynamics1D.jld2&quot; soln</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: Attempting to store Main.var&quot;#14#23&quot;{Main.var&quot;#13#22&quot;}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#13#22&quot;.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#6#15&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#14#23&quot;{Main.var&quot;#6#15&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#f#28&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#14#23&quot;{Main.var&quot;#13#22&quot;}, Main.var&quot;#14#23&quot;{Main.var&quot;#6#15&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#14#23&quot;{Main.var&quot;#13#22&quot;}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#13#22&quot;.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store SciMLBase.ODEFunction{true, SciMLBase.AutoSpecialize, Main.var&quot;#f#28&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#14#23&quot;{Main.var&quot;#13#22&quot;}, Main.var&quot;#14#23&quot;{Main.var&quot;#6#15&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449</code></pre><h2 id="Visualize"><a class="docs-heading-anchor" href="#Visualize">Visualize</a><a id="Visualize-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize" title="Permalink"></a></h2><p>Let&#39;s examine the final conditions:</p><pre><code class="language-julia hljs">fig,ax,ob = lines(map(x -&gt; x[1], point(s)), soln(tₑ).dynamics_h, linewidth=5)
 ylims!(ax, extrema(h₀))
 fig</code></pre><img src="f4abf226.png" alt="Example block output"/><p>We see that our distribution converges to a more uniform ice height across our domain, which matches our physical intuition.</p><p>Let&#39;s create a GIF to examine an animation of these dynamics:</p><pre><code class="language-julia hljs"># Create a gif
 begin
@@ -245,7 +280,42 @@ soln = solve(prob, Tsit5())
 @show soln.retcode
 @info(&quot;Done&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Solving
 soln.retcode = SciMLBase.ReturnCode.Success
-[ Info: Done</code></pre><pre><code class="language-julia hljs">@save &quot;ice_dynamics2D.jld2&quot; soln</code></pre><h2 id="Visualize-2D"><a class="docs-heading-anchor" href="#Visualize-2D">Visualize 2D</a><a id="Visualize-2D-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize-2D" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Final conditions:
+[ Info: Done</code></pre><pre><code class="language-julia hljs">@save &quot;ice_dynamics2D.jld2&quot; soln</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: Attempting to store Main.var&quot;#42#45&quot;{Main.var&quot;#41#44&quot;}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#41#44&quot;.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#40#43&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#42#45&quot;{Main.var&quot;#40#43&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#f#50&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#42#45&quot;{Main.var&quot;#41#44&quot;}, Main.var&quot;#42#45&quot;{Main.var&quot;#40#43&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#42#45&quot;{Main.var&quot;#41#44&quot;}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store Main.var&quot;#41#44&quot;.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449
+┌ Warning: Attempting to store SciMLBase.ODEFunction{true, SciMLBase.AutoSpecialize, Main.var&quot;#f#50&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#42#45&quot;{Main.var&quot;#41#44&quot;}, Main.var&quot;#42#45&quot;{Main.var&quot;#40#43&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}.
+│ JLD2 only stores functions by name.
+│  This may not be useful for anonymous functions.
+└ @ JLD2 ~/.julia/packages/JLD2/9xHXH/src/data/writing_datatypes.jl:449</code></pre><h2 id="Visualize-2D"><a class="docs-heading-anchor" href="#Visualize-2D">Visualize 2D</a><a id="Visualize-2D-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize-2D" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Final conditions:
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1])
 msh = mesh!(ax, s, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
@@ -294,11 +364,11 @@ soln = solve(prob, Tsit5())
 @info(&quot;Done&quot;)
 
 # Compare the extrema of the initial and final conditions of ice height.
-extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((0.0, 1.0), (0.3216234538493239, 0.3459218773549525))</code></pre><pre><code class="language-julia hljs">fig = Figure()
+extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((0.0, 1.0), (0.32162349088209097, 0.34592184056802733))</code></pre><pre><code class="language-julia hljs">fig = Figure()
 ax = LScene(fig[1,1], scenekw=(lights=[],))
 msh = CairoMakie.mesh!(ax, s, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 Colorbar(fig[1,2], msh)
-fig</code></pre><img src="7622b5cb.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
+fig</code></pre><img src="0d8237dd.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
   frames = 200
   fig = Figure()
   ax = LScene(fig[1,1], scenekw=(lights=[],))
@@ -310,5 +380,5 @@ fig</code></pre><img src="7622b5cb.png" alt="Example block output"/><pre><code c
   record(fig, &quot;ice_dynamics2D_sphere.gif&quot;, range(0.0, tₑ/64; length=frames); framerate = 20) do t
     msh.color = soln(t).dynamics_h
   end
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D_sphere.gif&quot;</code></pre><p><img src="../ice_dynamics2D_sphere.gif" alt="IceDynamics2DSphere"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 50 seconds.
-[ Info: This page was last built at 2024-09-04T20:00:13.146.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../cism/cism/">« CISM v2.1</a><a class="docs-footer-nextpage" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Wednesday 4 September 2024 20:01">Wednesday 4 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D_sphere.gif&quot;</code></pre><p><img src="../ice_dynamics2D_sphere.gif" alt="IceDynamics2DSphere"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 51 seconds.
+[ Info: This page was last built at 2024-09-30T20:13:11.661.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../cism/cism/">« CISM v2.1</a><a class="docs-footer-nextpage" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Monday 30 September 2024 20:14">Monday 30 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
