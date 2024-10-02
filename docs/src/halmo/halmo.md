@@ -52,14 +52,14 @@ Halfar's equation and Glen's law are composed like so:
 ```@example DEC_halmo
 halfar_eq2 = @decapode begin
   h::Form0
-  Γ::Form1
+  Γ::Form0
   n::Constant
 
-  ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  ∂ₜ(h) == Γ * ∘(⋆, d, ⋆)(d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
 end
 
 glens_law = @decapode begin
-  Γ::Form1
+  Γ::Form0
   (A,ρ,g,n)::Constant
   
   Γ == (2/(n+2))*A*(ρ*g)^n

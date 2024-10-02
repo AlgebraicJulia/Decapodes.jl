@@ -94,7 +94,7 @@ The coordinates of a vertex are stored in `sd[:point]`. Let's use our interpolat
 n = 3
 ρ = 910
 g = 9.8101
-A = fill(1e-16, ne(sd))
+A = 1e-16
 
 h₀ = map(sd[:point]) do (x,y,_)
   tif_val = ice_interp(x,y)
@@ -118,15 +118,15 @@ For exposition on this Halfar Decapode, see our [Glacial Flow](../ice_dynamics/i
 ``` @example DEC
 halfar_eq2 = @decapode begin
   h::Form0
-  Γ::Form1
+  Γ::Form0
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ h^(n+2))
 end
 
 glens_law = @decapode begin
-  Γ::Form1
+  Γ::Form0
   (A,ρ,g,n)::Constant
   
   Γ == (2/(n+2))*A*(ρ*g)^n
@@ -151,10 +151,6 @@ to_graphviz(ice_dynamics)
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :mag => x -> norm.(x)
-    :♯ => begin
-      sharp_mat = ♯_mat(sd, AltPPSharp())
-      x -> sharp_mat * x
-    end
     x => error("Unmatched operator $my_symbol")
   end
   return op
