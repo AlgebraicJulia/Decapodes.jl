@@ -1,17 +1,17 @@
-# TODO: Clean comments/ turn into a doc.
-# Demonstrate how to encode boundary conditions in Decapodes using the "collage"
-# technique.
+#STOKES
 using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
+using CombinatorialSpaces.DiscreteExteriorCalculus: eval_constant_primal_form
 using ComponentArrays
+using StaticArrays
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 using Decapodes
 using ComponentArrays
 using MLStyle
-#using OrdinaryDiffEq
+using OrdinaryDiffEq
 using LinearAlgebra
 using CairoMakie
 import CairoMakie: wireframe, mesh, Figure, Axis
@@ -20,28 +20,35 @@ using Logging
 using JLD2
 using Printf
 
-using GeometryBasics: Point2, Point3
+using GeometryBasics: Point2
 Point2D = Point2{Float64}
-Point3D = Point3{Float64}
 
-BrusselatorDynamics = @decapode begin
-  ## Values living on vertices.
-  (U, V)::Form0 ## State variables.
-  U2V::Form0 ## Named intermediate variables.
-  (U̇, V̇)::Form0 ## Tangent variables.
-  (α)::Constant
-  (F)::Parameter
-  ## A named intermediate variable.
-  U2V == (U .* U) .* V
-  ## Specify how to compute the tangent variables.
-  U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
-  V̇ == (3.4 * U) - U2V + (α * Δ(V))
+StokesDynamics = @decapode begin
+  (P)::Form0 ## Pressure.
+  (v)::Form1 ## Velocity.
+  (φ)::Constant
+  (μ)::Constant
+
   ## Associate tangent variables with a state variable.
-  ∂ₜ(U) == U̇
-  ∂ₜ(V) == V̇
-end
+  ∂ₜ(v) == v̇
+  ∂ₜ(P) == Ṗ
+  
+  v̇ == μ * Δ(v)-d₀(P) + φ
+  Ṗ == ⋆₀⁻¹(dual_d₁(⋆₁(v)))
+end 
 # Visualize. You must have graphviz installed.
-to_graphviz(BrusselatorDynamics)
+to_graphviz(StokesDynamics)
+symsim = gensim(StokesDynamics)
+s = triangulated_grid(1,1,1/100,1/100,Point3D)
+sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
+subdivide_duals!(sd, Circumcenter())
+f = evalsim(StokesDynamics)(sd,nothing)
+g = (du,u) -> f(du,u,(φ=zeros(ne(s)),μ=1),0) 
+ω = eval_constant_primal_form(sd,SVector{3}([1.,1.,1.]))
+u = ComponentArray(v=ω,P=ones(nv(sd)))
+du=similar(u)
+g(du,u)
+du
 
 # This is a "discrete" Decapode, with no morphisms.
 # TODO: Create an example with values that are not source terms.
@@ -92,6 +99,7 @@ bottom_wall_idxs(s) = findall(x -> abs(x[2]) < diam(s), s[:point])
 top_wall_idxs(s) = findall(x -> abs(x[2]-1) < diam(s), s[:point])
 function generate(sd, my_symbol; hodge=GeometricHodge())
 op = @match my_symbol begin
+  #=
   :rbl => (u,u₀) -> begin
   u[left_wall_idxs(sd)] .= u₀
   u
@@ -108,6 +116,7 @@ op = @match my_symbol begin
   u[top_wall_idx(sd)] .= u₀
   u
   end
+  =#
   :.* => (x,y) -> x .* y
   _ => error("Unmatched operator $my_symbol")
 end
@@ -130,7 +139,7 @@ VV = map(sd[:point]) do (x,_)
   27 * (x *(2-x))^(3/2)
 end
 
-L = fill(1.0, length(left_wall_idxs(s)))
+L = Float64[]#fill(1.0, length(left_wall_idxs(s)))
 
 F₁ = map(sd[:point]) do (x,y)
  (x-0.3)^2 + (y-0.6)^2 ≤ (0.1)^2 ? 5.0 : 0.0
@@ -147,8 +156,8 @@ constants_and_parameters = (
   F = t -> t ≥ 1.1 ? F₂ : F₁)
 
 # Generate the simulation.
-gensim(expand_operators(Brusselator))
-sim = eval(gensim(expand_operators(Brusselator)))
+simsym = gensim(StokesDynamics)
+sim = eval(simsym)
 fₘ = sim(sd, generate) #taking the dual mesh
 
 # Create problem and run sim for t ∈ [0,tₑ).
