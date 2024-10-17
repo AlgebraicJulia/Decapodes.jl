@@ -60,6 +60,7 @@ makedocs(
     "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
     "NHS" => "nhs/nhs_lite.md",
     "Pipe Flow" => "poiseuille/poiseuille.md",
+    "Stokes" => "euler/stokes.md",
     "Misc Features" => "bc/bc_debug.md", # Requires overview
     "ASCII Operators" => "ascii.md",
     "Canonical Models" => "canon.md",

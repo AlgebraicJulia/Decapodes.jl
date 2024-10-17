@@ -39,11 +39,16 @@ end
 # Visualize. You must have graphviz installed.
 to_graphviz(StokesDynamics)
 symsim = gensim(StokesDynamics)
-s = triangulated_grid(1,1,1/100,1/100,Point3D)
+ε = 1/10
+s = triangulated_grid(1,1,ε,ε*sqrt(3)/2,Point3D) #XX: less boilerplate args
+bvs(s) = findall(x -> abs(x[1]) < ε || abs(x[1]-1) < ε || x[2] == 0 || abs(x[2]-1)< ε*sqrt(3)/2, s[:point])
+bes(s) = begin bvs_s = bvs(s) ; 
+  findall(x -> s[:∂v0][x] ∈ bvs_s ||  s[:∂v1][x] ∈ bvs_s , parts(s,:E)) end
+
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s)
 subdivide_duals!(sd, Circumcenter())
-f = evalsim(StokesDynamics)(sd,nothing)
-g = (du,u) -> f(du,u,(φ=zeros(ne(s)),μ=1),0) 
+f! = evalsim(StokesDynamics)(sd,nothing)
+g = (du,u) -> begin f!(du,u,(φ=zeros(ne(s)),μ=1),0); du.v[bes(s)] .= 0.0; du.P[bvs(s)] .= 0.0 end
 ω = eval_constant_primal_form(sd,SVector{3}([1.,1.,1.]))
 u = ComponentArray(v=ω,P=ones(nv(sd)))
 du=similar(u)
