@@ -13,7 +13,7 @@ using OrdinaryDiffEq
 using LinearAlgebra
 using CairoMakie
 import CairoMakie: wireframe, mesh, Figure, Axis
-
+#
 using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
@@ -31,10 +31,10 @@ StokesDynamics = @decapode begin
 end; infer_types!(StokesDynamics)
 # I wonder if there is a principled way of creating the boundary pode
 StokesBoundaries = @decapode begin
-    lbP::Form0
-    rbP::Form0
-    tbP::Form0
-    bbP::Form0
+    lbP::Constant
+    rbP::Constant
+    tbP::Constant
+    bbP::Constant
 end
 StokesMorphism = @relation () begin
     LeftBoundary(C, lbC)
@@ -81,11 +81,17 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
             ℓ[bottom_wall_idxs(sd)] .= ℓ₀
             ℓ
         end
+        # :Boundary => (ℓ,ℓ₀) -> begin
+            # ℓ[left_wall_idxs(sd)] .= ℓ₀
+            # ℓ[right_wall_idxs(sd)] .= ℓ₀
         :.* => (x,y) -> x .* y
         _ => error("A!!!!!!!!!")
     end
     return (args...) -> op(args...)
 end
+
+init() = ComponentArray(idxs=Vector{Int}(), vals=Vector{Float64}())
+ComponentArray(l=init(),r=init())
 
 lbP = fill(1.0, length(left_wall_idxs(sd)));
 rbP = fill(1.0, length(right_wall_idxs(sd)));
@@ -102,18 +108,43 @@ sim = include("StokesCollage.jl")
 # sim = eval(symsim)
 f = sim(sd, generate);
 
-ω = eval_constant_primal_form(sd, SVector{3}([1.,1.,1.]));
+ω = eval_constant_primal_form(sd, SVector{3}([1.,0.,0.]));
 u₀ = ComponentArray(v=ω,
-                   P=ones(nv(sd)), # 121
-                   lbP=lbP, rbP=rbP, tbP=tbP, bbP=bbP); # 17 
+                   P=ones(nv(sd))); # 17 
 du = similar(u₀);
 # constants_and_parameters=ComponentArray(μ=0.5,φ=zeros(length(ω)));
-constants_and_parameters=ComponentArray(μ=0.25,φ=[rand() for _ in 1:length(ω)])
+constants_and_parameters=ComponentArray(μ=1, lbP=lbP, rbP=rbP, tbP=tbP, bbP=bbP,φ=[1.0 for _ in 1:length(ω)])
+
+# caps=ComponentArray(μ=1,φ=fill(1.0,length(ω)),boundaries=ComponentArray(lbP=lbP,rbP=rbP,tbP=tbP,bbP=bbP))
 
 # f(du,u₀,constants_and_parameters,nothing) 
-t=10;
+t=1e-2;
 prob = ODEProblem(f,u₀,(0,t),constants_and_parameters);
 soln = solve(prob, Tsit5());
 
-mesh(s, color=soln(t).P, colormap=:jet)
+function juxtapose(pode, msh, mshd, soln, vars; time::Float64=0)
+    fig = Figure()
+    foreach(enumerate(vars)) do (k,var)
+        ax = CairoMakie.Axis(fig[1,2k-1], title=string(var))
+        f = @match only(pode[incident(pode, var, :name), :type]) begin
+            :Form1 => u -> norm.(♯(mshd, u, LLSDDSharp()))
+            _ => identity
+        end
+        _m=mesh!(ax, msh, color=f(getproperty(soln(time), var)), colormap=:jet)
+        Colorbar(fig[1,2k], _m)
+    end
+    fig
+end
+#
+juxtapose(StokesCollage, s, sd, soln, [:P, :v], time=0.0) 
 
+# fig = Figure()
+# mesh(s, color=soln(t).P, colormap=:jet)
+# fig = Figure()
+# ax = CairoMakie.Axis(fig[1,1])
+# msh = mesh!(ax, s, color=soln(t).P, colormap=:jet)
+# Colorbar(fig[1,2], msh)
+# fig
+
+# mesh(s, color=soln(t).P, colormap=:jet)
+# mesh(s, color=soln(t).v, colormap=:jet)
