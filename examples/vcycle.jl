@@ -1,3 +1,4 @@
+using ACSets
 using CombinatorialSpaces
 using ComponentArrays
 using Krylov
@@ -29,34 +30,18 @@ norm(lap*u_test-b)/norm(b)
 
 inv_lap = @decapode begin
   U::Form0
-  C::Form0
-  C == Δ₀⁻¹(U)
+  C::Form1
+  C == d(Δ₀⁻¹(U))
 end
 
 function generate(fs, my_symbol; hodge=DiagonalHodge())
   op = @match my_symbol begin
-    :Δ₀⁻¹ => vcycle_lap_op(fs)
     _ => default_dec_matrix_generate(fs, my_symbol, hodge)
   end
 end
 
-# sim = eval(gensim(inv_lap))
+sim = eval(gensim(inv_lap; multigrid=true))
 
-answer = []
-
-sim = (meshs, operators, hodge = GeometricHodge())->begin
-            begin
-              Δ₀⁻¹ = default_dec_matrix_generate(meshs, :Δ₀⁻¹, hodge)
-            end
-            f(du, u, p, t) = begin
-                    begin
-                        U = u.U
-                    end
-                    C = Δ₀⁻¹(U)
-                    push!(answer, C)
-                    return nothing
-                end
-        end
 f = sim(fs, generate);
 u₀ = ComponentArray(U=b)
 
@@ -64,7 +49,3 @@ prob = ODEProblem(f,u₀,(0,1),());
 soln = solve(prob, Tsit5(), adaptive=false, dt=1);
 
 soln.u
-
-u_deca = last(answer)
-norm(lap*u_deca-b)/norm(b)
-norm(lap*u_test-b)/norm(b)

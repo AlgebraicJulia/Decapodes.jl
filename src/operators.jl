@@ -31,8 +31,8 @@ function vcycle_lap_op(fs::AbstractVector{<:GeometricMap})
   x -> run_multigrid_vcycles(x, vcyc_cache..., 3, 10, cg)
 end
 
-dom2dual(f::GeometricMap) = dom(fs).delta_set
-codom2dual(f::GeometricMap) = codom(fs).delta_set
+dom2dual(f::GeometricMap) = dualize(dom(f).delta_set)
+codom2dual(f::GeometricMap) = dualize(codom(f).delta_set)
 
 function default_dec_matrix_generate(fs::AbstractVector{<:GeometricMap}, my_symbol::Symbol, hodge::DiscreteHodge)
   op = @match my_symbol begin
