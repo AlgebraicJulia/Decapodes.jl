@@ -681,12 +681,12 @@ Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapode
 """
     gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
 
-Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol 
+Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol
 to operator mappings to return a simulator that can be used to solve the represented equations given initial conditions.
-  
+
 **Arguments:**
-  
-`user_d`: The user passed Decapode for which simulation code will be generated. (This is not modified) 
+
+`user_d`: The user passed Decapode for which simulation code will be generated. (This is not modified)
 
 `input_vars` is the collection of variables whose values are known at the beginning of the simulation. (Defaults to all state variables and literals in the Decapode)
 
@@ -699,8 +699,10 @@ to operator mappings to return a simulator that can be used to solve the represe
 `code_target`: The intended architecture target for the generated code. (Defaults to `CPUTarget()`)(Use `CUDATarget()` for NVIDIA CUDA GPUs)
 
 `preallocate`: Enables(`true`)/disables(`false`) pre-allocated caches for intermediate computations. Some functions, such as those that determine Jacobian sparsity patterns, or perform auto-differentiation, may require this to be disabled. (Defaults to `true`)
+
+`multigrid`: ADD ME!!! (Defaults to `false`)
 """
-function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
+function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, multigrid::Bool = true)
 
   (dimension == 1 || dimension == 2) ||
     throw(UnsupportedDimensionException(dimension))
@@ -754,10 +756,15 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   func_defs = compile_env(gen_d, dec_matrices, contracted_dec_operators, code_target)
   vect_defs = compile_var(alloc_vectors)
 
+  # TODO: Better generation of multigrid stuff
+  prologue = quote end
+  multigrid && push!(prologue.args, :(mesh = dualize(dom(first(mesh)).delta_set)))
+
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
       $func_defs
       $cont_defs
+      $prologue
       $vect_defs
       f(__du__, __u__, __p__, __t__) = begin
         $vars
