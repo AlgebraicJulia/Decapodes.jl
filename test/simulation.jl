@@ -102,11 +102,11 @@ DiffusionWithLiteral = @decapode begin
 end
 
 # Verify the variable accessors.
-@test Decapodes.get_vars_code(DiffusionWithConstant, [:k], Float64, CPUTarget()).args[2] == :(k = p.k)
+@test Decapodes.get_vars_code(DiffusionWithConstant, [:k], Float64, CPUTarget()).args[2] == :(k = __p__.k)
 @test infer_state_names(DiffusionWithConstant) == [:C, :k]
 
 @test infer_state_names(DiffusionWithParameter) == [:C, :k]
-@test Decapodes.get_vars_code(DiffusionWithParameter, [:k], Float64, CPUTarget()).args[2] == :(k = p.k(t))
+@test Decapodes.get_vars_code(DiffusionWithParameter, [:k], Float64, CPUTarget()).args[2] == :(k = __p__.k(t))
 
 @test infer_state_names(DiffusionWithLiteral) == [:C]
 # TODO: Fix proper Expr equality, the Float64 does not equate here
@@ -682,6 +682,15 @@ end
     return op
   end
 
+  # tests that there is no variable shadowing for u and p
+  NoShadow = @decapode begin
+      u::Form0
+      v::Form0
+  end
+  symsim = gensim(NoShadow)
+  sim_NS = eval(symsim)
+  @test sim_NS(d_rect, generate, DiagonalHodge()) isa Any
+
   HeatTransfer = @decapode begin
     (HT, Tₛ)::Form0
     (D, cosϕᵖ, cosϕᵈ)::Constant
@@ -770,11 +779,11 @@ for prealloc in [false, true]
   bytes = @allocated f(du, u₀, p, (0,1.0))
 
   if prealloc
-    @test nallocs == 3
-    @test bytes == 80
+    @test nallocs == 2
+    @test bytes == 32
   elseif !prealloc
-    @test nallocs == 5
-    @test bytes == 400
+    @test nallocs == 6
+    @test bytes == 352
   end
 end
 

@@ -249,14 +249,14 @@ import Decapodes: get_vars_code, AmbiguousNameException
   let d = @decapode begin end
     inputs = [:C]
     add_parts!(d, :Var, 1, name=inputs, type=[:Constant])
-    @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(C = p.C)
+    @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(C = __p__.C)
   end
 
   # Test that parameters parse correctly
   let d = @decapode begin end
     inputs = [:P]
     add_parts!(d, :Var, 1, name=inputs, type=[:Parameter])
-    @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(P = p.P(t))
+    @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(P = __p__.P(t))
   end
 
   # TODO: Remove when Literals are not parsed as symbols anymore
@@ -272,7 +272,7 @@ import Decapodes: get_vars_code, AmbiguousNameException
     let d = @decapode begin end
       inputs = [:F]
       add_parts!(d, :Var, 1, name=inputs, type=[form])
-      @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(F = u.F)
+      @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(F = __u__.F)
     end
   end
 
