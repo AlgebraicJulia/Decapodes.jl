@@ -686,6 +686,8 @@ end
   NoShadow = @decapode begin
       u::Form0
       v::Form0
+      p::Constant
+      q::Constant
   end
   symsim = gensim(NoShadow)
   sim_NS = eval(symsim)
