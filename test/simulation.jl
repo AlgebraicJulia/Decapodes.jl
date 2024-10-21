@@ -106,7 +106,7 @@ end
 @test infer_state_names(DiffusionWithConstant) == [:C, :k]
 
 @test infer_state_names(DiffusionWithParameter) == [:C, :k]
-@test Decapodes.get_vars_code(DiffusionWithParameter, [:k], Float64, CPUTarget()).args[2] == :(k = __p__.k(t))
+@test Decapodes.get_vars_code(DiffusionWithParameter, [:k], Float64, CPUTarget()).args[2] == :(k = __p__.k(__t__))
 
 @test infer_state_names(DiffusionWithLiteral) == [:C]
 # TODO: Fix proper Expr equality, the Float64 does not equate here
@@ -682,12 +682,14 @@ end
     return op
   end
 
-  # tests that there is no variable shadowing for u and p
+  # tests that there is no variable shadowing for du, u, p, and t
   NoShadow = @decapode begin
       u::Form0
+      du::Form1
       v::Form0
       p::Constant
       q::Constant
+      t::Constant
   end
   symsim = gensim(NoShadow)
   sim_NS = eval(symsim)

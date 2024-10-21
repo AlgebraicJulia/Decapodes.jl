@@ -315,7 +315,7 @@ function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{statee
     line = @match s_type begin
       :Literal => :($s = $(parse(stateeltype, String(s))))
       :Constant => :($s = __p__.$s)
-      :Parameter => :($s = (__p__.$s)(t))
+      :Parameter => :($s = (__p__.$s)(__t__))
       _ => hook_GVC_get_form(s, s_type, code_target) # ! WARNING: This assumes a form
       # _ => throw(InvalidDecaTypeException(s, s_type)) # TODO: Use this for invalid types
     end
@@ -759,7 +759,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
       $func_defs
       $cont_defs
       $vect_defs
-      f(__du__, __u__, __p__, t) = begin
+      f(__du__, __u__, __p__, __t__) = begin
         $vars
         $data
         $(equations...)
