@@ -314,8 +314,8 @@ function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{statee
     # TODO: we should fix that upstream so that we don't need this.
     line = @match s_type begin
       :Literal => :($s = $(parse(stateeltype, String(s))))
-      :Constant => :($s = p.$s)
-      :Parameter => :($s = (p.$s)(t))
+      :Constant => :($s = __p__.$s)
+      :Parameter => :($s = (__p__.$s)(__t__))
       _ => hook_GVC_get_form(s, s_type, code_target) # ! WARNING: This assumes a form
       # _ => throw(InvalidDecaTypeException(s, s_type)) # TODO: Use this for invalid types
     end
@@ -326,7 +326,7 @@ end
 
 # TODO: Expand on this to be able to handle vector and ComponentArrays inputs
 function hook_GVC_get_form(var_name::Symbol, var_type::Symbol, ::Union{CPUBackend, CUDABackend})
-  return :($var_name = u.$var_name)
+  return :($var_name = __u__.$var_name)
 end
 
 """
@@ -354,7 +354,7 @@ is the name of the variable whose data will be stored and a code target.
 """
 function hook_STC_settvar(state_name::Symbol, tgt_name::Symbol, ::Union{CPUBackend, CUDABackend})
   ssymb = QuoteNode(state_name)
-  return :(setproperty!(du, $ssymb, $tgt_name))
+  return :(setproperty!(__du__, $ssymb, $tgt_name))
 end
 
 const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
@@ -546,7 +546,7 @@ This hook is passed in `cache_exprs` which is the collection of exprs to be past
 `AllocVecCall` that stores information about the allocated vector and a code target.
 """
 function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
-  line = :($(alloc_vec.name) = (Decapodes.get_tmp($(Symbol(:__,alloc_vec.name)), u)))
+  line = :($(alloc_vec.name) = (Decapodes.get_tmp($(Symbol(:__,alloc_vec.name)), __u__)))
   push!(cache_exprs, line)
 end
 
@@ -759,7 +759,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
       $func_defs
       $cont_defs
       $vect_defs
-      f(du, u, p, t) = begin
+      f(__du__, __u__, __p__, __t__) = begin
         $vars
         $data
         $(equations...)
