@@ -764,13 +764,12 @@ for prealloc in [false, true]
     D::Constant
     ∂ₜ(C) == D*Δ(C)
   end
-  sim = eval(gensim(Heat,  preallocate=prealloc))
+  sim = eval(gensim(Heat, preallocate=prealloc))
   s = loadmesh(Icosphere(1))
   sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
   subdivide_duals!(sd, Circumcenter())
   f = sim(sd,nothing)
-  u₀ = ComponentArray(
-    C = map(x -> x[3], point(sd)))
+  u₀ = ComponentArray(C = map(x -> x[3], point(sd)))
   p = (D=1e-1,)
   du = copy(u₀)
   # The first call to the function makes many allocations.
@@ -780,12 +779,10 @@ for prealloc in [false, true]
   nallocs = @allocations f(du, u₀, p, (0,1.0))
   bytes = @allocated f(du, u₀, p, (0,1.0))
 
-  if prealloc
-    @test nallocs == 2
-    @test bytes == 32
-  elseif !prealloc
-    @test nallocs == 6
-    @test bytes == 352
+  if VERSION < v"1.11"
+    @test (nallocs, bytes) == (prealloc ? (3, 80) : (5, 400))
+  else
+    @test (nallocs, bytes) == (prealloc ? (2, 32) : (6, 352))
   end
 end
 
