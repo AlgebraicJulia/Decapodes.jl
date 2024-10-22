@@ -5,7 +5,9 @@ using Krylov
 using LinearAlgebra
 using SparseArrays
 
-function default_dec_cu_matrix_generate() end;
+function default_dec_cu_matrix_generate()
+  error("Please load CUDA.jl to use this function")
+end;
 
 function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge)
   op = @match my_symbol begin
