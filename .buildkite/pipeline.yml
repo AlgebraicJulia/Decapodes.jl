@@ -1,21 +1,7 @@
-env:
-  JULIA_VERSION: "1.10.5"
-  JULIA_DEPOT_PATH: "$DEPOT"
-
 steps:
 
   - label: ":arrow_down: Load AlgebraicJulia pipeline"
     command: |
       curl -s https://raw.githubusercontent.com/AlgebraicJulia/.github/main/buildkite/pipeline.yml | buildkite-agent pipeline upload
-
-  - wait
-
-  - label: ":racehorse: Build docs and run tests on A100 GPU partition"
-    command:
-      - "srun --cpus-per-task=16 --mem=16G  --gres=gpu:a100:1 --time=1:00:00 -p gpu --output=.buildkite/log_gpu_a100_%j.log --unbuffered .buildkite/jobscript.sh"
-
-  - label: ":racehorse: Build docs and run tests on Quadro GPU partition"
-    command:
-      - "srun --cpus-per-task=16 --mem=16G  --gres=gpu:geforce:1 --time=1:00:00 -p gpu --output=.buildkite/log_gpu_quadro_%j.log --unbuffered .buildkite/jobscript.sh"
 
   - wait
