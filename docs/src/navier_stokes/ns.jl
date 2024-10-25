@@ -1,9 +1,9 @@
+# Author: Luke Morris
 # This is a discretization of the incompressible Navier Stokes equations using the Discrete Exterior Calculus.
 #
-# The formulations are based on those given by Mohamed, Hirani, Samtaney, (in turn from Marsden, Ratiu, Abraham.)
+# These formulations are based on those given by Mohamed, Hirani, Samtaney, (in turn from Marsden, Ratiu, Abraham.)
 #
 # However, different choices in discretization are chosen for purposes of brevity, to demonstrate novel discretizations of certain operators, and to demonstrate the automated Decapodes workflow.
-
 
 ################
 # Dependencies #

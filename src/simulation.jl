@@ -66,15 +66,17 @@ Base.Expr(c::BinaryCall) = begin
   return Expr(c.equality, c.output, Expr(:call, c.operator, c.input1, c.input2))
 end
 
-struct VarargsCall <: AbstractCall
-  operator::Union{Symbol, Expr}
+struct SummationCall <: AbstractCall
   equality::Symbol
   inputs::Vector{Symbol}
   output::Symbol
 end
 
-Base.Expr(c::VarargsCall) = begin
-  return Expr(c.equality, c.output, Expr(:call, c.operator, c.inputs...))
+# The output of @code_llvm (.+) of more than 32 variables is inefficient.
+Base.Expr(c::SummationCall) = begin
+  length(c.inputs) ≤ 32 ?
+    Expr(c.equality, c.output, Expr(:call, Expr(:., :+), c.inputs...)) : # (.+)(a,b,c)
+    Expr(c.equality, c.output, Expr(:call, :sum, Expr(:vect, c.inputs...))) # sum([a,b,c])
 end
 
 struct AllocVecCall <: AbstractCall
@@ -312,8 +314,8 @@ function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{statee
     # TODO: we should fix that upstream so that we don't need this.
     line = @match s_type begin
       :Literal => :($s = $(parse(stateeltype, String(s))))
-      :Constant => :($s = p.$s)
-      :Parameter => :($s = (p.$s)(t))
+      :Constant => :($s = __p__.$s)
+      :Parameter => :($s = (__p__.$s)(__t__))
       _ => hook_GVC_get_form(s, s_type, code_target) # ! WARNING: This assumes a form
       # _ => throw(InvalidDecaTypeException(s, s_type)) # TODO: Use this for invalid types
     end
@@ -324,7 +326,7 @@ end
 
 # TODO: Expand on this to be able to handle vector and ComponentArrays inputs
 function hook_GVC_get_form(var_name::Symbol, var_type::Symbol, ::Union{CPUBackend, CUDABackend})
-  return :($var_name = u.$var_name)
+  return :($var_name = __u__.$var_name)
 end
 
 """
@@ -352,7 +354,7 @@ is the name of the variable whose data will be stored and a code target.
 """
 function hook_STC_settvar(state_name::Symbol, tgt_name::Symbol, ::Union{CPUBackend, CUDABackend})
   ssymb = QuoteNode(state_name)
-  return :(getproperty(du, $ssymb) .= $tgt_name)
+  return :(setproperty!(__du__, $ssymb, $tgt_name))
 end
 
 const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
@@ -508,7 +510,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
 
         visited_Σ[op] = true
         visited_Var[r] = true
-        c = VarargsCall(operator, equality, argnames, rname)
+        c = SummationCall(equality, argnames, rname)
         push!(op_order, c)
       end
     end
@@ -544,7 +546,7 @@ This hook is passed in `cache_exprs` which is the collection of exprs to be past
 `AllocVecCall` that stores information about the allocated vector and a code target.
 """
 function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
-  line = :($(alloc_vec.name) = (Decapodes.get_tmp($(Symbol(:__,alloc_vec.name)), u)))
+  line = :($(alloc_vec.name) = (Decapodes.get_tmp($(Symbol(:__,alloc_vec.name)), __u__)))
   push!(cache_exprs, line)
 end
 
@@ -696,7 +698,7 @@ to operator mappings to return a simulator that can be used to solve the represe
 
 `code_target`: The intended architecture target for the generated code. (Defaults to `CPUTarget()`)(Use `CUDATarget()` for NVIDIA CUDA GPUs)
 
-`preallocate`: Enables(`true`)/disables(`false`) pre-allocation optimizations. Some functions, such as those that determine Jacobian sparsity patterns, may require this to be disabled. (Defaults to `true`)
+`preallocate`: Enables(`true`)/disables(`false`) pre-allocated caches for intermediate computations. Some functions, such as those that determine Jacobian sparsity patterns, or perform auto-differentiation, may require this to be disabled. (Defaults to `true`)
 """
 function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
 
@@ -740,7 +742,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
 
   # This contracts matrices together into a single matrix
   contracted_dec_operators = Set{Symbol}()
-  contract_operators!(gen_d, allowable_ops = optimizable_dec_operators)
+  contract_operators!(gen_d, white_list = optimizable_dec_operators)
   cont_defs = link_contract_operators(gen_d, contracted_dec_operators, stateeltype, code_target)
 
   union!(optimizable_dec_operators, contracted_dec_operators, extra_dec_operators)
@@ -757,7 +759,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
       $func_defs
       $cont_defs
       $vect_defs
-      f(du, u, p, t) = begin
+      f(__du__, __u__, __p__, __t__) = begin
         $vars
         $data
         $(equations...)

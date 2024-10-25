@@ -51,32 +51,38 @@ import Decapodes: BinaryCall
   end
 end
 
-import Decapodes: VarargsCall
+import Decapodes: SummationCall
 
-@testset "Test VarargsCall" begin
+@testset "Test SummationCall" begin
   # Test equality, 2 inputs
-  @test Expr(VarargsCall(:F, EQUALS, [:x, :y], :z)) == :(z = F(x, y))
+  @test Expr(SummationCall(EQUALS, [:x, :y], :z)) == :(z = (.+)(x, y))
 
   # Test equality, 3 inputs
-  @test Expr(VarargsCall(:F, EQUALS, [:x, :y, :w], :z)) == :(z = F(x, y, w))
+  @test Expr(SummationCall(EQUALS, [:x, :y, :w], :z)) == :(z = (.+)(x, y, w))
 
   # Test equality, 1 input
-  @test Expr(VarargsCall(:F, EQUALS, [:x], :z)) == :(z = F(x))
+  @test Expr(SummationCall(EQUALS, [:x], :z)) == :(z = (.+)(x))
 
   # Test equality, 0 inputs
-  @test Expr(VarargsCall(:F, EQUALS, [], :z)) == :(z = F())
+  @test Expr(SummationCall(EQUALS, [], :z)) == :(z = (.+)())
+  
+  # Test broadcast equality, 33 inputs
+  @test Expr(SummationCall(EQUALS, fill(:x, 33), :z)) == Meta.parse("z = sum([" * foldl(*, fill("x, ", 32)) * "x])")
 
   # Test broadcast equality, 2 inputs
-  @test Expr(VarargsCall(:F, DOT_EQUALS, [:x, :y], :z)) == :(z .= F(x, y))
+  @test Expr(SummationCall(DOT_EQUALS, [:x, :y], :z)) == :(z .= (.+)(x, y))
 
   # Test broadcast equality, 3 inputs
-  @test Expr(VarargsCall(:F, DOT_EQUALS, [:x, :y, :w], :z)) == :(z .= F(x, y, w))
+  @test Expr(SummationCall(DOT_EQUALS, [:x, :y, :w], :z)) == :(z .= (.+)(x, y, w))
 
   # Test broadcast equality, 1 input
-  @test Expr(VarargsCall(:F, DOT_EQUALS, [:x], :z)) == :(z .= F(x))
+  @test Expr(SummationCall(DOT_EQUALS, [:x], :z)) == :(z .= (.+)(x))
 
   # Test broadcast equality, 0 inputs
-  @test Expr(VarargsCall(:F, DOT_EQUALS, [], :z)) == :(z .= F())
+  @test Expr(SummationCall(DOT_EQUALS, [], :z)) == :(z .= (.+)())
+  
+  # Test broadcast equality, 33 inputs
+  @test Expr(SummationCall(DOT_EQUALS, fill(:x, 33), :z)) == Meta.parse("z .= sum([" * foldl(*, fill("x, ", 32)) * "x])")
 end
 
 #######################
@@ -243,14 +249,14 @@ import Decapodes: get_vars_code, AmbiguousNameException
   let d = @decapode begin end
     inputs = [:C]
     add_parts!(d, :Var, 1, name=inputs, type=[:Constant])
-    @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(C = p.C)
+    @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(C = __p__.C)
   end
 
   # Test that parameters parse correctly
   let d = @decapode begin end
     inputs = [:P]
     add_parts!(d, :Var, 1, name=inputs, type=[:Parameter])
-    @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(P = p.P(t))
+    @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(P = __p__.P(__t__))
   end
 
   # TODO: Remove when Literals are not parsed as symbols anymore
@@ -266,7 +272,7 @@ import Decapodes: get_vars_code, AmbiguousNameException
     let d = @decapode begin end
       inputs = [:F]
       add_parts!(d, :Var, 1, name=inputs, type=[form])
-      @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(F = u.F)
+      @test get_vars_code(d, inputs, Float64, CPUTarget()).args[begin+1] == :(F = __u__.F)
     end
   end
 

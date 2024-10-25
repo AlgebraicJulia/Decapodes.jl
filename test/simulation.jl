@@ -102,11 +102,11 @@ DiffusionWithLiteral = @decapode begin
 end
 
 # Verify the variable accessors.
-@test Decapodes.get_vars_code(DiffusionWithConstant, [:k], Float64, CPUTarget()).args[2] == :(k = p.k)
+@test Decapodes.get_vars_code(DiffusionWithConstant, [:k], Float64, CPUTarget()).args[2] == :(k = __p__.k)
 @test infer_state_names(DiffusionWithConstant) == [:C, :k]
 
 @test infer_state_names(DiffusionWithParameter) == [:C, :k]
-@test Decapodes.get_vars_code(DiffusionWithParameter, [:k], Float64, CPUTarget()).args[2] == :(k = p.k(t))
+@test Decapodes.get_vars_code(DiffusionWithParameter, [:k], Float64, CPUTarget()).args[2] == :(k = __p__.k(__t__))
 
 @test infer_state_names(DiffusionWithLiteral) == [:C]
 # TODO: Fix proper Expr equality, the Float64 does not equate here
@@ -682,6 +682,19 @@ end
     return op
   end
 
+  # tests that there is no variable shadowing for du, u, p, and t
+  NoShadow = @decapode begin
+      u::Form0
+      du::Form1
+      v::Form0
+      p::Constant
+      q::Constant
+      t::Constant
+  end
+  symsim = gensim(NoShadow)
+  sim_NS = eval(symsim)
+  @test sim_NS(d_rect, generate, DiagonalHodge()) isa Any
+
   HeatTransfer = @decapode begin
     (HT, Tₛ)::Form0
     (D, cosϕᵖ, cosϕᵈ)::Constant
@@ -753,13 +766,12 @@ for prealloc in [false, true]
     D::Constant
     ∂ₜ(C) == D*Δ(C)
   end
-  sim = eval(gensim(Heat,  preallocate=prealloc))
+  sim = eval(gensim(Heat, preallocate=prealloc))
   s = loadmesh(Icosphere(1))
   sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
   subdivide_duals!(sd, Circumcenter())
   f = sim(sd,nothing)
-  u₀ = ComponentArray(
-    C = map(x -> x[3], point(sd)))
+  u₀ = ComponentArray(C = map(x -> x[3], point(sd)))
   p = (D=1e-1,)
   du = copy(u₀)
   # The first call to the function makes many allocations.
@@ -769,13 +781,52 @@ for prealloc in [false, true]
   nallocs = @allocations f(du, u₀, p, (0,1.0))
   bytes = @allocated f(du, u₀, p, (0,1.0))
 
-  if prealloc
-    @test nallocs == 3
-    @test bytes == 80
-  elseif !prealloc
-    @test nallocs == 5
-    @test bytes == 400
+  if VERSION < v"1.11"
+    @test (nallocs, bytes) == (prealloc ? (3, 80) : (5, 400))
+  else
+    @test (nallocs, bytes) == (prealloc ? (2, 32) : (6, 352))
   end
 end
 
 end
+
+@testset "Large Summations" begin
+# Elementwise summations of more than 32 variables are not pre-compiled by our
+# host language.
+
+# Test that (.+)(...) is generated for small sums.
+SmallSum = @decapode begin
+  (A00, A01, A02, A03, A04, A05, A06, A07, A08, A09,
+   A10, A11, A12, A13, A14, A15, A16, A17, A18, A19,
+   A20, A21, A22, A23, A24, A25, A26, A27, A28, A29,
+   A30, A31, A32)::Form0
+
+  ∂ₜ(A00) ==
+          A01 + A02 + A03 + A04 + A05 + A06 + A07 + A08 + A09 +
+    A10 + A11 + A12 + A13 + A14 + A15 + A16 + A17 + A18 + A19 +
+    A20 + A21 + A22 + A23 + A24 + A25 + A26 + A27 + A28 + A29 +
+    A30 + A31 + A32
+end
+needle = "A00̇ .= (.+)(A01, A02, A03, A04, A05, A06, A07, A08, A09, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32)"
+haystack = string(gensim(SmallSum))
+@test occursin(needle, haystack)
+
+# Test that sum([...]) is generated for large sums.
+LargeSum = @decapode begin
+  (A00, A01, A02, A03, A04, A05, A06, A07, A08, A09,
+   A10, A11, A12, A13, A14, A15, A16, A17, A18, A19,
+   A20, A21, A22, A23, A24, A25, A26, A27, A28, A29,
+   A30, A31, A32, A33)::Form0
+
+  ∂ₜ(A00) ==
+          A01 + A02 + A03 + A04 + A05 + A06 + A07 + A08 + A09 +
+    A10 + A11 + A12 + A13 + A14 + A15 + A16 + A17 + A18 + A19 +
+    A20 + A21 + A22 + A23 + A24 + A25 + A26 + A27 + A28 + A29 +
+    A30 + A31 + A32 + A33
+end
+needle = "A00̇ .= sum([A01, A02, A03, A04, A05, A06, A07, A08, A09, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33])"
+haystack = string(gensim(LargeSum))
+@test occursin(needle, haystack)
+
+end
+
