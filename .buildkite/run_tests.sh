@@ -19,4 +19,4 @@ VERSION=$1
 module load julia/$VERSION
 
 echo "Running tests..."
-julia --project -e "using Pkg; Pkg.status(); Pkg.test()"
+julia --project -e "using Pkg; Pkg.status(); Pkg.instantiate(); Pkg.test()"
