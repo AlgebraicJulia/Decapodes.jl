@@ -31,6 +31,10 @@ end
 #   end
 # end
 
+include("benchmark_helper.jl")
+insert_benchmarks!("src/benchmarks.md",
+  Dict("table" => "../benchmarks/data/exp_pro/heat/48787702/default_output.md"))
+
 @info "Building Documenter.jl docs"
 makedocs(
   modules   = [Decapodes],
@@ -47,23 +51,24 @@ makedocs(
                       r"Decapodes\.jl/dev"], # 404, probably due to bad self-rerference
   pages     = Any[
     "Decapodes.jl" => "index.md",
-    "Overview" => "overview/overview.md",
-    "Equations" => "equations/equations.md",
-    "Vortices" => "navier_stokes/ns.md",
-    "Harmonics" => "harmonics/harmonics.md",
-    "Cahn-Hilliard" => "ch/cahn-hilliard.md",
-    "Klausmeier" => "klausmeier/klausmeier.md",
-    "CISM v2.1" => "cism/cism.md",
-    "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
-    "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
-    "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
-    "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
-    "NHS" => "nhs/nhs_lite.md",
-    "Pipe Flow" => "poiseuille/poiseuille.md",
-    "Misc Features" => "bc/bc_debug.md", # Requires overview
-    "ASCII Operators" => "ascii.md",
-    "Canonical Models" => "canon.md",
-    "Library Reference" => "api.md"
+    #"Overview" => "overview/overview.md",
+    #"Equations" => "equations/equations.md",
+    #"Vortices" => "navier_stokes/ns.md",
+    #"Harmonics" => "harmonics/harmonics.md",
+    #"Cahn-Hilliard" => "ch/cahn-hilliard.md",
+    #"Klausmeier" => "klausmeier/klausmeier.md",
+    #"CISM v2.1" => "cism/cism.md",
+    #"Glacial Flow" => "ice_dynamics/ice_dynamics.md",
+    #"Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
+    #"Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
+    #"Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
+    #"NHS" => "nhs/nhs_lite.md",
+    #"Pipe Flow" => "poiseuille/poiseuille.md",
+    #"Misc Features" => "bc/bc_debug.md", # Requires overview
+    "Benchmarks" => "benchmarks.md"
+    #"ASCII Operators" => "ascii.md",
+    #"Canonical Models" => "canon.md",
+    #"Library Reference" => "api.md"
   ]
 )
 

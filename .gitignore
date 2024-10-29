@@ -1,9 +1,14 @@
 .DS_Store
 .ipynb_checkpoints
-/Manifest.toml
+**/Manifest.toml
 /dev/
 *.mem
 .vscode
 .buildkite/toolbox/config.json
 .buildkite/toolbox/username
 docs/Manifest.toml
+benchmarks/data/sims/
+benchmarks/src/physics/
+benchmarks/scripts/slurm_logs/
+benchmarks/data/exp_pro/heat/
+**/*.swp
