@@ -1,4 +1,4 @@
-# Import Dependencies 
+# Import Dependencies
 
 # AlgebraicJulia Dependencies
 using Catlab
@@ -19,7 +19,7 @@ using GeometryBasics: Point2
 using ComponentArray
 Point2D = Point2{Float64}
 
-# Import prior models 
+# Import prior models
 ## If the Budyko-Sellers and Halfar models are not already created, they can be
 ## with these scripts:
 ## include("budyko_sellers.jl")
@@ -62,10 +62,10 @@ budyko_sellers_halfar = apex(budyko_sellers_halfar_cospan)
 to_graphviz(budyko_sellers_halfar)
 
 budyko_sellers_halfar = expand_operators(budyko_sellers_halfar)
-infer_types!(budyko_sellers_halfar, op1_inf_rules_1D, op2_inf_rules_1D)
+infer_types!(budyko_sellers_halfar, dim=1)
 to_graphviz(budyko_sellers_halfar)
 
-resolve_overloads!(budyko_sellers_halfar, op1_res_rules_1D, op2_res_rules_1D)
+resolve_overloads!(budyko_sellers_halfar, dim=1)
 to_graphviz(budyko_sellers_halfar)
 
 ## Define the mesh
@@ -170,12 +170,12 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return (args...) -> op(args...)
 end
 
-## Generate simulation 
+## Generate simulation
 
 sim = eval(gensim(budyko_sellers_halfar, dimension=1))
 fₘ = sim(s, generate)
 
-## Run simulation 
+## Run simulation
 
 tₑ = 1e6
 #tₑ = 5e13
@@ -199,7 +199,7 @@ extrema(soln(tₑ).halfar_h)
 
 @save "budyko_sellers_halfar.jld2" soln
 
-# Visualize 
+# Visualize
 
 lines(map(x -> x[1], point(s′)), soln(0.0).Tₛ)
 lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)

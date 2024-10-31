@@ -185,8 +185,8 @@ We can perform type inference to determine what kind of differential form each o
 
 ``` @example DEC
 budyko_sellers_halfar = expand_operators(budyko_sellers_halfar)
-infer_types!(budyko_sellers_halfar, op1_inf_rules_1D, op2_inf_rules_1D)
-resolve_overloads!(budyko_sellers_halfar, op1_res_rules_1D, op2_res_rules_1D)
+infer_types!(budyko_sellers_halfar, dim=1)
+resolve_overloads!(budyko_sellers_halfar, dim=1)
 to_graphviz(budyko_sellers_halfar)
 ```
 
