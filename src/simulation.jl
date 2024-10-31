@@ -535,8 +535,8 @@ end
 A combined `infer_types` and `resolve_overloads` pipeline with default DEC rules.
 """
 function infer_overload_compiler!(d::SummationDecapode, dimension::Int)
-    infer_types!(d, dim = dimension)
-    resolve_overloads!(d, dim = dimension)
+  infer_types!(d, dim = dimension)
+  resolve_overloads!(d, dim = dimension)
 end
 
 """    link_contracted_operators!(d::SummationDecapode, code_target::AbstractGenerationTarget)
