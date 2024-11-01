@@ -229,7 +229,7 @@ Base.showerror(io::IO, e::InvalidCodeTargetException) = print(io, "Provided code
 This creates the symbol to function linking for the simulation output. Those run through the `default_dec` backend
 expect both an in-place and an out-of-place variant in that order. User defined operations only support out-of-place.
 """
-function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, nonoptimizable_operators::Set{Symbol}, code_target::AbstractGenerationTarget)
+function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::AbstractGenerationTarget)
   defined_ops = deepcopy(con_dec_operators)
 
   defs = quote end
@@ -255,7 +255,7 @@ function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec
   end
 
   # These are nonoptimizable default DEC functions.
-  for op in nonoptimizable_operators
+  for op in non_optimizable(code_target)
     op in defined_ops && continue
 
     quote_op = QuoteNode(op)
@@ -334,8 +334,8 @@ function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{statee
     # TODO: we should fix that upstream so that we don't need this.
     line = @match s_type begin
       :Literal => :($s = $(parse(stateeltype, String(s))))
-      :Constant => :($s = __p__.$s)
-      :Parameter => :($s = (__p__.$s)(__t__))
+      :Constant => :($s = p.$s)
+      :Parameter => :($s = (p.$s)(t))
       _ => hook_GVC_get_form(s, s_type, code_target) # ! WARNING: This assumes a form
       # _ => throw(InvalidDecaTypeException(s, s_type)) # TODO: Use this for invalid types
     end
@@ -346,7 +346,7 @@ end
 
 # TODO: Expand on this to be able to handle vector and ComponentArrays inputs
 function hook_GVC_get_form(var_name::Symbol, var_type::Symbol, ::Union{CPUBackend, CUDABackend})
-  return :($var_name = __u__.$var_name)
+  return :($var_name = u.$var_name)
 end
 
 """
@@ -374,7 +374,7 @@ is the name of the variable whose data will be stored and a code target.
 """
 function hook_STC_settvar(state_name::Symbol, tgt_name::Symbol, ::Union{CPUBackend, CUDABackend})
   ssymb = QuoteNode(state_name)
-  return :(setproperty!(__du__, $ssymb, $tgt_name))
+  return :(setproperty!(du, $ssymb, $tgt_name))
 end
 
 const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
@@ -566,7 +566,7 @@ This hook is passed in `cache_exprs` which is the collection of exprs to be past
 `AllocVecCall` that stores information about the allocated vector and a code target.
 """
 function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
-  line = :($(alloc_vec.name) = (Decapodes.get_tmp($(Symbol(:__,alloc_vec.name)), __u__)))
+  line = :($(alloc_vec.name) = (Decapodes.get_tmp($(Symbol(:__,alloc_vec.name)), u)))
   push!(cache_exprs, line)
 end
 
@@ -698,15 +698,28 @@ end
 
 Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32 or Float64")
 
+const MATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
+:d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
+:avg₀₁])
+
+const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
+
+const NON_OPTIMIZABLE_CPU_OPERATORS = Set([:♯ᵖᵖ, :♯ᵈᵈ, :♭ᵈᵖ])
+const NON_OPTIMIZABLE_CUDA_OPERATORS = Set{Symbol}()
+
+non_optimizable(::AbstractGenerationTarget) = NON_OPTIMIZABLE_CPU_OPERATORS
+non_optimizable(::CPUBackend) = NON_OPTIMIZABLE_CPU_OPERATORS
+non_optimizable(::CUDABackend) = NON_OPTIMIZABLE_CUDA_OPERATORS
+
 """
     gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
 
-Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol 
+Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol
 to operator mappings to return a simulator that can be used to solve the represented equations given initial conditions.
-  
+
 **Arguments:**
-  
-`user_d`: The user passed Decapode for which simulation code will be generated. (This is not modified) 
+
+`user_d`: The user passed Decapode for which simulation code will be generated. (This is not modified)
 
 `input_vars` is the collection of variables whose values are known at the beginning of the simulation. (Defaults to all state variables and literals in the Decapode)
 
@@ -752,34 +765,20 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   open_operators!(gen_d, dimension = dimension)
   infer_overload_compiler!(gen_d, dimension)
 
-  # This will generate all of the fundemental DEC operators present
-  matrix_optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
-                                  :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
-                                  :avg₀₁])
-  nonmatrix_optimizable_dec_operators = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
-
-  nonoptimizable_cpu_operators = Set([:♯ᵖᵖ, :♯ᵈᵈ, :♭ᵈᵖ])
-  nonoptimizable_cuda_operators = Set{Symbol}()
-  nonoptimizable_operators = @match code_target begin
-    ::CPUBackend => nonoptimizable_cpu_operators
-    ::CUDABackend => nonoptimizable_cuda_operators
-    _ => throw(InvalidCodeTargetException(code_target))
-  end
-
-  init_dec_matrices!(gen_d, dec_matrices, union(matrix_optimizable_dec_operators, nonmatrix_optimizable_dec_operators))
+  init_dec_matrices!(gen_d, dec_matrices, union(MATRIX_OPTIMIZABLE_DEC_OPERATORS, NONMATRIX_OPTIMIZABLE_DEC_OPERATORS))
 
   # This contracts matrices together into a single matrix
   contracted_dec_operators = Set{Symbol}()
-  contract_operators!(gen_d, white_list = matrix_optimizable_dec_operators)
+  contract_operators!(gen_d, white_list = MATRIX_OPTIMIZABLE_DEC_OPERATORS)
   cont_defs = link_contract_operators(gen_d, contracted_dec_operators, stateeltype, code_target)
 
-  optimizable_dec_operators = union(matrix_optimizable_dec_operators, contracted_dec_operators, nonmatrix_optimizable_dec_operators)
+  optimizable_dec_operators = union(MATRIX_OPTIMIZABLE_DEC_OPERATORS, contracted_dec_operators, NONMATRIX_OPTIMIZABLE_DEC_OPERATORS)
 
   # Compilation of the simulation
   equations = compile(gen_d, input_vars, alloc_vectors, optimizable_dec_operators, dimension, stateeltype, code_target, preallocate)
   data = post_process_vector_allocs(alloc_vectors, code_target)
 
-  func_defs = compile_env(gen_d, dec_matrices, contracted_dec_operators, nonoptimizable_operators, code_target)
+  func_defs = compile_env(gen_d, dec_matrices, contracted_dec_operators, code_target)
   vect_defs = compile_var(alloc_vectors)
 
   quote
@@ -787,7 +786,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
       $func_defs
       $cont_defs
       $vect_defs
-      f(__du__, __u__, __p__, __t__) = begin
+      f(du, u, p, t) = begin
         $vars
         $data
         $(equations...)
