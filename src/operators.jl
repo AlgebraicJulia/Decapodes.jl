@@ -11,7 +11,7 @@ function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::Discret
 
   op = @match my_symbol begin
 
-    :plus => (+)
+    # :plus => (+)
     :(-) || :neg => x -> -1 .* x
     :ln => (x -> log.(x))
     # Musical Isomorphisms
