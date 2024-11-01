@@ -14,6 +14,7 @@ function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::Discret
     # :plus => (+)
     :(-) || :neg => x -> -1 .* x
     :ln => (x -> log.(x))
+
     # Musical Isomorphisms
     :♯ᵖᵖ => dec_♯_p(sd)
     :♯ᵈᵈ => dec_♯_d(sd)
@@ -80,12 +81,6 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     # Dual Laplacians
     :Δᵈ₀ => Δᵈ(Val{0},sd)
     :Δᵈ₁ => Δᵈ(Val{1},sd)
-
-    # Musical Isomorphisms
-    :♯ᵖᵖ => dec_♯_p(sd)
-    :♯ᵈᵈ => dec_♯_d(sd)
-
-    :♭ᵈᵖ => dec_♭(sd)
 
     # Averaging Operator
     :avg₀₁ => dec_avg₀₁(sd)
