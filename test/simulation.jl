@@ -641,6 +641,8 @@ end
 
 end
 
+filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
+
 @testset "1-D Mat Generation" begin
   Point2D = Point2{Float64}
   function generate_dual_mesh(s::HasDeltaSet1D)
@@ -655,19 +657,20 @@ end
   add_edges!(primal_line, [1,2], [2,3])
   line = generate_dual_mesh(primal_line)
 
-    # Testing Diagonal inverse hodge 1
-    DiagonalInvHodge1 = @decapode begin
-      A::DualForm1
+  # Testing Diagonal inverse hodge 1
+  DiagonalInvHodge1 = @decapode begin
+    A::DualForm1
 
-      B == ∂ₜ(A)
-      B == ⋆(A)
-    end
-    g = gensim(DiagonalInvHodge1)
-    @test gensim(DiagonalInvHodge1).args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
-    sim = eval(g)
+    B == ∂ₜ(A)
+    B == ⋆(A)
+  end
+  g = gensim(DiagonalInvHodge1)
+  @test g.args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
+  @test length(filter_lnn(g.args[2].args[2].args[3].args)) == 1
+  sim = eval(g)
 
-    # Test that no error is thrown here
-    f = sim(line, default_dec_generate, DiagonalHodge())
+  # TODO: Error is being thrown here
+  @test f = sim(line, default_dec_generate, DiagonalHodge()) isa Any
 end
 
 @testset "GenSim Compilation" begin
@@ -829,4 +832,3 @@ haystack = string(gensim(LargeSum))
 @test occursin(needle, haystack)
 
 end
-
