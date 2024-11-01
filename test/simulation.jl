@@ -641,6 +641,8 @@ end
 
 end
 
+filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
+
 @testset "1-D Mat Generation" begin
   Point2D = Point2{Float64}
   function generate_dual_mesh(s::HasDeltaSet1D)
@@ -664,10 +666,11 @@ end
   end
   g = gensim(DiagonalInvHodge1)
   @test g.args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
+  @test length(filter_lnn(g.args[2].args[2].args[3].args)) == 1
   sim = eval(g)
 
   # TODO: Error is being thrown here
-  # @test f = sim(line, default_dec_generate, DiagonalHodge()) isa Any
+  @test f = sim(line, default_dec_generate, DiagonalHodge()) isa Any
 end
 
 @testset "GenSim Compilation" begin

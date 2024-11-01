@@ -252,8 +252,10 @@ function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec
     push!(defined_ops, op)
   end
 
+  operators = vcat(d[:op1], d[:op2])
+
   # These are nonoptimizable default DEC functions.
-  for op in non_optimizable(code_target)
+  for op in intersect(operators, non_optimizable(code_target))
     op in defined_ops && continue
 
     def = :($op = $(generator_function(code_target))(mesh, $(QuoteNode(op)), hodge))
@@ -263,7 +265,7 @@ function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec
   end
 
   # Add in user-defined operations
-  for op in vcat(d[:op1], d[:op2])
+  for op in operators
     if op == DerivOp || op in defined_ops || op in ARITHMETIC_OPS
       continue
     end
@@ -688,8 +690,8 @@ end
 Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32 or Float64")
 
 const MATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
-:d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
-:avg₀₁])
+                                              :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
+                                              :avg₀₁])
 
 const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
