@@ -55,7 +55,7 @@ halfar_eq2 = @decapode begin
   Γ::Form0
   n::Constant
 
-  ∂ₜ(h) == Γ * ∘(⋆, d, ⋆)(d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
+  ∂ₜ(h) == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
 end
 
 glens_law = @decapode begin
