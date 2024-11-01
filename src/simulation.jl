@@ -223,6 +223,14 @@ end
 
 Base.showerror(io::IO, e::InvalidCodeTargetException) = print(io, "Provided code target $(e.code_target) is not yet supported in simulations")
 
+opt_generator_function(code_target::AbstractGenerationTarget) = throw(InvalidCodeTargetException(code_target))
+opt_generator_function(::CPUBackend) = :default_dec_matrix_generate
+opt_generator_function(::CUDABackend) = :default_dec_cu_matrix_generate
+
+generator_function(code_target::AbstractGenerationTarget) = throw(InvalidCodeTargetException(code_target))
+generator_function(::CPUBackend) = :default_dec_generate
+generator_function(::CUDABackend) = :default_dec_cu_generate
+
 """
     compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::AbstractGenerationTarget)
 
@@ -238,17 +246,7 @@ function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec
   for op in dec_matrices
     op in defined_ops && continue
 
-    quote_op = QuoteNode(op)
-    mat_op = add_stub(GENSIM_INPLACE_STUB, op)
-
-    # TODO: Add support for user-defined code targets
-    default_generation = @match code_target begin
-      ::CPUBackend => :default_dec_matrix_generate
-      ::CUDABackend => :default_dec_cu_matrix_generate
-      _ => throw(InvalidCodeTargetException(code_target))
-    end
-
-    def = :(($mat_op, $op) = $(default_generation)(mesh, $quote_op, hodge))
+    def = :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $(QuoteNode(op)), hodge))
     push!(defs.args, def)
 
     push!(defined_ops, op)
@@ -258,16 +256,7 @@ function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec
   for op in non_optimizable(code_target)
     op in defined_ops && continue
 
-    quote_op = QuoteNode(op)
-
-    # TODO: Add support for user-defined code targets
-    default_generation = @match code_target begin
-      ::CPUBackend => :default_dec_generate
-      ::CUDABackend => :default_dec_cu_generate
-      _ => throw(InvalidCodeTargetException(code_target))
-    end
-
-    def = :($op = $(default_generation)(mesh, $quote_op, hodge))
+    def = :($op = $(generator_function(code_target))(mesh, $(QuoteNode(op)), hodge))
     push!(defs.args, def)
 
     push!(defined_ops, op)
@@ -438,7 +427,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
         if preallocate && is_form(d, t)
           if operator in optimizable_dec_operators
             equality = PROMOTE_ARITHMETIC_MAP[equality]
-            operator = add_stub(GENSIM_INPLACE_STUB, operator)
+            operator = add_inplace_stub(operator)
             push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype, code_target))
 
           elseif operator == :(-) || operator == :.-
@@ -483,7 +472,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
               push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
             end
           elseif operator in optimizable_dec_operators
-            operator = add_stub(GENSIM_INPLACE_STUB, operator)
+            operator = add_inplace_stub(operator)
             equality = PROMOTE_ARITHMETIC_MAP[equality]
             push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
           end
@@ -707,7 +696,7 @@ const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧�
 const NON_OPTIMIZABLE_CPU_OPERATORS = Set([:♯ᵖᵖ, :♯ᵈᵈ, :♭ᵈᵖ])
 const NON_OPTIMIZABLE_CUDA_OPERATORS = Set{Symbol}()
 
-non_optimizable(::AbstractGenerationTarget) = NON_OPTIMIZABLE_CPU_OPERATORS
+non_optimizable(::AbstractGenerationTarget) = throw(InvalidCodeTargetException(code_target))
 non_optimizable(::CPUBackend) = NON_OPTIMIZABLE_CPU_OPERATORS
 non_optimizable(::CUDABackend) = NON_OPTIMIZABLE_CUDA_OPERATORS
 
