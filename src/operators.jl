@@ -7,38 +7,10 @@ using SparseArrays
 
 function default_dec_cu_matrix_generate() end;
 
-export cache_vcycle_lap, run_multigrid_vcycles, vcycle_lap_op
-
-# TODO: Move vcycle code into CombSpaces
-function cache_vcycle_lap(fs::AbstractVector{<:GeometricMap})
-  sses = map(fs) do f dom(f).delta_set end
-  push!(sses,codom(last(fs)).delta_set) # Get original mesh
-
-  sds = map(sses) do s dualize(s, Circumcenter()) end # TODO: Add option
-
-  Ls = map(sds) do sd ∇²(0,sd) end
-  rs = as_matrix.(fs)./4.0 #4 is the biggest row sum that occurs for triforce, this is not clearly the correct scaling
-  ps = transpose.(as_matrix.(fs))
-  (Ls, rs, ps)
-end
-
-function run_multigrid_vcycles(b,As,rs,ps,steps,cycles=1,alg=cg)
-  multigrid_vcycles(zeros(length(b)),b,As,rs,ps,steps,cycles,alg)
-end
-
-function vcycle_lap_op(fs::AbstractVector{<:GeometricMap})
-  vcyc_cache = cache_vcycle_lap(fs)
-  x -> run_multigrid_vcycles(x, vcyc_cache..., 3, 10, cg)
-end
-
-dom2dual(f::GeometricMap) = dualize(dom(f).delta_set)
-codom2dual(f::GeometricMap) = dualize(codom(f).delta_set)
-
-function default_dec_matrix_generate(fs::AbstractVector{<:GeometricMap}, my_symbol::Symbol, hodge::DiscreteHodge)
+function default_dec_matrix_generate(fs::PrimitiveGeometricMapSeries, my_symbol::Symbol, hodge::DiscreteHodge)
   op = @match my_symbol begin
-    :Δ₀⁻¹ => vcycle_lap_op(fs)
-    # TODO: This is creating the dual matrix everytime
-    _ => default_dec_matrix_generate(dom2dual(first(fs)), my_symbol, hodge)
+    :Δ₀⁻¹ => dec_Δ⁻¹(Val{0}, fs)
+    _ => default_dec_matrix_generate(finest_mesh(fs), my_symbol, hodge)
   end
 end
 
