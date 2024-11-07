@@ -702,7 +702,7 @@ to operator mappings to return a simulator that can be used to solve the represe
 
 `multigrid`: ADD ME!!! (Defaults to `false`)
 """
-function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, multigrid::Bool = true)
+function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, multigrid::Bool = false)
 
   (dimension == 1 || dimension == 2) ||
     throw(UnsupportedDimensionException(dimension))
@@ -758,7 +758,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
 
   # TODO: Better generation of multigrid stuff
   prologue = quote end
-  multigrid && push!(prologue.args, :(mesh = dualize(dom(first(mesh)).delta_set)))
+  multigrid && push!(prologue.args, :(mesh = finest_mesh(mesh)))
 
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin

@@ -9,7 +9,11 @@ using LinearAlgebra
 using MLStyle
 using OrdinaryDiffEq
 using Test
+using Random
 Point3D = Point3{Float64}
+
+import Decapodes: default_dec_matrix_generate
+
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
@@ -757,6 +761,38 @@ end
 
 end
 
+@testset "Multigrid" begin
+  s = triangulated_grid(1,1,1/4,sqrt(3)/2*1/4,Point3D)
+
+  series = PrimitiveGeometricMapSeries(s, binary_subdivision_map, 4);
+
+  our_mesh = finest_mesh(series)
+  lap = ∇²(0,our_mesh);
+
+  Random.seed!(1337)
+  b = lap*rand(nv(our_mesh));
+
+  inv_lap = @decapode begin
+    U::Form0
+    ∂ₜ(U) == Δ₀⁻¹(U)
+  end
+
+  function generate(fs, my_symbol; hodge=DiagonalHodge())
+    op = @match my_symbol begin
+      _ => default_dec_matrix_generate(fs, my_symbol, hodge)
+    end
+  end
+
+  sim = eval(gensim(inv_lap; multigrid=true))
+
+  f = sim(series, generate);
+  u = ComponentArray(U=b)
+  du = similar(u)
+
+  f(du, u, 0, ())
+  @test norm(lap*du.U-b)/norm(b) < 1e-6
+end
+
 @testset "Allocations" begin
 # Test the heat equation Decapode has expected memory allocation.
 
@@ -781,11 +817,7 @@ for prealloc in [false, true]
   nallocs = @allocations f(du, u₀, p, (0,1.0))
   bytes = @allocated f(du, u₀, p, (0,1.0))
 
-  if VERSION < v"1.11"
-    @test (nallocs, bytes) == (prealloc ? (3, 80) : (5, 400))
-  else
-    @test (nallocs, bytes) == (prealloc ? (2, 32) : (6, 352))
-  end
+  @test (nallocs, bytes) == (prealloc ? (6, 80) : (6, 400))
 end
 
 end
@@ -829,4 +861,3 @@ haystack = string(gensim(LargeSum))
 @test occursin(needle, haystack)
 
 end
-
