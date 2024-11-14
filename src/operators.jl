@@ -1,7 +1,6 @@
 using Base.Iterators
 using CombinatorialSpaces
 import CombinatorialSpaces.DiscreteExteriorCalculus: DiscreteHodge
-using CombinatorialSpaces.Multigrid: PrimitiveGeometricMapSeries
 using Krylov
 using LinearAlgebra
 using SparseArrays
@@ -9,7 +8,7 @@ using KernelAbstractions
 
 function default_dec_cu_matrix_generate() end;
 
-function default_dec_matrix_generate(fs::PrimitiveGeometricMapSeries, my_symbol::Symbol, hodge::DiscreteHodge)
+function default_dec_matrix_generate(fs::PrimalGeometricMapSeries, my_symbol::Symbol, hodge::DiscreteHodge)
   op = @match my_symbol begin
     :Δ₀⁻¹ => dec_Δ⁻¹(Val{0}, fs)
     _ => default_dec_matrix_generate(finest_mesh(fs), my_symbol, hodge)

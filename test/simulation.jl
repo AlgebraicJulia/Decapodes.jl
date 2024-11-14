@@ -764,7 +764,7 @@ end
 @testset "Multigrid" begin
   s = triangulated_grid(1,1,1/4,sqrt(3)/2*1/4,Point3D)
 
-  series = PrimitiveGeometricMapSeries(s, binary_subdivision_map, 4);
+  series = PrimalGeometricMapSeries(s, binary_subdivision_map, 4);
 
   our_mesh = finest_mesh(series)
   lap = ∇²(0,our_mesh);
