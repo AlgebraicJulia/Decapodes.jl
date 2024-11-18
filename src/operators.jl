@@ -10,6 +10,7 @@ function default_dec_cu_matrix_generate() end;
 
 function default_dec_matrix_generate(fs::PrimalGeometricMapSeries, my_symbol::Symbol, hodge::DiscreteHodge)
   op = @match my_symbol begin
+    # Inverse Laplacians
     :Δ₀⁻¹ => dec_Δ⁻¹(Val{0}, fs)
     _ => default_dec_matrix_generate(finest_mesh(fs), my_symbol, hodge)
   end
@@ -62,8 +63,11 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     :ℒ₁ => ℒ_dd(Tuple{1,1}, sd)
 
     # Dual Laplacians
-    :Δᵈ₀ => Δᵈ(Val{0},sd)
-    :Δᵈ₁ => Δᵈ(Val{1},sd)
+    :Δᵈ₀ => Δᵈ(Val{0}, sd)
+    :Δᵈ₁ => Δᵈ(Val{1}, sd)
+
+    # Inverse Laplacians
+    :Δ₀⁻¹ => dec_inv_lap_solver(Val{0}, sd)
 
     # Musical Isomorphisms
     :♯ => dec_♯_p(sd)
@@ -152,6 +156,11 @@ end
 function dec_avg₀₁(sd::HasDeltaSet)
   avg_mat = avg₀₁_mat(sd)
   (avg_mat, x -> avg_mat * x)
+end
+
+function dec_inv_lap_solver(::Type{Val{0}}, sd::HasDeltaSet)
+  inv_lap = LinearAlgebra.factorize(∇²(0, sd))
+  x -> inv_lap \ x
 end
 
 function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge=GeometricHodge())

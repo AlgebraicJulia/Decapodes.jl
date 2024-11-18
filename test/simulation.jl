@@ -783,13 +783,21 @@ end
     end
   end
 
-  sim = eval(gensim(inv_lap; multigrid=true))
+  sim = eval(gensim(inv_lap))
+  sim_mg = eval(gensim(inv_lap; multigrid=true))
 
-  f = sim(series, generate);
+  f = sim(our_mesh, generate);
+  f_mg = sim_mg(series, generate);
+
   u = ComponentArray(U=b)
   du = similar(u)
 
+  # Regular mesh
   f(du, u, 0, ())
+  @test norm(lap*du.U-b)/norm(b) < 1e-15
+
+  # Multigrid
+  f_mg(du, u, 0, ())
   @test norm(lap*du.U-b)/norm(b) < 1e-6
 end
 
