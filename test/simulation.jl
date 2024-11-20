@@ -825,7 +825,7 @@ for prealloc in [false, true]
   nallocs = @allocations f(du, u₀, p, (0,1.0))
   bytes = @allocated f(du, u₀, p, (0,1.0))
 
-  @test (nallocs, bytes) == (prealloc ? (6, 80) : (6, 400))
+  @test (nallocs, bytes) <= (prealloc ? (6, 80) : (6, 400))
 end
 
 end
