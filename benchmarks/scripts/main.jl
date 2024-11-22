@@ -26,7 +26,7 @@ elseif length(ARGS) == 3
 
     run_physics = SimNameData(physics, arch, tag)
     is_valid_config_instance(run_physics)
-    run_single_physics(physics, [run_physics])
+    run_single_physics(physics, [run_physics]) # final.sh
 else
     error("Usage: ['physics' 'architecture' 'tag']")
 end

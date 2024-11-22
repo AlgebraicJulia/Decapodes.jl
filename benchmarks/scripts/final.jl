@@ -10,4 +10,4 @@ const physics = ARGS[2]
 
 aggregate_data(slurm_id, physics)
 
-run(`julia --threads=auto $(postprocessdir("default_out.jl")) $slurm_id $physics`)
+run(`julia --threads=auto $(postprocessdir("docs_pp.jl")) $slurm_id $physics`)

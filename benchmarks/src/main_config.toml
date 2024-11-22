@@ -1,2 +1,5 @@
 [heat.cpu.test]
 [heat.cuda.test]
+
+[brussel.cpu.default]
+[brussel.cuda.default]
