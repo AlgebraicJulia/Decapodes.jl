@@ -1,6 +1,6 @@
-# Performance Benchmarks
+# Benchmarks
 
-## First Pass
+## Heat
 | Task ID |                   statsfile |                        benchfile | resolution | code_target | float_type | Setup Median time | Mesh Median time | Simulate Median time | Solve Median time |   nf |
 |---------|-----------------------------|----------------------------------|------------|-------------|------------|-------------------|------------------|----------------------|-------------------|------|
 |       3 |  stats_heat_cpu_test_3.jld2 |  benchmarks_heat_cpu_test_3.json |          1 |   CPUTarget |    Float32 |        0.00440888 |         0.279692 |           0.00309735 |          0.558636 | 9327 |

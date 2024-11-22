@@ -31,9 +31,10 @@ end
 #   end
 # end
 
+@info "Interpolating benchmarks into docs $(@__DIR__))"
 include("benchmark_helper.jl")
-insert_benchmarks!("src/benchmarks.md",
-  Dict("table" => "../benchmarks/data/exp_pro/heat/48787702/default_output.md"))
+insert_benchmarks!("docs/src/benchmarks.md",
+	Dict("heat" => "benchmarks/data/exp_pro/heat/"))
 
 @info "Building Documenter.jl docs"
 makedocs(
