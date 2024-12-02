@@ -700,7 +700,7 @@ to operator mappings to return a simulator that can be used to solve the represe
 
 `preallocate`: Enables(`true`)/disables(`false`) pre-allocated caches for intermediate computations. Some functions, such as those that determine Jacobian sparsity patterns, or perform auto-differentiation, may require this to be disabled. (Defaults to `true`)
 
-`multigrid`: ADD ME!!! (Defaults to `false`)
+`multigrid`: Enables multigrid methods during code generation. If `true`, then the function produced by `gensim` will expect a `PrimalGeometricMapSeries`. (Defaults to `false`)
 """
 function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, multigrid::Bool = false)
 
@@ -756,7 +756,6 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   func_defs = compile_env(gen_d, dec_matrices, contracted_dec_operators, code_target)
   vect_defs = compile_var(alloc_vectors)
 
-  # TODO: Better generation of multigrid stuff
   prologue = quote end
   multigrid && push!(prologue.args, :(mesh = finest_mesh(mesh)))
 

@@ -4,7 +4,6 @@ import CombinatorialSpaces.DiscreteExteriorCalculus: DiscreteHodge
 using Krylov
 using LinearAlgebra
 using SparseArrays
-using KernelAbstractions
 
 function default_dec_cu_matrix_generate() end;
 
@@ -117,19 +116,19 @@ function dec_mat_dual_differential(k::Int, sd::HasDeltaSet)
 end
 
 function dec_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where {k}
-  val_pack = cache_wedge(Tuple{0,k}, sd, KernelAbstractions.CPU())
+  val_pack = cache_wedge(Tuple{0,k}, sd, Val(:CPU))
   ((y, α, g) -> dec_c_wedge_product!(Tuple{0,k}, y, g, α, val_pack[1], val_pack[2]),
     (α, g) -> dec_c_wedge_product(Tuple{0,k}, g, α, val_pack))
 end
 
 function dec_pair_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where {k}
-  val_pack = cache_wedge(Tuple{0,k}, sd, KernelAbstractions.CPU())
+  val_pack = cache_wedge(Tuple{0,k}, sd, Val(:CPU))
   ((y, f, β) -> dec_c_wedge_product!(Tuple{0,k}, y, f, β, val_pack[1], val_pack[2]),
     (f, β) -> dec_c_wedge_product(Tuple{0,k}, f, β, val_pack))
 end
 
 function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
-  val_pack = cache_wedge(Tuple{1,1}, sd, KernelAbstractions.CPU())
+  val_pack = cache_wedge(Tuple{1,1}, sd, Val(:CPU))
   ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack[1], val_pack[2]),
     (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack))
 end
