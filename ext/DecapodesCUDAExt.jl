@@ -96,20 +96,20 @@ end
 
 function dec_cu_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where {k}
   val_pack = cache_wedge(Tuple{0,k}, sd, Val{:CUDA})
-  ((y, α, g) -> dec_c_wedge_product!(Tuple{0,k}, y, g, α, val_pack, Val{:CUDA}),
-    (α, g) -> dec_c_wedge_product(Tuple{0,k}, g, α, val_pack, Val{:CUDA}))
+  ((y, α, g) -> dec_c_wedge_product!(Tuple{0,k}, y, g, α, val_pack[1], val_pack[2]),
+    (α, g) -> dec_c_wedge_product(Tuple{0,k}, g, α, val_pack))
 end
 
 function dec_cu_pair_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where {k}
   val_pack = cache_wedge(Tuple{0,k}, sd, Val{:CUDA})
-  ((y, f, β) -> dec_c_wedge_product!(Tuple{0,k}, y, f, β, val_pack, Val{:CUDA}),
-    (f, β) -> dec_c_wedge_product(Tuple{0,k}, f, β, val_pack, Val{:CUDA}))
+  ((y, f, β) -> dec_c_wedge_product!(Tuple{0,k}, y, f, β, val_pack[1], val_pack[2]),
+    (f, β) -> dec_c_wedge_product(Tuple{0,k}, f, β, val_pack))
 end
 
 function dec_cu_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
   val_pack = cache_wedge(Tuple{1,1}, sd, Val{:CUDA})
-  ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack, Val{:CUDA}),
-    (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack, Val{:CUDA}))
+  ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack[1], val_pack[2]),
+    (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack))
 end
 
 function dec_pair_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
