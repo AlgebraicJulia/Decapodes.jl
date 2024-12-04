@@ -72,7 +72,8 @@ end
 
 f = Figure()
 ax = LScene(f[1,1], scenekw=(lights=[],))
-msh = mesh!(ax, s_plots, color=sit_sph)
+update_cam!(ax.scene, Vec3f(0,0,0.8), Vec3f(0,0,0), Vec3f(0, 1, 1))
+msh = mesh!(ax, s_plots, color=sit_sph, colormap=Reverse(:redsblues))
 Colorbar(f[1,2], msh)
 f
 ```
@@ -315,7 +316,8 @@ Let's visualize the initial conditions for ice height and the ice height after 1
 ``` @example DEC
 f = Figure()
 ax = LScene(f[1,1], scenekw=(lights=[],))
-msh = mesh!(ax, s_plots, color=soln.u[begin].h)
+update_cam!(ax.scene, Vec3f(0,0,0.8), Vec3f(0,0,0), Vec3f(0, 1, 1))
+msh = mesh!(ax, s_plots, color=soln.u[begin].h, colormap=Reverse(:redsblues))
 Colorbar(f[1,2], msh)
 f
 ```
@@ -325,7 +327,8 @@ f
 ``` @example DEC
 f = Figure()
 ax = LScene(f[1,1], scenekw=(lights=[],))
-msh = mesh!(ax, s_plots, color=soln.u[end].h)
+update_cam!(ax.scene, Vec3f(0,0,0.8), Vec3f(0,0,0), Vec3f(0, 1, 1))
+msh = mesh!(ax, s_plots, color=soln.u[end].h, colorrange=extrema(soln.u[begin].h), colormap=Reverse(:redsblues))
 Colorbar(f[1,2], msh)
 f
 ```
