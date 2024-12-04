@@ -18,6 +18,9 @@ However, a new discretization is produced for purposes of brevity, to demonstrat
 The full code that generated these results is available in [a julia script](ns.jl).
 
 Let's first demonstrate an (incorrect) formulation of the equations to demonstrate how one can iteratively develop a Decapodes model.
+This is intended to show how easy it is to edit a Decapodes model to improve the quality of the physical formulation.
+
+This approach can be combined with the multiphysics described in other pages to improve the quality of other fluid mechanics simulations.
 
 An initial attempt at solving the vorticity formulation of the inviscid incompressible Navier-Stokes momentum equation could be:
 
@@ -35,12 +38,14 @@ end
 nothing # hide
 ```
 
-In this (unstable) formulation, the velocity field is computed as the pseudo-inverse of the differential operation that computes curl.
+This formulation comes from the fact that you are treating `du` (vorticity) as the only state variable and computing the velocity field, which you need to advect vorticity along the flow with a linear solve of the exterior derivative `d₁`. In other words, the velocity field is computed as the pseudo-inverse of the differential operation that computes curl.
 
 ## Initial Conditions
 
 We can check these dynamics on a couple of test cases on the sphere with well-known analytic solutions.
 In the case of dual Taylor vortices, we expect the vortices to repel one another, and in the case of a ring of (smoothed) point vortices, we should expect the vortices to rotate along the initial line of latitude. See "Wave and vortex dynamics on the surface of a sphere" (1993) from Polvani and Dritschel for analysis.
+
+The following plots are shown from directly above the north pole of the sphere.
 
 ### Point Vortices
 
@@ -68,9 +73,11 @@ max u=NaN
 ┌ Warning: Instability detected. Aborting
 ```
 
-## Laplacian Solver Formulation
+## Streamfunction-Poisson Formulation
 
 There are cohomological reasons why the above model formulation produces low-quality simulations. The variable **X** is physically required to be in the kernel of $\Delta$, but that isn't guaranteed by the model formulation above. To fix this, you can use the solve for the stream-function by introducing a Laplacian solve as part of the update law.
+
+Due to the equation $$du = -\Delta\psi$$ we can solve for the stream function with a linear solve of the Laplacian.
 
 This transformation can be implemented by editing the Decapode formulation and regenerating the simulator.
 
