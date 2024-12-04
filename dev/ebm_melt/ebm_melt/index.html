@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Halfar-EBM-Water · Decapodes.jl</title><meta name="title" content="Halfar-EBM-Water · Decapodes.jl"/><meta property="og:title" content="Halfar-EBM-Water · Decapodes.jl"/><meta property="twitter:title" content="Halfar-EBM-Water · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../equations/equations/">Equations</a></li><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li class="is-active"><a class="tocitem" href>Halfar-EBM-Water</a><ul class="internal"><li><a class="tocitem" href="#Load-data"><span>Load data</span></a></li><li><a class="tocitem" href="#Define-the-model"><span>Define the model</span></a></li><li><a class="tocitem" href="#Define-initial-conditions"><span>Define initial conditions</span></a></li><li><a class="tocitem" href="#Generate-and-run-simulation"><span>Generate and run simulation</span></a></li><li><a class="tocitem" href="#Visualize"><span>Visualize</span></a></li></ul></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Halfar-EBM-Water</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Halfar-EBM-Water</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/ebm_melt/ebm_melt.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Haflar-EBM-Water"><a class="docs-heading-anchor" href="#Haflar-EBM-Water">Haflar-EBM-Water</a><a id="Haflar-EBM-Water-1"></a><a class="docs-heading-anchor-permalink" href="#Haflar-EBM-Water" title="Permalink"></a></h1><p>This docs page demonsrates a composition of the Halfar model of ice dynamics with the Budyko-Sellers energy-balance model (EBM) defining temperature dynamics. Surface temperature affects the rate at which ice diffuses, and melts ice into a water density term. This water density then diffuses across the domain.</p><p>We execute these dynamics on real sea ice thickness data provided by the Polar Science Center.</p><pre><code class="language-julia hljs"># Import Dependencies
+
+# AlgebraicJulia Dependencies
+using Catlab
+using Catlab.Graphics
+using CombinatorialSpaces
+using DiagrammaticEquations
+using Decapodes
+
+# External Dependencies
+using ComponentArrays
+using CoordRefSystems
+using CairoMakie
+using LinearAlgebra
+using MLStyle
+using NetCDF
+using OrdinaryDiffEq
+Point3D = Point3{Float64}</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GeometryBasics.Point{3, Float64}</code></pre><p>First, we load a mesh. We will execute these dynamics on the sphere:</p><pre><code class="language-julia hljs"># Load a mesh
+s_plots = loadmesh(Icosphere(7));
+s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s_plots);
+subdivide_duals!(s, Barycenter());
+wireframe(s_plots)</code></pre><img src="d5902cfe.png" alt="Example block output"/><h2 id="Load-data"><a class="docs-heading-anchor" href="#Load-data">Load data</a><a id="Load-data-1"></a><a class="docs-heading-anchor-permalink" href="#Load-data" title="Permalink"></a></h2><p>The data provided by the Polar Science Center is given as a NetCDF file. Ice thickness is a matrix with the same dimensions as a matrix provided Latitude and Longitude of the associated point on the Earth&#39;s surface. We need to convert between polar and Cartesian coordinates to use this data on our mesh.</p><pre><code class="language-julia hljs">ice_thickness_file = &quot;piomas20c.heff.1901.2010.v1.0.nc&quot;
+run(`curl -o $ice_thickness_file https://pscfiles.apl.uw.edu/axel/piomas20c/v1.0/monthly/piomas20c.heff.1901.2010.v1.0.nc`)
+
+# Use ncinfo(ice_thickness_file) to interactively get information on variables.
+# Sea ice thickness (&quot;sit&quot;) has dimensions of [y, x, time].
+# y,x index into &quot;Latitude&quot; and &quot;Longitude&quot; variables.
+# Time is in units of days since 1901-01-01.
+lat = ncread(ice_thickness_file, &quot;Latitude&quot;)
+lon = ncread(ice_thickness_file, &quot;Longitude&quot;)
+sit = ncread(ice_thickness_file, &quot;sit&quot;)
+
+# Convert latitude from [90, -90] to [0, 180] for convenience.
+lat .= -lat .+ 90
+
+# Convert mesh points from Cartesian to spherical coordinates.
+p_sph = map(point(s)) do p
+  p = convert(Spherical, Cartesian(p...))
+  [rad2deg(p.θ).val, rad2deg(p.ϕ).val]
+end
+
+# Note: You can instead use an algebraic parameterization, rather than nearest-neighbor interpolation.
+# Note: You can alternatively set a value to 0.0 if the distance to the nearest-neighbor is greater than some threshold.
+sit_sph_idxs = map(p_sph) do p
+  argmin(map(i -&gt; sqrt((lat[i] - p[1])^2 + (lon[i] - p[2])^2), eachindex(lat)))
+end
+
+sit_sph = map(sit_sph_idxs, p_sph) do i, p
+  ((p[1] &gt; maximum(lat)) || isnan(sit[i])) ? 0.0f0 : sit[i]
+end
+
+f = Figure()
+ax = LScene(f[1,1], scenekw=(lights=[],))
+msh = mesh!(ax, s_plots, color=sit_sph)
+Colorbar(f[1,2], msh)
+f</code></pre><img src="849796e5.png" alt="Example block output"/><h2 id="Define-the-model"><a class="docs-heading-anchor" href="#Define-the-model">Define the model</a><a id="Define-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Define-the-model" title="Permalink"></a></h2><p>Here, the Halfar model of ice dynamics is recalled, as well as the Budyko-Sellers EBM. These these models are composed individually. They are then coupled together via <code>warming</code> and <code>melting</code> components.</p><pre><code class="language-julia hljs">halfar_eq2 = @decapode begin
+  (h, melt)::Form0
+  Γ::Form1
+  n::Constant
+
+  ∂ₜ(h)  == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2))) - melt
+end
+
+glens_law = @decapode begin
+  (A,Γ)::Form1
+  (ρ,g,n)::Constant
+
+  Γ == (2/(n+2))*A*(ρ*g)^n
+end
+
+ice_dynamics_composition_diagram = @relation () begin
+  dynamics(Γ,n)
+  stress(Γ,n)
+end
+
+ice_dynamics = apex(oapply(ice_dynamics_composition_diagram,
+  [Open(halfar_eq2, [:Γ,:n]),
+   Open(glens_law, [:Γ,:n])]))
+
+energy_balance = @decapode begin
+  (Tₛ, ASR, OLR, HT)::Form0
+  C::Constant
+
+  ∂ₜ(Tₛ) == (ASR - OLR + HT) ./ C
+end
+
+absorbed_shortwave_radiation = @decapode begin
+  (Q, ASR)::Form0
+  α::Constant
+
+  ASR == (1 .- α) .* Q
+end
+
+outgoing_longwave_radiation = @decapode begin
+  (Tₛ, OLR)::Form0
+  (A,B)::Constant
+
+  OLR == A .+ (B .* Tₛ)
+end
+
+heat_transfer = @decapode begin
+  (HT, Tₛ)::Form0
+  (D,cosϕᵖ,cosϕᵈ)::Constant
+
+  HT == (D ./ cosϕᵖ) .* ⋆(d(cosϕᵈ .* ⋆(d(Tₛ))))
+end
+
+insolation = @decapode begin
+  Q::Form0
+  cosϕᵖ::Constant
+
+  Q == 450 * cosϕᵖ
+end
+
+budyko_sellers_composition_diagram = @relation () begin
+  energy(Tₛ, ASR, OLR, HT)
+  absorbed_radiation(Q, ASR)
+  outgoing_radiation(Tₛ, OLR)
+  diffusion(Tₛ, HT, cosϕᵖ)
+  insolation(Q, cosϕᵖ)
+end
+
+budyko_sellers = apex(oapply(budyko_sellers_composition_diagram,
+  [Open(energy_balance, [:Tₛ, :ASR, :OLR, :HT]),
+   Open(absorbed_shortwave_radiation, [:Q, :ASR]),
+   Open(outgoing_longwave_radiation, [:Tₛ, :OLR]),
+   Open(heat_transfer, [:Tₛ, :HT, :cosϕᵖ]),
+   Open(insolation, [:Q, :cosϕᵖ])]))</code></pre><pre><code class="language-julia hljs">warming = @decapode begin
+  Tₛ::Form0
+  A::Form1
+
+  A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.01e-19)
+end
+
+melting = @decapode begin
+  (Tₛ, h, melt, water)::Form0
+  Dₕ₂ₒ::Constant
+
+  melt == (Tₛ - 15)*1e-16*h
+  ∂ₜ(water) == melt + Dₕ₂ₒ*Δ(water)
+end
+
+budyko_sellers_halfar_water_composition_diagram = @relation () begin
+  budyko_sellers(Tₛ)
+
+  warming(A, Tₛ)
+
+  melting(Tₛ, h, melt)
+
+  halfar(A, h, melt)
+end</code></pre><div class="c-set">
+<span class="c-set-summary">Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol} {Box:4, Port:9, OuterPort:0, Junction:4, Name:0, VarName:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Box</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">budyko_sellers</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">warming</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">melting</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">halfar</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Port</th>
+      <th style = "text-align: right;">box</th>
+      <th style = "text-align: right;">junction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Junction</th>
+      <th style = "text-align: right;">variable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">Tₛ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">A</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">h</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">melt</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<pre><code class="language-julia hljs">budyko_sellers_halfar_water = apex(oapply(budyko_sellers_halfar_water_composition_diagram,
+  [Open(budyko_sellers, [:Tₛ]),
+   Open(warming, [:A, :Tₛ]),
+   Open(melting, [:Tₛ, :h, :melt]),
+   Open(ice_dynamics, [:stress_A, :dynamics_h, :dynamics_melt])]))</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:72, TVar:3, Op1:16, Op2:30, Σ:4, Summand:8, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">Tₛ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">budyko_sellers_ASR</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">budyko_sellers_OLR</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">budyko_sellers_HT</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">budyko_sellers_energy_C</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">budyko_sellers_energy_Tₛ̇</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">budyko_sellers_energy_sum_1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">budyko_sellers_energy_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">budyko_sellers_Q</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">budyko_sellers_absorbed_radiation_α</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">budyko_sellers_absorbed_radiation_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">budyko_sellers_outgoing_radiation_A</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">budyko_sellers_outgoing_radiation_B</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">budyko_sellers_outgoing_radiation_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">budyko_sellers_diffusion_D</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">17</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">budyko_sellers_cosϕᵖ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">18</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">budyko_sellers_diffusion_cosϕᵈ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">19</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">budyko_sellers_diffusion_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">20</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">budyko_sellers_diffusion_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">21</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">budyko_sellers_diffusion_•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">22</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">budyko_sellers_diffusion_•4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">23</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">budyko_sellers_diffusion_•5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">24</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">budyko_sellers_diffusion_•6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">25</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">450</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">26</td>
+      <td style = "text-align: right;">Form1</td>
+      <td style = "text-align: right;">A</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">27</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">warming_mult_1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">28</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">5.8282</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">29</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">warming_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">30</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">10</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">31</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">warming_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">32</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">-0.236</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">33</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">1.01e-19</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">34</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">warming_mult_2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">35</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">h</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">36</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">melt</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">37</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">melting_water</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">38</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">melting_Dₕ₂ₒ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">39</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">melting_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">40</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">15</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">41</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">1.0e-16</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">42</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">melting_mult_1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">43</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">melting_mult_2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">44</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">melting_wateṙ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">45</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">melting_•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">46</td>
+      <td style = "text-align: right;">Form1</td>
+      <td style = "text-align: right;">halfar_Γ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">47</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">halfar_n</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">48</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_ḣ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">49</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_mult_1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">50</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">51</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">52</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_•4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">53</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_•5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">54</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_•6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">55</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_•7</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">56</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_•8</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">57</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_•9</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">58</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">59</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_•10</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">60</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_•11</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">61</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">62</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_sum_1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">63</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_mult_2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">64</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_dynamics_mult_3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">65</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">halfar_stress_ρ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">66</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">halfar_stress_g</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">67</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_stress_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">68</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">69</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_stress_sum_1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">70</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_stress_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">71</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_stress_•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">72</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">halfar_stress_mult_1</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">44</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">48</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">19</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">19</td>
+      <td style = "text-align: right;">24</td>
+      <td style = "text-align: right;">⋆</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">23</td>
+      <td style = "text-align: right;">22</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">22</td>
+      <td style = "text-align: right;">21</td>
+      <td style = "text-align: right;">⋆</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">27</td>
+      <td style = "text-align: right;">26</td>
+      <td style = "text-align: right;">avg₀₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">37</td>
+      <td style = "text-align: right;">44</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">37</td>
+      <td style = "text-align: right;">43</td>
+      <td style = "text-align: right;">Δ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">35</td>
+      <td style = "text-align: right;">48</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">35</td>
+      <td style = "text-align: right;">51</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">35</td>
+      <td style = "text-align: right;">56</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">56</td>
+      <td style = "text-align: right;">55</td>
+      <td style = "text-align: right;">♯</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">55</td>
+      <td style = "text-align: right;">54</td>
+      <td style = "text-align: right;">mag</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">53</td>
+      <td style = "text-align: right;">52</td>
+      <td style = "text-align: right;">avg₀₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">60</td>
+      <td style = "text-align: right;">59</td>
+      <td style = "text-align: right;">avg₀₁</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">49</td>
+      <td style = "text-align: right;">50</td>
+      <td style = "text-align: right;">[:⋆, :d, :⋆]</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">./</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">.-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">.*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">14</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">.*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">15</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">.+</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">16</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">20</td>
+      <td style = "text-align: right;">./</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">18</td>
+      <td style = "text-align: right;">24</td>
+      <td style = "text-align: right;">23</td>
+      <td style = "text-align: right;">.*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">20</td>
+      <td style = "text-align: right;">21</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">.*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">25</td>
+      <td style = "text-align: right;">17</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">32</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">31</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">30</td>
+      <td style = "text-align: right;">31</td>
+      <td style = "text-align: right;">29</td>
+      <td style = "text-align: right;">^</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">28</td>
+      <td style = "text-align: right;">29</td>
+      <td style = "text-align: right;">34</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">34</td>
+      <td style = "text-align: right;">33</td>
+      <td style = "text-align: right;">27</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">40</td>
+      <td style = "text-align: right;">39</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">39</td>
+      <td style = "text-align: right;">41</td>
+      <td style = "text-align: right;">42</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">17</td>
+      <td style = "text-align: right;">42</td>
+      <td style = "text-align: right;">35</td>
+      <td style = "text-align: right;">36</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">18</td>
+      <td style = "text-align: right;">38</td>
+      <td style = "text-align: right;">43</td>
+      <td style = "text-align: right;">45</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">19</td>
+      <td style = "text-align: right;">47</td>
+      <td style = "text-align: right;">58</td>
+      <td style = "text-align: right;">57</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">20</td>
+      <td style = "text-align: right;">54</td>
+      <td style = "text-align: right;">57</td>
+      <td style = "text-align: right;">53</td>
+      <td style = "text-align: right;">^</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">21</td>
+      <td style = "text-align: right;">35</td>
+      <td style = "text-align: right;">62</td>
+      <td style = "text-align: right;">60</td>
+      <td style = "text-align: right;">^</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">22</td>
+      <td style = "text-align: right;">46</td>
+      <td style = "text-align: right;">51</td>
+      <td style = "text-align: right;">63</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">23</td>
+      <td style = "text-align: right;">63</td>
+      <td style = "text-align: right;">52</td>
+      <td style = "text-align: right;">64</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">24</td>
+      <td style = "text-align: right;">64</td>
+      <td style = "text-align: right;">59</td>
+      <td style = "text-align: right;">49</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">25</td>
+      <td style = "text-align: right;">50</td>
+      <td style = "text-align: right;">36</td>
+      <td style = "text-align: right;">48</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">26</td>
+      <td style = "text-align: right;">68</td>
+      <td style = "text-align: right;">69</td>
+      <td style = "text-align: right;">67</td>
+      <td style = "text-align: right;">/</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">27</td>
+      <td style = "text-align: right;">65</td>
+      <td style = "text-align: right;">66</td>
+      <td style = "text-align: right;">71</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">28</td>
+      <td style = "text-align: right;">71</td>
+      <td style = "text-align: right;">47</td>
+      <td style = "text-align: right;">70</td>
+      <td style = "text-align: right;">^</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">29</td>
+      <td style = "text-align: right;">67</td>
+      <td style = "text-align: right;">26</td>
+      <td style = "text-align: right;">72</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">30</td>
+      <td style = "text-align: right;">72</td>
+      <td style = "text-align: right;">70</td>
+      <td style = "text-align: right;">46</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Σ</th>
+      <th style = "text-align: right;">sum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">7</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">44</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">62</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">69</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Summand</th>
+      <th style = "text-align: right;">summand</th>
+      <th style = "text-align: right;">summation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">36</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">45</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">47</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">61</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">47</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">68</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<h2 id="Define-initial-conditions"><a class="docs-heading-anchor" href="#Define-initial-conditions">Define initial conditions</a><a id="Define-initial-conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Define-initial-conditions" title="Permalink"></a></h2><p>The initial data must be specified for state variables, as well as constants and parameters.</p><pre><code class="language-julia hljs"># This is a primal 0-form, with values at vertices.
+cosϕᵖ = map(x -&gt; cos(x[1]), point(s))
+# This is a dual 0-form, with values at edge centers.
+cosϕᵈ = map(edges(s)) do e
+  (cos(point(s, src(s, e))[1]) + cos(point(s, tgt(s, e))[1])) / 2
+end
+
+α₀ = 0.354
+α₂ = 0.25
+α = map(point(s)) do ϕ
+  α₀ + α₂*((1/2)*(3*ϕ[1]^2 - 1))
+end
+A = 210
+B = 2
+f = 0.70
+ρ = 1025
+cw = 4186
+H = 70
+C = map(point(s)) do ϕ
+  f * ρ * cw * H
+end
+D = 0.6
+
+# Isothermal initial conditions:
+Tₛ₀ = map(point(s)) do ϕ
+  15.0
+end
+
+water = map(point(s)) do _
+  0.0
+end
+
+Dₕ₂ₒ = 1e-16
+
+n = 3
+halfar_ρ = 910
+g = 9.8
+
+h₀ = sit_sph
+# Store these values to be passed to the solver.
+u₀ = ComponentArray(
+  Tₛ = Tₛ₀,
+  h = h₀,
+  melting_water = water)
+
+constants_and_parameters = (
+  budyko_sellers_absorbed_radiation_α = α,
+  budyko_sellers_outgoing_radiation_A = A,
+  budyko_sellers_outgoing_radiation_B = B,
+  budyko_sellers_energy_C = C,
+  budyko_sellers_diffusion_D = D,
+  budyko_sellers_cosϕᵖ = cosϕᵖ,
+  budyko_sellers_diffusion_cosϕᵈ = cosϕᵈ,
+  halfar_n = n,
+  halfar_stress_ρ = halfar_ρ,
+  halfar_stress_g = g,
+  melting_Dₕ₂ₒ = Dₕ₂ₒ)
+
+# Define how symbols map to Julia functions
+
+function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :♯ =&gt; begin
+      sharp_mat = ♯_mat(sd, AltPPSharp())
+      x -&gt; sharp_mat * x
+    end
+    :mag =&gt; x -&gt; begin
+      norm.(x)
+    end
+    :^ =&gt; (x,y) -&gt; x .^ y
+    :* =&gt; (x,y) -&gt; x .* y
+    x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
+  end
+  return (args...) -&gt; op(args...)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><h2 id="Generate-and-run-simulation"><a class="docs-heading-anchor" href="#Generate-and-run-simulation">Generate and run simulation</a><a id="Generate-and-run-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-and-run-simulation" title="Permalink"></a></h2><p>The composed model is generated and executed for 100 years. The model is run twice to demonstrate the speed of the model after the simulation code is precompiled by the first run.</p><p>We will save the final ice thickness data in a .jld2 file, an HDF5-compatible file format. We will also save the latitude and longitude of the points on the sphere.</p><pre><code class="language-julia hljs">sim = eval(gensim(budyko_sellers_halfar_water))
+fₘ = sim(s, generate)
+
+tₑ = 100.0
+
+@info(&quot;Precompiling Solver&quot;)
+prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
+soln = solve(prob, Tsit5())
+soln.retcode != :Unstable || error(&quot;Solver was not stable&quot;)
+
+@info(&quot;Solving&quot;)
+prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+soln = solve(prob, Tsit5())
+@show soln.retcode
+@info(&quot;Done&quot;)
+
+save(&quot;ice.jld2&quot;,
+  Dict(&quot;lat&quot; =&gt; map(x -&gt; x[1], p_sph), &quot;lon&quot; =&gt; map(x -&gt; x[2], p_sph), &quot;ice&quot; =&gt; soln(tₑ).h))
+
+(extrema(soln(0.0).h), extrema(soln(tₑ).h))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((0.0, 5.88970947265625), (-7.952412110913545e-15, 4.292574775383085))</code></pre><h2 id="Visualize"><a class="docs-heading-anchor" href="#Visualize">Visualize</a><a id="Visualize-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize" title="Permalink"></a></h2><p>Let&#39;s visualize the initial conditions for ice height and the ice height after 100 years.</p><h3 id="Initial-ice-height"><a class="docs-heading-anchor" href="#Initial-ice-height">Initial ice height</a><a id="Initial-ice-height-1"></a><a class="docs-heading-anchor-permalink" href="#Initial-ice-height" title="Permalink"></a></h3><pre><code class="language-julia hljs">f = Figure()
+ax = LScene(f[1,1], scenekw=(lights=[],))
+msh = mesh!(ax, s_plots, color=soln.u[end].h)
+Colorbar(f[1,2], msh)
+f</code></pre><img src="fde18e01.png" alt="Example block output"/><h3 id="Ice-height-after-100-years"><a class="docs-heading-anchor" href="#Ice-height-after-100-years">Ice height after 100 years</a><a id="Ice-height-after-100-years-1"></a><a class="docs-heading-anchor-permalink" href="#Ice-height-after-100-years" title="Permalink"></a></h3><pre><code class="language-julia hljs">f = Figure()
+ax = LScene(f[1,1], scenekw=(lights=[],))
+msh = mesh!(ax, s_plots, color=soln.u[end].h)
+Colorbar(f[1,2], msh)
+f</code></pre><img src="fde18e01-001.png" alt="Example block output"/><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Process(`<span class="sgr4">rm</span> <span class="sgr4">piomas20c.heff.1901.2010.v1.0.nc</span>`, ProcessExited(0))</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../bsh/budyko_sellers_halfar/">« Budyko-Sellers-Halfar</a><a class="docs-footer-nextpage" href="../../halmo/halmo/">Halfar-NS »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Wednesday 4 December 2024 05:34">Wednesday 4 December 2024</span>. Using Julia version 1.11.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
