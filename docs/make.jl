@@ -40,7 +40,7 @@ makedocs(
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
-  draft = false;
+  draft = true;
   pagesonly = true,
   linkcheck = true,
   linkcheck_ignore = [r"agupubs\.onlinelibrary\.wiley\.com", # This gives a 403 Forbidden
