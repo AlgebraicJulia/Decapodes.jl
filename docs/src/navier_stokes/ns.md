@@ -42,17 +42,13 @@ In this (unstable) formulation, the velocity field is computed as the pseudo-inv
 We can check these dynamics on a couple of test cases on the sphere with well-known analytic solutions.
 In the case of dual Taylor vortices, we expect the vortices to repel one another, and in the case of a ring of (smoothed) point vortices, we should expect the vortices to rotate along the initial line of latitude. See "Wave and vortex dynamics on the surface of a sphere" (1993) from Polvani and Dritschel for analysis.
 
-### Taylor Vortices
-
-![Plot of Taylor Vortex initial conditions](taylor_ics.png)
-
 ### Point Vortices
 
 ![Plot of point Vortex initial conditions](point_ics.png)
 
-Based on the [configuration](config.toml), you can see different results that match the expected solutions from the literature.
+### Taylor Vortices
 
-Here is one set of results from using the inviscid Poisson formulation:
+![Plot of Taylor Vortex initial conditions](taylor_ics.png)
 
 ### Numerical Solutions (Incorrect formulation)
 
@@ -91,7 +87,7 @@ eq11_inviscid_poisson = @decapode begin
 end
 ```
 
-We achieve these numerical results:
+With this formulation, we achieve these numerical results:
 
 ![Rotating point vortices](vort.gif)
 
