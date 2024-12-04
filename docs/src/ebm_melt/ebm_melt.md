@@ -1,37 +1,49 @@
+# Haflar-EBM-Water
+
+This docs page demonsrates a composition of the Halfar model of ice dynamics with the Budyko-Sellers energy-balance model (EBM) defining temperature dynamics. Surface temperature affects the rate at which ice diffuses, and melts ice into a water density term. This water density then diffuses across the domain.
+
+We execute these dynamics on real sea ice thickness data provided by the Polar Science Center.
+
+``` @example DEC
 # Import Dependencies 
 
 # AlgebraicJulia Dependencies
 using Catlab
+using Catlab.Graphics
 using CombinatorialSpaces
 using DiagrammaticEquations
-using DiagrammaticEquations.Deca
 using Decapodes
-using Decapodes: SchSummationDecapode
 
 # External Dependencies
 using ComponentArrays
 using CoordRefSystems
-using GLMakie
-using JLD2
+using CairoMakie
 using LinearAlgebra
 using MLStyle
 using NetCDF
 using OrdinaryDiffEq
-using ProgressBars
 Point3D = Point3{Float64}
+```
 
-## Load a mesh
+First, we load a mesh. We will execute these dynamics on the sphere:
+
+``` @example DEC
+# Load a mesh
 s_plots = loadmesh(Icosphere(7));
 s = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s_plots);
 subdivide_duals!(s, Barycenter());
 wireframe(s_plots)
+```
 
-## Load Data
-# Effective sea ice thickness data can be downloaded here:
-# https://pscfiles.apl.uw.edu/axel/piomas20c/v1.0/monthly/piomas20c.heff.1901.2010.v1.0.nc
-ice_thickness_file = "examples/climate/piomas20c.heff.1901.2010.v1.0.nc"
+## Load data
 
-# Use ncinfo(ice_thickness_file) to get information on variables.
+The data provided by the Polar Science Center is given as a NetCDF file. Ice thickness is a matrix with the same dimensions as a matrix provided Latitude and Longitude of the associated point on the Earth's surface. We need to convert between polar and Cartesian coordinates to use this data on our mesh.
+
+``` @example DEC
+ice_thickness_file = "piomas20c.heff.1901.2010.v1.0.nc"
+run(`curl -o $ice_thickness_file https://pscfiles.apl.uw.edu/axel/piomas20c/v1.0/monthly/piomas20c.heff.1901.2010.v1.0.nc`)
+
+# Use ncinfo(ice_thickness_file) to interactively get information on variables.
 # Sea ice thickness ("sit") has dimensions of [y, x, time].
 # y,x index into "Latitude" and "Longitude" variables.
 # Time is in units of days since 1901-01-01.
@@ -42,14 +54,15 @@ sit = ncread(ice_thickness_file, "sit")
 # Convert latitude from [90, -90] to [0, 180] for convenience.
 lat .= -lat .+ 90
 
+# Convert mesh points from Cartesian to spherical coordinates.
 p_sph = map(point(s)) do p
   p = convert(Spherical, Cartesian(p...))
   [rad2deg(p.θ).val, rad2deg(p.ϕ).val]
 end
 
-# TODO: Do algebraic parameterization, rather than nearest-neighbor interpolation.
-# TODO: You can set a value to 0.0 if the distance to the nearest-neighbor is greater than some threshold.
-sit_sph_idxs = map(ProgressBar(p_sph)) do p
+# Note: You can instead use an algebraic parameterization, rather than nearest-neighbor interpolation.
+# Note: You can alternatively set a value to 0.0 if the distance to the nearest-neighbor is greater than some threshold.
+sit_sph_idxs = map(p_sph) do p
   argmin(map(i -> sqrt((lat[i] - p[1])^2 + (lon[i] - p[2])^2), eachindex(lat)))
 end
 
@@ -61,9 +74,14 @@ f = Figure()
 ax = LScene(f[1,1], scenekw=(lights=[],))
 msh = mesh!(ax, s_plots, color=sit_sph)
 Colorbar(f[1,2], msh)
+f
+```
 
 ## Define the model
 
+Here, the Halfar model of ice dynamics is recalled, as well as the Budyko-Sellers EBM. These these models are composed individually. They are then coupled together via `warming` and `melting` components.
+
+``` @example DEC
 halfar_eq2 = @decapode begin
   (h, melt)::Form0
   Γ::Form1
@@ -137,13 +155,14 @@ budyko_sellers = apex(oapply(budyko_sellers_composition_diagram,
    Open(outgoing_longwave_radiation, [:Tₛ, :OLR]),
    Open(heat_transfer, [:Tₛ, :HT, :cosϕᵖ]),
    Open(insolation, [:Q, :cosϕᵖ])]))
+nothing # hide
+```
 
+``` @example DEC
 warming = @decapode begin
   Tₛ::Form0
   A::Form1
 
-  #A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e7)
-  #A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.01e-13)
   A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.01e-19)
 end
 
@@ -164,15 +183,21 @@ budyko_sellers_halfar_water_composition_diagram = @relation () begin
 
   halfar(A, h, melt)
 end
+```
 
+``` @example DEC
 budyko_sellers_halfar_water = apex(oapply(budyko_sellers_halfar_water_composition_diagram,
   [Open(budyko_sellers, [:Tₛ]),
    Open(warming, [:A, :Tₛ]),
    Open(melting, [:Tₛ, :h, :melt]),
    Open(ice_dynamics, [:stress_A, :dynamics_h, :dynamics_melt])]))
+```
 
-## Define constants, parameters, and initial conditions
+## Define initial conditions
 
+The initial data must be specified for state variables, as well as constants and parameters.
+
+``` @example DEC
 # This is a primal 0-form, with values at vertices.
 cosϕᵖ = map(x -> cos(x[1]), point(s))
 # This is a dual 0-form, with values at edge centers.
@@ -248,17 +273,20 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   end
   return (args...) -> op(args...)
 end
+```
 
-## Generate simulation 
+## Generate and run simulation 
 
+The composed model is generated and executed for 100 years. The model is run twice to demonstrate the speed of the model after the simulation code is precompiled by the first run.
+
+We will save the final ice thickness data in a .jld2 file, an HDF5-compatible file format. We will also save the latitude and longitude of the points on the sphere.
+
+``` @example DEC
 sim = eval(gensim(budyko_sellers_halfar_water))
 fₘ = sim(s, generate)
 
-## Run simulation 
-
 tₑ = 100.0
 
-# Julia will precompile the generated simulation the first time it is run.
 @info("Precompiling Solver")
 prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
 soln = solve(prob, Tsit5())
@@ -270,15 +298,37 @@ soln = solve(prob, Tsit5())
 @show soln.retcode
 @info("Done")
 
-extrema(soln(0.0).halfar_h)
-extrema(soln(tₑ).halfar_h)
+save("ice.jld2",
+  Dict("lat" => map(x -> x[1], p_sph), "lon" => map(x -> x[2], p_sph), "ice" => soln(tₑ).h))
 
-@save "budyko_sellers_halfar_water.jld2" soln
+(extrema(soln(0.0).h), extrema(soln(tₑ).h))
+```
 
-# Visualize 
+## Visualize 
 
-g = Figure()
-ax = LScene(g[1,1], scenekw=(lights=[],))
+Let's visualize the initial conditions for ice height and the ice height after 100 years.
+
+### Initial ice height
+
+``` @example DEC
+f = Figure()
+ax = LScene(f[1,1], scenekw=(lights=[],))
 msh = mesh!(ax, s_plots, color=soln.u[end].h)
-Colorbar(g[1,2], msh)
+Colorbar(f[1,2], msh)
+f
+```
+
+### Ice height after 100 years
+
+``` @example DEC
+f = Figure()
+ax = LScene(f[1,1], scenekw=(lights=[],))
+msh = mesh!(ax, s_plots, color=soln.u[end].h)
+Colorbar(f[1,2], msh)
+f
+```
+
+```@example DEC
+run(`rm $ice_thickness_file) # hide
+```
 
