@@ -329,6 +329,6 @@ f
 ```
 
 ```@example DEC
-run(`rm $ice_thickness_file) # hide
+run(`rm $ice_thickness_file`) # hide
 ```
 
