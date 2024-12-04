@@ -183,6 +183,7 @@ budyko_sellers_halfar_water_composition_diagram = @relation () begin
 
   halfar(A, h, melt)
 end
+nothing # hide
 ```
 
 ``` @example DEC
@@ -191,6 +192,7 @@ budyko_sellers_halfar_water = apex(oapply(budyko_sellers_halfar_water_compositio
    Open(warming, [:A, :Tₛ]),
    Open(melting, [:Tₛ, :h, :melt]),
    Open(ice_dynamics, [:stress_A, :dynamics_h, :dynamics_melt])]))
+nothing # hide
 ```
 
 ## Define initial conditions
@@ -313,7 +315,7 @@ Let's visualize the initial conditions for ice height and the ice height after 1
 ``` @example DEC
 f = Figure()
 ax = LScene(f[1,1], scenekw=(lights=[],))
-msh = mesh!(ax, s_plots, color=soln.u[end].h)
+msh = mesh!(ax, s_plots, color=soln.u[begin].h)
 Colorbar(f[1,2], msh)
 f
 ```
