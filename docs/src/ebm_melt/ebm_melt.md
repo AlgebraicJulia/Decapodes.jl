@@ -107,6 +107,15 @@ ice_dynamics = apex(oapply(ice_dynamics_composition_diagram,
   [Open(halfar_eq2, [:Γ,:n]),
    Open(glens_law, [:Γ,:n])]))
 
+draw_composition(ice_dynamics_composition_diagram)
+```
+
+The composition pattern tells you how to couple the variables and introduces namespaces that we will use later when supplying initial conditions.
+
+The following code creates the Budyko-Sellers model as a composite of individual terms.
+
+```@example DEC
+
 energy_balance = @decapode begin
   (Tₛ, ASR, OLR, HT)::Form0
   C::Constant
@@ -156,8 +165,11 @@ budyko_sellers = apex(oapply(budyko_sellers_composition_diagram,
    Open(outgoing_longwave_radiation, [:Tₛ, :OLR]),
    Open(heat_transfer, [:Tₛ, :HT, :cosϕᵖ]),
    Open(insolation, [:Q, :cosϕᵖ])]))
-nothing # hide
+
+draw_composition(budyko_sellers_composition_diagram)
 ```
+
+Our full model can then be composed by adding terms for melting of water. We will assume that the meltwater is transported by diffusion because the transport of meltwater is so much faster than the melting process itself. If you wanted to increase the physical realism of this model, using a different model of melting and water transport would be a good place to start.
 
 ``` @example DEC
 warming = @decapode begin
@@ -177,14 +189,12 @@ end
 
 budyko_sellers_halfar_water_composition_diagram = @relation () begin
   budyko_sellers(Tₛ)
-
   warming(A, Tₛ)
-
   melting(Tₛ, h, melt)
-
   halfar(A, h, melt)
 end
-nothing # hide
+
+draw_composition(budyko_sellers_halfar_water_composition_diagram)
 ```
 
 ``` @example DEC
@@ -246,6 +256,7 @@ u₀ = ComponentArray(
   h = h₀,
   melting_water = water)
 
+# The underscore-separated words are the namespaces that were introduced by oapply.
 constants_and_parameters = (
   budyko_sellers_absorbed_radiation_α = α,
   budyko_sellers_outgoing_radiation_A = A,
@@ -260,7 +271,6 @@ constants_and_parameters = (
   melting_Dₕ₂ₒ = Dₕ₂ₒ)
 
 # Define how symbols map to Julia functions
-
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :♯ => begin
@@ -270,8 +280,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :mag => x -> begin
       norm.(x)
     end
-    :^ => (x,y) -> x .^ y
-    :* => (x,y) -> x .* y
     x => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
