@@ -609,12 +609,11 @@ function init_dec_matrices!(d::SummationDecapode, dec_matrices::Vector{Symbol}, 
   end
 end
 
-"""    link_contract_operators!(d::SummationDecapode, contract_defs, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::AbstractGenerationTarget)
+"""    link_contract_operators!(d::SummationDecapode, contract_defs::Expr, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::AbstractGenerationTarget)
 
 Collects arrays of DEC matrices together, replaces the array with a generated function name and computes the contracted multiplication
 """
-function link_contract_operators!(d::SummationDecapode, contract_defs, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::AbstractGenerationTarget)
-
+function link_contract_operators!(d::SummationDecapode, contract_defs::Expr, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::AbstractGenerationTarget)
   compute_to_name = Dict()
   curr_id = 1
 
@@ -642,8 +641,6 @@ function link_contract_operators!(d::SummationDecapode, contract_defs, con_dec_o
       d[op1_id, :op1] = computation_name
     end
   end
-
-  contract_defs
 end
 
 # TODO: Allow user to overload these hooks with user-defined code_target
@@ -746,8 +743,9 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   contracted_dec_operators = Set{Symbol}()
   if contract
     contract_operators!(gen_d, white_list = optimizable_dec_operators)
-    cont_defs = link_contract_operators!(gen_d, contract_defs, contracted_dec_operators, stateeltype, code_target)
+    link_contract_operators!(gen_d, contract_defs, contracted_dec_operators, stateeltype, code_target)
   end
+
 
   union!(optimizable_dec_operators, contracted_dec_operators, extra_dec_operators)
 
@@ -764,7 +762,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
       $func_defs
-      $cont_defs
+      $contract_defs
       $prologue
       $vect_defs
       f(__du__, __u__, __p__, __t__) = begin

@@ -325,15 +325,12 @@ end
 
 @testset "Gensim Transformations" begin
 
-  function checkForContractionInGensim(d::SummationDecapode)
-    results = []
-    block = gensim(d).args[2].args[2].args[5]
-    for line in 2:length(block.args)
-      push!(results, block.args[line].args[1])
-    end
-
-    return results
+  function count_contractions(e::Expr)
+    block = e.args[2].args[2].args[5]
+    length(block.args) - 1
   end
+
+  count_contractions(d::SummationDecapode) = count_contractions(gensim(d))
 
   begin
     primal_earth = loadmesh(Icosphere(1))
@@ -376,7 +373,9 @@ end
     B == ⋆(⋆(A))
     D == d(d(C))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 4 == count_contractions(single_contract)
+
+  @test 0 == count_contractions(gensim(single_contract; contract=false))
 
   sim = eval(gensim(single_contract))
   f = sim(earth, default_dec_generate)
@@ -403,7 +402,7 @@ end
 
     D == d(d(C))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 4 == count_contractions(contract_with_summation)
 
   sim = eval(gensim(contract_with_summation))
   f = sim(earth, default_dec_generate)
@@ -430,7 +429,7 @@ end
 
     D == d(d(C))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 4 == count_contractions(contract_with_op2)
 
   for prealloc in [false, true]
     let sim = eval(gensim(contract_with_op2, preallocate = prealloc))
@@ -456,7 +455,7 @@ end
     B == A * A
     D == ⋆(⋆(B))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 2 == count_contractions(later_contraction)
 
   sim = eval(gensim(later_contraction))
   f = sim(earth, default_dec_generate)
@@ -476,7 +475,7 @@ end
     D == ∂ₜ(A)
     D == d(A)
   end
-  @test 0 == length(checkForContractionInGensim(no_contraction))
+  @test 0 == count_contractions(no_contraction)
 
   sim = eval(gensim(no_contraction))
   f = sim(earth, default_dec_generate)
@@ -496,7 +495,7 @@ end
     D == ∂ₜ(A)
     D == d(k(A))
   end
-  @test 0 == length(checkForContractionInGensim(no_unallowed))
+  @test 0 == count_contractions(no_unallowed)
 
   sim = eval(gensim(no_unallowed))
 
