@@ -364,30 +364,38 @@ end
 
   # Testing simple contract operations
   single_contract = @decapode begin
-    (A,C)::Form0
-    (D)::Form2
+    (A,C,E)::Form0
+    (D,F)::Form2
 
     B == ∂ₜ(A)
     D == ∂ₜ(C)
 
     B == ⋆(⋆(A))
     D == d(d(C))
+    F == d(d(E))
   end
   @test 4 == count_contractions(single_contract)
 
   @test 0 == count_contractions(gensim(single_contract; contract=false))
 
+  f = gensim(single_contract)
+  @test f.args[2].args[2].args[5].args[[2,4]] == [
+    :(var"GenSim-M_GenSim-ConMat_0" = var"GenSim-M_d₁" * var"GenSim-M_d₀"),
+    :(var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_⋆₀")]
+
   sim = eval(gensim(single_contract))
   f = sim(earth, default_dec_generate)
   A = 2 * ones(nv(earth))
   C = ones(nv(earth))
-  u = ComponentArray(A=A, C=C)
-  du = ComponentArray(A=zeros(nv(earth)), C=zeros(ntriangles(earth)))
+  E = ones(nv(earth))
+  u = ComponentArray(A=A, C=C, E=E)
+  du = ComponentArray(A=zeros(nv(earth)), C=zeros(ntriangles(earth)), E=zeros(ntriangles(earth)))
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
   @test du.A ≈ 2 * ones(nv(earth))
   @test du.C == zeros(ntriangles(earth))
+  @test du.E == zeros(ntriangles(earth))
 
   # Testing contraction interrupted by summation
   contract_with_summation = @decapode begin

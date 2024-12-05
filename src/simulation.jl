@@ -615,30 +615,32 @@ Collects arrays of DEC matrices together, replaces the array with a generated fu
 """
 function link_contract_operators!(d::SummationDecapode, contract_defs::Expr, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::AbstractGenerationTarget)
   compute_to_name = Dict()
-  curr_id = 1
 
   for op1_id in parts(d, :Op1)
     op1_name = d[op1_id, :op1]
-    if isa(op1_name, AbstractArray)
+    if op1_name isa AbstractArray
+      # Pre-multiply the matrices.
+      # e.g. var"GenSim-M_d₀" * var"GenSim-M_⋆₀⁻¹"
       computation = reverse!(map(x -> add_inplace_stub(x), op1_name))
       compute_key = join(computation, " * ")
 
-      computation_name = get(compute_to_name, compute_key, :Error)
-      if computation_name == :Error
-        computation_name = add_stub(Symbol("GenSim-ConMat"), Symbol(curr_id))
-        get!(compute_to_name, compute_key, computation_name)
+      if compute_key ∉ keys(compute_to_name)
+        computation_name = add_stub(Symbol("GenSim-ConMat"), Symbol(length(compute_to_name)))
+        compute_to_name[compute_key] = computation_name
         push!(con_dec_operators, computation_name)
 
-        expr_line = hook_LCO_inplace(computation_name, computation, stateeltype, code_target)
-        push!(contract_defs.args, expr_line)
+        # Pre-multiply the matrices.
+        # e.g. var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_d₀" * var"GenSim-M_⋆₀⁻¹"
+        push!(contract_defs.args,
+          hook_LCO_inplace(computation_name, computation, stateeltype, code_target))
 
-        expr_line = Expr(Symbol("="), computation_name, Expr(Symbol("->"), :x, Expr(:call, :*, add_inplace_stub(computation_name), :x)))
-        push!(contract_defs.args, expr_line)
-
-        curr_id += 1
+        # Define a function which multiplies by the given matrix.
+        # e.g. var"GenSim-ConMat_1" = (x->var"GenSim-M_GenSim-ConMat_1" * x)
+        push!(contract_defs.args,
+          Expr(Symbol("="), computation_name, Expr(Symbol("->"), :x, Expr(:call, :*, add_inplace_stub(computation_name), :x))))
       end
 
-      d[op1_id, :op1] = computation_name
+      d[op1_id, :op1] = compute_to_name[compute_key]
     end
   end
 end
