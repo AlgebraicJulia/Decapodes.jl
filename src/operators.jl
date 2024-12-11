@@ -32,6 +32,14 @@ function default_dec_cu_generate() end;
 # ----------------------------------------------------------------
 function default_dec_cu_matrix_generate() end;
 
+function default_dec_matrix_generate(fs::PrimalGeometricMapSeries, my_symbol::Symbol, hodge::DiscreteHodge)
+  op = @match my_symbol begin
+    # Inverse Laplacians
+    :Δ₀⁻¹ => dec_Δ⁻¹(Val{0}, fs)
+    _ => default_dec_matrix_generate(finest_mesh(fs), my_symbol, hodge)
+  end
+end
+
 function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge)
   op = @match my_symbol begin
 
@@ -79,8 +87,11 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     :ℒ₁ => ℒ_dd(Tuple{1,1}, sd)
 
     # Dual Laplacians
-    :Δᵈ₀ => Δᵈ(Val{0},sd)
-    :Δᵈ₁ => Δᵈ(Val{1},sd)
+    :Δᵈ₀ => Δᵈ(Val{0}, sd)
+    :Δᵈ₁ => Δᵈ(Val{1}, sd)
+
+    # Inverse Laplacians
+    :Δ₀⁻¹ => dec_inv_lap_solver(Val{0}, sd)
 
     # Averaging Operator
     :avg₀₁ => dec_avg₀₁(sd)
@@ -124,20 +135,20 @@ function dec_mat_dual_differential(k::Int, sd::HasDeltaSet)
 end
 
 function dec_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where {k}
-  val_pack = dec_p_wedge_product(Tuple{0,k}, sd)
-  ((y, α, g) -> dec_c_wedge_product!(Tuple{0,k}, y, g, α, val_pack),
+  val_pack = cache_wedge(Tuple{0,k}, sd, Val{:CPU})
+  ((y, α, g) -> dec_c_wedge_product!(Tuple{0,k}, y, g, α, val_pack[1], val_pack[2]),
     (α, g) -> dec_c_wedge_product(Tuple{0,k}, g, α, val_pack))
 end
 
 function dec_pair_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where {k}
-  val_pack = dec_p_wedge_product(Tuple{0,k}, sd)
-  ((y, f, β) -> dec_c_wedge_product!(Tuple{0,k}, y, f, β, val_pack),
+  val_pack = cache_wedge(Tuple{0,k}, sd, Val{:CPU})
+  ((y, f, β) -> dec_c_wedge_product!(Tuple{0,k}, y, f, β, val_pack[1], val_pack[2]),
     (f, β) -> dec_c_wedge_product(Tuple{0,k}, f, β, val_pack))
 end
 
 function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
-  val_pack = dec_p_wedge_product(Tuple{1,1}, sd)
-  ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack),
+  val_pack = cache_wedge(Tuple{1,1}, sd, Val{:CPU})
+  ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack[1], val_pack[2]),
     (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack))
 end
 
@@ -165,9 +176,28 @@ function dec_avg₀₁(sd::HasDeltaSet)
   (avg_mat, x -> avg_mat * x)
 end
 
-function open_operators(d::SummationDecapode; dimension::Int=2)
+function dec_inv_lap_solver(::Type{Val{0}}, sd::HasDeltaSet)
+  inv_lap = LinearAlgebra.factorize(∇²(0, sd))
+  x -> inv_lap \ x
+end
+
+function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge=GeometricHodge())
+
+  op = @match my_symbol begin
+
+    :plus => (+)
+    :(-) || :neg => x -> -1 .* x
+    :ln => (x -> log.(x))
+
+    _ => error("Unmatched operator $my_symbol")
+  end
+
+  return (args...) -> op(args...)
+end
+
+function open_operators(d::SummationDecapode; kwargs...)
   e = deepcopy(d)
-  open_operators!(e, dimension=dimension)
+  open_operators!(e, kwargs...)
   return e
 end
 
@@ -178,35 +208,39 @@ function open_operators!(d::SummationDecapode; dimension::Int=2)
     op1_tgt = d[op1_idx, :tgt]
     op1_name = d[op1_idx, :op1]
 
-    remove_op1 = 0
-    @match (op1_name, dimension) begin
+
+    remove_op1 = @match (op1_name, dimension) begin
       (:Δ₀, 1) => begin
-        remove_op1 = add_De_Rham_1D!(Val{0}, d, op1_src, op1_tgt)
+        add_De_Rham_1D!(Val{0}, d, op1_src, op1_tgt)
+        true
       end
       (:Δ₁, 1) => begin
-        remove_op1 = add_De_Rham_1D!(Val{1}, d, op1_src, op1_tgt)
+        add_De_Rham_1D!(Val{1}, d, op1_src, op1_tgt)
+        true
       end
-
       (:Δ₀, 2) => begin
-        remove_op1 = add_De_Rham_2D!(Val{0}, d, op1_src, op1_tgt)
+        add_De_Rham_2D!(Val{0}, d, op1_src, op1_tgt)
+        true
       end
       (:Δ₁, 2) => begin
-        remove_op1 = add_De_Rham_2D!(Val{1}, d, op1_src, op1_tgt)
+        add_De_Rham_2D!(Val{1}, d, op1_src, op1_tgt)
+        true
       end
       (:Δ₂, 2) => begin
-        remove_op1 = add_De_Rham_2D!(Val{2}, d, op1_src, op1_tgt)
+        add_De_Rham_2D!(Val{2}, d, op1_src, op1_tgt)
+        true
       end
-
       (:δ₁, _) => begin
-        remove_op1 = add_Codiff!(d, op1_src, op1_tgt)
+        add_Codiff!(d, op1_src, op1_tgt)
+        true
       end
       (:δ₂, _) => begin
-        remove_op1 = add_Codiff!(d, op1_src, op1_tgt)
+        add_Codiff!(d, op1_src, op1_tgt)
+        true
       end
-
-      _ => nothing
+      _ => false
     end
-    (remove_op1 > 0) && push!(op1_remove_stack, op1_idx)
+    remove_op1 && push!(op1_remove_stack, op1_idx)
   end
 
   op2_remove_stack = Vector{Int}()
@@ -219,39 +253,44 @@ function open_operators!(d::SummationDecapode; dimension::Int=2)
     remove_op2 = 0
 
     ## Make substitution for complex operator into components
-    @match (op2_name, dimension) begin
+    remove_op2 = @match (op2_name, dimension) begin
       (:i₁, 1) => begin
-        remove_op2 = add_Inter_Prod_1D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        add_Inter_Prod_1D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
-
       (:i₁, 2) => begin
-        remove_op2 = add_Inter_Prod_2D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        add_Inter_Prod_2D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
       (:i₂, 2) => begin
-        remove_op2 = add_Inter_Prod_2D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        add_Inter_Prod_2D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
-
       (:L₀, 1) => begin
-        remove_op2 = add_Lie_1D!(Val{0}, d, op2_proj1, op2_proj2, op2_res)
+        add_Lie_1D!(Val{0}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
       (:L₁, 1) => begin
-        remove_op2 = add_Lie_1D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        add_Lie_1D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
-
       (:L₀, 2) => begin
-        remove_op2 = add_Lie_2D!(Val{0}, d, op2_proj1, op2_proj2, op2_res)
+        add_Lie_2D!(Val{0}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
       (:L₁, 2) => begin
-        remove_op2 = add_Lie_2D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        add_Lie_2D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
       (:L₂, 2) => begin
-        remove_op2 = add_Lie_2D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        add_Lie_2D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
-      _ => nothing
+      _ => false
     end
 
     ## If sub was made, add the original operator to be removed
-    (remove_op2 > 0) && push!(op2_remove_stack, op2_idx)
+    remove_op2 && push!(op2_remove_stack, op2_idx)
   end
 
   ## Remove all subbed operators

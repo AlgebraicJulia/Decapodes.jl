@@ -11,6 +11,7 @@ abstract type AbstractGenerationTarget end
 
 abstract type CPUBackend <: AbstractGenerationTarget end
 abstract type CUDABackend <: AbstractGenerationTarget end
+# TODO: Test that AbstractGenerationTargets are user-extendable.
 
 struct CPUTarget <: CPUBackend end
 struct CUDATarget <: CUDABackend end
@@ -131,33 +132,6 @@ function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CUDABackend)
   :($(c.name) = CuVector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end
 
-"""
-    compile_var(alloc_vectors::Vector{AllocVecCall})
-
-This creates the vector allocations that will be used by the simulation body for in-place operations.
-"""
-function compile_var(alloc_vectors::Vector{AllocVecCall})
-  return quote $(Expr.(alloc_vectors)...) end
-end
-
-#= function get_form_number(d::SummationDecapode, var_id::Int)
-  type = d[var_id, :type]
-  if type == :Form0
-    return 0
-  elseif type == :Form1
-    return 1
-  elseif type == :Form2
-    return 2
-  end
-  return -1
-end
-
-# ! WARNING: This may not work if names are not unique, use above instead
-function get_form_number(d::SummationDecapode, var_name::Symbol)
-var_id = first(incident(d, var_name, :name))
-return get_form_number(d, var_id)
-end =#
-
 # TODO: This should be edited when we replace types as symbols with types as Julia types
 function is_form(d::SummationDecapode, var_id::Int)
   type = d[var_id, :type]
@@ -231,52 +205,31 @@ generator_function(code_target::AbstractGenerationTarget) = throw(InvalidCodeTar
 generator_function(::CPUBackend) = :default_dec_generate
 generator_function(::CUDABackend) = :default_dec_cu_generate
 
-"""
-    compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::AbstractGenerationTarget)
+# TODO: This function should be handled with dispatch.
+"""    compile_env(d::SummationDecapode, basic_dec_ops::Vector{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
 
-This creates the symbol to function linking for the simulation output. Those run through the `default_dec` backend
-expect both an in-place and an out-of-place variant in that order. User defined operations only support out-of-place.
+Emit code to define functions given operator Symbols.
+
+Default operations return a tuple of an in-place and an out-of-place function. User-defined operations return an out-of-place function.
 """
-function compile_env(d::SummationDecapode, dec_matrices::Vector{Symbol}, con_dec_operators::Set{Symbol}, code_target::AbstractGenerationTarget)
-  defined_ops = deepcopy(con_dec_operators)
+function compile_env(d::SummationDecapode, basic_dec_ops::Set{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
+  default_generation = @match code_target begin
+    ::CPUBackend => :default_dec_matrix_generate
+    ::CUDABackend => :default_dec_cu_matrix_generate
+    _ => throw(InvalidCodeTargetException(code_target))
+  end
 
   defs = quote end
 
-  # These are optimizable default DEC functions.
-  for op in dec_matrices
-    op in defined_ops && continue
-
-    def = :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $(QuoteNode(op)), hodge))
+  for op in setdiff(basic_dec_ops ∪ d[:op1] ∪ d[:op2], contracted_ops ∪ [DerivOp] ∪ ARITHMETIC_OPS)
+    quote_op = QuoteNode(op)
+    def = op in basic_dec_ops ?
+      :(($(add_inplace_stub(op)), $op) = $(default_generation)(mesh, $quote_op, hodge)) :
+      :($op = operators(mesh, $quote_op))
     push!(defs.args, def)
-
-    push!(defined_ops, op)
   end
 
-  operators = vcat(d[:op1], d[:op2])
-
-  # These are nonoptimizable default DEC functions.
-  for op in intersect(operators, non_optimizable(code_target))
-    op in defined_ops && continue
-
-    def = :($op = $(generator_function(code_target))(mesh, $(QuoteNode(op)), hodge))
-    push!(defs.args, def)
-
-    push!(defined_ops, op)
-  end
-
-  # Add in user-defined operations
-  for op in operators
-    if op == DerivOp || op in defined_ops || op in ARITHMETIC_OPS
-      continue
-    end
-    ops = QuoteNode(op)
-    def = :($op = operators(mesh, $ops))
-    push!(defs.args, def)
-
-    push!(defined_ops, op)
-  end
-
-  return defs
+  defs
 end
 
 struct AmbiguousNameException <: Exception
@@ -382,15 +335,16 @@ const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
                                     :.= => :.=)
 
 """
-    compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
+    compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
 
 Function that compiles the computation body. `d` is the input Decapode, `inputs` is a vector of state variables and literals,
-`alloc_vec` should be empty when passed in, `optimizable_dec_operators` is a collection of all DEC operator symbols that can use special
+`inplace_dec_ops` is a collection of all DEC operator symbols that can use special
 in-place methods, `dimension` is the dimension of the problem (usually 1 or 2), `stateeltype` is the type of the state elements
 (usually Float32 or Float64), `code_target` determines what architecture the code is compiled for (either CPU or CUDA), and `preallocate`
 which is set to `true` by default and determines if intermediate results can be preallocated..
 """
-function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}, optimizable_dec_operators::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
+function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
+  alloc_vectors = Vector{AllocVecCall}()
   # Get the Vars of the inputs (probably state Vars).
   visited_Var = falses(nparts(d, :Var))
 
@@ -427,7 +381,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
 
         # TODO: Check to see if this is a DEC operator
         if preallocate && is_form(d, t)
-          if operator in optimizable_dec_operators
+          if operator in inplace_dec_ops
             equality = PROMOTE_ARITHMETIC_MAP[equality]
             operator = add_inplace_stub(operator)
             push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype, code_target))
@@ -527,7 +481,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, alloc_vectors::Ve
     end
   end
 
-  eq_exprs = Expr.(op_order)
+  Expr.(op_order), alloc_vectors
 end
 
 """
@@ -566,29 +520,13 @@ function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCa
 end
 
 """
-    resolve_types_compiler!(d::SummationDecapode)
+    convert_cs_ps_to_infer!(d::SummationDecapode)
 
-Converts `Constant` and `Parameter` types to `infer` since this is essentially what they are
-to the compiler.
+Convert `Constant` and `Parameter` types to `infer`.
 """
-function resolve_types_compiler!(d::SummationDecapode)
-  d[:type] = map(d[:type]) do x
-    if x == :Constant || x == :Parameter
-      return :infer
-    end
-    return x
-  end
-end
-
-"""
-    replace_names_compiler!(d::SummationDecapode)
-
-This makes easy function name conversions in the Decapode
-"""
-function replace_names_compiler!(d::SummationDecapode)
-  dec_op1 = Pair{Symbol, Any}[]
-  dec_op2 = Pair{Symbol, Symbol}[(:∧₀₀ => :.*)]
-  replace_names!(d, dec_op1, dec_op2)
+function convert_cs_ps_to_infer!(d::SummationDecapode)
+  cs_ps = incident(d, [:Constant, :Parameter], :type)
+  d[vcat(cs_ps...), :type] = :infer
 end
 
 # TODO: This should be extended to accept user rules
@@ -607,75 +545,41 @@ function infer_overload_compiler!(d::SummationDecapode, dimension::Int)
   end
 end
 
-"""
-    init_dec_matrices!(d::SummationDecapode, dec_matrices::Vector{Symbol}, optimizable_dec_operators::Set{Symbol})
+"""    link_contracted_operators!(d::SummationDecapode, code_target::AbstractGenerationTarget)
 
-Collects all DEC operators that are concrete matrices.
+Emit code to pre-multiply unique sequences of matrix operations, and rename corresponding operations.
 """
-function init_dec_matrices!(d::SummationDecapode, dec_matrices::Vector{Symbol}, optimizable_dec_operators::Set{Symbol})
-  for op_name in vcat(d[:op1], d[:op2])
-    if op_name in optimizable_dec_operators
-      push!(dec_matrices, op_name)
-    end
+function link_contracted_operators!(d::SummationDecapode, code_target::AbstractGenerationTarget)
+  contracted_defs = quote end
+  contracted_ops = Symbol[]
+  chain_idxs = findall(x -> x isa AbstractArray, d[:op1])
+
+  for (i, chain) in enumerate(unique(d[chain_idxs, :op1]))
+    LHS = add_stub(Symbol("GenSim-ConMat"), Symbol(i-1))
+    RHS = reverse!(add_inplace_stub.(chain))
+
+    push!(contracted_ops, LHS)
+    push!(contracted_defs.args, mat_def_expr(LHS, RHS, code_target), mat_mul_func_expr(LHS))
+    d[findall(==(chain), d[:op1]), :op1] = LHS
   end
+  contracted_defs, contracted_ops
 end
 
-"""
-    link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::AbstractGenerationTarget)
+# Given the name of a matrix, return an Expr that multiplies by that matrix.
+mat_mul_func_expr(mat_name) =
+  :($mat_name = x -> $(add_inplace_stub(mat_name)) * x)
 
-Collects arrays of DEC matrices together, replaces the array with a generated function name and computes the contracted multiplication
-"""
-function link_contract_operators(d::SummationDecapode, con_dec_operators::Set{Symbol}, stateeltype::DataType, code_target::AbstractGenerationTarget)
+# Given the name and factors of a matrix, return an Expr that defines that matrix.
+mat_def_expr(computation_name::Symbol, factors::Vector{Symbol}, ::CPUBackend) =
+  :($(add_inplace_stub(computation_name)) = *($(factors...)))
 
-  contract_defs = quote end
+nested_mul(factors) =
+  length(factors) == 1 ?
+    list[begin] :
+    Expr(:call, :*, nested_mul(factors[begin:end-1]), factors[end])
 
-  compute_to_name = Dict()
-  curr_id = 1
-
-  for op1_id in parts(d, :Op1)
-    op1_name = d[op1_id, :op1]
-    if isa(op1_name, AbstractArray)
-      computation = reverse!(map(x -> add_inplace_stub(x), op1_name))
-      compute_key = join(computation, " * ")
-
-      computation_name = get(compute_to_name, compute_key, :Error)
-      if computation_name == :Error
-        computation_name = add_stub(Symbol("GenSim-ConMat"), Symbol(curr_id))
-        get!(compute_to_name, compute_key, computation_name)
-        push!(con_dec_operators, computation_name)
-
-        expr_line = hook_LCO_inplace(computation_name, computation, stateeltype, code_target)
-        push!(contract_defs.args, expr_line)
-
-        expr_line = Expr(Symbol("="), computation_name, Expr(Symbol("->"), :x, Expr(:call, :*, add_inplace_stub(computation_name), :x)))
-        push!(contract_defs.args, expr_line)
-
-        curr_id += 1
-      end
-
-      d[op1_id, :op1] = computation_name
-    end
-  end
-
-  contract_defs
-end
-
-# TODO: Allow user to overload these hooks with user-defined code_target
-function hook_LCO_inplace(computation_name::Symbol, computation::Vector{Symbol}, float_type::DataType, ::CPUBackend)
-  return :($(add_inplace_stub(computation_name)) = $(Expr(:call, :*, computation...)))
-end
-
-function generate_parentheses_multiply(list)
-  if length(list) == 1
-      return list[1]
-  else
-      return Expr(:call, :*, generate_parentheses_multiply(list[1:end-1]), list[end])
-  end
-end
-
-function hook_LCO_inplace(computation_name::Symbol, computation::Vector{Symbol}, float_type::DataType, ::CUDABackend)
-  return :($(add_inplace_stub(computation_name)) = $(generate_parentheses_multiply(computation)))
-end
+mat_def_expr(computation_name::Symbol, factors::Vector{Symbol}, ::CUDABackend) =
+  :($(add_inplace_stub(computation_name)) = $(nested_mul(factors)))
 
 struct UnsupportedDimensionException <: Exception
   dim::Int
@@ -697,6 +601,11 @@ const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧�
 
 const NON_OPTIMIZABLE_CPU_OPERATORS = Set([:♯ᵖᵖ, :♯ᵈᵈ, :♭ᵈᵖ])
 const NON_OPTIMIZABLE_CUDA_OPERATORS = Set{Symbol}()
+                                    
+const DEC_GEN_OPTIMIZABLE_OPERATORS = MATRIX_OPTIMIZABLE_DEC_OPERATORS ∪ NONMATRIX_OPTIMIZABLE_DEC_OPERATORS
+                                    
+const DEC_CPU_OPERATORS = DEC_GEN_OPTIMIZABLE_OPERATORS ∪ NON_OPTIMIZABLE_CPU_OPERATORS
+const DEC_CUDA_OPERATORS = DEC_GEN_OPTIMIZABLE_OPERATORS ∪ NON_OPTIMIZABLE_CUDA_OPERATORS
 
 non_optimizable(::AbstractGenerationTarget) = throw(InvalidCodeTargetException(code_target))
 non_optimizable(::CPUBackend) = NON_OPTIMIZABLE_CPU_OPERATORS
@@ -723,9 +632,12 @@ to operator mappings to return a simulator that can be used to solve the represe
 `code_target`: The intended architecture target for the generated code. (Defaults to `CPUTarget()`)(Use `CUDATarget()` for NVIDIA CUDA GPUs)
 
 `preallocate`: Enables(`true`)/disables(`false`) pre-allocated caches for intermediate computations. Some functions, such as those that determine Jacobian sparsity patterns, or perform auto-differentiation, may require this to be disabled. (Defaults to `true`)
-"""
-function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
 
+`contract`: Enables(`true`)/disables(`false`) pre-computation of matrix-matrix multiplications for chains of such operators. This feature can interfere with certain auto-differentiation methods, in which case this can be disabled. (Defaults to `true`)
+
+`multigrid`: Enables multigrid methods during code generation. If `true`, then the function produced by `gensim` will expect a `PrimalGeometricMapSeries`. (Defaults to `false`)
+"""
+function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, multigrid::Bool = false)
   (dimension == 1 || dimension == 2) ||
     throw(UnsupportedDimensionException(dimension))
 
@@ -733,49 +645,47 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
     throw(UnsupportedStateeltypeException(stateeltype))
 
   # Explicit copy for safety
-  gen_d = deepcopy(user_d)
+  d = deepcopy(user_d)
 
-  recognize_types(gen_d)
+  recognize_types(d)
 
   # Makes copy
-  gen_d = expand_operators(gen_d)
+  d = expand_operators(d)
 
-  dec_matrices = Vector{Symbol}()
-  alloc_vectors = Vector{AllocVecCall}()
+  vars = get_vars_code(d, input_vars, stateeltype, code_target)
+  tars = set_tanvars_code(d, code_target)
 
-  vars = get_vars_code(gen_d, input_vars, stateeltype, code_target)
-  tars = set_tanvars_code(gen_d, code_target)
+  infer_overload_compiler!(d, dimension)
+  convert_cs_ps_to_infer!(d)
+  infer_overload_compiler!(d, dimension)
 
-  # We need to run this after we grab the constants and parameters out
-  infer_overload_compiler!(gen_d, dimension)
-  resolve_types_compiler!(gen_d)
-  infer_overload_compiler!(gen_d, dimension)
-
-  # This should probably be followed by an expand_operators
-  replace_names_compiler!(gen_d)
-  open_operators!(gen_d, dimension = dimension)
-  infer_overload_compiler!(gen_d, dimension)
-
-  init_dec_matrices!(gen_d, dec_matrices, union(MATRIX_OPTIMIZABLE_DEC_OPERATORS, NONMATRIX_OPTIMIZABLE_DEC_OPERATORS))
+  # XXX: expand_operators should be called if any replacement is a chain of operations.
+  replace_names!(d, Pair{Symbol, Any}[], Pair{Symbol, Symbol}[(:∧₀₀ => :.*)])
+  open_operators!(d, dimension = dimension)
+  infer_overload_compiler!(d, dimension)
 
   # This contracts matrices together into a single matrix
-  contracted_dec_operators = Set{Symbol}()
-  contract_operators!(gen_d, white_list = MATRIX_OPTIMIZABLE_DEC_OPERATORS)
-  cont_defs = link_contract_operators(gen_d, contracted_dec_operators, stateeltype, code_target)
+  contract && contract_operators!(gen_d, white_list = MATRIX_OPTIMIZABLE_DEC_OPERATORS)
+  contracted_defs, contracted_ops = link_contracted_operators!(d, code_target)
 
-  optimizable_dec_operators = union(MATRIX_OPTIMIZABLE_DEC_OPERATORS, contracted_dec_operators, NONMATRIX_OPTIMIZABLE_DEC_OPERATORS)
+  inplace_dec_ops = union(DEC_GEN_OPTIMIZABLE_OPERATORS, contracted_dec_operators)
 
   # Compilation of the simulation
-  equations = compile(gen_d, input_vars, alloc_vectors, optimizable_dec_operators, dimension, stateeltype, code_target, preallocate)
+  equations, alloc_vectors = compile(d, input_vars, inplace_dec_ops, dimension, stateeltype, code_target, preallocate)
   data = post_process_vector_allocs(alloc_vectors, code_target)
 
-  func_defs = compile_env(gen_d, dec_matrices, contracted_dec_operators, code_target)
-  vect_defs = compile_var(alloc_vectors)
+  # TODO: Generalize to CUDA
+  func_defs = compile_env(d, DEC_CPU_OPERATORS, contracted_ops, code_target)
+  vect_defs = quote $(Expr.(alloc_vectors)...) end
+
+  multigrid_defs = quote end
+  multigrid && push!(multigrid_defs.args, :(mesh = finest_mesh(mesh)))
 
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
       $func_defs
-      $cont_defs
+      $contracted_defs
+      $multigrid_defs
       $vect_defs
       f(__du__, __u__, __p__, __t__) = begin
         $vars

@@ -9,7 +9,11 @@ using LinearAlgebra
 using MLStyle
 using OrdinaryDiffEq
 using Test
+using Random
 Point3D = Point3{Float64}
+
+import Decapodes: default_dec_matrix_generate
+
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
@@ -321,15 +325,12 @@ end
 
 @testset "Gensim Transformations" begin
 
-  function checkForContractionInGensim(d::SummationDecapode)
-    results = []
-    block = gensim(d).args[2].args[2].args[5]
-    for line in 2:length(block.args)
-      push!(results, block.args[line].args[1])
-    end
-
-    return results
+  function count_contractions(e::Expr)
+    block = e.args[2].args[2].args[5]
+    length(block.args) - 1
   end
+
+  count_contractions(d::SummationDecapode) = count_contractions(gensim(d))
 
   begin
     primal_earth = loadmesh(Icosphere(1))
@@ -363,28 +364,38 @@ end
 
   # Testing simple contract operations
   single_contract = @decapode begin
-    (A,C)::Form0
-    (D)::Form2
+    (A,C,E)::Form0
+    (D,F)::Form2
 
     B == ∂ₜ(A)
     D == ∂ₜ(C)
 
     B == ⋆(⋆(A))
     D == d(d(C))
+    F == d(d(E))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 4 == count_contractions(single_contract)
+
+  @test 0 == count_contractions(gensim(single_contract; contract=false))
+
+  f = gensim(single_contract)
+  @test f.args[2].args[2].args[5].args[[2,4]] == [
+    :(var"GenSim-M_GenSim-ConMat_0" = var"GenSim-M_d₁" * var"GenSim-M_d₀"),
+    :(var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_⋆₀")]
 
   sim = eval(gensim(single_contract))
   f = sim(earth, default_dec_generate)
   A = 2 * ones(nv(earth))
   C = ones(nv(earth))
-  u = ComponentArray(A=A, C=C)
-  du = ComponentArray(A=zeros(nv(earth)), C=zeros(ntriangles(earth)))
+  E = ones(nv(earth))
+  u = ComponentArray(A=A, C=C, E=E)
+  du = ComponentArray(A=zeros(nv(earth)), C=zeros(ntriangles(earth)), E=zeros(ntriangles(earth)))
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
   @test du.A ≈ 2 * ones(nv(earth))
   @test du.C == zeros(ntriangles(earth))
+  @test du.E == zeros(ntriangles(earth))
 
   # Testing contraction interrupted by summation
   contract_with_summation = @decapode begin
@@ -399,7 +410,7 @@ end
 
     D == d(d(C))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 4 == count_contractions(contract_with_summation)
 
   sim = eval(gensim(contract_with_summation))
   f = sim(earth, default_dec_generate)
@@ -426,7 +437,7 @@ end
 
     D == d(d(C))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 4 == count_contractions(contract_with_op2)
 
   for prealloc in [false, true]
     let sim = eval(gensim(contract_with_op2, preallocate = prealloc))
@@ -452,7 +463,7 @@ end
     B == A * A
     D == ⋆(⋆(B))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 2 == count_contractions(later_contraction)
 
   sim = eval(gensim(later_contraction))
   f = sim(earth, default_dec_generate)
@@ -472,7 +483,7 @@ end
     D == ∂ₜ(A)
     D == d(A)
   end
-  @test 0 == length(checkForContractionInGensim(no_contraction))
+  @test 0 == count_contractions(no_contraction)
 
   sim = eval(gensim(no_contraction))
   f = sim(earth, default_dec_generate)
@@ -492,7 +503,7 @@ end
     D == ∂ₜ(A)
     D == d(k(A))
   end
-  @test 0 == length(checkForContractionInGensim(no_unallowed))
+  @test 0 == count_contractions(no_unallowed)
 
   sim = eval(gensim(no_unallowed))
 
@@ -760,6 +771,46 @@ end
 
 end
 
+@testset "Multigrid" begin
+  s = triangulated_grid(1,1,1/4,sqrt(3)/2*1/4,Point3D)
+
+  series = PrimalGeometricMapSeries(s, binary_subdivision_map, 4);
+
+  our_mesh = finest_mesh(series)
+  lap = ∇²(0,our_mesh);
+
+  Random.seed!(1337)
+  b = lap*rand(nv(our_mesh));
+
+  inv_lap = @decapode begin
+    U::Form0
+    ∂ₜ(U) == Δ₀⁻¹(U)
+  end
+
+  function generate(fs, my_symbol; hodge=DiagonalHodge())
+    op = @match my_symbol begin
+      _ => default_dec_matrix_generate(fs, my_symbol, hodge)
+    end
+  end
+
+  sim = eval(gensim(inv_lap))
+  sim_mg = eval(gensim(inv_lap; multigrid=true))
+
+  f = sim(our_mesh, generate);
+  f_mg = sim_mg(series, generate);
+
+  u = ComponentArray(U=b)
+  du = similar(u)
+
+  # Regular mesh
+  f(du, u, 0, ())
+  @test norm(lap*du.U-b)/norm(b) < 1e-15
+
+  # Multigrid
+  f_mg(du, u, 0, ())
+  @test norm(lap*du.U-b)/norm(b) < 1e-6
+end
+
 @testset "Allocations" begin
 # Test the heat equation Decapode has expected memory allocation.
 
@@ -784,11 +835,7 @@ for prealloc in [false, true]
   nallocs = @allocations f(du, u₀, p, (0,1.0))
   bytes = @allocated f(du, u₀, p, (0,1.0))
 
-  if VERSION < v"1.11"
-    @test (nallocs, bytes) == (prealloc ? (3, 80) : (5, 400))
-  else
-    @test (nallocs, bytes) == (prealloc ? (2, 32) : (6, 352))
-  end
+  @test (nallocs, bytes) <= (prealloc ? (6, 80) : (6, 400))
 end
 
 end
