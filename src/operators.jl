@@ -176,9 +176,9 @@ function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::Discret
   return (args...) -> op(args...)
 end
 
-function open_operators(d::SummationDecapode; dimension::Int=2)
+function open_operators(d::SummationDecapode; kwargs...)
   e = deepcopy(d)
-  open_operators!(e, dimension=dimension)
+  open_operators!(e, kwargs...)
   return e
 end
 
@@ -189,35 +189,39 @@ function open_operators!(d::SummationDecapode; dimension::Int=2)
     op1_tgt = d[op1_idx, :tgt]
     op1_name = d[op1_idx, :op1]
 
-    remove_op1 = 0
-    @match (op1_name, dimension) begin
+
+    remove_op1 = @match (op1_name, dimension) begin
       (:Δ₀, 1) => begin
-        remove_op1 = add_De_Rham_1D!(Val{0}, d, op1_src, op1_tgt)
+        add_De_Rham_1D!(Val{0}, d, op1_src, op1_tgt)
+        true
       end
       (:Δ₁, 1) => begin
-        remove_op1 = add_De_Rham_1D!(Val{1}, d, op1_src, op1_tgt)
+        add_De_Rham_1D!(Val{1}, d, op1_src, op1_tgt)
+        true
       end
-
       (:Δ₀, 2) => begin
-        remove_op1 = add_De_Rham_2D!(Val{0}, d, op1_src, op1_tgt)
+        add_De_Rham_2D!(Val{0}, d, op1_src, op1_tgt)
+        true
       end
       (:Δ₁, 2) => begin
-        remove_op1 = add_De_Rham_2D!(Val{1}, d, op1_src, op1_tgt)
+        add_De_Rham_2D!(Val{1}, d, op1_src, op1_tgt)
+        true
       end
       (:Δ₂, 2) => begin
-        remove_op1 = add_De_Rham_2D!(Val{2}, d, op1_src, op1_tgt)
+        add_De_Rham_2D!(Val{2}, d, op1_src, op1_tgt)
+        true
       end
-
       (:δ₁, _) => begin
-        remove_op1 = add_Codiff!(d, op1_src, op1_tgt)
+        add_Codiff!(d, op1_src, op1_tgt)
+        true
       end
       (:δ₂, _) => begin
-        remove_op1 = add_Codiff!(d, op1_src, op1_tgt)
+        add_Codiff!(d, op1_src, op1_tgt)
+        true
       end
-
-      _ => nothing
+      _ => false
     end
-    (remove_op1 > 0) && push!(op1_remove_stack, op1_idx)
+    remove_op1 && push!(op1_remove_stack, op1_idx)
   end
 
   op2_remove_stack = Vector{Int}()
@@ -230,39 +234,44 @@ function open_operators!(d::SummationDecapode; dimension::Int=2)
     remove_op2 = 0
 
     ## Make substitution for complex operator into components
-    @match (op2_name, dimension) begin
+    remove_op2 = @match (op2_name, dimension) begin
       (:i₁, 1) => begin
-        remove_op2 = add_Inter_Prod_1D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        add_Inter_Prod_1D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
-
       (:i₁, 2) => begin
-        remove_op2 = add_Inter_Prod_2D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        add_Inter_Prod_2D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
       (:i₂, 2) => begin
-        remove_op2 = add_Inter_Prod_2D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        add_Inter_Prod_2D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
-
       (:L₀, 1) => begin
-        remove_op2 = add_Lie_1D!(Val{0}, d, op2_proj1, op2_proj2, op2_res)
+        add_Lie_1D!(Val{0}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
       (:L₁, 1) => begin
-        remove_op2 = add_Lie_1D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        add_Lie_1D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
-
       (:L₀, 2) => begin
-        remove_op2 = add_Lie_2D!(Val{0}, d, op2_proj1, op2_proj2, op2_res)
+        add_Lie_2D!(Val{0}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
       (:L₁, 2) => begin
-        remove_op2 = add_Lie_2D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        add_Lie_2D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
       (:L₂, 2) => begin
-        remove_op2 = add_Lie_2D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        add_Lie_2D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        true
       end
-      _ => nothing
+      _ => false
     end
 
     ## If sub was made, add the original operator to be removed
-    (remove_op2 > 0) && push!(op2_remove_stack, op2_idx)
+    remove_op2 && push!(op2_remove_stack, op2_idx)
   end
 
   ## Remove all subbed operators
