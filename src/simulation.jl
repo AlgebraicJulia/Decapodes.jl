@@ -218,11 +218,7 @@ function compile_env(d::SummationDecapode, basic_dec_ops::Set{Symbol}, contracte
 
   avoid_ops = contracted_ops ∪ [DerivOp] ∪ ARITHMETIC_OPS
 
-  for op in d[:op1] ∪ d[:op2] ∪ basic_dec_ops
-    if op in avoid_ops
-      continue
-    end
-
+  for op in setdiff(d[:op1] ∪ d[:op2] ∪ basic_dec_ops, avoid_ops)
     quote_op = QuoteNode(op)
     def = @match op begin
       if op in optimizable(code_target) end => :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $quote_op, hodge))
@@ -680,13 +676,12 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   contract && contract_operators!(d, white_list = MATRIX_OPTIMIZABLE_DEC_OPERATORS)
   contracted_defs, contracted_ops = link_contracted_operators!(d, code_target)
 
-  inplace_dec_ops = union(DEC_GEN_OPTIMIZABLE_OPERATORS, contracted_ops)
+  inplace_dec_ops = union(optimizable(code_target), contracted_ops)
 
   # Compilation of the simulation
   equations, alloc_vectors = compile(d, input_vars, inplace_dec_ops, dimension, stateeltype, code_target, preallocate)
   data = post_process_vector_allocs(alloc_vectors, code_target)
 
-  # TODO: Generalize to CUDA
   func_defs = compile_env(d, basic_dec_ops, contracted_ops, code_target)
   vect_defs = quote $(Expr.(alloc_vectors)...) end
 

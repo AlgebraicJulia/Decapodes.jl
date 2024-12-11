@@ -771,7 +771,6 @@ end
   @test sim_Tracer(d_rect, generate, DiagonalHodge()) isa Any
 
   # Test for Halfar
-
   halfar_eq2 = @decapode begin
     h::Form0
     Γ::Form1
@@ -806,12 +805,13 @@ end
       :mag => x -> norm.(x)
       x => error("Unmatched operator $my_symbol")
     end
-    return (args...) -> op(args...)
+    return op
   end
 
   sim_Halfar = evalsim(halfar)
   @test sim_Halfar(d_rect, halfar_generate, DiagonalHodge()) isa Any
 
+  # Test for Poisson
   eq11_inviscid_poisson = @decapode begin
     d𝐮::DualForm2
     𝐮::DualForm1
@@ -828,12 +828,80 @@ end
       :♭♯ => x -> nothing
       x => error("Unmatched operator $my_symbol")
     end
-    return (args...) -> op(args...)
+    return op
   end
-
 
   sim_Poisson = evalsim(eq11_inviscid_poisson)
   @test sim_Poisson(d_rect, poisson_generate, DiagonalHodge()) isa Any
+
+  # Test for Halmo
+  eq10forN2 = @decapode begin
+    (𝐮,w)::DualForm1
+    (P, 𝑝ᵈ)::DualForm0
+    μ::Constant
+
+    𝑝ᵈ == P + 0.5 * ι₁₁(w,w)
+
+    ∂ₜ(𝐮) == μ * ∘(d, ⋆, d, ⋆)(w) + (-1)*⋆₁⁻¹(∧ᵈᵖ₁₀(w, ⋆(d(w)))) + d(𝑝ᵈ)
+  end
+
+  halfar_eq2 = @decapode begin
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯ᵖᵖ(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  end
+
+  glens_law = @decapode begin
+    Γ::Form1
+    (A,ρ,g,n)::Constant
+
+    Γ == (2/(n+2))*A*(ρ*g)^n
+  end
+
+  ice_dynamics_composition_diagram = @relation () begin
+    dynamics(Γ,n)
+    stress(Γ,n)
+  end
+
+  ice_dynamics = apex(oapply(ice_dynamics_composition_diagram,
+    [Open(halfar_eq2, [:Γ,:n]),
+     Open(glens_law, [:Γ,:n])]))
+
+     ice_water_composition_diagram = @relation () begin
+     glacier_dynamics(ice_thickness)
+     water_dynamics(flow, flow_after)
+
+     interaction(ice_thickness, flow, flow_after)
+   end
+
+   blocking = @decapode begin
+    h::Form0
+    (𝐮,w)::DualForm1
+
+    w == (1-σ(h)) ∧ᵖᵈ₀₁ 𝐮
+  end
+
+  ice_water = apex(oapply(ice_water_composition_diagram,
+  [Open(ice_dynamics, [:dynamics_h]),
+   Open(eq10forN2,    [:𝐮, :w]),
+   Open(blocking,     [:h, :𝐮, :w])]))
+
+  function halmo_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :σ => x -> nothing
+      :mag => x -> nothing
+      _ => error("Unmatched operator $my_symbol")
+    end
+    return op
+  end
+
+  resolve_overloads!(infer_types!(ice_water))
+
+  sim_Halmo = evalsim(ice_water)
+  @test sim_Halmo(d_rect, halmo_generate, DiagonalHodge()) isa Any
+
 end
 
 @testset "Multigrid" begin
