@@ -213,19 +213,22 @@ Emit code to define functions given operator Symbols.
 Default operations return a tuple of an in-place and an out-of-place function. User-defined operations return an out-of-place function.
 """
 function compile_env(d::SummationDecapode, basic_dec_ops::Set{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
-  default_generation = @match code_target begin
-    ::CPUBackend => :default_dec_matrix_generate
-    ::CUDABackend => :default_dec_cu_matrix_generate
-    _ => throw(InvalidCodeTargetException(code_target))
-  end
 
   defs = quote end
 
-  for op in setdiff(basic_dec_ops ∪ d[:op1] ∪ d[:op2], contracted_ops ∪ [DerivOp] ∪ ARITHMETIC_OPS)
+  avoid_ops = contracted_ops ∪ [DerivOp] ∪ ARITHMETIC_OPS
+
+  for op in d[:op1] ∪ d[:op2] ∪ basic_dec_ops
+    if op in avoid_ops
+      continue
+    end
+
     quote_op = QuoteNode(op)
-    def = op in basic_dec_ops ?
-      :(($(add_inplace_stub(op)), $op) = $(default_generation)(mesh, $quote_op, hodge)) :
-      :($op = operators(mesh, $quote_op))
+    def = @match op begin
+      if op in optimizable(code_target) end => :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $quote_op, hodge))
+      if op in non_optimizable(code_target) end => :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
+      _ => :($op = operators(mesh, $quote_op))
+    end
     push!(defs.args, def)
   end
 
@@ -427,7 +430,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::
               equality = PROMOTE_ARITHMETIC_MAP[equality]
               push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
             end
-          elseif operator in optimizable_dec_operators
+          elseif operator in inplace_dec_ops
             operator = add_inplace_stub(operator)
             equality = PROMOTE_ARITHMETIC_MAP[equality]
             push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
@@ -599,17 +602,24 @@ const MATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀
 
 const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
-const NON_OPTIMIZABLE_CPU_OPERATORS = Set([:♯ᵖᵖ, :♯ᵈᵈ, :♭ᵈᵖ])
-const NON_OPTIMIZABLE_CUDA_OPERATORS = Set{Symbol}()
-                                    
-const DEC_GEN_OPTIMIZABLE_OPERATORS = MATRIX_OPTIMIZABLE_DEC_OPERATORS ∪ NONMATRIX_OPTIMIZABLE_DEC_OPERATORS
-                                    
-const DEC_CPU_OPERATORS = DEC_GEN_OPTIMIZABLE_OPERATORS ∪ NON_OPTIMIZABLE_CPU_OPERATORS
-const DEC_CUDA_OPERATORS = DEC_GEN_OPTIMIZABLE_OPERATORS ∪ NON_OPTIMIZABLE_CUDA_OPERATORS
 
-non_optimizable(::AbstractGenerationTarget) = throw(InvalidCodeTargetException(code_target))
+const NON_OPTIMIZABLE_CPU_OPERATORS = Set([:♯ᵖᵖ, :♯ᵈᵈ, :♭ᵈᵖ,
+                                           :∧ᵖᵈ₁₁, :∧ᵖᵈ₀₁, :∧ᵈᵖ₁₁, :∧ᵈᵖ₁₀, :∧ᵈᵈ₁₁, :∧ᵈᵈ₁₀, :∧ᵈᵈ₀₁,
+                                           :ι₁₁, :ι₁₂, :ℒ₁, :Δᵈ₀ , :Δᵈ₁, :Δ₀⁻¹, :neg])
+const NON_OPTIMIZABLE_CUDA_OPERATORS = Set{Symbol}()
+
+
+const DEC_GEN_OPTIMIZABLE_OPERATORS = MATRIX_OPTIMIZABLE_DEC_OPERATORS ∪ NONMATRIX_OPTIMIZABLE_DEC_OPERATORS
+
+optimizable(code_target::AbstractGenerationTarget) = throw(InvalidCodeTargetException(code_target))
+optimizable(::CPUBackend) = DEC_GEN_OPTIMIZABLE_OPERATORS
+optimizable(::CUDABackend) = DEC_GEN_OPTIMIZABLE_OPERATORS
+
+non_optimizable(code_target::AbstractGenerationTarget) = throw(InvalidCodeTargetException(code_target))
 non_optimizable(::CPUBackend) = NON_OPTIMIZABLE_CPU_OPERATORS
 non_optimizable(::CUDABackend) = NON_OPTIMIZABLE_CUDA_OPERATORS
+
+dec_operator_set(code_target::AbstractGenerationTarget) = optimizable(code_target) ∪ non_optimizable(code_target)
 
 """
     gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
@@ -664,18 +674,20 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   open_operators!(d, dimension = dimension)
   infer_overload_compiler!(d, dimension)
 
+  basic_dec_ops = Set{Symbol}(dec_operator_set(code_target) ∩ (d[:op1] ∪ d[:op2]))
+
   # This contracts matrices together into a single matrix
-  contract && contract_operators!(gen_d, white_list = MATRIX_OPTIMIZABLE_DEC_OPERATORS)
+  contract && contract_operators!(d, white_list = MATRIX_OPTIMIZABLE_DEC_OPERATORS)
   contracted_defs, contracted_ops = link_contracted_operators!(d, code_target)
 
-  inplace_dec_ops = union(DEC_GEN_OPTIMIZABLE_OPERATORS, contracted_dec_operators)
+  inplace_dec_ops = union(DEC_GEN_OPTIMIZABLE_OPERATORS, contracted_ops)
 
   # Compilation of the simulation
   equations, alloc_vectors = compile(d, input_vars, inplace_dec_ops, dimension, stateeltype, code_target, preallocate)
   data = post_process_vector_allocs(alloc_vectors, code_target)
 
   # TODO: Generalize to CUDA
-  func_defs = compile_env(d, DEC_CPU_OPERATORS, contracted_ops, code_target)
+  func_defs = compile_env(d, basic_dec_ops, contracted_ops, code_target)
   vect_defs = quote $(Expr.(alloc_vectors)...) end
 
   multigrid_defs = quote end

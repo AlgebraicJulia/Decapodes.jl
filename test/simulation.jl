@@ -1,4 +1,5 @@
 using ACSets
+using Catlab
 using CombinatorialSpaces
 using ComponentArrays
 using Decapodes
@@ -769,6 +770,70 @@ end
   sim_Tracer = evalsim(Tracer)
   @test sim_Tracer(d_rect, generate, DiagonalHodge()) isa Any
 
+  # Test for Halfar
+
+  halfar_eq2 = @decapode begin
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ḣ == ∂ₜ(h)
+    ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯ᵖᵖ(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  end
+
+  glens_law = @decapode begin
+    Γ::Form1
+    A::Form1
+    (ρ,g,n)::Constant
+
+    Γ == (2/(n+2))*A*(ρ*g)^n
+  end
+
+  ice_dynamics_composition_diagram = @relation () begin
+    dynamics(Γ,n)
+    stress(Γ,n)
+  end
+
+  ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
+    [Open(halfar_eq2, [:Γ,:n]),
+     Open(glens_law, [:Γ,:n])])
+  halfar = apex(ice_dynamics_cospan)
+
+  resolve_overloads!(infer_types!(halfar))
+
+  function halfar_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :mag => x -> norm.(x)
+      x => error("Unmatched operator $my_symbol")
+    end
+    return (args...) -> op(args...)
+  end
+
+  sim_Halfar = evalsim(halfar)
+  @test sim_Halfar(d_rect, halfar_generate, DiagonalHodge()) isa Any
+
+  eq11_inviscid_poisson = @decapode begin
+    d𝐮::DualForm2
+    𝐮::DualForm1
+    ψ::Form0
+
+    ψ == Δ₀⁻¹(⋆(d𝐮))
+    𝐮 == ⋆(d(ψ))
+
+    ∂ₜ(d𝐮) ==  (-1) * ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
+  end
+
+  function poisson_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :♭♯ => x -> nothing
+      x => error("Unmatched operator $my_symbol")
+    end
+    return (args...) -> op(args...)
+  end
+
+
+  sim_Poisson = evalsim(eq11_inviscid_poisson)
+  @test sim_Poisson(d_rect, poisson_generate, DiagonalHodge()) isa Any
 end
 
 @testset "Multigrid" begin
