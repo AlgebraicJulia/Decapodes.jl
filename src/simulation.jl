@@ -574,7 +574,7 @@ mat_def_expr(computation_name::Symbol, factors::Vector{Symbol}, ::CPUBackend) =
 
 nested_mul(factors) =
   length(factors) == 1 ?
-    list[begin] :
+    factors[begin] :
     Expr(:call, :*, nested_mul(factors[begin:end-1]), factors[end])
 
 mat_def_expr(computation_name::Symbol, factors::Vector{Symbol}, ::CUDABackend) =
