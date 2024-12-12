@@ -206,19 +206,20 @@ generator_function(::CPUBackend) = :default_dec_generate
 generator_function(::CUDABackend) = :default_dec_cu_generate
 
 # TODO: This function should be handled with dispatch.
-"""    compile_env(d::SummationDecapode, basic_dec_ops::Vector{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
+"""    compile_env(d::SummationDecapode, present_dec_ops::Vector{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
 
 Emit code to define functions given operator Symbols.
 
 Default operations return a tuple of an in-place and an out-of-place function. User-defined operations return an out-of-place function.
 """
-function compile_env(d::SummationDecapode, basic_dec_ops::Set{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
+function compile_env(d::SummationDecapode, present_dec_ops::Set{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
 
   defs = quote end
 
+  all_ops = d[:op1] ∪ d[:op2] ∪ present_dec_ops
   avoid_ops = contracted_ops ∪ [DerivOp] ∪ ARITHMETIC_OPS
 
-  for op in setdiff(d[:op1] ∪ d[:op2] ∪ basic_dec_ops, avoid_ops)
+  for op in setdiff(all_ops, avoid_ops)
     quote_op = QuoteNode(op)
     def = @match op begin
       if op in optimizable(code_target) end => :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $quote_op, hodge))
@@ -378,7 +379,6 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::
         sname = d[s, :name]
         tname = d[t, :name]
 
-        # TODO: Check to see if this is a DEC operator
         if preallocate && is_form(d, t)
           if operator in inplace_dec_ops
             equality = PROMOTE_ARITHMETIC_MAP[equality]
@@ -670,19 +670,20 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   open_operators!(d, dimension = dimension)
   infer_overload_compiler!(d, dimension)
 
-  basic_dec_ops = Set{Symbol}(dec_operator_set(code_target) ∩ (d[:op1] ∪ d[:op2]))
+  present_dec_ops = Set{Symbol}(dec_operator_set(code_target) ∩ (d[:op1] ∪ d[:op2]))
 
   # This contracts matrices together into a single matrix
   contract && contract_operators!(d, white_list = MATRIX_OPTIMIZABLE_DEC_OPERATORS)
   contracted_defs, contracted_ops = link_contracted_operators!(d, code_target)
 
+  # Combination of already in-place dec operators and newly contracted matrices
   inplace_dec_ops = union(optimizable(code_target), contracted_ops)
 
   # Compilation of the simulation
   equations, alloc_vectors = compile(d, input_vars, inplace_dec_ops, dimension, stateeltype, code_target, preallocate)
   data = post_process_vector_allocs(alloc_vectors, code_target)
 
-  func_defs = compile_env(d, basic_dec_ops, contracted_ops, code_target)
+  func_defs = compile_env(d, present_dec_ops, contracted_ops, code_target)
   vect_defs = quote $(Expr.(alloc_vectors)...) end
 
   multigrid_defs = quote end

@@ -147,7 +147,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
     :σ => sigmoid
     :mag => x -> norm.(x)
     # Remaining operations (such as our differential operators) are built-in.
-    _ => default_dec_matrix_generate(sd, my_symbol, hodge)
+    _ => error("Unmatched operator $my_symbol")
   end
   return op
 end;
@@ -181,7 +181,7 @@ u₀ = ComponentArray(
 
 constants_and_parameters = (
   glacier_dynamics_n = 3,
-  glacier_dynamics_stress_A = fill(1e-16, ne(sd)),
+  glacier_dynamics_stress_A = 1e-16,
   glacier_dynamics_stress_ρ = 910,
   glacier_dynamics_stress_g = 9.8101,
   water_dynamics_μ = 0.01);
