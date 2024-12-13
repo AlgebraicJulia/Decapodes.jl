@@ -63,6 +63,7 @@ makedocs(
     "NHS" => "nhs/nhs_lite.md",
     "Pipe Flow" => "poiseuille/poiseuille.md",
     "Misc Features" => "bc/bc_debug.md", # Requires overview
+    "FAQ" => "faq/faq.md",
     "ASCII Operators" => "ascii.md",
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
