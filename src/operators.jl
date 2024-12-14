@@ -80,6 +80,7 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     :avg₀₁ => dec_avg₀₁(sd)
 
     :neg => x -> -1 .* x
+    :mag => x -> norm.(x)
      _ => error("Unmatched operator $my_symbol")
   end
 

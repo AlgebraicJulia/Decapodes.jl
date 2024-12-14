@@ -273,14 +273,8 @@ constants_and_parameters = (
 # Define how symbols map to Julia functions
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :♯ => begin
-      sharp_mat = ♯_mat(sd, AltPPSharp())
-      x -> sharp_mat * x
-    end
-    :mag => x -> begin
-      norm.(x)
-    end
-    x => error("Unmatched operator $my_symbol")
+    x => default_dec_matrix_generate(sd, x, hodge)
+    _ => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
 end
