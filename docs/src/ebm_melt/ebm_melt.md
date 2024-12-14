@@ -1,4 +1,4 @@
-# Haflar-EBM-Water
+# Halfar-EBM-Water
 
 This docs page demonsrates a composition of the Halfar model of ice dynamics with the Budyko-Sellers energy-balance model (EBM) defining temperature dynamics. Surface temperature affects the rate at which ice diffuses, and melts ice into a water density term. This water density then diffuses across the domain.
 
