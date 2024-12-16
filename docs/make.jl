@@ -52,6 +52,7 @@ makedocs(
     "Meshes" => "meshes/meshes.md",
     "Vortices" => "navier_stokes/ns.md",
     "Harmonics" => "harmonics/harmonics.md",
+    "Brusselator" => "brussel/brussel.md"
     "Cahn-Hilliard" => "ch/cahn-hilliard.md",
     "Klausmeier" => "klausmeier/klausmeier.md",
     "CISM v2.1" => "cism/cism.md",
