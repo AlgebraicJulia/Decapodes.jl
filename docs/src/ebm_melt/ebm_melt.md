@@ -20,6 +20,7 @@ using CoordRefSystems
 using CairoMakie
 using LinearAlgebra
 using MLStyle
+using NearestNeighbors
 using NetCDF
 using OrdinaryDiffEq
 Point3D = Point3{Float64}
@@ -61,9 +62,11 @@ p_sph = map(point(s)) do p
 end
 
 # Note: You can instead use an algebraic parameterization, rather than nearest-neighbor interpolation.
-# Note: You can alternatively set a value to 0.0 if the distance to the nearest-neighbor is greater than some threshold.
+lat, lon = lat[:], lon[:]
+ll = hcat(lat, lon)'
+kdt = KDTree(ll)
 sit_sph_idxs = map(p_sph) do p
-  argmin(map(i -> sqrt((lat[i] - p[1])^2 + (lon[i] - p[2])^2), eachindex(lat)))
+  nn(kdt, p)[1]
 end
 
 sit_sph = map(sit_sph_idxs, p_sph) do i, p
