@@ -1,13 +1,37 @@
+# The model in this file is copied from the stream function formulation introduced here:
+# https://algebraicjulia.github.io/Decapodes.jl/dev/navier_stokes/ns/
+# , but updated with terms representing β being advected by the fluid. The initial conditions
+# setup code is copied outright.
+
+# The main reference used for developing this model is:
 # "Magnetohydrodynamics Simulation via Discrete Exterior Calculus", Gillespie, M.
 # https://markjgillespie.com/Research/MHD/MHD_Simulation_with_DEC.pdf
-# modeled by Matt Cuffaro, Luke Morris
+# Note that the Gillespie paper does not use a stream function-vorticity formulation.
+
 @info "Loading Dependencies"
 
+#=
+# Dependencies can be installed with the following command:
+using Pkg
+Pkg.add(["ACSets", "CairoMakie", "CombinatorialSpaces", "ComponentArrays",
+  "CoordRefSystems", "DiagrammaticEquations", "GeometryBasics", "JLD2",
+  "LinearAlgebra", "Logging", "LoggingExtras", "OrdinaryDiffEq", "SparseArrays",
+  "StaticArrays", "TerminalLoggers"])
+=#
+
+# Saving
+using JLD2
+
+# other dependencies
+using MLStyle
+using Statistics: mean
+
+begin # Dependencies
 # AlgebraicJulia
-using Catlab
+using ACSets
 using CombinatorialSpaces
-using DiagrammaticEquations
 using Decapodes
+using DiagrammaticEquations
 
 # Meshing
 using CoordRefSystems
@@ -21,18 +45,25 @@ using CairoMakie
 using ComponentArrays
 using LinearAlgebra
 using LinearAlgebra: factorize
+using Logging: global_logger
+using LoggingExtras
 using OrdinaryDiffEq
 using SparseArrays
 using StaticArrays
+using TerminalLoggers: TerminalLogger
+global_logger(TerminalLogger())
 
 # Saving
+using JLD2
 
 # other dependencies
 using MLStyle
 using Statistics: mean
+end # Dependencies
 
 @info "Defining models"
-_mhd = @decapode begin
+# Beta is out-of-plane:
+mhd_out_of_plane = @decapode begin
     ψ::Form0
     η::DualForm1
     (dη,β)::DualForm2
@@ -44,14 +75,15 @@ _mhd = @decapode begin
     η == ⋆(d(ψ))
 end;
 
+# Beta lies in-plane:
 mhd = @decapode begin
     ψ::Form0
     (η,β)::DualForm1
     dη::DualForm2
-    # δ = ⋆d⋆ # TODO Luke make primal-dual 1, 0
+
     ∂ₜ(dη) == -1*(∘(⋆₁, dual_d₁)((⋆(dη) ∧₀₁ ♭♯(η)) + (♭♯(⋆(β)) ∧ᵈᵈ₁₀ ∘(⋆, d, ⋆)(β))))
     ∂ₜ(β) == -1*(∘(⋆₂, dual_d₀)(⋆(β) ∧ᵖᵈ₁₁ η))
-    # solve for stream function
+
     ψ == ∘(⋆, Δ⁻¹)(dη)
     η == ⋆(d(ψ))
 end;
@@ -60,6 +92,7 @@ end;
 const RADIUS = 1.0;
 sphere = :ICO7;
 s = @match sphere begin
+    :ICO5 => loadmesh(Icosphere(4, RADIUS));
     :ICO6 => loadmesh(Icosphere(6, RADIUS));
     :ICO7 => loadmesh(Icosphere(7, RADIUS));
     :ICO8 => loadmesh(Icosphere(8, RADIUS));
@@ -72,34 +105,26 @@ end;
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s);
 subdivide_duals!(sd, Circumcenter());
 
+Δ0 = Δ(0,sd);
+fΔ0 = factorize(Δ0);
 d0 = dec_differential(0,sd);
 d1 = dec_differential(1,sd);
 dd0 = dec_dual_derivative(0,sd);
 dd1 = dec_dual_derivative(1,sd);
-fd0 = factorize(float.(d0));
-fdd1 = factorize(float.(dd1));
 δ1 = δ(1,sd);
 s0 = dec_hodge_star(0,sd,GeometricHodge());
 s1 = dec_hodge_star(1,sd,GeometricHodge());
 s2 = dec_hodge_star(2, sd);
 s0inv = dec_inv_hodge_star(0,sd,GeometricHodge());
-Δ0 = Δ(0,sd);
-fΔ0 = factorize(Δ0);
 ♭♯_m = ♭♯_mat(sd);
-dsd = factorize(dd1 * s1 * d0);
-# As defined in the MHS paper:
-dᵦ = 0.5 * abs.(dd1) * spdiagm(dd0 * ones(ntriangles(sd)));
 @info "    Differential operators allocated"
 
 function generate(s, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :d₁⁻¹ => x -> fdd1 \ x
     :Δ⁻¹ => x -> begin
       y = fΔ0 \ x
       y .- minimum(y)
     end
-    :dsdinv => x -> dsd \ x
-    :dinv => x -> fd0 \ x
     :♭♯ => x -> ♭♯_m * x
     _ => default_dec_matrix_generate(s, my_symbol, hodge)
   end
@@ -116,7 +141,6 @@ f = sim(sd, generate);
 constants_and_parameters = (
   μ = 0.001,)
 
-###################
 begin # ICs
 @info "Setting Initial Conditions"
 
@@ -210,7 +234,7 @@ solve_poisson(vort::DualForm{2}) =
 
 # Compute velocity as curl (⋆d) of the stream function.
 curl_stream(ψ) = s1 * d0 * ψ
-div(u) = s2 * d1 * (s1 \ u)
+divergence(u) = s2 * d1 * (s1 \ u)
 RMS(x) = √(mean(x' * x))
 
 integral_of_curl(curl::DualForm{2}) = sum(curl.data)
@@ -218,33 +242,14 @@ integral_of_curl(curl::DualForm{2}) = sum(curl.data)
 # i.e. (sum ∘ ⋆₀) computes a Riemann sum.
 integral_of_curl(curl::VForm) = integral_of_curl(DualForm{2}(s0*curl.data))
 
-# X is a primal 0, 
-vort_ring(0.4, 6, PointVortexParams(3.0, 0.15), point_vortex)
-u₀ = ComponentArray(dη = s0*X, β = 1e-9*s1*d0*X)
+u₀ = ComponentArray(dη = s0*X, β = zeros(ne(sd)))
 
 constants_and_parameters = (
-  μ = 0.001,)
-# TODO Units are probably heinous for u₀
+  μ = 0.0,)
 
-@info "RMS of divergence of initial velocity: $(∘(RMS, div, curl_stream)(ψ))"
+@info "RMS of divergence of initial velocity: $(∘(RMS, divergence, curl_stream)(ψ))"
 @info "Integral of initial curl: $(integral_of_curl(VForm(X)))"
 end # ICs
-
-###################
-
-# η = dω::DualForm(1)
-# DVF = map(sd[sd[:tri_center], :dual_point]) do (x,y,z); SVector(x, y^2, 0) end;
-
-# # differential operator
-# matt = ♭_mat(sd);
-
-# # deRham map of our cohain
-# primal1 = only.(matt*DVF);
-# dual2 = dd1*(s1*primal1);
-
-# β = map(sd[:point]) do (x,y,z); x^2 * 1e-3 end;
-
-# u₀ = ComponentArray(dη = dual2, β = β, );
 
 @info("Solving")
 tₑ = 1.0; 
@@ -256,7 +261,7 @@ soln = solve(prob,
   dense=false,
   progress=true, progress_steps=1);
 
-function save_gif(file_name, soln)
+function visualize_dynamics(file_name, soln)
     time = Observable(0.0)
     fig = Figure()
     Label(fig[1, 1, Top()], @lift("...at $($time)"), padding = (0, 0, 5, 0))
@@ -269,5 +274,5 @@ function save_gif(file_name, soln)
       time[] = t
     end
 end
-save_gif("vid3.mp4", soln)
+visualize_dynamics("mhd.mp4", soln)
  
