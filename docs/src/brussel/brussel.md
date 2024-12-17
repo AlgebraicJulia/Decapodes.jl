@@ -1,6 +1,6 @@
 # Brusselator
 
-This Brusselator example is adapted from [MethodOfLines.jl](https://docs.sciml.ai/MethodOfLines/stable/tutorials/brusselator/#brusselator). The [Brusselator](https://en.wikipedia.org/wiki/Brusselator) is a autocatalytic chemical reaction that takes place between two reactants `U` and `V`.
+This Brusselator example is adapted from [MethodOfLines.jl](https://docs.sciml.ai/MethodOfLines/stable/tutorials/brusselator/#brusselator)'s page on the same topic. The [Brusselator](https://en.wikipedia.org/wiki/Brusselator) is a autocatalytic chemical reaction that takes place between two reactants `U` and `V`.
 
 ```@setup INFO
 include(joinpath(Base.@__DIR__, ".." , "..", "docinfo.jl"))
@@ -28,7 +28,7 @@ nothing # hide
 
 ## The Model
 
-We establish the model for the Brusselator, with the two reactants `U` and `V`, modelled as residing on the vertices of the mesh. The equations encode a reaction that occurs independently at each point coupled with a diffusion term as well as a source term `F` in the case of `U`. Here `α` denotes the rate of diffusion for both reactants.
+We establish the model for the Brusselator, with the two reactants `U` and `V`, modeled as residing on the vertices of the mesh. The equations encode a reaction that occurs independently at each point coupled with a diffusion term as well as a source term `F` in the case of `U`. Here `α` denotes the rate of diffusion for both reactants.
 ```@example DEC
 BrusselatorDynamics = @decapode begin
   (U, V)::Form0
@@ -50,7 +50,7 @@ nothing # hide
 
 ## Boundary Conditions
 
-We now establish the Dirichlet boundary conditions for our model. Here we intend to set some portion of the `U` variable to be a fixed value on some portion of the mesh. At this point, the conditions are only set symbolically and their actual implementation can change. Note that these values are set at the beginning of execution, as shown by the computation graph.
+We now establish the Dirichlet boundary conditions for our model. Here we intend to set some portion of the `U` variable to be a fixed value on some portion of the mesh. At this point the boundary conditions are only set symbolically and their actual implementation can change. Note that these values are set at the beginning of execution, as shown by the computation graph.
 ```@example DEC
 BrusselatorBoundaries = @decapode begin
   B::Constant
