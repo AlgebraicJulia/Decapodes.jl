@@ -202,12 +202,8 @@ We provide here the mapping from symbols to differential operators. As more of t
 function generate(sd, my_symbol; hodge=GeometricHodge())
   # We pre-allocate matrices that encode differential operators.
   op = @match my_symbol begin
-    :mag => x -> norm.(x)
-    :♯  => begin
-      sharp_mat = ♯_mat(sd, AltPPSharp())
-      x -> sharp_mat * x
-    end
-    x => error("Unmatched operator $my_symbol")
+    x => default_dec_matrix_generate(sd, x, hodge) 
+    _ => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
 end
