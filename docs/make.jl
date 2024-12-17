@@ -52,6 +52,7 @@ makedocs(
     "Meshes" => "meshes/meshes.md",
     "Vortices" => "navier_stokes/ns.md",
     "Harmonics" => "harmonics/harmonics.md",
+    "Brusselator" => "brussel/brussel.md",
     "Cahn-Hilliard" => "ch/cahn-hilliard.md",
     "Klausmeier" => "klausmeier/klausmeier.md",
     "CISM v2.1" => "cism/cism.md",
@@ -63,6 +64,7 @@ makedocs(
     "NHS" => "nhs/nhs_lite.md",
     "Pipe Flow" => "poiseuille/poiseuille.md",
     "Misc Features" => "bc/bc_debug.md", # Requires overview
+    "FAQ" => "faq/faq.md",
     "ASCII Operators" => "ascii.md",
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"

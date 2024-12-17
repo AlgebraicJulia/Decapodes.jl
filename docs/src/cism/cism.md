@@ -194,11 +194,8 @@ constants_and_parameters = (
 
 We provide here the mapping from symbols to differential operators. As more of the differential operators of the DEC are implemented, they are upstreamed to the Decapodes and CombinatorialSpaces libraries. Of course, users can also provide their own implementations of these operators and others as they see fit.
 
+## Setting up the Simulation
 ```@example DEC
-#############################################
-# Define how symbols map to Julia functions #
-#############################################
-
 function generate(sd, my_symbol; hodge=GeometricHodge())
   # We pre-allocate matrices that encode differential operators.
   op = @match my_symbol begin
@@ -216,15 +213,13 @@ end
 The `gensim` function takes our high-level representation of the physics equations and produces compiled simulation code. It performs optimizations such as allocating memory for intermediate variables, and so on.
 
 ```@example DEC
-#######################
-# Generate simulation #
-#######################
-
 sim = eval(gensim(ice_dynamics2D))
 fₘ = sim(sd, generate)
 ```
 
 Julia is a "Just-In-Time" compiled language. That means that functions are compiled the first time they are called, and later calls to those functions skip this step. To get a feel for just how fast this simulation is, we will run the dynamics twice, once for a very short timespan to trigger pre-compilation, and then again for the actual dynamics.
+
+## Running the Simulation
 
 ```@example DEC
 # Pre-compile simulation
@@ -263,6 +258,8 @@ Here we save the solution information to a [file](ice_dynamics2D.jld2).
 ```@example DEC
 @save "ice_dynamics2D.jld2" soln
 ```
+
+## Result Comparison and Analysis
 
 We recall that these dynamics are of the "shallow slope" and "shallow ice" approximations. So, at the edge of our parabolic dome of ice, we expect increased error as the slope increases. On the interior of the dome, we expect the dynamics to match more closely that given by the analytic model. We will see that the CISM results likewise accumulate error in the same neighborhood.
 
