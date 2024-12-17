@@ -23,7 +23,40 @@ Plotting in DECAPODES is commonly done with the [Makie](https://github.com/Makie
 - For [3D visualization](../ice_dynamics/ice_dynamics.md#2-manifold-in-3d)
 
 
-## 5. How to add artificial diffusion for 0- or 1-forms to improve stability?
+## 5. How to add artificial diffusion for 0- or 1-forms?
+
+Without viscosity - i.e. when ``\mu = 0`` - the incompressible (inviscid) Navier-Stokes equations can be formulated like so:
+
+```julia
+eq11_inviscid_poisson = @decapode begin
+  d𝐮::DualForm2
+  𝐮::DualForm1
+  ψ::Form0
+
+  ψ == Δ⁻¹(⋆(d𝐮))
+  𝐮 == ⋆(d(ψ))
+
+  ∂ₜ(d𝐮) ==  (-1) * ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
+end
+```
+
+Adding a viscosity term can be accomplished by simply added the appropriate term, and declaring the ``\mu`` constant:
+
+```julia
+eq11_viscid_poisson = @decapode begin
+  d𝐮::DualForm2
+  𝐮::DualForm1
+  ψ::Form0
+  μ::Constant
+
+  ψ == Δ⁻¹(⋆(d𝐮))
+  𝐮 == ⋆(d(ψ))
+
+  ∂ₜ(d𝐮) ==  μ * ∘(⋆, d, ⋆, d)(d𝐮) + (-1) * ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
+end
+```
+
+More demonstrations on how to iterate between formulations of the same physics (the incompressible Navier-Stokes equations) is available in further detail on the [Vortices](../navier_stokes/ns.md) docs page and in the script available there.
 
 ## 6. How to use a Laplacian solver / multigrid?
 
