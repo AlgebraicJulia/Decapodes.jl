@@ -24,7 +24,7 @@ This approach can be combined with the multiphysics described in other pages to 
 
 An initial attempt at solving the vorticity formulation of the inviscid incompressible Navier-Stokes momentum equation could be:
 
-## Vorticity Formulation
+## Vorticity Formulation (Incorrect)
 
 ```julia
 eq11_incorrect = @decapode begin
@@ -38,7 +38,7 @@ end
 nothing # hide
 ```
 
-This formulation comes from the fact that you are treating `du` (vorticity) as the only state variable and computing the velocity field, which you need to advect vorticity along the flow with a linear solve of the exterior derivative `d₁`. In other words, the velocity field is computed as the pseudo-inverse of the differential operation that computes curl.
+This incorrect formulation does not use a stream function, but rather tries to compute the velocity field via a linear solve of the exterior derivative `d₁`. In other words, the velocity field is computed as the pseudo-inverse of the differential operation that computes curl.
 
 ## Initial Conditions
 
@@ -55,7 +55,7 @@ The following plots are shown from directly above the north pole of the sphere.
 
 ![Plot of Taylor Vortex initial conditions](taylor_ics.png)
 
-### Numerical Solutions (Incorrect formulation)
+### Numerical Solutions (Incorrect Formulation)
 
 This formulation is very unstable for both sets of initial conditions, failing approximately 0.4% of the way into the simulation.
 
@@ -73,9 +73,9 @@ max u=NaN
 ┌ Warning: Instability detected. Aborting
 ```
 
-## Streamfunction-Poisson Formulation
+## Stream Function / Poisson Problem Formulation (Correct)
 
-There are cohomological reasons why the above model formulation produces low-quality simulations. The variable **X** is physically required to be in the kernel of $\Delta$, but that isn't guaranteed by the model formulation above. To fix this, you can use the solve for the stream-function by introducing a Laplacian solve as part of the update law.
+There are cohomological reasons why the above model formulation produces low-quality simulations. The variable of interest is physically required to be in the kernel of $\Delta$, but that isn't guaranteed by the model formulation above. To fix this, you can use the solve for the stream function by introducing a Laplacian solve as part of the update law.
 
 Due to the equation $$du = -\Delta\psi$$ we can solve for the stream function with a linear solve of the Laplacian.
 
