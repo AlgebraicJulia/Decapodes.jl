@@ -2,17 +2,19 @@
 
 ## 1. How do I incorporate scalar or vector field input data where you have a function of the embedded coordinates?
 
-We can take a look at the [Brusselator page](../brussel/brussel.md#initial-data) which sets the values of each point on its mesh to a value as determined by some function. This can be done in a similar manner in 1D and 2D. 
+We can take a look at the [Brusselator page](../brussel/brussel.md#initial-data) which sets the values of each point on its mesh to a value as determined by some function. This can be done in a similar manner in both 1D and 2D. 
 
 The Brusselator also demonstrates, with the variable `F`, how one can go about changing the function by which these values are set over time.
 
 ## 2. How do I incorporate input data from a file with linear interpolation?
 
-The Grigoriev Ice Cap model has a section where after the initial data is loaded from a TIF, the data is interpolated so that it may fit over a discrete mesh of our choosing. The link for that is [here](../grigoriev/grigoriev.md#loading-a-scientific-dataset).
+The Grigoriev Ice Cap model has a section where after the initial data is loaded from a TIF and the data is interpolated so that it may fit over a discrete mesh of our choosing. You may view that [here](../grigoriev/grigoriev.md#loading-a-scientific-dataset).
 
 ## 3. How do I set boundary conditions like fixed value, no-flux, and no-slip?
 
-Boundary conditions can be set by using "collages", which can take two variables among two different Decapodes and apply a function on the first. A general workflow would be to have the first Decapode encode the physics and have the second one encode values for boundary conditions. They can be related by a function that will mask the first variable and replace the desired values with second. An example of applying fixed boundary conditions would be in the [Brusselator page](../brussel/brussel.md#boundary-conditions).
+Boundary conditions can be set by using "collages", which can take two variables among two different Decapodes and apply a function on the first. 
+
+A general workflow would be to have the first Decapode encode the physics and have a second Decapode encode values for the boundary conditions. They can be related by a function that will mask the first variable and replace the desired values with those of the second's. An example of applying fixed boundary conditions would be in the [Brusselator page](../brussel/brussel.md#boundary-conditions).
 
 A similar workflow can be used for "no-flux" and "no-slip" conditions by fixing the value of the appropriate variable to be 0. 
 
