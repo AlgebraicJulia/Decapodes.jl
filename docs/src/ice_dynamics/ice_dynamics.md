@@ -43,19 +43,17 @@ We'll change the term out front to Γ so we can demonstrate composition in a mom
 In the exterior calculus, we could write the above equations like so:
 
 ```math
-\partial_t(h) = \circ(\star, d, \star)(\Gamma\quad d(h)\quad \text{avg}_{01}|d(h)^\sharp|^{n-1} \quad \text{avg}_{01}(h^{n+2})).
+\partial_t(h) = \Gamma\quad \circ(\star, d, \star)(d(h)\quad \wedge \quad|d(h)^\sharp|^{n-1} \quad \wedge \quad (h^{n+2})).
 ```
-
-`avg` here is an operator that performs the midpoint rule, setting the value at an edge to be the average of the values at its two vertices.
 
 ``` @example DEC
 halfar_eq2 = @decapode begin
   h::Form0
-  Γ::Form1
+  Γ::Form0
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
 end
 
 to_graphviz(halfar_eq2)
@@ -65,8 +63,7 @@ And here, a formulation of Glen's law from J.W. Glen's 1958 ["The flow law of ic
 
 ``` @example DEC
 glens_law = @decapode begin
-  #Γ::Form0
-  Γ::Form1
+  Γ::Form0
   (A,ρ,g,n)::Constant
   
   Γ == (2/(n+2))*A*(ρ*g)^n
