@@ -1,3 +1,4 @@
+using Catlab
 using CombinatorialSpaces
 using DiagrammaticEquations
 using Decapodes
@@ -12,9 +13,10 @@ using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
 
-# We use the model equations as stated here and use the initial conditions for
-# f, k, rᵤ, rᵥ as listed for experiment 4.
-# https://groups.csail.mit.edu/mac/projects/amorphous/GrayScott/
+# We use the model equations as stated here:
+# https://github.com/JuliaParallel/julia-hpc-tutorial-sc24/blob/main/parts/gpu/gray-scott.ipynb
+# Initial conditions were based off those given here:
+# https://itp.uni-frankfurt.de/~gros/StudentProjects/Projects_2020/projekt_schulz_kaefer/#header
 GrayScott = @decapode begin
   (U, V)::Form0
   (UV2)::Form0
@@ -33,15 +35,16 @@ GrayScott = @decapode begin
 end
 
 n = 100
+h = 1
 
-s = triangulated_grid(n,n,0.8,0.8,Point3D);
+s = triangulated_grid(n,n,h,h,Point3D);
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s);
 subdivide_duals!(sd, Circumcenter());
 
 sim = eval(gensim(GrayScott))
 
-left_wall_idxs = findall(x -> x[1] <= 1.0, s[:point])
-right_wall_idxs = findall(x -> x[1] >= n - 1.0, s[:point])
+left_wall_idxs = findall(x -> x[1] <= h, s[:point])
+right_wall_idxs = findall(x -> x[1] >= n - h, s[:point])
 top_wall_idxs = findall(y -> y[2] == 0.0, s[:point])
 bot_wall_idxs = findall(y -> y[2] == n, s[:point])
 
