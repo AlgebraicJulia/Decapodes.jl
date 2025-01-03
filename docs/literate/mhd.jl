@@ -10,14 +10,12 @@
 
 @info "Loading Dependencies"
 
-#=
 # Dependencies can be installed with the following command:
 using Pkg
 Pkg.add(["ACSets", "CairoMakie", "CombinatorialSpaces", "ComponentArrays",
   "CoordRefSystems", "DiagrammaticEquations", "GeometryBasics", "JLD2",
   "LinearAlgebra", "Logging", "LoggingExtras", "OrdinaryDiffEq", "SparseArrays",
   "StaticArrays", "TerminalLoggers"])
-=#
 
 # Saving
 using JLD2
@@ -26,7 +24,6 @@ using JLD2
 using MLStyle
 using Statistics: mean
 
-begin # Dependencies
 # AlgebraicJulia
 using ACSets
 using CombinatorialSpaces
@@ -50,8 +47,6 @@ using LoggingExtras
 using OrdinaryDiffEq
 using SparseArrays
 using StaticArrays
-using TerminalLoggers: TerminalLogger
-global_logger(TerminalLogger())
 
 # Saving
 using JLD2
@@ -59,7 +54,6 @@ using JLD2
 # other dependencies
 using MLStyle
 using Statistics: mean
-end # Dependencies
 
 @info "Defining models"
 # Beta is out-of-plane:
@@ -67,10 +61,10 @@ mhd_out_of_plane = @decapode begin
     ψ::Form0
     η::DualForm1
     (dη,β)::DualForm2
-    # δ = ⋆d⋆
+    
     ∂ₜ(dη) == -1*(∘(⋆₁, dual_d₁)((⋆(dη) ∧₀₁ ♭♯(η)) + (⋆(β) ∧₀₁ ♭♯(∘(⋆, d, ⋆)(β)))))
     ∂ₜ(β) == -1*(∘(⋆₁, dual_d₁)(⋆(β) ∧₀₁ ♭♯(η)))
-    # solve for stream function
+    
     ψ == ∘(⋆, Δ⁻¹)(dη)
     η == ⋆(d(ψ))
 end;
@@ -117,7 +111,6 @@ s1 = dec_hodge_star(1,sd,GeometricHodge());
 s2 = dec_hodge_star(2, sd);
 s0inv = dec_inv_hodge_star(0,sd,GeometricHodge());
 ♭♯_m = ♭♯_mat(sd);
-@info "    Differential operators allocated"
 
 function generate(s, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
@@ -131,17 +124,12 @@ function generate(s, my_symbol; hodge=GeometricHodge())
   return (args...) -> op(args...)
 end;
 
-sim = gensim(mhd);
-open("mhd_sim.jl", "w") do f
-    write(f, string(gensim(mhd)))
-end
-sim = include("mhd_sim.jl")
+sim = evalsim(mhd);
 f = sim(sd, generate);
 
 constants_and_parameters = (
   μ = 0.001,)
 
-begin # ICs
 @info "Setting Initial Conditions"
 
 """    function great_circle_dist(pnt,G,a,cntr)
@@ -215,10 +203,10 @@ function vort_ring(lat, n_vorts, p::PointVortexParams, formula)
   Xs + Xsp
 end
 
-X =  # Six equidistant points at latitude θ=0.4.
-  # "... an additional vortex, with strength τ=-18 and a radius a=0.15, is
-  # placed at the south pole (θ=π)."
-  vort_ring(0.4, 6, PointVortexParams(3.0, 0.15), point_vortex)
+# Six equidistant points at latitude θ=0.4.
+# "... an additional vortex, with strength τ=-18 and a radius a=0.15, is
+# placed at the south pole (θ=π)."
+X = vort_ring(0.4, 6, PointVortexParams(3.0, 0.15), point_vortex)
 
 """    function solve_poisson(vort::VForm)
 Compute the stream function by solving the Poisson equation.
@@ -247,9 +235,6 @@ u₀ = ComponentArray(dη = s0*X, β = zeros(ne(sd)))
 constants_and_parameters = (
   μ = 0.0,)
 
-@info "RMS of divergence of initial velocity: $(∘(RMS, divergence, curl_stream)(ψ))"
-@info "Integral of initial curl: $(integral_of_curl(VForm(X)))"
-end # ICs
 
 @info("Solving")
 tₑ = 1.0; 
