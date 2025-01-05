@@ -2,6 +2,7 @@
 using Documenter
 using Literate
 using Distributed
+using ProgressMeter
 
 @info "Loading Decapodes"
 using Decapodes
@@ -20,8 +21,8 @@ const generated_dir = joinpath(@__DIR__, "src", "examples")
 @info "Building literate files"
 for (root, dirs, files) in walkdir(literate_dir)
   out_dir = joinpath(generated_dir, relpath(root, literate_dir))
-  # @showprogress pmap(files) do file
-  for file in files
+  @showprogress pmap(files) do file
+  # for file in files
     f,l = splitext(file)
     if l == ".jl" && !startswith(f, "_")
       Literate.markdown(joinpath(root, file), out_dir;
@@ -48,30 +49,30 @@ makedocs(
                       r"Decapodes\.jl/dev"], # 404, probably due to bad self-reference
   pages     = Any[
     "Decapodes.jl" => "index.md",
-    # "Overview" => "overview/overview.md",
-    # "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
-    # "Equations" => "equations/equations.md",
-    # "Meshes" => "meshes/meshes.md",
-    # "Zoo" => Any[
-    #     "Vortices" => "navier_stokes/ns.md",
-    #     "Harmonics" => "harmonics/harmonics.md",
-    #     "Cahn-Hilliard" => "ch/cahn-hilliard.md",
-    #     "Klausmeier" => "klausmeier/klausmeier.md",
-    #     "CISM v2.1" => "cism/cism.md",
-    #     "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
-    #     "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
-    #     "Halfar-EBM-Water" => "ebm_melt/ebm_melt.md",
-    #     "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
-    #     "NHS" => "nhs/nhs_lite.md",
-    #     "Pipe Flow" => "poiseuille/poiseuille.md",
-    # ],
-    "Examples" => Any[
-        # "Oncology" => "examples/oncology/tumor_proliferation_invasion.md"
-        # "MHD" => "examples/mhd.md" # TODO convert original file to a docs page
+    "Overview" => "overview/overview.md",
+    "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
+    "Equations" => "equations/equations.md",
+    "Meshes" => "meshes/meshes.md",
+    "Zoo" => Any[
+        "Vortices" => "navier_stokes/ns.md",
+        "Harmonics" => "harmonics/harmonics.md",
+        "Cahn-Hilliard" => "ch/cahn-hilliard.md",
+        "Klausmeier" => "klausmeier/klausmeier.md",
+        "CISM v2.1" => "cism/cism.md",
+        "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
+        "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
+        "Halfar-EBM-Water" => "ebm_melt/ebm_melt.md",
+        "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
+        "NHS" => "nhs/nhs_lite.md",
+        "Pipe Flow" => "poiseuille/poiseuille.md",
     ],
-    # "Misc Features" => "bc/bc_debug.md", # Requires overview
-    # "ASCII Operators" => "ascii.md",
-    # "Canonical Models" => "canon.md",
+    "Examples" => Any[
+        "Oncology" => "examples/oncology/tumor_proliferation_invasion.md"
+        "MHD" => "examples/mhd.md" # TODO convert original file to a docs page
+    ],
+    "Misc Features" => "bc/bc_debug.md", # Requires overview
+    "ASCII Operators" => "ascii.md",
+    "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ]
 )
