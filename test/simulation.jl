@@ -1,4 +1,5 @@
 using ACSets
+using Catlab
 using CombinatorialSpaces
 using ComponentArrays
 using Decapodes
@@ -652,6 +653,8 @@ end
 
 end
 
+filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
+
 @testset "1-D Mat Generation" begin
   Point2D = Point2{Float64}
   function generate_dual_mesh(s::HasDeltaSet1D)
@@ -666,19 +669,20 @@ end
   add_edges!(primal_line, [1,2], [2,3])
   line = generate_dual_mesh(primal_line)
 
-    # Testing Diagonal inverse hodge 1
-    DiagonalInvHodge1 = @decapode begin
-      A::DualForm1
+  # Testing Diagonal inverse hodge 1
+  DiagonalInvHodge1 = @decapode begin
+    A::DualForm1
 
-      B == ∂ₜ(A)
-      B == ⋆(A)
-    end
-    g = gensim(DiagonalInvHodge1)
-    @test gensim(DiagonalInvHodge1).args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
-    sim = eval(g)
+    B == ∂ₜ(A)
+    B == ⋆(A)
+  end
+  g = gensim(DiagonalInvHodge1)
+  @test g.args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
+  @test length(filter_lnn(g.args[2].args[2].args[3].args)) == 1
+  sim = eval(g)
 
-    # Test that no error is thrown here
-    f = sim(line, default_dec_generate, DiagonalHodge())
+  # TODO: Error is being thrown here
+  @test f = sim(line, default_dec_generate, DiagonalHodge()) isa Any
 end
 
 @testset "GenSim Compilation" begin
@@ -765,6 +769,138 @@ end
 
   sim_Tracer = evalsim(Tracer)
   @test sim_Tracer(d_rect, generate, DiagonalHodge()) isa Any
+
+  # Test for Halfar
+  halfar_eq2 = @decapode begin
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ḣ == ∂ₜ(h)
+    ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯ᵖᵖ(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  end
+
+  glens_law = @decapode begin
+    Γ::Form1
+    A::Form1
+    (ρ,g,n)::Constant
+
+    Γ == (2/(n+2))*A*(ρ*g)^n
+  end
+
+  ice_dynamics_composition_diagram = @relation () begin
+    dynamics(Γ,n)
+    stress(Γ,n)
+  end
+
+  ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
+    [Open(halfar_eq2, [:Γ,:n]),
+     Open(glens_law, [:Γ,:n])])
+  halfar = apex(ice_dynamics_cospan)
+
+  resolve_overloads!(infer_types!(halfar))
+
+  function halfar_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :mag => x -> norm.(x)
+      x => error("Unmatched operator $my_symbol")
+    end
+    return op
+  end
+
+  sim_Halfar = evalsim(halfar)
+  @test sim_Halfar(d_rect, halfar_generate, DiagonalHodge()) isa Any
+
+  # Test for Poisson
+  eq11_inviscid_poisson = @decapode begin
+    d𝐮::DualForm2
+    𝐮::DualForm1
+    ψ::Form0
+
+    ψ == Δ₀⁻¹(⋆(d𝐮))
+    𝐮 == ⋆(d(ψ))
+
+    ∂ₜ(d𝐮) ==  (-1) * ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
+  end
+
+  function poisson_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :♭♯ => x -> nothing
+      x => error("Unmatched operator $my_symbol")
+    end
+    return op
+  end
+
+  sim_Poisson = evalsim(eq11_inviscid_poisson)
+  @test sim_Poisson(d_rect, poisson_generate, DiagonalHodge()) isa Any
+
+  # Test for Halmo
+  eq10forN2 = @decapode begin
+    (𝐮,w)::DualForm1
+    (P, 𝑝ᵈ)::DualForm0
+    μ::Constant
+
+    𝑝ᵈ == P + 0.5 * ι₁₁(w,w)
+
+    ∂ₜ(𝐮) == μ * ∘(d, ⋆, d, ⋆)(w) + (-1)*⋆₁⁻¹(∧ᵈᵖ₁₀(w, ⋆(d(w)))) + d(𝑝ᵈ)
+  end
+
+  halfar_eq2 = @decapode begin
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯ᵖᵖ(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  end
+
+  glens_law = @decapode begin
+    Γ::Form1
+    (A,ρ,g,n)::Constant
+
+    Γ == (2/(n+2))*A*(ρ*g)^n
+  end
+
+  ice_dynamics_composition_diagram = @relation () begin
+    dynamics(Γ,n)
+    stress(Γ,n)
+  end
+
+  ice_dynamics = apex(oapply(ice_dynamics_composition_diagram,
+    [Open(halfar_eq2, [:Γ,:n]),
+     Open(glens_law, [:Γ,:n])]))
+
+     ice_water_composition_diagram = @relation () begin
+     glacier_dynamics(ice_thickness)
+     water_dynamics(flow, flow_after)
+
+     interaction(ice_thickness, flow, flow_after)
+   end
+
+   blocking = @decapode begin
+    h::Form0
+    (𝐮,w)::DualForm1
+
+    w == (1-σ(h)) ∧ᵖᵈ₀₁ 𝐮
+  end
+
+  ice_water = apex(oapply(ice_water_composition_diagram,
+  [Open(ice_dynamics, [:dynamics_h]),
+   Open(eq10forN2,    [:𝐮, :w]),
+   Open(blocking,     [:h, :𝐮, :w])]))
+
+  function halmo_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :σ => x -> nothing
+      :mag => x -> nothing
+      _ => error("Unmatched operator $my_symbol")
+    end
+    return op
+  end
+
+  resolve_overloads!(infer_types!(ice_water))
+
+  sim_Halmo = evalsim(ice_water)
+  @test sim_Halmo(d_rect, halmo_generate, DiagonalHodge()) isa Any
 
 end
 
