@@ -26,10 +26,10 @@ Porous_Convection = @decapode begin
 
   P == Δ⁻¹(-δ(ρ))
 
-  qD == k_ηf * (d(P) - ρ)
+  qD == -(k_ηf * (d(P) - ρ))
 
-  Adv == δ(qD ∧ bound_T) # TODO: Doesn't work well cause velocity isn't constant, needs Lie
-  # Adv == ⋆(interpolate(∧ᵈᵖ₁₁(⋆(d(bound_T)), qD))) #TODO: Acting strangely, maybe some other scheme would work better
+  # Adv == δ(qD ∧ bound_T) # TODO: Doesn't work well cause velocity isn't constant, needs Lie
+  Adv == ⋆(interpolate(∧ᵈᵖ₁₁(⋆(d(bound_T)), qD))) #TODO: Acting strangely, maybe some other scheme would work better
   Ṫ == -1/ϕ * Adv + λ_ρ₀Cp * Δ(bound_T)
 
   bound_Ṫ == tb_bc(Ṫ)
@@ -65,7 +65,7 @@ for tri_id in triangles(sd)
     dual_tri_area = sd[dual_tri_id, :dual_area]
     dual_tri_orient = sd[dual_tri_id, :D_tri_orientation]
 
-    weight = (dual_tri_area / tri_area)
+    weight = tri_orient * (dual_tri_area / tri_area)
 
     v = sd[sd[dual_tri_id, :D_∂e1], :D_∂v1]
 
@@ -114,8 +114,8 @@ T_dist = MvNormal([lx/2.0, ly/2.0], [1/sqrt(2), 1/sqrt(2)])
 T = [2 * ΔT * pdf(T_dist, [p[1], p[2]]) for p in sd[:point]]
 # TODO: Not currently stable with top and bottom initial conditions
 # T = zeros(nv(sd))
-# T[top_wall_idxs] .= -ΔT/2
-# T[bottom_wall_idxs] .= ΔT/2
+T[top_wall_idxs] .= -ΔT/2
+T[bottom_wall_idxs] .= ΔT/2
 
 # TODO: More stable conditions which deviate from those given in Exercise 1, task 4
 # Ra (Rayleigh number) is set to 1000 as per Exercise 1, task 5
@@ -134,12 +134,11 @@ k_ηf = 1.0
 αρ₀ = 1/9.81
 ϕ = 0.1
 λ_ρ₀Cp = 1/Ra*(αρ₀*k_ηf*ΔT*ly/ϕ)
-constants = (k_ηf = k_ηf, αρ₀ = αρ₀, ϕ = ϕ * 2500, λ_ρ₀Cp = λ_ρ₀Cp / 40)
+constants = (k_ηf = k_ηf, αρ₀ = αρ₀, ϕ = ϕ, λ_ρ₀Cp = λ_ρ₀Cp)
 
 # Smallest time step in original simulation was 0.00019, largest around 0.00100, around 0.00050 from original implementation
 # Only ran for 500 time steps, but adaptive time stepping means physical time simulated could vary
-tₑ = 0.0100 # 10 (To use with more stable constants)
-tₑ = 100
+tₑ = 0.0100
 
 prob = ODEProblem(f, u₀, (0, tₑ), constants)
 soln = solve(prob, Tsit5())
@@ -162,12 +161,12 @@ end
 function calculate_advection(T, P, constants)
   boussinesq = wdg10(g, constants.αρ₀ * T)
 
-  darcy_flux = constants.k_ηf * (d0 * P - boussinesq)
+  darcy_flux = -(constants.k_ηf * (d0 * P - boussinesq))
   
   # TODO: Why is this new advection acting strangely?
-  # Adv = apply_tb_bc(-1/constants.ϕ *  inv_hdg_0 * mat * dp_wdg_11(hdg_1 * d0 * T, darcy_flux))
+  Adv = apply_tb_bc(-1/constants.ϕ *  inv_hdg_0 * mat * dp_wdg_11(hdg_1 * d0 * T, darcy_flux))
 
-  Adv = apply_tb_bc(-1/constants.ϕ * codif_1 * (wdg10(darcy_flux, T)))
+  # Adv = apply_tb_bc(-1/constants.ϕ * codif_1 * (wdg10(darcy_flux, T)))
 end
 
 function calculate_diffusion(T, constants)
@@ -206,4 +205,4 @@ function save_dynamics(save_file_name, video_length = 30)
   end
 end
 
-save_dynamics("Porous_Convection.mp4", 30)
+save_dynamics("Porous_Convection.mp4", 60)
