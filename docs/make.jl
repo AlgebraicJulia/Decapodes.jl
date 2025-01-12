@@ -1,5 +1,6 @@
 @info "Loading Documenter"
 using Documenter
+using DocumenterCitations
 using Literate
 using Distributed
 using ProgressMeter
@@ -33,6 +34,11 @@ for (root, dirs, files) in walkdir(literate_dir)
   end
 end
 
+bib = CitationBibliography(
+    joinpath(@__DIR__, "src", "decapodes_documenter.bib");
+    style=:numeric
+)
+
 @info "Building Documenter.jl docs"
 makedocs(
   modules   = [Decapodes],
@@ -57,6 +63,7 @@ makedocs(
         "Vortices" => "navier_stokes/ns.md",
         "Harmonics" => "harmonics/harmonics.md",
         "Cahn-Hilliard" => "ch/cahn-hilliard.md",
+        "Brusselator" => "brussel/brussel.md",
         "Klausmeier" => "klausmeier/klausmeier.md",
         "CISM v2.1" => "cism/cism.md",
         "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
@@ -71,10 +78,12 @@ makedocs(
         "MHD" => "examples/mhd.md" # TODO convert original file to a docs page
     ],
     "Misc Features" => "bc/bc_debug.md", # Requires overview
+    "FAQ" => "faq/faq.md",
     "ASCII Operators" => "ascii.md",
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
-  ]
+  ],
+  plugins=[bib]
 )
 
 @info "Deploying docs"
