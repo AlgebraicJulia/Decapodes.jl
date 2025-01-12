@@ -1,47 +1,71 @@
-# The model in this file is copied from the stream function formulation introduced here:
-# https://algebraicjulia.github.io/Decapodes.jl/dev/navier_stokes/ns/
-# , but updated with terms representing β being advected by the fluid. The initial conditions
-# setup code is copied outright.
+```@meta
+EditURL = "../../literate/mhd.jl"
+```
 
-# The main reference used for developing this model is:
-# "Magnetohydrodynamics Simulation via Discrete Exterior Calculus", Gillespie, M.
-# https://markjgillespie.com/Research/MHD/MHD_Simulation_with_DEC.pdf
-# Note that the Gillespie paper does not use a stream function-vorticity formulation.
+The model in this file is copied from the stream function formulation introduced here:
+https://algebraicjulia.github.io/Decapodes.jl/dev/navier_stokes/ns/
+, but updated with terms representing β being advected by the fluid. The initial conditions
+setup code is copied outright.
 
+The main reference used for developing this model is:
+"Magnetohydrodynamics Simulation via Discrete Exterior Calculus", Gillespie, M.
+https://markjgillespie.com/Research/MHD/MHD_Simulation_with_DEC.pdf
+Note that the Gillespie paper does not use a stream function-vorticity formulation.
+
+````@example mhd
 @info "Loading Dependencies"
+````
 
-#=
-# Dependencies can be installed with the following command:
+Dependencies can be installed with the following command:
+
+````@example mhd
 using Pkg
 Pkg.add(["ACSets", "CairoMakie", "CombinatorialSpaces", "ComponentArrays",
   "CoordRefSystems", "DiagrammaticEquations", "GeometryBasics", "JLD2",
   "LinearAlgebra", "Logging", "LoggingExtras", "OrdinaryDiffEq", "SparseArrays",
   "StaticArrays", "TerminalLoggers"])
-=#
+````
 
-# Saving
+Saving
+
+````@example mhd
 using JLD2
+````
 
-# other dependencies
+other dependencies
+
+````@example mhd
 using MLStyle
 using Statistics: mean
+````
 
-begin # Dependencies
-# AlgebraicJulia
+AlgebraicJulia
+
+````@example mhd
 using ACSets
 using CombinatorialSpaces
 using Decapodes
 using DiagrammaticEquations
+````
 
-# Meshing
+Meshing
+
+````@example mhd
 using CoordRefSystems
 using GeometryBasics: Point3
 Point3D = Point3{Float64};
+nothing #hide
+````
 
-# Visualization
+Visualization
+
+````@example mhd
 using CairoMakie
+````
 
-# Simulation
+Simulation
+
+````@example mhd
 using ComponentArrays
 using LinearAlgebra
 using LinearAlgebra: factorize
@@ -50,32 +74,43 @@ using LoggingExtras
 using OrdinaryDiffEq
 using SparseArrays
 using StaticArrays
-using TerminalLoggers: TerminalLogger
-global_logger(TerminalLogger())
+````
 
-# Saving
+Saving
+
+````@example mhd
 using JLD2
+````
 
-# other dependencies
+other dependencies
+
+````@example mhd
 using MLStyle
 using Statistics: mean
-end # Dependencies
 
 @info "Defining models"
-# Beta is out-of-plane:
+````
+
+Beta is out-of-plane:
+
+````@example mhd
 mhd_out_of_plane = @decapode begin
     ψ::Form0
     η::DualForm1
     (dη,β)::DualForm2
-    # δ = ⋆d⋆
+
     ∂ₜ(dη) == -1*(∘(⋆₁, dual_d₁)((⋆(dη) ∧₀₁ ♭♯(η)) + (⋆(β) ∧₀₁ ♭♯(∘(⋆, d, ⋆)(β)))))
     ∂ₜ(β) == -1*(∘(⋆₁, dual_d₁)(⋆(β) ∧₀₁ ♭♯(η)))
-    # solve for stream function
+
     ψ == ∘(⋆, Δ⁻¹)(dη)
     η == ⋆(d(ψ))
 end;
+nothing #hide
+````
 
-# Beta lies in-plane:
+Beta lies in-plane:
+
+````@example mhd
 mhd = @decapode begin
     ψ::Form0
     (η,β)::DualForm1
@@ -117,7 +152,6 @@ s1 = dec_hodge_star(1,sd,GeometricHodge());
 s2 = dec_hodge_star(2, sd);
 s0inv = dec_inv_hodge_star(0,sd,GeometricHodge());
 ♭♯_m = ♭♯_mat(sd);
-@info "    Differential operators allocated"
 
 function generate(s, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
@@ -131,17 +165,12 @@ function generate(s, my_symbol; hodge=GeometricHodge())
   return (args...) -> op(args...)
 end;
 
-sim = gensim(mhd);
-open("mhd_sim.jl", "w") do f
-    write(f, string(gensim(mhd)))
-end
-sim = include("mhd_sim.jl")
+sim = evalsim(mhd);
 f = sim(sd, generate);
 
 constants_and_parameters = (
   μ = 0.001,)
 
-begin # ICs
 @info "Setting Initial Conditions"
 
 """    function great_circle_dist(pnt,G,a,cntr)
@@ -214,11 +243,14 @@ function vort_ring(lat, n_vorts, p::PointVortexParams, formula)
   Xsp = point_vortex(sd, Point3D(0.0, 0.0, -1.0), PointVortexParams(-1*n_vorts*p.τ, p.a))
   Xs + Xsp
 end
+````
 
-X =  # Six equidistant points at latitude θ=0.4.
-  # "... an additional vortex, with strength τ=-18 and a radius a=0.15, is
-  # placed at the south pole (θ=π)."
-  vort_ring(0.4, 6, PointVortexParams(3.0, 0.15), point_vortex)
+Six equidistant points at latitude θ=0.4.
+"... an additional vortex, with strength τ=-18 and a radius a=0.15, is
+placed at the south pole (θ=π)."
+
+````@example mhd
+X = vort_ring(0.4, 6, PointVortexParams(3.0, 0.15), point_vortex)
 
 """    function solve_poisson(vort::VForm)
 Compute the stream function by solving the Poisson equation.
@@ -231,15 +263,22 @@ solve_poisson(vort::DualForm{2}) =
   solve_poisson(VForm(s0inv * vort.data))
 
 ψ = solve_poisson(VForm(X))
+````
 
-# Compute velocity as curl (⋆d) of the stream function.
+Compute velocity as curl (⋆d) of the stream function.
+
+````@example mhd
 curl_stream(ψ) = s1 * d0 * ψ
 divergence(u) = s2 * d1 * (s1 \ u)
 RMS(x) = √(mean(x' * x))
 
 integral_of_curl(curl::DualForm{2}) = sum(curl.data)
-# Recall that s0 effectively multiplies each entry by a solid angle.
-# i.e. (sum ∘ ⋆₀) computes a Riemann sum.
+````
+
+Recall that s0 effectively multiplies each entry by a solid angle.
+i.e. (sum ∘ ⋆₀) computes a Riemann sum.
+
+````@example mhd
 integral_of_curl(curl::VForm) = integral_of_curl(DualForm{2}(s0*curl.data))
 
 u₀ = ComponentArray(dη = s0*X, β = zeros(ne(sd)))
@@ -247,12 +286,9 @@ u₀ = ComponentArray(dη = s0*X, β = zeros(ne(sd)))
 constants_and_parameters = (
   μ = 0.0,)
 
-@info "RMS of divergence of initial velocity: $(∘(RMS, divergence, curl_stream)(ψ))"
-@info "Integral of initial curl: $(integral_of_curl(VForm(X)))"
-end # ICs
 
 @info("Solving")
-tₑ = 1.0; 
+tₑ = 1.0;
 
 prob = ODEProblem(f, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob,
@@ -275,4 +311,5 @@ function visualize_dynamics(file_name, soln)
     end
 end
 visualize_dynamics("mhd.mp4", soln)
- 
+````
+
