@@ -11,6 +11,8 @@ using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
 using SparseArrays
+using StaticArrays
+import CombinatorialSpaces.DiscreteExteriorCalculus: eval_constant_primal_form
 
 # Reference equations are at the link below, dual-time method is replaced with a Poisson equation solve
 # https://pde-on-gpu.vaw.ethz.ch/lecture4/#solving_thermal_porous_convection_using_the_pseudo-transient_method
@@ -24,7 +26,7 @@ Porous_Convection = @decapode begin
 
   ρ == g ∧ (αρ₀ * bound_T)
 
-  P == Δ⁻¹(-δ(ρ))
+  P == Δ⁻¹(δ(ρ))
 
   qD == -(k_ηf * (d(P) - ρ))
 
@@ -56,7 +58,7 @@ fΔ0 = LinearAlgebra.factorize(Δ0);
 
 # This matrix is for interpolation of PrimalForm2 to DualForm2, meant for use with primal-primal Lie
 # TODO: To test, if there is a constant Form2, for example with just 1s, over primal triangles, primal vertex will have 1/(tri_area)
-# This assume triangle area and orientations are the same. So essentially, inv_hdq_0 * mat * ones() = 1 ./ sd[:area] 
+# This assume triangle area and orientations are the same. So essentially, inv_hdq_0 * mat * ones() = 1 ./ sd[:area]
 mat = spzeros(nv(sd), ntriangles(sd))
 for tri_id in triangles(sd)
   tri_area = sd[tri_id, :area]
@@ -70,7 +72,7 @@ for tri_id in triangles(sd)
     v = sd[sd[dual_tri_id, :D_∂e1], :D_∂v1]
 
     mat[v, tri_id] += weight
-  
+
   end
 end
 
@@ -122,11 +124,11 @@ T[bottom_wall_idxs] .= ΔT/2
 # Note these are only stable without considering the top and bottom conditions, so these are not correct
 # λ_ρ₀Cp / 40, phi * 2500
 
-grav = [0.0, -9.81] # Measure the force of gravity in the downwards direction
-edge_vecs = (sd[sd[:∂v1],:point] .- sd[sd[:∂v0],:point]) ./ sd[:length]
+grav = SVector{3}([0.0, -9.81, 0.0]) # Measure the force of gravity in the downwards direction
+# edge_vecs = (sd[sd[:∂v1],:point] .- sd[sd[:∂v0],:point]) ./ sd[:length]
 
-g = map(vec -> -dot(grav, vec), edge_vecs)
-
+# g = map(vec -> -dot(grav, vec), edge_vecs)
+g = eval_constant_primal_form(sd, grav)
 u₀ = ComponentArray(T=T, g=g)
 
 Ra = 1000
@@ -138,7 +140,7 @@ constants = (k_ηf = k_ηf, αρ₀ = αρ₀, ϕ = ϕ, λ_ρ₀Cp = λ_ρ₀Cp)
 
 # Smallest time step in original simulation was 0.00019, largest around 0.00100, around 0.00050 from original implementation
 # Only ran for 500 time steps, but adaptive time stepping means physical time simulated could vary
-tₑ = 0.0100
+tₑ = 0.1
 
 prob = ODEProblem(f, u₀, (0, tₑ), constants)
 soln = solve(prob, Tsit5())
@@ -155,14 +157,14 @@ inv_hdg_0 = dec_inv_hodge_star(0, sd)
 
 function calculate_pressure(T, constants)
   boussinesq = wdg10(g, constants.αρ₀ * T)
-  P = fΔ0 \ (codif_1 * -boussinesq) # Pressure
+  P = fΔ0 \ (codif_1 * boussinesq) # Pressure
 end
 
 function calculate_advection(T, P, constants)
   boussinesq = wdg10(g, constants.αρ₀ * T)
 
   darcy_flux = -(constants.k_ηf * (d0 * P - boussinesq))
-  
+
   # TODO: Why is this new advection acting strangely?
   Adv = apply_tb_bc(-1/constants.ϕ *  inv_hdg_0 * mat * dp_wdg_11(hdg_1 * d0 * T, darcy_flux))
 
