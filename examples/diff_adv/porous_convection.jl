@@ -30,8 +30,7 @@ Porous_Convection = @decapode begin
 
   qD == -(k_ηf * (d(P) - ρ))
 
-  # Adv == δ(qD ∧ bound_T) # TODO: Doesn't work well cause velocity isn't constant, needs Lie
-  Adv == ⋆(interpolate(∧ᵈᵖ₁₁(⋆(d(bound_T)), qD))) #TODO: Acting strangely, maybe some other scheme would work better
+  Adv == ⋆(interpolate(∧ᵈᵖ₁₁(⋆(d(bound_T)), qD)))
   Ṫ == -1/ϕ * Adv + λ_ρ₀Cp * Δ(bound_T)
 
   bound_Ṫ == tb_bc(Ṫ)
@@ -114,33 +113,25 @@ f = sim(sd, generate, DiagonalHodge())
 
 T_dist = MvNormal([lx/2.0, ly/2.0], [1/sqrt(2), 1/sqrt(2)])
 T = [2 * ΔT * pdf(T_dist, [p[1], p[2]]) for p in sd[:point]]
-# TODO: Not currently stable with top and bottom initial conditions
-# T = zeros(nv(sd))
 T[top_wall_idxs] .= -ΔT/2
 T[bottom_wall_idxs] .= ΔT/2
 
-# TODO: More stable conditions which deviate from those given in Exercise 1, task 4
-# Ra (Rayleigh number) is set to 1000 as per Exercise 1, task 5
-# Note these are only stable without considering the top and bottom conditions, so these are not correct
-# λ_ρ₀Cp / 40, phi * 2500
-
-grav = SVector{3}([0.0, -9.81, 0.0]) # Measure the force of gravity in the downwards direction
-# edge_vecs = (sd[sd[:∂v1],:point] .- sd[sd[:∂v0],:point]) ./ sd[:length]
-
-# g = map(vec -> -dot(grav, vec), edge_vecs)
+# Measure the force of gravity in the downwards direction
+accl_g = 9.81
+grav = SVector{3}([0.0, -accl_g, 0.0])
 g = eval_constant_primal_form(sd, grav)
 u₀ = ComponentArray(T=T, g=g)
 
 Ra = 1000
 k_ηf = 1.0
-αρ₀ = 1/9.81
+αρ₀ = 1.0/accl_g
 ϕ = 0.1
-λ_ρ₀Cp = 1/Ra*(αρ₀*k_ηf*ΔT*ly/ϕ)
+λ_ρ₀Cp = 1/Ra*(3.92*αρ₀*k_ηf*ΔT*ly/ϕ)
 constants = (k_ηf = k_ηf, αρ₀ = αρ₀, ϕ = ϕ, λ_ρ₀Cp = λ_ρ₀Cp)
 
 # Smallest time step in original simulation was 0.00019, largest around 0.00100, around 0.00050 from original implementation
 # Only ran for 500 time steps, but adaptive time stepping means physical time simulated could vary
-tₑ = 0.1
+tₑ = 2
 
 prob = ODEProblem(f, u₀, (0, tₑ), constants)
 soln = solve(prob, Tsit5())
@@ -165,10 +156,7 @@ function calculate_advection(T, P, constants)
 
   darcy_flux = -(constants.k_ηf * (d0 * P - boussinesq))
 
-  # TODO: Why is this new advection acting strangely?
   Adv = apply_tb_bc(-1/constants.ϕ *  inv_hdg_0 * mat * dp_wdg_11(hdg_1 * d0 * T, darcy_flux))
-
-  # Adv = apply_tb_bc(-1/constants.ϕ * codif_1 * (wdg10(darcy_flux, T)))
 end
 
 function calculate_diffusion(T, constants)
@@ -185,19 +173,19 @@ function save_dynamics(save_file_name, video_length = 30)
 
   f = Figure()
 
-  ax_T = CairoMakie.Axis(f[1,1], title = @lift("Temperature at Time $(round($time, digits=2))"))
+  ax_T = CairoMakie.Axis(f[1,1], title = @lift("Temperature at Time $(round($time, digits=3))"))
   msh_T = mesh!(ax_T, s, color=T, colormap=:jet)
   Colorbar(f[1,2], msh_T)
 
-  ax_P = CairoMakie.Axis(f[2,1], title = @lift("Pressure at Time $(round($time, digits=2))"))
+  ax_P = CairoMakie.Axis(f[2,1], title = @lift("Pressure at Time $(round($time, digits=3))"))
   msh_P = mesh!(ax_P, s, color=P, colormap=:jet)
   Colorbar(f[2,2], msh_P)
 
-  ax_Adv = CairoMakie.Axis(f[1,3], title = @lift("Advection at Time $(round($time, digits=2))"))
+  ax_Adv = CairoMakie.Axis(f[1,3], title = @lift("Advection at Time $(round($time, digits=3))"))
   msh_Adv = mesh!(ax_Adv, s, color=Adv, colormap=:jet)
   Colorbar(f[1,4], msh_Adv)
 
-  ax_Diff = CairoMakie.Axis(f[2,3], title = @lift("Diffusion at Time $(round($time, digits=2))"))
+  ax_Diff = CairoMakie.Axis(f[2,3], title = @lift("Diffusion at Time $(round($time, digits=3))"))
   msh_Diff = mesh!(ax_Diff, s, color=Diff, colormap=:jet)
   Colorbar(f[2,4], msh_Diff)
 
@@ -207,4 +195,4 @@ function save_dynamics(save_file_name, video_length = 30)
   end
 end
 
-save_dynamics("Porous_Convection.mp4", 60)
+save_dynamics("Porous_Convection.mp4", 120)
