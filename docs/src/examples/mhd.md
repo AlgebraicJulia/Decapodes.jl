@@ -168,8 +168,7 @@ end;
 sim = evalsim(mhd);
 f = sim(sd, generate);
 
-constants_and_parameters = (
-  μ = 0.001,)
+constants_and_parameters = (μ = 0.001,)
 
 @info "Setting Initial Conditions"
 
@@ -283,8 +282,7 @@ integral_of_curl(curl::VForm) = integral_of_curl(DualForm{2}(s0*curl.data))
 
 u₀ = ComponentArray(dη = s0*X, β = zeros(ne(sd)))
 
-constants_and_parameters = (
-  μ = 0.0,)
+constants_and_parameters = (μ = 0.0,)
 
 
 @info("Solving")

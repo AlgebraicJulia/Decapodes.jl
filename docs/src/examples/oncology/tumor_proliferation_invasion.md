@@ -27,15 +27,22 @@ Load in our Decapodes models
 using Decapodes.Canon.Oncology
 ````
 
-Examine our models
-Note that the implementation is entirely specified by its documentation
+Let's examine our models. Here's the tumor invasion model:
 
 ````@example tumor_proliferation_invasion
-@doc invasion
+to_graphviz(invasion)
+````
 
-@doc logistic
+The Logistic growth model
 
-@doc gompertz
+````@example tumor_proliferation_invasion
+to_graphviz(logistic)
+````
+
+The Gompertz growth model
+
+````@example tumor_proliferation_invasion
+to_graphviz(gompertz)
 ````
 
 Load in a mesh, initial conditions, and a plotting function

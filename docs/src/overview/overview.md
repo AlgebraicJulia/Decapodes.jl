@@ -26,9 +26,9 @@ surfaces of the mesh.
 Below, we provide a Decapode with just a single variable `C` and display it.
 
 ```@example DEC
-using Catlab
 using Decapodes
 using DiagrammaticEquations
+using Catlab
 
 Variable = @decapode begin
   C::Form0
@@ -77,9 +77,10 @@ proportional to the Laplacian of the concentration.
 Diffusion = @decapode begin
   (C, Ċ)::Form0
   ϕ::Form1
+  k::Constant
 
   # Fick's first law
-  ϕ ==  k(d₀(C))
+  ϕ ==  k*(d₀(C))
 
   # Diffusion equation
   Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
@@ -109,37 +110,24 @@ non-periodic meshes.
 ```@example DEC
 using CairoMakie
 using CombinatorialSpaces
+using GeometryBasics
 
-plot_mesh = loadmesh(Rectangle_30x10())
-periodic_mesh = loadmesh(Torus_30x10())
-point_map = loadmesh(Point_Map())
+mesh = triangulated_grid(20,10,0.1,0.1,Point3{Float64})
 
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
-wireframe!(ax, plot_mesh)
+wireframe!(ax, mesh)
 fig
 ```
+We then compile the simulation by using `gensim` and create functional simulation by calling the evaluated `sim`  with the mesh. Decapodes supports providing custom functions to the simulator, but for the time being we will keep things simple by passing in `nothing` to this value. Necessarily, we will create a "dual mesh," an explanation can be found [HERE].
 
-Now we create a function which links the names of functions used in the Decapode to their implementations. Note that many DEC operators are already
-defined for you.
-
-As an example, we chose to define `k` as a function that multiplies an input by `0.05`. We could have alternately chosen to represent `k` as a `Constant` that we multiply by in the Decapode itself.
-
-We then compile the simulation by using `gen_sim` and create functional simulation by calling the evaluated `sim`  with the mesh and our `generate` function.
+[TODO: subdivide_duals! warrants explanation]
 
 ```@example DEC
-using MLStyle
-
-function generate(sd, my_symbol; hodge=DiagonalHodge())
-  op = @match my_symbol begin
-    :k => x -> 0.05*x
-    x => error("Unmatched operator $my_symbol")
-  end
-  return op
-end
-
+dualmesh = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}(mesh)
+subdivide_duals!(dualmesh, Barycenter())
 sim = eval(gensim(Diffusion))
-fₘ = sim(periodic_mesh, generate, DiagonalHodge())
+fₘ = sim(dualmesh, nothing, DiagonalHodge())
 ```
 
 We go ahead and set up our initial conditions for this problem. In this case we generate a Gaussian and apply it to our mesh.
@@ -147,15 +135,15 @@ We go ahead and set up our initial conditions for this problem. In this case we 
 ```@example DEC
 using Distributions
 c_dist = MvNormal([7, 5], [1.5, 1.5])
-c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
+c = [pdf(c_dist, [p[1], p[2]]) for p in mesh[:point]]
 
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
-mesh!(ax, plot_mesh; color=c[point_map])
+mesh!(ax, mesh; color=c)
 fig
 ```
 
-Finally, we solve this PDE problem using the `Tsit5()` solver provided by DifferentialEquations.jl.
+Finally, we solve this PDE problem using the `Tsit5()` solver provided by DifferentialEquations.jl. We will need to make two ComponentArrays to store the state variable data and constants, respectively.
 
 ```@example DEC
 using LinearAlgebra
@@ -163,10 +151,11 @@ using ComponentArrays
 using OrdinaryDiffEq
 
 u₀ = ComponentArray(C=c)
+constants = ComponentArray(k=0.5)
 
-prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
-sol = solve(prob, Tsit5());
-sol.retcode
+prob = ODEProblem(fₘ, u₀, (0.0, 100.0), constants)
+soln = solve(prob, Tsit5());
+soln.retcode
 ```
 
 Now that the simulation has succeeded we can plot out our results with [CairoMakie.jl](https://github.com/MakieOrg/Makie.jl).
@@ -174,18 +163,16 @@ Now that the simulation has succeeded we can plot out our results with [CairoMak
 ```@example DEC
 # Plot the result
 times = range(0.0, 100.0, length=150)
-colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
-pmsh = mesh!(ax, plot_mesh; color=colors[1], colorrange = extrema(vcat(colors...)))
+pmsh = mesh!(ax, mesh; color=c, colorrange = extrema(c))
 Colorbar(fig[1,2], pmsh)
-framerate = 30
 
 # Animation
-record(fig, "diffusion.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-  pmsh.color = sol(t).C[point_map]
+record(fig, "diffusion.gif", times; framerate = 30) do t
+  pmsh.color = soln(t).C
 end
 ```
 
@@ -208,9 +195,10 @@ and the change of concentration under superposition of fluxes.
 Diffusion = @decapode begin
   C::Form0
   ϕ::Form1
+  k::Constant
 
   # Fick's first law
-  ϕ ==  k(d₀(C))
+  ϕ == k*(d₀(C))
 end
 
 Advection = @decapode begin
@@ -255,7 +243,12 @@ physics under. This pattern of composition is described by an undirected wiring
 diagram, which has the individual physics as nodes and the shared variables as
 the small junctions.
 
+For this example, we will now invoke `Catlab`, which exports
+[`@relation`](https://algebraicjulia.github.io/Catlab.jl/v0.9/apis/programs/#Catlab.Programs.RelationalPrograms.@relation-Tuple)
+necessary for specifying a composition pattern.
+
 ```@example DEC
+using Catlab
 compose_diff_adv = @relation (C, V) begin
   diffusion(C, ϕ₁)
   advection(C, ϕ₂, V)
@@ -277,82 +270,44 @@ DiffusionAdvection = apex(DiffusionAdvection_cospan)
 to_graphviz(DiffusionAdvection)
 ```
 
-Similar to before, this physics can be compiled and executed. Note that this process
-now requires another value to be defined, namely the velocity vector field. We do
-this using a custom operator called `flat_op`. This operator is basically the flat
-operator from CombinatorialSpaces.jl, but specialized to account for the periodic mesh.
+We used `compose_diff_adv` to specify how physics should be
+composed, and then provided a list of physical models (Decapodes) along with
+their variables which will be associated to those in the pattern.
 
-We could instead represent the domain as the surface of an object with equivalent boundaries in 3D.
+Similar to before, this physics can be compiled, executed, and plotted. Note that this process
+now requires another value to be defined, namely the velocity vector field. 
 
-``` @setup DEC
-function closest_point(p1, p2, dims)
-    p_res = collect(p2)
-    for i in 1:length(dims)
-        if dims[i] != Inf
-            p = p1[i] - p2[i]
-            f, n = modf(p / dims[i])
-            p_res[i] += dims[i] * n
-            if abs(f) > 0.5
-                p_res[i] += sign(f) * dims[i]
-            end
-        end
-    end
-    Point3{Float64}(p_res...)
-end
-
-function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, Inf, Inf])
-  tri_map = Dict{Int,Int}(triangle_center(s,t) => t for t in triangles(s))
-
-  map(edges(s)) do e
-    p = closest_point(point(s, tgt(s,e)), point(s, src(s,e)), dims)
-    e_vec = (point(s, tgt(s,e)) - p) * sign(1,s,e)
-    dual_edges = elementary_duals(1,s,e)
-    dual_lengths = dual_volume(1, s, dual_edges)
-    mapreduce(+, dual_edges, dual_lengths) do dual_e, dual_length
-      X_vec = X[tri_map[s[dual_e, :D_∂v0]]]
-      dual_length * dot(X_vec, e_vec)
-    end / sum(dual_lengths)
-  end
-end
-```
+TODO: this now slams into the wall. needs fixing.
 
 ```@example DEC
 using LinearAlgebra
 using MLStyle
 
-function generate(sd, my_symbol; hodge=DiagonalHodge())
-  op = @match my_symbol begin
-    :k => x -> 0.05*x
-    x => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
-
 sim = eval(gensim(DiffusionAdvection))
-fₘ = sim(periodic_mesh, generate, DiagonalHodge())
+fₘ = sim(dualmesh, nothing, DiagonalHodge())
 
 velocity(p) = [-0.5, -0.5, 0.0]
-v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
+v = flat(dualmesh, velocity.(dualmesh[triangle_center(dualmesh),:dual_point]),
+DPPFlat())
 
 u₀ = ComponentArray(C=c,V=v)
+constants = ComponentArray(diffusion_k=0.5)
 
-prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
+prob = ODEProblem(fₘ, u₀, (0.0, 100.0), constants)
 sol = solve(prob, Tsit5());
 
 # Plot the result
-times = range(0.0, 100.0, length=150)
-colors = [sol(t).C[point_map] for t in times]
 
 # Initial frame
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
-pmsh = mesh!(ax, plot_mesh; color=colors[1], colorrange = extrema(vcat(colors...)))
+pmsh = mesh!(ax, mesh; color=c, colorrange = extrema(c))
 Colorbar(fig[1,2], pmsh)
-framerate = 30
 
 # Animation
-record(fig, "diff_adv.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-  pmsh.color = sol(t).C[point_map]
+times = range(0.0, 100.0, length=150)
+record(fig, "diff_adv.gif", times; framerate = 30) do t
+  pmsh.color = sol(t).C
 end
 ```
 

@@ -20,19 +20,19 @@ const literate_dir = joinpath(@__DIR__, "literate")
 const generated_dir = joinpath(@__DIR__, "src", "examples")
 
 @info "Building literate files"
-for (root, dirs, files) in walkdir(literate_dir)
-  out_dir = joinpath(generated_dir, relpath(root, literate_dir))
-  @showprogress pmap(files) do file
-  # for file in files
-    f,l = splitext(file)
-    if l == ".jl" && !startswith(f, "_")
-      Literate.markdown(joinpath(root, file), out_dir;
-        config=config, documenter=true, credit=false)
-      Literate.notebook(joinpath(root, file), out_dir;
-        execute=true, documenter=true, credit=false)
-    end
-  end
-end
+# for (root, dirs, files) in walkdir(literate_dir)
+#   out_dir = joinpath(generated_dir, relpath(root, literate_dir))
+#   @showprogress pmap(files) do file
+#   # for file in files
+#     f,l = splitext(file)
+#     if l == ".jl" && !startswith(f, "_")
+#       Literate.markdown(joinpath(root, file), out_dir;
+#         config=config, documenter=true, credit=false)
+#       Literate.notebook(joinpath(root, file), out_dir;
+#         execute=true, documenter=true, credit=false)
+#     end
+#   end
+# end
 
 bib = CitationBibliography(
     joinpath(@__DIR__, "src", "decapodes_documenter.bib");
