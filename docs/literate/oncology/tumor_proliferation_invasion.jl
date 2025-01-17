@@ -17,13 +17,14 @@ Point3D = Point3{Float64}
 # Load in our Decapodes models
 using Decapodes.Canon.Oncology
 
-# Examine our models
-# Note that the implementation is entirely specified by its documentation
-@doc invasion
+# Let's examine our models. Here's the tumor invasion model:
+to_graphviz(invasion)
 
-@doc logistic
+# The Logistic growth model
+to_graphviz(logistic)
 
-@doc gompertz
+# The Gompertz growth model
+to_graphviz(gompertz)
 
 # Load in a mesh, initial conditions, and a plotting function
 function show_heatmap(Cdata)
