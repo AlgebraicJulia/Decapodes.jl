@@ -112,7 +112,7 @@ using CairoMakie
 using CombinatorialSpaces
 using GeometryBasics
 
-mesh = triangulated_grid(20,10,0.1,0.1,Point3{Float64})
+mesh = triangulated_grid(30,10,1,1,Point3{Float64})
 
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
@@ -151,9 +151,10 @@ using ComponentArrays
 using OrdinaryDiffEq
 
 u₀ = ComponentArray(C=c)
-constants = ComponentArray(k=0.5)
+constants = ComponentArray(k=0.05)
 
-prob = ODEProblem(fₘ, u₀, (0.0, 100.0), constants)
+tₑ = 100
+prob = ODEProblem(fₘ, u₀, (0.0, tₑ), constants)
 soln = solve(prob, Tsit5());
 soln.retcode
 ```
@@ -162,7 +163,7 @@ Now that the simulation has succeeded we can plot out our results with [CairoMak
 
 ```@example DEC
 # Plot the result
-times = range(0.0, 100.0, length=150)
+times = range(0.0, tₑ, length=150)
 
 # Initial frame
 fig = Figure()
@@ -275,25 +276,29 @@ composed, and then provided a list of physical models (Decapodes) along with
 their variables which will be associated to those in the pattern.
 
 Similar to before, this physics can be compiled, executed, and plotted. Note that this process
-now requires another value to be defined, namely the velocity vector field. 
+now requires another value to be defined, namely the velocity vector field.
 
-TODO: this now slams into the wall. needs fixing.
+TODO: Why is the blob moving opposite of the velocity field
 
 ```@example DEC
 using LinearAlgebra
 using MLStyle
+using StaticArrays
+import CombinatorialSpaces.DiscreteExteriorCalculus: eval_constant_primal_form
 
 sim = eval(gensim(DiffusionAdvection))
 fₘ = sim(dualmesh, nothing, DiagonalHodge())
 
-velocity(p) = [-0.5, -0.5, 0.0]
-v = flat(dualmesh, velocity.(dualmesh[triangle_center(dualmesh),:dual_point]),
-DPPFlat())
+# TODO: Remove depending on default edge orientation
+dualmesh[:edge_orientation] = .!(dualmesh[:edge_orientation])
+
+v = eval_constant_primal_form(dualmesh, SVector{3}(0.25, 0.0, 0.0))
 
 u₀ = ComponentArray(C=c,V=v)
-constants = ComponentArray(diffusion_k=0.5)
+constants = ComponentArray(diffusion_k=0.05)
 
-prob = ODEProblem(fₘ, u₀, (0.0, 100.0), constants)
+tₑ = 50
+prob = ODEProblem(fₘ, u₀, (0.0, tₑ), constants)
 sol = solve(prob, Tsit5());
 
 # Plot the result
@@ -305,7 +310,7 @@ pmsh = mesh!(ax, mesh; color=c, colorrange = extrema(c))
 Colorbar(fig[1,2], pmsh)
 
 # Animation
-times = range(0.0, 100.0, length=150)
+times = range(0.0, tₑ, length=150)
 record(fig, "diff_adv.gif", times; framerate = 30) do t
   pmsh.color = sol(t).C
 end
