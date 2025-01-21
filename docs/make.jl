@@ -58,8 +58,9 @@ makedocs(
     "Overview" => "overview/overview.md",
     "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
     "Concepts" => Any[
-        "Equations" => "equations/equations.md",
-        "Meshes" => "meshes/meshes.md",
+        "Equations" => "concepts/equations.md",
+        "Meshes" => "concepts/meshes.md",
+        "Composition" => "concepts/composition.md",
     ],
     "Zoo" => Any[
         "Vortices" => "navier_stokes/ns.md",

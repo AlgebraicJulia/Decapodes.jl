@@ -108,43 +108,26 @@ We will visualize the mesh embedded in two dimensions here, but in later visuali
 ```@example DEC
 # Define Mesh
 function circle(n, c)
-  s = EmbeddedDeltaSet1D{Bool, Point2D}()
+  mesh = EmbeddedDeltaSet1D{Bool, Point2D}()
   map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
-    add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+    add_vertex!(mesh, point=Point2D(cos(t),sin(t))*(c/2pi))
   end
-  add_edges!(s, 1:(nv(s)-1), 2:nv(s))
-  add_edge!(s, nv(s), 1)
-  sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
-  subdivide_duals!(sd, Circumcenter())
-  s,sd
+  add_edges!(mesh, 1:(nv(mesh)-1), 2:nv(mesh))
+  add_edge!(mesh, nv(mesh), 1)
+  dualmesh = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(mesh)
+  subdivide_duals!(dualmesh, Circumcenter())
+  mesh,dualmesh
 end
-s,sd = circle(9, 500)
+mesh,dualmesh = circle(9, 500)
 
-scatter(sd[:point])
-```
-
-We discretize our differential operators using the Discrete Exterior Calculus. The DEC is an elegant way of building up more complex differential operators from simpler ones. To demonstrate, we will define the Δ operator by building it up with matrix multiplication of simpler operators. Since most operators in the DEC are matrices, most simulations consist mainly of matrix-vector multiplications, and are thus very fast.
-
-If this code seems too low level, do not worry. Decapodes defines and caches for you many differential operators behind the scenes, so you do not have to worry about defining your own.
-
-```@example DEC
-lap_mat = dec_hodge_star(1,sd) * dec_differential(0,sd) * dec_inv_hodge_star(0,sd) * dec_dual_derivative(0,sd)
-
-function generate(sd, my_symbol; hodge=DiagonalHodge())
-  op = @match my_symbol begin
-    :Δ => x -> begin
-      lap_mat * x
-    end
-  end
-  return (args...) -> op(args...)
-end
+scatter(dualmesh[:point])
 ```
 
 Let's pass our mesh and methods of generating operators to our simulation code.
 
 ```@example DEC
 # Instantiate Simulation
-fₘ = sim(sd, generate, DiagonalHodge())
+fₘ = sim(dualmesh, generate, DiagonalHodge())
 ```
 
 With our simulation now ready, let's specify initial data to pass to it. We'll define them with plain Julia code.
@@ -154,12 +137,12 @@ The most interesting parameter here is our "downhill gradient" `dX`. This parame
 ```@example DEC
 # Define Initial Conditions
 n_dist = Normal(pi)
-n = [pdf(n_dist, t)*(√(2pi))*7.2 + 0.08 - 5e-2 for t in range(0,2pi; length=ne(sd))]
+n = [pdf(n_dist, t)*(√(2pi))*7.2 + 0.08 - 5e-2 for t in range(0,2pi; length=ne(dualmesh))]
 
 w_dist = Normal(pi, 20)
-w = [pdf(w_dist, t) for t in range(0,2pi; length=ne(sd))]
+w = [pdf(w_dist, t) for t in range(0,2pi; length=ne(dualmesh))]
 
-dX = sd[:length]
+dX = dualmesh[:length]
 
 u₀ = ComponentArray(N = n, W = w, hydro_dX = dX)
 
@@ -174,8 +157,8 @@ Let's execute our simulation.
 # Run Simulation
 tₑ = 300.0
 prob = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
-sol = solve(prob, Tsit5(), saveat=0.1, save_idxs=[:N, :W])
-sol.retcode
+soln = solve(prob, Tsit5(), saveat=0.1, save_idxs=[:N, :W])
+soln.retcode
 ```
 
 ## Animation
@@ -183,10 +166,10 @@ sol.retcode
 Let's perform some basic visualization and analysis of our results to verify our dynamics.
 
 ```@example DEC
-n = sol(0).N
-nₑ = sol(tₑ).N
-w = sol(0).W
-wₑ = sol(tₑ).W
+n = soln(0).N
+nₑ = soln(tₑ).N
+w = soln(0).W
+wₑ = soln(tₑ).W
 nothing # hide
 ```
 
@@ -194,10 +177,10 @@ nothing # hide
 # Animate dynamics
 function save_dynamics(form_name, framerate, filename)
   time = Observable(0.0)
-  ys = @lift(getproperty(sol($time), form_name))
-  xcoords = [0, accumulate(+, sd[:length])[1:end-1]...]
+  ys = @lift(getproperty(soln($time), form_name))
+  xcoords = [0, accumulate(+, dualmesh[:length])[1:end-1]...]
   fig = lines(xcoords, ys, color=:green, linewidth=4.0,
-    colorrange=extrema(getproperty(sol(0), form_name));
+    colorrange=extrema(getproperty(soln(0), form_name));
     axis = (; title = @lift("Klausmeier $(String(form_name)) at $($time)")))
   timestamps = range(0, tₑ, step=1)
   record(fig, filename, timestamps; framerate=framerate) do t
