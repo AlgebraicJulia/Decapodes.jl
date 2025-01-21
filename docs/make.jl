@@ -57,8 +57,10 @@ makedocs(
     "Decapodes.jl" => "index.md",
     "Overview" => "overview/overview.md",
     "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
-    "Equations" => "equations/equations.md",
-    "Meshes" => "meshes/meshes.md",
+    "Concepts" => Any[
+        "Equations" => "equations/equations.md",
+        "Meshes" => "meshes/meshes.md",
+    ],
     "Zoo" => Any[
         "Vortices" => "navier_stokes/ns.md",
         "Harmonics" => "harmonics/harmonics.md",
