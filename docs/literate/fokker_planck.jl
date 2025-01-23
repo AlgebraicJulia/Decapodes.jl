@@ -1,12 +1,12 @@
 # We use here the formulation studied by Jordan, Kinderlehrer, and Otto in "The
 # Variational Formulation of the Fokker-Planck Equation" (1996).
 
-# The formualation they studied is that where the drift coefficient is the
+# The formulation they studied is that where the drift coefficient is the
 # gradient of (some potential) Ψ.
 
 # Load libraries.
 using Catlab, CombinatorialSpaces, Decapodes, DiagrammaticEquations
-using CairoMakie, ComponentArrays, LinearAlgebra, MLStyle, MultiScaleArrays, OrdinaryDiffEq
+using CairoMakie, ComponentArrays, LinearAlgebra, MLStyle, ComponentArrays, OrdinaryDiffEq
 using GeometryBasics: Point3
 Point3D = Point3{Float64}
 using Arpack
@@ -42,17 +42,14 @@ u₀ = ComponentArray(Ψ=Ψ, ρ=ρ)
 
 # Run.
 tₑ = 20.0
-prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5(), progress=true, progress_steps=1)
+prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters);
+soln = solve(prob, Tsit5(), progress=true, progress_steps=1);
 
 # Verify that the PDF is still a PDF.
 s0 = dec_hodge_star(0,sd);
 @info sum(s0 * soln(0).ρ)
 @info sum(s0 * soln(tₑ).ρ) # ρ integrates to 1
 @info any(soln(tₑ).ρ .≤ 0) # ρ is nonzero
-
-# Save solution data.
-@save "fokker_planck.jld2" soln
 
 # Create GIF
 function save_gif(file_name, soln)
@@ -71,5 +68,10 @@ function save_gif(file_name, soln)
     time[] = t
   end
 end
-save_gif("fokker_planck.gif", soln)
+gif = save_gif("fokker_planck.gif", soln)
 
+gif
+
+# using DisplayAs
+
+# DisplayAs.Text(DisplayAs.GIF(gif))
