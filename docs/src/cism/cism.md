@@ -227,9 +227,9 @@ Julia is a "Just-In-Time" compiled language. That means that functions are compi
 # Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
 # We run for a short timespan to pre-compile.
-prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
-soln = solve(prob, Tsit5())
-soln.retcode != :Unstable || error("Solver was not stable")
+problem = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
+solution = solve(problem, Tsit5())
+solution.retcode != :Unstable || error("Solver was not stable")
 ```
 
 ```@example DEC
@@ -238,9 +238,9 @@ tₑ = 200
 
 # This next run should be fast.
 @info("Solving")
-prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5(), saveat=0.1)
-@show soln.retcode
+problem = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+solution = solve(problem, Tsit5(), saveat=0.1)
+@show solution.retcode
 @info("Done")
 ```
 
@@ -249,14 +249,14 @@ We can benchmark the compiled simulation with `@benchmarkable`. This macro runs 
 ```@example DEC
 # Time the simulation
 
-b = @benchmarkable solve(prob, Tsit5(), saveat=0.1)
+b = @benchmarkable solve(problem, Tsit5(), saveat=0.1)
 c = run(b)
 ```
 
 Here we save the solution information to a [file](ice_dynamics2D.jld2).
 
 ```@example DEC
-@save "ice_dynamics2D.jld2" soln
+@save "ice_dynamics2D.jld2" solution
 ```
 
 ## Result Comparison and Analysis
@@ -272,7 +272,7 @@ function plot_final_conditions()
   ax = CairoMakie.Axis(fig[1,1],
     title="Modeled thickness (m) at time 200.0",
     aspect=0.6, xticks = [0, 3e4, 6e4])
-  msh = mesh!(ax, s, color=soln(200.0).dynamics_h, colormap=:jet)
+  msh = mesh!(ax, s, color=solution(200.0).dynamics_h, colormap=:jet)
   Colorbar(fig[1,2], msh)
   fig
 end
@@ -306,7 +306,7 @@ nothing # hide
 # Plot the error.
 function plot_error()
   hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s))
-  h_diff = soln(tₑ).dynamics_h - hₐ
+  h_diff = solution(tₑ).dynamics_h - hₐ
   extrema(h_diff)
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1],
@@ -328,7 +328,7 @@ We compute below that the maximum absolute error is approximately 89 meters. We 
 ```@example DEC
 # Compute max absolute error:
 hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s))
-h_diff = soln(tₑ).dynamics_h - hₐ
+h_diff = solution(tₑ).dynamics_h - hₐ
 maximum(abs.(h_diff))
 ```
 
@@ -338,14 +338,14 @@ We compute root-mean-square (RMS) error as well, both over the entire domain, an
 # Compute RMS not considering the "outside".
 hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s))
 nonzeros = findall(!=(0), hₐ)
-h_diff = soln(tₑ).dynamics_h - hₐ
+h_diff = solution(tₑ).dynamics_h - hₐ
 rmse = sqrt(sum(map(x -> x*x, h_diff[nonzeros])) / length(nonzeros))
 ```
 
 ```@example DEC
 # Compute RMS of the entire domain.
 hₐ = map(x -> height_at_p(x[1], x[2], 200.0), point(s))
-h_diff = soln(tₑ).dynamics_h - hₐ
+h_diff = solution(tₑ).dynamics_h - hₐ
 rmse = sqrt(sum(map(x -> x*x, h_diff)) / length(h_diff))
 ```
 
@@ -355,10 +355,10 @@ begin
   frames = 100
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1], aspect=0.6, xticks = [0, 3e4, 6e4])
-  msh = mesh!(ax, s, color=soln(0).dynamics_h, colormap=:jet, colorrange=extrema(soln(tₑ).dynamics_h))
+  msh = mesh!(ax, s, color=solution(0).dynamics_h, colormap=:jet, colorrange=extrema(solution(tₑ).dynamics_h))
   Colorbar(fig[1,2], msh)
   record(fig, "ice_dynamics_cism.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
-    msh.color = soln(t).dynamics_h
+    msh.color = solution(t).dynamics_h
   end
 end
 ```

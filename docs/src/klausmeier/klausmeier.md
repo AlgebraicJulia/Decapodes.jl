@@ -127,6 +127,19 @@ Let's pass our mesh and methods of generating operators to our simulation code.
 
 ```@example DEC
 # Instantiate Simulation
+
+lap_mat = dec_hodge_star(1,dualmesh) * dec_differential(0,dualmesh) * dec_inv_hodge_star(0,dualmesh) * dec_dual_derivative(0,dualmesh)
+
+function generate(sd, my_symbol; hodge=DiagonalHodge())
+  op = @match my_symbol begin
+    :Δ => x -> begin
+      lap_mat * x
+    end
+  end
+  return (args...) -> op(args...)
+end
+
+
 fₘ = sim(dualmesh, generate, DiagonalHodge())
 ```
 
@@ -156,9 +169,9 @@ Let's execute our simulation.
 ```@example DEC
 # Run Simulation
 tₑ = 300.0
-prob = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
-soln = solve(prob, Tsit5(), saveat=0.1, save_idxs=[:N, :W])
-soln.retcode
+problem = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
+solution = solve(problem, Tsit5(), saveat=0.1, save_idxs=[:N, :W])
+solution.retcode
 ```
 
 ## Animation
@@ -166,10 +179,10 @@ soln.retcode
 Let's perform some basic visualization and analysis of our results to verify our dynamics.
 
 ```@example DEC
-n = soln(0).N
-nₑ = soln(tₑ).N
-w = soln(0).W
-wₑ = soln(tₑ).W
+n = solution(0).N
+nₑ = solution(tₑ).N
+w = solution(0).W
+wₑ = solution(tₑ).W
 nothing # hide
 ```
 
@@ -177,10 +190,10 @@ nothing # hide
 # Animate dynamics
 function save_dynamics(form_name, framerate, filename)
   time = Observable(0.0)
-  ys = @lift(getproperty(soln($time), form_name))
+  ys = @lift(getproperty(solution($time), form_name))
   xcoords = [0, accumulate(+, dualmesh[:length])[1:end-1]...]
   fig = lines(xcoords, ys, color=:green, linewidth=4.0,
-    colorrange=extrema(getproperty(soln(0), form_name));
+    colorrange=extrema(getproperty(solution(0), form_name));
     axis = (; title = @lift("Klausmeier $(String(form_name)) at $($time)")))
   timestamps = range(0, tₑ, step=1)
   record(fig, filename, timestamps; framerate=framerate) do t

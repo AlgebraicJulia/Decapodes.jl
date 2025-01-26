@@ -60,7 +60,7 @@ makedocs(
     "Concepts" => Any[
         "Equations" => "concepts/equations.md",
         "Meshes" => "concepts/meshes.md",
-        "Composition" => "concepts/composition.md",
+        "Custom Operators" => "concepts/generate.md",
     ],
     "Zoo" => Any[
         "Vortices" => "navier_stokes/ns.md",
@@ -71,14 +71,18 @@ makedocs(
         "CISM v2.1" => "cism/cism.md",
         "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
         "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
-        "Halfar-EBM-Water" => "ebm_melt/ebm_melt.md",
+        # "Halfar-EBM-Water" => "ebm_melt/ebm_melt.md",
         "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
         "NHS" => "nhs/nhs_lite.md",
         "Pipe Flow" => "poiseuille/poiseuille.md",
+        "Fokker-Planck" => "fokker_planck/fokker_planck.md"
     ],
     "Examples" => Any[
-        "Oncology" => "examples/oncology/tumor_proliferation_invasion.md"
-        "MHD" => "examples/mhd.md" # TODO convert original file to a docs page
+        "Heat" => "examples/diff_adv/heat.md",
+        "Burger" => "examples/diff_adv/burger.md",
+        "Gray-Scott" => "examples/chemistry/gray_scott.md",
+        "Oncology" => "examples/oncology/tumor_proliferation_invasion.md",
+        "MHD" => "examples/mhd.md", # TODO convert original file to a docs page
     ],
     "Misc Features" => "bc/bc_debug.md", # Requires overview
     "FAQ" => "faq/faq.md",
