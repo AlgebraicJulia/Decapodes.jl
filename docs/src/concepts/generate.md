@@ -1,16 +1,33 @@
 ``` @example DEC
 using Decapodes
+import MLStyle: @match
 ```
 
 ## Custom Operators
 
-Decapodes.jl already defines a suite of operators from the Discrete Exterior Calculus. However it is often the case that an implementation requires custom operators. Sometimes, this is just matter of building operators through composition. However Decapodes accepts a lookup table of functions which are included when parsing a Decapodes expression. This allows for new operators with their own symbols to be defined.
+Decapodes.jl already defines a suite of operators from the Discrete Exterior Calculus. However it is often the case that an implementation requires custom operators. Sometimes, this is just matter of building operators through composition, however Decapodes accepts a lookup table of functions which are included when parsing a Decapodes expression. This allows for new operators with their own symbols to be defined.
 
 On this page, we will give an overview of the Decapodes `generate` function. 
 
 ### The `generate` function
 
 The `gensim` function optionally accepts a callable object like a function to act as a lookup table for new operators. In general practice, this function is called `generate`, but this is not necessary. It just requires as arguments the dual mesh `dualmesh`, the function symbol, and optionally the hodge operator.
+
+Let's examine this generate function from the MHD example. Here this system introduces two operators, an inverse Laplacian and a flat-sharp operator. 
+
+```
+function generate(dualmesh, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :Δ⁻¹ => x -> begin
+      y = fΔ0 \ x
+      y .- minimum(y)
+    end
+    :♭♯ => x -> ♭♯_m * x
+    _ => default_dec_matrix_generate(dualmesh, my_symbol, hodge)
+  end
+  return (args...) -> op(args...)
+end;
+```
 
 ### Composing Operators
 

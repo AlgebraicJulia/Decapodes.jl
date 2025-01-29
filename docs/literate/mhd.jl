@@ -12,10 +12,10 @@
 
 # Dependencies can be installed with the following command:
 using Pkg
-Pkg.add(["ACSets", "CairoMakie", "CombinatorialSpaces", "ComponentArrays",
-  "CoordRefSystems", "DiagrammaticEquations", "GeometryBasics", "JLD2",
-  "LinearAlgebra", "Logging", "LoggingExtras", "OrdinaryDiffEq", "SparseArrays",
-  "StaticArrays", "TerminalLoggers"])
+# Pkg.add(["ACSets", "CairoMakie", "CombinatorialSpaces", "ComponentArrays",
+#   "CoordRefSystems", "DiagrammaticEquations", "GeometryBasics", "JLD2",
+#   "LinearAlgebra", "Logging", "LoggingExtras", "OrdinaryDiffEq", "SparseArrays",
+#   "StaticArrays", "TerminalLoggers"])
 
 # Saving
 using JLD2
@@ -96,36 +96,36 @@ s = @match sphere begin
         s;
     end
 end;
-sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s);
-subdivide_duals!(sd, Circumcenter());
+dualmesh = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s);
+subdivide_duals!(dualmesh, Circumcenter());
 
-Δ0 = Δ(0,sd);
+Δ0 = Δ(0,dualmesh);
 fΔ0 = factorize(Δ0);
-d0 = dec_differential(0,sd);
-d1 = dec_differential(1,sd);
-dd0 = dec_dual_derivative(0,sd);
-dd1 = dec_dual_derivative(1,sd);
-δ1 = δ(1,sd);
-s0 = dec_hodge_star(0,sd,GeometricHodge());
-s1 = dec_hodge_star(1,sd,GeometricHodge());
-s2 = dec_hodge_star(2, sd);
-s0inv = dec_inv_hodge_star(0,sd,GeometricHodge());
-♭♯_m = ♭♯_mat(sd);
+d0 = dec_differential(0,dualmesh);
+d1 = dec_differential(1,dualmesh);
+dd0 = dec_dual_derivative(0,dualmesh);
+dd1 = dec_dual_derivative(1,dualmesh);
+δ1 = δ(1,dualmesh);
+s0 = dec_hodge_star(0,dualmesh,GeometricHodge());
+s1 = dec_hodge_star(1,dualmesh,GeometricHodge());
+s2 = dec_hodge_star(2, dualmesh);
+s0inv = dec_inv_hodge_star(0,dualmesh,GeometricHodge());
+♭♯_m = ♭♯_mat(dualmesh);
 
-function generate(s, my_symbol; hodge=GeometricHodge())
+function generate(dualmesh, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :Δ⁻¹ => x -> begin
       y = fΔ0 \ x
       y .- minimum(y)
     end
     :♭♯ => x -> ♭♯_m * x
-    _ => default_dec_matrix_generate(s, my_symbol, hodge)
+    _ => default_dec_matrix_generate(dualmesh, my_symbol, hodge)
   end
   return (args...) -> op(args...)
 end;
 
 sim = evalsim(mhd);
-f = sim(sd, generate);
+f = sim(dualmesh, generate);
 
 constants_and_parameters = (μ = 0.001,)
 
@@ -166,10 +166,10 @@ function point_vortex(pnt::Point3D, cntr::Point3D, p::PointVortexParams)
   p.τ / (cosh(3gcd/p.a)^2)
 end
 
-taylor_vortex(sd::HasDeltaSet, cntr::Point3D, p::TaylorVortexParams) =
-  map(x -> taylor_vortex(x, cntr, p), point(sd))
-point_vortex(sd::HasDeltaSet, cntr::Point3D, p::PointVortexParams) =
-  map(x -> point_vortex(x, cntr, p), point(sd))
+taylor_vortex(dualmesh::HasDeltaSet, cntr::Point3D, p::TaylorVortexParams) =
+  map(x -> taylor_vortex(x, cntr, p), point(dualmesh))
+point_vortex(dualmesh::HasDeltaSet, cntr::Point3D, p::PointVortexParams) =
+  map(x -> point_vortex(x, cntr, p), point(dualmesh))
 
 """    function ring_centers(lat, n)
 Find n equispaced points at the given latitude.
@@ -188,7 +188,7 @@ Compute vorticity as primal 0-forms for a ring of vortices.
 Specify the latitude, number of vortices, and a formula for computing vortex strength centered at a point.
 """
 function vort_ring(lat, n_vorts, p::T, formula) where {T<:AbstractVortexParams}
-  sum(map(x -> formula(sd, x, p), ring_centers(lat, n_vorts)))
+  sum(map(x -> formula(dualmesh, x, p), ring_centers(lat, n_vorts)))
 end
 
 """    function vort_ring(lat, n_vorts, p::PointVortexParams, formula)
@@ -197,8 +197,8 @@ Specify the latitude, number of vortices, and a formula for computing vortex str
 Additionally, place a counter-balance vortex at the South Pole such that the integral of vorticity is 0.
 """
 function vort_ring(lat, n_vorts, p::PointVortexParams, formula)
-  Xs = sum(map(x -> formula(sd, x, p), ring_centers(lat, n_vorts)))
-  Xsp = point_vortex(sd, Point3D(0.0, 0.0, -1.0), PointVortexParams(-1*n_vorts*p.τ, p.a))
+  Xs = sum(map(x -> formula(dualmesh, x, p), ring_centers(lat, n_vorts)))
+  Xsp = point_vortex(dualmesh, Point3D(0.0, 0.0, -1.0), PointVortexParams(-1*n_vorts*p.τ, p.a))
   Xs + Xsp
 end
 
@@ -229,7 +229,7 @@ integral_of_curl(curl::DualForm{2}) = sum(curl.data)
 # i.e. (sum ∘ ⋆₀) computes a Riemann sum.
 integral_of_curl(curl::VForm) = integral_of_curl(DualForm{2}(s0*curl.data))
 
-u₀ = ComponentArray(dη = s0*X, β = zeros(ne(sd)))
+u₀ = ComponentArray(dη = s0*X, β = zeros(ne(dualmesh)))
 
 constants_and_parameters = (μ = 0.0,)
 

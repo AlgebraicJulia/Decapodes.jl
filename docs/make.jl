@@ -19,20 +19,20 @@ end
 const literate_dir = joinpath(@__DIR__, "literate")
 const generated_dir = joinpath(@__DIR__, "src", "examples")
 
-# @info "Building literate files"
-# for (root, dirs, files) in walkdir(literate_dir)
-#   out_dir = joinpath(generated_dir, relpath(root, literate_dir))
-#   @showprogress pmap(files) do file
-#   # for file in files
-#     f,l = splitext(file)
-#     if l == ".jl" && !startswith(f, "_")
-#       Literate.markdown(joinpath(root, file), out_dir;
-#         config=config, documenter=true, credit=false)
-#       Literate.notebook(joinpath(root, file), out_dir;
-#         execute=true, documenter=true, credit=false)
-#     end
-#   end
-# end
+@info "Building literate files"
+for (root, dirs, files) in walkdir(literate_dir)
+  out_dir = joinpath(generated_dir, relpath(root, literate_dir))
+  @showprogress pmap(files) do file
+  # for file in files
+    f,l = splitext(file)
+    if l == ".jl" && !startswith(f, "_")
+      Literate.markdown(joinpath(root, file), out_dir;
+        config=config, documenter=true, credit=false)
+      Literate.notebook(joinpath(root, file), out_dir;
+        execute=true, documenter=true, credit=false)
+    end
+  end
+end
 
 bib = CitationBibliography(
     joinpath(@__DIR__, "src", "decapodes_documenter.bib");
@@ -59,6 +59,7 @@ makedocs(
     "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
     "Concepts" => Any[
         "Equations" => "concepts/equations.md",
+        "Composition" => "concepts/composition.md",
         "Meshes" => "concepts/meshes.md",
         "Custom Operators" => "concepts/generate.md",
     ],
@@ -73,7 +74,7 @@ makedocs(
         "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
         # "Halfar-EBM-Water" => "ebm_melt/ebm_melt.md",
         "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
-        "NHS" => "nhs/nhs_lite.md",
+        # "NHS" => "nhs/nhs_lite.md",
         "Pipe Flow" => "poiseuille/poiseuille.md",
         "Fokker-Planck" => "fokker_planck/fokker_planck.md"
     ],
