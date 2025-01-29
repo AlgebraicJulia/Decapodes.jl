@@ -74,7 +74,7 @@ makedocs(
         "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
         # "Halfar-EBM-Water" => "ebm_melt/ebm_melt.md",
         "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
-        # "NHS" => "nhs/nhs_lite.md",
+        "NHS" => "nhs/nhs_lite.md",
         "Pipe Flow" => "poiseuille/poiseuille.md",
         "Fokker-Planck" => "fokker_planck/fokker_planck.md"
     ],

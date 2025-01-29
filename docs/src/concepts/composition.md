@@ -1,10 +1,22 @@
 # Composition
 
 ``` @example DEC
-using Catlab
-using DiagrammaticEquations
-using Decapodes
+using Catlab # hide
+using DiagrammaticEquations # hide
+using Decapodes # hide
 ```
+
+```@raw html
+<details open>
+  <summary><i>Dependencies</i></summary>
+  <pre><code>
+  using Catlab
+  using DiagrammaticEquations
+  using Decapodes
+  </code></pre>
+</details>
+```
+
 
 Decapodes composition is formally known as an "operad algebra". That means that we don't have to encode our composition in a single undirected wiring diagram (UWD) and then apply it. Rather, we can define several UWDs, compose those, and then apply those. Of course, since the output of oapply is another Decapode, we could perform an intermediate oapply, if that is convenient. In this tutorial we will learn how to use this capability to define more complex models, and how this modularity allows us to swap out models.
 
@@ -44,6 +56,7 @@ WrongHydrodynamics = @decapode begin
     dX::Form1
     ∂ₜ(w) == L(dX, w)
 end
+nothing # hide
 ```
 
 Now that we have our two component models, we can specify a means of composing them via a composition pattern. This defines placeholder models which accept variables as inputs. If the variables between any two models are the same, then we have asserted that they are shared. For example, in this `@relation` diagram, we assert that there are two models, `phyto` and `hydro`, which each share the `N` and `W` variables.

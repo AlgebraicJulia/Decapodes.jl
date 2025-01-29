@@ -1,4 +1,3 @@
-# Load Dependencies
 using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
@@ -17,73 +16,70 @@ Point3D = Point3{Float64}
 # Load in our Decapodes models
 using Decapodes.Canon.Oncology
 
-# Let's examine our models. Here's the tumor invasion model:
-to_graphviz(invasion)
+# Let's examine our models. Here's the tumor invasion model with the logistic and Gompertz growth models.
+@doc invasion
 
-# The Logistic growth model
-to_graphviz(logistic)
+#
+@doc logistic
 
-# The Gompertz growth model
-to_graphviz(gompertz)
+#
+@doc gompertz
 
-# Load in a mesh, initial conditions, and a plotting function
+#
+# Load in a mesh and a plotting function
 function show_heatmap(Cdata)
   heatmap(reshape(Cdata, (floor(Int64, sqrt(length(Cdata))), floor(Int64, sqrt(length(Cdata))))))
 end
 
-s = triangulated_grid(50,50,0.2,0.2,Point2D);
-sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point2D}(s);
-subdivide_duals!(sd, Circumcenter());
+mesh = triangulated_grid(50,50,0.2,0.2,Point2D);
+dualmesh = EmbeddedDeltaDualComplex2D{Bool, Float64, Point2D}(mesh);
+subdivide_duals!(dualmesh, Circumcenter());
 
-constants_and_parameters = (
-  invasion_Dif = 0.005,
-  invasion_Kd = 0.5,
-  Cmax = 10)
+# Let's define initial conditions
+constants_and_parameters = (invasion_Dif = 0.005, invasion_Kd = 0.5, Cmax = 10)
 
-# "The model ... considers an equivalent radially symmetric tumour"
-# - Murray J.D., Glioblastoma brain tumours
+# Here we follow the assumption "The model ... considers an equivalent radially symmetric tumour", Murray J.D., Glioblastoma brain tumours, by initializing the tumor with a normal distribution.
 c_dist  = MvNormal([25, 25], 2)
-C = 100 * [pdf(c_dist, [p[1], p[2]]) for p in sd[:point]]
-
+C = 100 * [pdf(c_dist, [p[1], p[2]]) for p in dualmesh[:point]]
 u₀ = ComponentArray(C=C)
 
-# Compose our Proliferation-Invasion models
+# Let's define how our Proliferation-Invasion models will relate to one another.
 proliferation_invasion_composition_diagram = @relation () begin
   proliferation(C, fC, Cmax)
   invasion(C, fC, Cmax)
 end
 
+# Now let's specify which sub-models slot into our system. We use the same pattern for two different models: the first model pertains to a logistic growth model,
 logistic_proliferation_invasion_cospan = oapply(proliferation_invasion_composition_diagram,
   [Open(logistic, [:C, :fC, :Cmax]),
    Open(invasion, [:C, :fC, :Cmax])])
-
 logistic_proliferation_invasion = apex(logistic_proliferation_invasion_cospan)
 
+# The second model uses the same composition pattern but swaps out the logistic growth mode for a Gompertz growth model.
 gompertz_proliferation_invasion_cospan = oapply(proliferation_invasion_composition_diagram,
   [Open(gompertz, [:C, :fC, :Cmax]),
    Open(invasion, [:C, :fC, :Cmax])])
-
 gompertz_proliferation_invasion = apex(gompertz_proliferation_invasion_cospan)
 
 # Generate the logistic simulation
 logistic_sim = evalsim(logistic_proliferation_invasion)
-
-lₘ = logistic_sim(sd, default_dec_generate, DiagonalHodge())
+lₘ = logistic_sim(dualmesh, default_dec_generate, DiagonalHodge())
 
 # Execute the logistic simulation
 tₑ = 15.0
+problem = ODEProblem(lₘ, u₀, (0, tₑ), constants_and_parameters)
+logistic_solution = solve(problem, Tsit5());
 
-prob = ODEProblem(lₘ, u₀, (0, tₑ), constants_and_parameters)
-logistic_soln = solve(prob, Tsit5())
-
-show_heatmap(logistic_soln(tₑ).C)
+# Let's examine the solution using the heatmap equation we defined.
+show_heatmap(logistic_solution(tₑ).C)
 
 # Generate the Gompertz simulation
 gompertz_sim = evalsim(gompertz_proliferation_invasion)
-gₘ = gompertz_sim(sd, default_dec_generate, DiagonalHodge())
+gₘ = gompertz_sim(dualmesh, default_dec_generate, DiagonalHodge())
 
 # Execute the Gompertz simulation
-prob = ODEProblem(gₘ, u₀, (0, tₑ), constants_and_parameters)
-gompertz_soln = solve(prob, Tsit5())
+problem = ODEProblem(gₘ, u₀, (0, tₑ), constants_and_parameters)
+gompertz_solution = solve(problem, Tsit5());
 
-show_heatmap(gompertz_soln(tₑ).C)
+# Let's examine this solution now.
+show_heatmap(gompertz_solution(tₑ).C)
