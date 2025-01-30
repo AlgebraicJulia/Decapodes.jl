@@ -1,5 +1,6 @@
 [EBM_PIOMAS_Data]
 git-tree-sha1 = "3bed3238f89effadd8d0395c78acec646d9ae5ef"
+lazy = true
 
     [[EBM_PIOMAS_Data.download]]
     sha256 = "080bdb1aefe825d1728db8e57cc35da8961302cf978698bbd7e41d0af54249c7"
