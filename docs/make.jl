@@ -79,7 +79,6 @@ makedocs(
         "Fokker-Planck" => "fokker_planck/fokker_planck.md"
     ],
     "Examples" => Any[
-        "Burger" => "examples/diff_adv/burger.md",
         "Gray-Scott" => "examples/chemistry/gray_scott.md",
         "Oncology" => "examples/oncology/tumor_proliferation_invasion.md",
         "MHD" => "examples/mhd.md", # TODO convert original file to a docs page
