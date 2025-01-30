@@ -145,7 +145,6 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     # This is a new function.
     :σ => sigmoid
-    :mag => x -> norm.(x)
     # Remaining operations (such as our differential operators) are built-in.
     _ => default_dec_matrix_generate(sd, my_symbol, hodge)
   end
