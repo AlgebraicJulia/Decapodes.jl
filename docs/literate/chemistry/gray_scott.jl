@@ -102,13 +102,13 @@ constants_and_parameters = (
 tₑ = 10_000
 
 @info("Solving")
-prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5())
+problem = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+solution = solve(problem, Tsit5())
 @info("Done")
 
 function save_dynamics(save_file_name)
   time = Observable(0.0)
-  u = @lift(soln($time).U)
+  u = @lift(solution($time).U)
   f = Figure()
   ax_U = CairoMakie.Axis(f[1,1], title = @lift("Concentration of U at Time $($time)"))
 

@@ -99,9 +99,9 @@ to_graphviz(isotropic_diffusivity)
 
 ## Compatibility Guarantees via Operadic Composition
 
-Decapodes composition is formally known as an "operad algebra". That means that we don't have to encode our composition in a single undirected wiring diagram (UWD) and then apply it. Rather, we can define several UWDs, compose those, and then apply those. Of course, since the output of oapply is another Decapode, we could perform an intermediate oapply, if that is convenient.
-
-Besides it being convenient to break apart large UWDs into component UWDs, this hierarchical composition can enforce rules on our physical quantities.
+We will use our operad algebra to guarantee model compatibility and physical
+consistency, guarantees that would be burdensome to fit into a one-off type
+system. Read more [here](@ref "Composition"). 
 
 For example:
 
@@ -109,9 +109,8 @@ For example:
 2. We want them to obey the same "turbulence closure", which affects their flux-divergence term.
 3. At the same time, a choice of turbulence closure doesn't just affect (each of) the flux-divergence terms, it also constrains which stress-divergence is physically valid in the momentum equation.
 
-We will use our operad algebra to guarantee model compatibility and physical consistency, guarantees that would be burdensome to fit into a one-off type system.
 
-Here, we specify the equations that any tracer obeys:
+We specify the equations that any tracer obeys:
 
 ```@example DEC
 tracer_composition = @relation () begin

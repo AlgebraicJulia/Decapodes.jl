@@ -87,3 +87,21 @@ f_mg = sim_mg(series, generate);
 A common workflow is to iterate through multiple different models as is done in the [Vorticity Model page](../navier_stokes/ns.md). A formulation is first done with a direct vorticity formulation but a quick run finds that this setup is unstable. A second formulation introduces a Laplacian solve which produces nice results.
 
 Similar workflows may retain the same model but may iterate on the types of meshes/initial conditions used. An excellent example of this is found in the [Glacial Flow page](../ice_dynamics/ice_dynamics.md) where the model is first run in a [1D](../ice_dynamics/ice_dynamics.md#Define-a-mesh) setting and then quickly promoted to both [2D](../ice_dynamics/ice_dynamics.md#Define-our-mesh) and [3D](../ice_dynamics/ice_dynamics.md#2-Manifold-in-3D). This allows either running some dynamics in a more complicated setting, as just discussed, or allows for simplifying higher dimensional models by some sort of symmetry.
+
+
+# Troubleshooting
+
+## Debugging Generated Simulations
+
+The Decapodes workflow requires generating the simulation function by evaluating
+the output of `gensim`. However this simulation code can be saved to a file and
+edited directly, allowing for full control over the simulation. By this same
+token, reading the simulation code from a file allows for line numbers to be
+associated to buggy lines!
+
+```
+open("filename.jl" "w") do f
+    write(f, string(gensim(your_decapode)))
+end
+simulator = include("filename.jl")
+```
