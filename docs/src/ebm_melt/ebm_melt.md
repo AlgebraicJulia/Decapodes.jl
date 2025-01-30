@@ -15,7 +15,6 @@ using DiagrammaticEquations
 using Decapodes
 
 # External Dependencies
-using Artifacts
 using ComponentArrays
 using CoordRefSystems
 using CairoMakie
@@ -42,7 +41,10 @@ wireframe(s_plots)
 The data provided by the Polar Science Center is given as a NetCDF file. Ice thickness is a matrix with the same dimensions as a matrix provided Latitude and Longitude of the associated point on the Earth's surface. We need to convert between polar and Cartesian coordinates to use this data on our mesh.
 
 ``` @example DEC
-ice_thickness_file = rootpath"piomas20c.heff.1901.2010.v1.0.nc"
+# This data can be downloaded from source here:
+# https://pscfiles.apl.uw.edu/axel/piomas20c/v1.0/monthly/piomas20c.heff.1901.2010.v1.0.nc
+ice_thickness_file = "piomas20c.heff.1901.2010.v1.0.nc"
+run(`curl -o $ice_thickness_file https://cise.ufl.edu/"~"luke.morris/piomas20c.heff.1901.2010.v1.0.nc`)
 
 # Use ncinfo(ice_thickness_file) to interactively get information on variables.
 # Sea ice thickness ("sit") has dimensions of [y, x, time].
