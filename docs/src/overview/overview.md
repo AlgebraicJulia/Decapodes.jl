@@ -26,31 +26,35 @@ surfaces of the mesh.
 Below, we provide a Decapode with just a single variable `C` and display it.
 
 ```@example DEC
-using Catlab
 using Decapodes
 using DiagrammaticEquations
+using Catlab
 
 Variable = @decapode begin
   C::Form0
-end;
+end
 
 to_graphviz(Variable)
 ```
 
 The resulting diagram contains a single node, showing the single variable in
-this system. We can add a second variable:
+this system. The arrow into this node represents that `C` is a source term.
+
+Note that to display these diagrams you will require [Graphviz](https://graphviz.org/).
+
+We can add a second variable.
 
 ```@example DEC
 TwoVariables = @decapode begin
   C::Form0
   dC::Form1
-end;
+end
 
 to_graphviz(TwoVariables)
 ```
 
 We can also add a relationship between them. In this case, we make an
-equation which states that `dC` is the derivative of `C`:
+equation which states that `dC` is the derivative of `C`.
 
 ```@example DEC
 Equation = @decapode begin
@@ -58,7 +62,7 @@ Equation = @decapode begin
   dC::Form1
 
   dC == d(C)
-end;
+end
 
 to_graphviz(Equation)
 ```
@@ -77,85 +81,70 @@ proportional to the Laplacian of the concentration.
 Diffusion = @decapode begin
   (C, Ċ)::Form0
   ϕ::Form1
+  k::Constant
 
   # Fick's first law
-  ϕ ==  k(d₀(C))
+  ϕ ==  k*(d₀(C))
 
   # Diffusion equation
   Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
   ∂ₜ(C) == Ċ
 
-end;
+end
 
 to_graphviz(Diffusion)
 ```
 
 The resulting Decapode shows the relationships between the three variables with
-the triangle diagram. Note that these diagrams are automatically layed-out by [Graphviz](https://graphviz.org/).
+the triangle diagram.
 
 ## Bring in the Dynamics
 
 Now that we have a reasonably complex PDE, we can demonstrate some of the
 developed tooling for actually solving the PDE. Currently, the tooling will
 automatically generate an explicit method for solving the system (using
-[DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl?tab=readme-ov-file) to handle time-stepping and instability detection).
+[OrdinaryDiffEq.jl](https://docs.sciml.ai/OrdinaryDiffEq/stable/) to handle time-stepping and instability detection).
 
-`Torus_30x10` is a default mesh that is downloaded via `Artifacts.jl` when a user installs [CombinatorialSpaces.jl](https://github.com/AlgebraicJulia/CombinatorialSpaces.jl). If we wanted, we could also instantiate any `.obj` file of triangulated faces as a simplicial set although we do not here.
-
-We will also upload a non-periodic mesh for the sake of
-visualization, as well as a mapping between the points on the periodic and
-non-periodic meshes.
+To start with, we solve our PDE on a flat `triangulated_grid` as provided by [CombinatorialSpaces.jl](https://algebraicjulia.github.io/CombinatorialSpaces.jl/stable/meshes/#CombinatorialSpaces.Meshes.triangulated_grid).
 
 ```@example DEC
 using CairoMakie
 using CombinatorialSpaces
+using GeometryBasics: Point3
 
-plot_mesh = loadmesh(Rectangle_30x10())
-periodic_mesh = loadmesh(Torus_30x10())
-point_map = loadmesh(Point_Map())
+mesh = triangulated_grid(30,10,1,1,Point3{Float64})
 
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
-wireframe!(ax, plot_mesh)
+wireframe!(ax, mesh)
 fig
 ```
 
-Now we create a function which links the names of functions used in the Decapode to their implementations. Note that many DEC operators are already
-defined for you.
+We first create a mesh that is "dual" to the original mesh by creating an `EmbeddedDeltaDualComplex2D` and calling `subdivide_duals!`. This is done to allow important DEC operators to be created and used in the simulation.
 
-As an example, we chose to define `k` as a function that multiplies an input by `0.05`. We could have alternately chosen to represent `k` as a `Constant` that we multiply by in the Decapode itself.
-
-We then compile the simulation by using `gen_sim` and create functional simulation by calling the evaluated `sim`  with the mesh and our `generate` function.
+We then compile the simulation by using `gensim` and create functional simulation by calling the evaluated `sim`  with the mesh. Decapodes supports providing custom functions to the simulator, but for the time being we will keep things simple by passing in `nothing` to this value.
 
 ```@example DEC
-using MLStyle
-
-function generate(sd, my_symbol; hodge=DiagonalHodge())
-  op = @match my_symbol begin
-    :k => x -> 0.05*x
-    x => error("Unmatched operator $my_symbol")
-  end
-  return op
-end
-
+dualmesh = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}(mesh)
+subdivide_duals!(dualmesh, Circumcenter())
 sim = eval(gensim(Diffusion))
-fₘ = sim(periodic_mesh, generate, DiagonalHodge())
+fₘ = sim(dualmesh, nothing, DiagonalHodge())
 ```
 
-We go ahead and set up our initial conditions for this problem. In this case we generate a Gaussian and apply it to our mesh.
+We go ahead and set up our initial conditions for this problem. In this case we generate a Gaussian over our mesh.
 
 ```@example DEC
 using Distributions
 c_dist = MvNormal([7, 5], [1.5, 1.5])
-c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
+c = [pdf(c_dist, [p[1], p[2]]) for p in mesh[:point]]
 
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
-mesh!(ax, plot_mesh; color=c[point_map])
+mesh!(ax, mesh; color=c)
 fig
 ```
 
-Finally, we solve this PDE problem using the `Tsit5()` solver provided by DifferentialEquations.jl.
+Finally, we solve this PDE problem using the `Tsit5()` solver provided by [OrdinaryDiffEq](https://docs.sciml.ai/OrdinaryDiffEq/stable/explicit/Tsit5/). We will need to make two ComponentArrays to store the state variable data and constants, respectively.
 
 ```@example DEC
 using LinearAlgebra
@@ -163,30 +152,28 @@ using ComponentArrays
 using OrdinaryDiffEq
 
 u₀ = ComponentArray(C=c)
+constants = ComponentArray(k=0.05)
 
-prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
-sol = solve(prob, Tsit5());
-sol.retcode
+tₑ = 100
+prob = ODEProblem(fₘ, u₀, (0.0, tₑ), constants)
+soln = solve(prob, Tsit5())
+soln.retcode
 ```
 
 Now that the simulation has succeeded we can plot out our results with [CairoMakie.jl](https://github.com/MakieOrg/Makie.jl).
 
 ```@example DEC
-# Plot the result
-times = range(0.0, 100.0, length=150)
-colors = [sol(t).C[point_map] for t in times]
-
-# Initial frame
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
-pmsh = mesh!(ax, plot_mesh; color=colors[1], colorrange = extrema(vcat(colors...)))
+pmsh = mesh!(ax, mesh; color=c, colorrange = extrema(c))
 Colorbar(fig[1,2], pmsh)
-framerate = 30
 
-# Animation
-record(fig, "diffusion.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-  pmsh.color = sol(t).C[point_map]
+
+times = range(0.0, tₑ, length=150)
+record(fig, "diffusion.gif", times; framerate = 30) do t
+  pmsh.color = soln(t).C
 end
+nothing # hide
 ```
 
 ![Your first Decapode!](diffusion.gif)
@@ -208,9 +195,10 @@ and the change of concentration under superposition of fluxes.
 Diffusion = @decapode begin
   C::Form0
   ϕ::Form1
+  k::Constant
 
   # Fick's first law
-  ϕ ==  k(d₀(C))
+  ϕ == k*(d₀(C))
 end
 
 Advection = @decapode begin
@@ -255,7 +243,10 @@ physics under. This pattern of composition is described by an undirected wiring
 diagram, which has the individual physics as nodes and the shared variables as
 the small junctions.
 
+For this example, we will invoke `Catlab`'s exported [`@relation`](https://algebraicjulia.github.io/Catlab.jl/v0.9/apis/programs/#Catlab.Programs.RelationalPrograms.@relation-Tuple) to specify a composition pattern. We are essentially saying here that the `C` in each Decapode should be fused into the same variable. Likewise for `ϕ₁` between `diffusion` and `superposition` as well as `ϕ₂` between `advection` and `superposition`.
+
 ```@example DEC
+using Catlab
 compose_diff_adv = @relation (C, V) begin
   diffusion(C, ϕ₁)
   advection(C, ϕ₂, V)
@@ -265,7 +256,7 @@ end
 draw_composition(compose_diff_adv)
 ```
 
-After this, the physics can be composed as follows:
+After this, the physics can be composed as follows. Here we specify, for example, that the `ϕ₁` that we wish to have in our final Decapode (as declared above) is called `ϕ` in `diffusion` and `ϕ₁` in `superposition`. Notice the fused result in `DiffusionAdvection`.
 
 ```@example DEC
 DiffusionAdvection_cospan = oapply(compose_diff_adv,
@@ -277,83 +268,40 @@ DiffusionAdvection = apex(DiffusionAdvection_cospan)
 to_graphviz(DiffusionAdvection)
 ```
 
-Similar to before, this physics can be compiled and executed. Note that this process
-now requires another value to be defined, namely the velocity vector field. We do
-this using a custom operator called `flat_op`. This operator is basically the flat
-operator from CombinatorialSpaces.jl, but specialized to account for the periodic mesh.
+Similar to before, this physics can be compiled, executed, and plotted.
 
-We could instead represent the domain as the surface of an object with equivalent boundaries in 3D.
+Note that for our purposes we require a velocity vector field for the advection (remember we called this term `V` in our Decapode). We define the velocity field so as to move our fluid to the right (the negative is to account for the orientation of the edges of the mesh) and call `eval_constant_primal_form` to convert this field into a `Form1` usable by the Decapode.
 
-``` @setup DEC
-function closest_point(p1, p2, dims)
-    p_res = collect(p2)
-    for i in 1:length(dims)
-        if dims[i] != Inf
-            p = p1[i] - p2[i]
-            f, n = modf(p / dims[i])
-            p_res[i] += dims[i] * n
-            if abs(f) > 0.5
-                p_res[i] += sign(f) * dims[i]
-            end
-        end
-    end
-    Point3{Float64}(p_res...)
-end
-
-function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, Inf, Inf])
-  tri_map = Dict{Int,Int}(triangle_center(s,t) => t for t in triangles(s))
-
-  map(edges(s)) do e
-    p = closest_point(point(s, tgt(s,e)), point(s, src(s,e)), dims)
-    e_vec = (point(s, tgt(s,e)) - p) * sign(1,s,e)
-    dual_edges = elementary_duals(1,s,e)
-    dual_lengths = dual_volume(1, s, dual_edges)
-    mapreduce(+, dual_edges, dual_lengths) do dual_e, dual_length
-      X_vec = X[tri_map[s[dual_e, :D_∂v0]]]
-      dual_length * dot(X_vec, e_vec)
-    end / sum(dual_lengths)
-  end
-end
-```
+We then run the simulation and create video out of the solution.
 
 ```@example DEC
 using LinearAlgebra
 using MLStyle
-
-function generate(sd, my_symbol; hodge=DiagonalHodge())
-  op = @match my_symbol begin
-    :k => x -> 0.05*x
-    x => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
+using StaticArrays
+import CombinatorialSpaces.DiscreteExteriorCalculus: eval_constant_primal_form
 
 sim = eval(gensim(DiffusionAdvection))
-fₘ = sim(periodic_mesh, generate, DiagonalHodge())
+fₘ = sim(dualmesh, nothing, DiagonalHodge())
 
-velocity(p) = [-0.5, -0.5, 0.0]
-v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
+v = eval_constant_primal_form(dualmesh, SVector{3}(-0.25, 0.0, 0.0))
 
 u₀ = ComponentArray(C=c,V=v)
+constants = ComponentArray(diffusion_k=0.05)
 
-prob = ODEProblem(fₘ, u₀, (0.0, 100.0))
-sol = solve(prob, Tsit5());
+tₑ = 50
+prob = ODEProblem(fₘ, u₀, (0.0, tₑ), constants)
+sol = solve(prob, Tsit5())
 
-# Plot the result
-times = range(0.0, 100.0, length=150)
-colors = [sol(t).C[point_map] for t in times]
-
-# Initial frame
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
-pmsh = mesh!(ax, plot_mesh; color=colors[1], colorrange = extrema(vcat(colors...)))
+pmsh = mesh!(ax, mesh; color=c, colorrange = extrema(c))
 Colorbar(fig[1,2], pmsh)
-framerate = 30
 
-# Animation
-record(fig, "diff_adv.gif", range(0.0, 100.0; length=150); framerate = 30) do t
-  pmsh.color = sol(t).C[point_map]
+times = range(0.0, tₑ, length=150)
+record(fig, "diff_adv.gif", times; framerate = 30) do t
+  pmsh.color = soln(t).C
 end
+nothing # hide
 ```
 
 ![Your first composed Decapode!](diff_adv.gif)

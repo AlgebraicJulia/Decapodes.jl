@@ -15,7 +15,6 @@ using DiagrammaticEquations
 using Decapodes
 
 # External Dependencies
-using Artifacts
 using ComponentArrays
 using CoordRefSystems
 using CairoMakie
