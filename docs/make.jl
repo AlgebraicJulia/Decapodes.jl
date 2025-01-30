@@ -72,7 +72,7 @@ makedocs(
         "CISM v2.1" => "cism/cism.md",
         "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
         "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
-        # "Halfar-EBM-Water" => "ebm_melt/ebm_melt.md",
+        "Halfar-EBM-Water" => "ebm_melt/ebm_melt.md",
         "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
         "NHS" => "nhs/nhs_lite.md",
         "Pipe Flow" => "poiseuille/poiseuille.md",
