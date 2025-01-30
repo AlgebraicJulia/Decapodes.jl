@@ -79,7 +79,6 @@ makedocs(
         "Fokker-Planck" => "fokker_planck/fokker_planck.md"
     ],
     "Examples" => Any[
-        "Heat" => "examples/diff_adv/heat.md",
         "Burger" => "examples/diff_adv/burger.md",
         "Gray-Scott" => "examples/chemistry/gray_scott.md",
         "Oncology" => "examples/oncology/tumor_proliferation_invasion.md",
