@@ -777,7 +777,7 @@ end
     n::Constant
 
     ḣ == ∂ₜ(h)
-    ḣ == ∘(⋆, d, ⋆)(Γ * d(h) ∧₁₀ ((mag(♯(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
+    ḣ == ∘(⋆, d, ⋆)(Γ * d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
   end
 
   glens_law = @decapode begin
