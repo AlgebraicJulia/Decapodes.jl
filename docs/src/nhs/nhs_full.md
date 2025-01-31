@@ -175,7 +175,7 @@ subdivide_duals!(sd, Barycenter())
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    _ => default_dec_matrix_generate(sd, my_symbol, hodge) # TODO: Don't do this!
+    _ => error("Unmatched operator $my_symbol")
   end
   return op
 end

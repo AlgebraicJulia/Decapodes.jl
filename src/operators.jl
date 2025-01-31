@@ -5,12 +5,70 @@ using Krylov
 using LinearAlgebra
 using SparseArrays
 
+# Define mappings for default DEC operations that are not optimizable.
+# --------------------------------------------------------------------
+function default_dec_generate(fs::PrimalGeometricMapSeries, my_symbol::Symbol, hodge::DiscreteHodge)
+  op = @match my_symbol begin
+    # Inverse Laplacians
+    :Δ₀⁻¹ => dec_Δ⁻¹(Val{0}, fs)
+    _ => default_dec_generate(finest_mesh(fs), my_symbol, hodge)
+  end
+end
+
+function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge=GeometricHodge())
+
+  op = @match my_symbol begin
+
+    # Misc.
+    :plus => (+)
+    :(-) || :neg => x -> -1 .* x
+    :ln => (x -> log.(x))
+    :mag => x -> norm.(x)
+
+    # Musical Isomorphisms
+    :♯ᵖᵖ => dec_♯_p(sd)
+    :♯ᵈᵈ => dec_♯_d(sd)
+    :♭ᵈᵖ => dec_♭(sd)
+
+    # Primal-Dual Wedge Products
+    :∧ᵖᵈ₁₁ => dec_wedge_product_pd(Tuple{1,1}, sd)
+    :∧ᵖᵈ₀₁ => dec_wedge_product_pd(Tuple{0,1}, sd)
+    :∧ᵈᵖ₁₁ => dec_wedge_product_dp(Tuple{1,1}, sd)
+    :∧ᵈᵖ₁₀ => dec_wedge_product_dp(Tuple{1,0}, sd)
+
+    # Dual-Dual Wedge Products
+    :∧ᵈᵈ₁₁ => dec_wedge_product_dd(Tuple{1,1}, sd)
+    :∧ᵈᵈ₁₀ => dec_wedge_product_dd(Tuple{1,0}, sd)
+    :∧ᵈᵈ₀₁ => dec_wedge_product_dd(Tuple{0,1}, sd)
+
+    # Dual-Dual Interior Products
+    :ι₁₁ => interior_product_dd(Tuple{1,1}, sd)
+    :ι₁₂ => interior_product_dd(Tuple{1,2}, sd)
+
+    # Dual-Dual Lie Derivatives
+    :ℒ₁ => ℒ_dd(Tuple{1,1}, sd)
+
+    # Dual Laplacians
+    :Δᵈ₀ => Δᵈ(Val{0}, sd)
+    :Δᵈ₁ => Δᵈ(Val{1}, sd)
+
+    # Inverse Laplacians
+    :Δ₀⁻¹ => dec_inv_lap_solver(Val{0}, sd)
+
+    _ => error("Unmatched operator $my_symbol")
+  end
+
+  return (args...) -> op(args...)
+end
+
+function default_dec_cu_generate() end;
+
+# Define mappings for default DEC operations that are optimizable.
+# ----------------------------------------------------------------
 function default_dec_cu_matrix_generate() end;
 
 function default_dec_matrix_generate(fs::PrimalGeometricMapSeries, my_symbol::Symbol, hodge::DiscreteHodge)
   op = @match my_symbol begin
-    # Inverse Laplacians
-    :Δ₀⁻¹ => dec_Δ⁻¹(Val{0}, fs)
     _ => default_dec_matrix_generate(finest_mesh(fs), my_symbol, hodge)
   end
 end
@@ -43,44 +101,11 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     :∧₂₀ => dec_pair_wedge_product(Tuple{2,0}, sd)
     :∧₁₁ => dec_pair_wedge_product(Tuple{1,1}, sd)
 
-    # Primal-Dual Wedge Products
-    :∧ᵖᵈ₁₁ => dec_wedge_product_pd(Tuple{1,1}, sd)
-    :∧ᵖᵈ₀₁ => dec_wedge_product_pd(Tuple{0,1}, sd)
-    :∧ᵈᵖ₁₁ => dec_wedge_product_dp(Tuple{1,1}, sd)
-    :∧ᵈᵖ₁₀ => dec_wedge_product_dp(Tuple{1,0}, sd)
-
-    # Dual-Dual Wedge Products
-    :∧ᵈᵈ₁₁ => dec_wedge_product_dd(Tuple{1,1}, sd)
-    :∧ᵈᵈ₁₀ => dec_wedge_product_dd(Tuple{1,0}, sd)
-    :∧ᵈᵈ₀₁ => dec_wedge_product_dd(Tuple{0,1}, sd)
-
-    # Dual-Dual Interior Products
-    :ι₁₁ => interior_product_dd(Tuple{1,1}, sd)
-    :ι₁₂ => interior_product_dd(Tuple{1,2}, sd)
-
-    # Dual-Dual Lie Derivatives
-    :ℒ₁ => ℒ_dd(Tuple{1,1}, sd)
-
-    # Dual Laplacians
-    :Δᵈ₀ => Δᵈ(Val{0}, sd)
-    :Δᵈ₁ => Δᵈ(Val{1}, sd)
-
-    # Inverse Laplacians
-    :Δ₀⁻¹ => dec_inv_lap_solver(Val{0}, sd)
-
-    # Musical Isomorphisms
-    :♯ => dec_♯_p(sd)
-    :♯ᵈ => dec_♯_d(sd)
-
-    :♭ => dec_♭(sd)
-
     :♭♯ => ♭♯_mat(sd)
 
     # Averaging Operator
     :avg₀₁ => dec_avg₀₁(sd)
 
-    :neg => x -> -1 .* x
-    :mag => x -> norm.(x)
      _ => error("Unmatched operator $my_symbol")
   end
 
@@ -163,21 +188,6 @@ end
 function dec_inv_lap_solver(::Type{Val{0}}, sd::HasDeltaSet)
   inv_lap = LinearAlgebra.factorize(∇²(0, sd))
   x -> inv_lap \ x
-end
-
-function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge=GeometricHodge())
-
-  op = @match my_symbol begin
-
-    :plus => (+)
-    :(-) || :neg => x -> -1 .* x
-    :ln => (x -> log.(x))
-    :mag => x -> norm.(x)
-
-    _ => error("Unmatched operator $my_symbol")
-  end
-
-  return (args...) -> op(args...)
 end
 
 function open_operators(d::SummationDecapode; kwargs...)
