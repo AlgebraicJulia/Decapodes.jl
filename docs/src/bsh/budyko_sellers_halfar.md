@@ -32,16 +32,16 @@ We have defined the [Halfar ice model](../ice_dynamics/ice_dynamics.md) in other
 ``` @example DEC
 halfar_eq2 = @decapode begin
   h::Form0
-  Γ::Form1
+  Γ::Form0
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
 end
 
 glens_law = @decapode begin
-  Γ::Form1
-  A::Form1
+  Γ::Form0
+  A::Form0
   (ρ,g,n)::Constant
   
   Γ == (2/(n+2))*A*(ρ*g)^n
@@ -147,9 +147,9 @@ We need to specify physically what it means for these two terms to interact. We 
 ``` @example DEC
 warming = @decapode begin
   Tₛ::Form0
-  A::Form1
-
-  A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e7)
+  A::Form0
+  
+  A == 5.8282*10^(-0.236 * Tₛ)*1.65e7
 end
 
 to_graphviz(warming)

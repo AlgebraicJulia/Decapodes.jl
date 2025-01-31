@@ -221,7 +221,7 @@ function generate(s, my_symbol; hodge=GeometricHodge())
     :dinv => x -> fd0 \ x
     :♭♯ => x -> ♭♯_m * x
     :dᵦ => x -> dᵦ * x
-    _ => default_dec_matrix_generate(s, my_symbol, hodge)
+    _ => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
 end;
@@ -536,10 +536,10 @@ if PLOT_FCS
     ax = CairoMakie.Axis(fig[1,1],
       title="Vorticity along θ=0.4",
       xlabel="Azimuth Angle, φ")
-    lns_ic = CairoMakie.lines!(ax, 
+    lns_ic = CairoMakie.lines!(ax,
                                range(0.0,2π; length=length(in_lat_range)),
                                form_ic.data[in_lat_range][by_phi])
-    lns_fc = CairoMakie.lines!(ax, 
+    lns_fc = CairoMakie.lines!(ax,
                                range(0.0,2π; length=length(in_lat_range)),
                                form_fc.data[in_lat_range][by_phi])
     Legend(fig[1,2], [lns_ic, lns_fc], ["T=0.0", "T=$(tₑ)"])
@@ -570,7 +570,7 @@ if PLOT_FCS
     plot_vort_fc())
 
   azimuth_name = "azimuth.png"
-  save(joinpath(DATA_DR, azimuth_name), 
+  save(joinpath(DATA_DR, azimuth_name),
     azimuth_form(0.4, 0.01, VForm(s0inv*soln(0).d𝐮), VForm(s0inv*soln(tₑ).d𝐮)))
 
   diff_name = "relsolchng.png"
@@ -586,4 +586,3 @@ if PLOT_FCS
   end
 end
 end # Plot FCs
-
