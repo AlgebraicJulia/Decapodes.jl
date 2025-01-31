@@ -178,7 +178,7 @@ We execute these dynamics on the torus explicitly, instead of using a square wit
 # used by Oceananigans (explicitly represented as a torus, not as a
 # square with periodic boundary conditions!)
 Downloads.download("https://cise.ufl.edu/~luke.morris/torus.obj", "torus.obj")
-s = EmbeddedDeltaSet2D("torus.obj")
+s = EmbeddedDeltaSet2D(joinpath(@__DIR__, "torus.obj"))
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Barycenter())
 fig = Figure() # hide

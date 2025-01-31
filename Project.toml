@@ -1,7 +1,7 @@
 name = "Decapodes"
 uuid = "679ab3ea-c928-4fe6-8d59-fd451142d391"
 authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
-version = "0.5.6"
+version = "0.5.7"
 
 [deps]
 ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
@@ -26,11 +26,11 @@ ACSets = "0.2"
 Aqua = "0.8"
 CUDA = "5.2"
 Catlab = "0.16.19"
-CombinatorialSpaces = "0.6.8"
+CombinatorialSpaces = "0.7"
 ComponentArrays = "0.15"
 DiagrammaticEquations = "0.1.7"
 Distributions = "0.25"
-GeometryBasics = "0.4.2"
+GeometryBasics = "0.5"
 JSON = "0.21"
 Krylov = "0.9.6"
 LinearAlgebra = "1.9"

@@ -24,8 +24,6 @@ nothing # hide
 
 ## Creating the Poiseuille Equations
 
-The `@decapode` macro creates the data structure representing the equations of Poiseuille flow. The first block declares variables, the second block defines intermediate terms and the last block is the core equation.
-
 For these physics, `μ̃` represents the negative viscosity per unit area while `R` represents the drag of the pipe boundary.
 
 ```@example Poiseuille
