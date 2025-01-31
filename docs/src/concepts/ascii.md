@@ -1,11 +1,16 @@
-# ASCII and Vector Calculus Operators
+# Vector Calculus and ASCII Operators
 
 ```@setup INFO
 include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
 info = DocInfo.Info()
 ```
 
-Some users may have trouble entering unicode characters like ⋆ or ∂ in their development environment. So, we offer the following ASCII equivalents. Further, some users may like to use vector calculus symbols instead of exterior calculus symbols where possible. We offer support for such symbols as well.
+Decapodes is able to present equations which closely resemble their
+representation in mathematics because of Julia's native Unicode support. Most
+editors (such as Vim or Emacs) or IDEs (such as VSCode) support Julia plug-ins
+with built-in support for typing Unicode.
+
+However some users may have trouble entering unicode characters like ⋆ or ∂ in their development environment. So, we offer the following ASCII equivalents. Further, some users may like to use vector calculus symbols instead of exterior calculus symbols where possible. We offer support for such symbols as well.
 
 ## ASCII Equivalents
 

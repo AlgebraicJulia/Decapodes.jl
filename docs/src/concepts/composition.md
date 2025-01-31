@@ -94,3 +94,15 @@ klausmeier_cospan = oapply(compose_klausmeier,
 Klausmeier = apex(klausmeier_cospan)
 to_graphviz(Klausmeier)
 ```
+
+## How to Read the Graphviz Nodes
+
+Decapodes uses Graphviz to represent its compute graphs. Nodes are labeled by
+their value and a type represented with an $Ω$ and some extra glyph.
+
+| Node  | Meaning |
+| ----- |---------|
+| Ω•    | An uninferred type |
+| Ωₙ    | A $n$-form, where $n$ is some positive integer. For example, Ω₀ |
+| ΩC    | Constant |
+| ΩL    | Literal  |
