@@ -93,7 +93,7 @@ halfar_eq2 = @decapode begin
   Γ::Form1
   n::Constant
 
-  ∂ₜ(h)  == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2))) - melt
+  ∂ₜ(h)  == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯ᵖᵖ(d(h)))^(n-1)) * avg₀₁(h^(n+2))) - melt
 end
 
 glens_law = @decapode begin
@@ -274,15 +274,6 @@ constants_and_parameters = (
   halfar_stress_ρ = halfar_ρ,
   halfar_stress_g = g,
   melting_Dₕ₂ₒ = Dₕ₂ₒ)
-
-# Define how symbols map to Julia functions
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    x => default_dec_matrix_generate(sd, x, hodge)
-    _ => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
 ```
 
 ## Generate and run simulation 
@@ -293,7 +284,7 @@ We will save the final ice thickness data in a .jld2 file, an HDF5-compatible fi
 
 ``` @example DEC
 sim = eval(gensim(budyko_sellers_halfar_water))
-fₘ = sim(s, generate)
+fₘ = sim(s, nothing, DiagonalHodge())
 
 tₑ = 100.0
 

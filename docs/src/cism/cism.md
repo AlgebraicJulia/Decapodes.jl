@@ -192,25 +192,11 @@ constants_and_parameters = (
   stress_A = A)
 ```
 
-We provide here the mapping from symbols to differential operators. As more of the differential operators of the DEC are implemented, they are upstreamed to the Decapodes and CombinatorialSpaces libraries. Of course, users can also provide their own implementations of these operators and others as they see fit.
-
-## Setting up the Simulation
-```@example DEC
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  # We pre-allocate matrices that encode differential operators.
-  op = @match my_symbol begin
-    x => default_dec_matrix_generate(sd, x, hodge) 
-    _ => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
-```
-
 The `gensim` function takes our high-level representation of the physics equations and produces compiled simulation code. It performs optimizations such as allocating memory for intermediate variables, and so on.
 
 ```@example DEC
 sim = eval(gensim(ice_dynamics2D))
-fₘ = sim(sd, generate)
+fₘ = sim(sd, nothing)
 ```
 
 Julia is a "Just-In-Time" compiled language. That means that functions are compiled the first time they are called, and later calls to those functions skip this step. To get a feel for just how fast this simulation is, we will run the dynamics twice, once for a very short timespan to trigger pre-compilation, and then again for the actual dynamics.

@@ -15,7 +15,6 @@ if !(haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "GITLAB_CI"))
   config["repo_root_url"] = "https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs"
 end
 
-# const literate_dir = joinpath(@__DIR__, "..", "examples")
 const literate_dir = joinpath(@__DIR__, "literate")
 const generated_dir = joinpath(@__DIR__, "src", "examples")
 
@@ -36,8 +35,7 @@ end
 
 bib = CitationBibliography(
     joinpath(@__DIR__, "src", "decapodes_documenter.bib");
-    style=:numeric
-)
+    style=:numeric)
 
 @info "Building Documenter.jl docs"
 makedocs(
@@ -89,13 +87,11 @@ makedocs(
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ],
-  plugins=[bib]
-)
+  plugins=[bib])
 
 @info "Deploying docs"
 deploydocs(
   target = "build",
   repo   = "github.com/AlgebraicJulia/Decapodes.jl.git",
   branch = "gh-pages",
-  devbranch = "main"
-)
+  devbranch = "main")
