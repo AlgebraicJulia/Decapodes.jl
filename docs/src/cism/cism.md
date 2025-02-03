@@ -57,7 +57,7 @@ halfar_eq2 = @decapode begin
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
 end
 
 to_graphviz(halfar_eq2)
