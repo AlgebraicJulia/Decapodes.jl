@@ -80,10 +80,10 @@ s = triangulated_grid(1,1,h,h,Point3D);
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s);
 subdivide_duals!(sd, Circumcenter());
 
-fig = Figure() # hide
-ax = CairoMakie.Axis(fig[1,1], aspect=1) # hide
-wf = wireframe!(ax, s; linewidth=1) # hide
-save("Brusselator_rect.png", fig) # hide
+fig = Figure() 
+ax = CairoMakie.Axis(fig[1,1], aspect=1) 
+wf = wireframe!(ax, s; linewidth=1) 
+save("Brusselator_rect.png", fig) 
 nothing # hide
 ```
 
@@ -102,17 +102,17 @@ V = map(sd[:point]) do (x,_)
   27 * (x *(1-x))^(3/2)
 end
 
-fig = Figure() # hide
-ax = CairoMakie.Axis(fig[1,1], aspect=1, title = "Initial value of U") # hide
-msh = CairoMakie.mesh!(ax, s, color=U, colormap=:jet, colorrange=extrema(U)) # hide
-Colorbar(fig[1,2], msh) # hide
-save("initial_U.png", fig) # hide
+fig = Figure() 
+ax = CairoMakie.Axis(fig[1,1], aspect=1, title = "Initial value of U") 
+msh = CairoMakie.mesh!(ax, s, color=U, colormap=:jet, colorrange=extrema(U)) 
+Colorbar(fig[1,2], msh) 
+save("initial_U.png", fig) 
 
-fig = Figure() # hide
-ax = CairoMakie.Axis(fig[1,1], aspect=1, title = "Initial value of V") # hide
-msh = CairoMakie.mesh!(ax, s, color=V, colormap=:jet, colorrange=extrema(V)) # hide
-Colorbar(fig[1,2], msh) # hide
-save("initial_V.png", fig) # hide
+fig = Figure() 
+ax = CairoMakie.Axis(fig[1,1], aspect=1, title = "Initial value of V") 
+msh = CairoMakie.mesh!(ax, s, color=V, colormap=:jet, colorrange=extrema(V)) 
+Colorbar(fig[1,2], msh) 
+save("initial_V.png", fig) 
 
 F₁ = map(sd[:point]) do (x,y)
  (x-0.3)^2 + (y-0.6)^2 ≤ (0.1)^2 ? 5.0 : 0.0
@@ -148,13 +148,13 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   end
 end
 
-fig = Figure() # hide
-ax = CairoMakie.Axis(fig[1,1], aspect=1, title = "Highlighted Boundary") # hide
-value = zeros(nv(sd)) # hide
-value[wall_idxs] .= 1.0 # hide
-msh = CairoMakie.mesh!(ax, s, color=value, colormap=:jet, colorrange=(0,2)) # hide
-Colorbar(fig[1,2], msh) # hide
-save("boundary.png", fig) # hide
+fig = Figure() 
+ax = CairoMakie.Axis(fig[1,1], aspect=1, title = "Highlighted Boundary") 
+value = zeros(nv(sd)) 
+value[wall_idxs] .= 1.0 
+msh = CairoMakie.mesh!(ax, s, color=value, colormap=:jet, colorrange=(0,2)) 
+Colorbar(fig[1,2], msh) 
+save("boundary.png", fig) 
 nothing # hide
 ```
 

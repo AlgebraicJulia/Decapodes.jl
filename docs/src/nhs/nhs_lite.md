@@ -181,10 +181,10 @@ Downloads.download("https://cise.ufl.edu/~luke.morris/torus.obj", "torus.obj")
 s = EmbeddedDeltaSet2D(joinpath(@__DIR__, "torus.obj"))
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Barycenter())
-fig = Figure() # hide
-ax = CairoMakie.Axis(fig[1,1], aspect=1) # hide
-wf = wireframe!(ax, s; linewidth=1) # hide
-save("NHS_mesh.png", fig) # hide
+fig = Figure() 
+ax = CairoMakie.Axis(fig[1,1], aspect=1) 
+wf = wireframe!(ax, s; linewidth=1) 
+save("NHS_mesh.png", fig) 
 nothing # hide
 ```
 
