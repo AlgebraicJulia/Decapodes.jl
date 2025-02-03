@@ -223,19 +223,19 @@ nothing # hide
 The diffusion Decapode.
 
 ```@example DEC
-to_graphviz(Diffusion) # hide
+to_graphviz(Diffusion) 
 ```
 
 The advection Decapode.
 
 ```@example DEC
-to_graphviz(Advection) # hide
+to_graphviz(Advection) 
 ```
 
 And the superposition Decapode.
 
 ```@example DEC
-to_graphviz(Superposition) # hide
+to_graphviz(Superposition) 
 ```
 
 Next, we define the pattern of composition which we want to compose these

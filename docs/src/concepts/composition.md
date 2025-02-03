@@ -1,9 +1,9 @@
 # Composition
 
 ``` @example DEC
-using Catlab # hide
-using DiagrammaticEquations # hide
-using Decapodes # hide
+using Catlab 
+using DiagrammaticEquations 
+using Decapodes 
 ```
 
 ```@raw html
