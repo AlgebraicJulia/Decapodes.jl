@@ -24,8 +24,9 @@ function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::Discret
     :ln => (x -> log.(x))
 
     # Musical Isomorphisms
-    :♯ᵖᵖ => dec_♯_p(sd)
-    :♯ᵈᵈ => dec_♯_d(sd)
+    :♯ᵖᵈ => dec_♯_pd(sd)
+    :♯ᵖᵖ => dec_♯_pp(sd)
+    :♯ᵈᵈ => dec_♯_dd(sd)
     :♭ᵈᵖ => dec_♭(sd)
 
     # Primal-Dual Wedge Products
@@ -161,12 +162,24 @@ function dec_pair_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
   error("Replace me in compiled code with element-wise multiplication (.*)")
 end
 
-function dec_♯_p(sd::HasDeltaSet2D)
+function dec_♯_pd(sd::HasDeltaSet1D)
+  x -> ♯(sd, x, PDSharp())
+end
+
+function dec_♯_pp(sd::HasDeltaSet1D)
+  x -> ♯(sd, x, PPSharp())
+end
+
+function dec_♯_pd(sd::HasDeltaSet2D)
+  error("Primal-dual sharp is not yet implemented for 2D complexes.")
+end
+
+function dec_♯_pp(sd::HasDeltaSet2D)
   ♯_m = ♯_mat(sd, AltPPSharp())
   x -> ♯_m * x
 end
 
-function dec_♯_d(sd::HasDeltaSet2D)
+function dec_♯_dd(sd::HasDeltaSet2D)
   ♯_m = ♯_mat(sd, LLSDDSharp())
   x -> ♯_m * x
 end

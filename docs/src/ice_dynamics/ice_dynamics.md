@@ -53,7 +53,7 @@ halfar_eq2 = @decapode begin
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
 end
 
 to_graphviz(halfar_eq2)
@@ -139,7 +139,7 @@ A = 1e-16
 # Ice height is a primal 0-form, with values at vertices.
 # We choose a distribution that obeys the shallow height and shallow slope conditions.
 h₀ = map(point(s)) do (x,_)
-  ((7072-((x-5000)^2))/9e3+2777)/2777e-1
+  10 - ((x-5000)*1e-5)^2
 end
 
 # Visualize initial conditions for ice sheet height.
@@ -162,41 +162,13 @@ constants_and_parameters = (
 
 In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. In the DEC, there are a handful of operators that one uses to construct all the usual vector calculus operations, namely: ♯, ♭, ∧, d, ⋆. The CombinatorialSpaces.jl library specifies many of these for us.
 
-``` @example DEC
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :♯ => x -> begin
-      # This is an implementation of the "sharp" operator from the exterior
-      # calculus, which takes co-vector fields to vector fields.
-      # This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
-      # this operation is not bespoke to this simulation.)
-      e_vecs = map(edges(sd)) do e
-        point(sd, sd[e, :∂v0]) - point(sd, sd[e, :∂v1])
-      end
-      neighbors = map(vertices(sd)) do v
-        union(incident(sd, v, :∂v0), incident(sd, v, :∂v1))
-      end
-      n_vecs = map(neighbors) do es
-        [e_vecs[e] for e in es]
-      end
-      map(neighbors, n_vecs) do es, nvs
-        sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
-      end
-    end
-    :mag => x -> norm.(x)
-    x => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
-```
-
 ## Generate the simulation
 
 Now, we have everything we need to generate our simulation:
 
 ``` @example DEC
 sim = eval(gensim(ice_dynamics1D, dimension=1))
-fₘ = sim(sd, generate)
+fₘ = sim(sd, nothing)
 ```
 
 ## Pre-compile and run
@@ -209,7 +181,7 @@ prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
 soln = solve(prob, Tsit5())
 soln.retcode != :Unstable || error("Solver was not stable")
 
-tₑ = 8_000
+tₑ = 3e17
 
 # This next run should be fast.
 @info("Solving")
@@ -331,27 +303,11 @@ constants_and_parameters = (
   stress_A = A)
 ```
 
-## Define our functions
-
-``` @example DEC
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :♯ => begin
-      sharp_mat = ♯_mat(sd, AltPPSharp())
-      x -> sharp_mat * x
-    end
-    :mag => x -> norm.(x)
-    x => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
-```
-
 ## Generate simulation
 
 ``` @example DEC
 sim = eval(gensim(ice_dynamics2D, dimension=2))
-fₘ = sim(sd, generate)
+fₘ = sim(sd, nothing)
 ```
 
 ## Pre-compile and run 2D
