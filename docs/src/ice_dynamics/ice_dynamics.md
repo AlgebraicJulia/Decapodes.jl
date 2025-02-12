@@ -158,10 +158,6 @@ constants_and_parameters = (
   stress_A = A)
 ```
 
-## Define functions
-
-In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. In the DEC, there are a handful of operators that one uses to construct all the usual vector calculus operations, namely: ♯, ♭, ∧, d, ⋆. The CombinatorialSpaces.jl library specifies many of these for us.
-
 ## Generate the simulation
 
 Now, we have everything we need to generate our simulation:
@@ -403,7 +399,7 @@ constants_and_parameters = (
 
 ``` @example DEC
 sim = eval(gensim(ice_dynamics2D, dimension=2))
-fₘ = sim(sd, generate)
+fₘ = sim(sd, nothing)
 ```
 
 For brevity's sake, we'll skip the pre-compilation cell.
