@@ -210,11 +210,13 @@ Let's create a GIF to examine an animation of these dynamics:
 ``` @example DEC
 # Create a gif
 begin
-  frames = 100
-  fig, ax, ob = lines(map(x -> x[1], point(s)), soln(0).dynamics_h)
-  ylims!(ax, extrema(h₀))
-  record(fig, "ice_dynamics1D.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    lines!(map(x -> x[1], point(s)), soln(t).dynamics_h)
+  time = Observable(0.0)
+  ys = @lift(getproperty(soln($time), :dynamics_h))
+  xcoords = map(x -> x[1], point(s))
+  fig, ax, ob = lines(xcoords, ys, colorrange=extrema(h₀);
+    axis = (; title = "1D Ice Thickness"))
+  record(fig, "ice_dynamics1D.gif", range(0, tₑ, length=30); framerate=15) do t
+    time[] = t
   end
 end
 ```
