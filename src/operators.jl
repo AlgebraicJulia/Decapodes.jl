@@ -19,9 +19,11 @@ function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::Discret
 
   op = @match my_symbol begin
 
-    # :plus => (+)
+    # Misc.
+    :plus => (+)
     :(-) || :neg => x -> -1 .* x
     :ln => (x -> log.(x))
+    :mag => x -> norm.(x)
 
     # Musical Isomorphisms
     :♯ᵖᵖ => dec_♯_p(sd)
@@ -98,6 +100,8 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     :∧₀₂ => dec_pair_wedge_product(Tuple{0,2}, sd)
     :∧₂₀ => dec_pair_wedge_product(Tuple{2,0}, sd)
     :∧₁₁ => dec_pair_wedge_product(Tuple{1,1}, sd)
+
+    :♭♯ => ♭♯_mat(sd)
 
     # Averaging Operator
     :avg₀₁ => dec_avg₀₁(sd)

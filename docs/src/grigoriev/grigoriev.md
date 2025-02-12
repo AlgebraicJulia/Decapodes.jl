@@ -145,23 +145,11 @@ ice_dynamics = apex(ice_dynamics_cospan)
 to_graphviz(ice_dynamics)
 ```
 
-## Define our functions
-
-``` @example DEC
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :mag => x -> norm.(x)
-    x => error("Unmatched operator $my_symbol")
-  end
-  return op
-end
-```
-
 ## Generate simulation
 
 ``` @example DEC
 sim = eval(gensim(ice_dynamics, dimension=2))
-fₘ = sim(sd, generate)
+fₘ = sim(sd, nothing)
 ```
 
 ## Run

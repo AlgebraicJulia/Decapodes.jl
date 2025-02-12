@@ -53,7 +53,7 @@ halfar_eq2 = @decapode begin
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
 end
 
 to_graphviz(halfar_eq2)
@@ -165,7 +165,7 @@ In order to solve our equations, we will need numerical linear operators that gi
 ``` @example DEC
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :♯ => x -> begin
+    :♯ᵖᵖ => x -> begin
       # This is an implementation of the "sharp" operator from the exterior
       # calculus, which takes co-vector fields to vector fields.
       # This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
@@ -183,8 +183,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
         sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
       end
     end
-    :mag => x -> norm.(x)
-    x => error("Unmatched operator $my_symbol")
+    x => default_dec_generate(sd, my_symbol, hodge)
   end
   return (args...) -> op(args...)
 end
@@ -331,27 +330,11 @@ constants_and_parameters = (
   stress_A = A)
 ```
 
-## Define our functions
-
-``` @example DEC
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :♯ => begin
-      sharp_mat = ♯_mat(sd, AltPPSharp())
-      x -> sharp_mat * x
-    end
-    :mag => x -> norm.(x)
-    x => error("Unmatched operator $my_symbol")
-  end
-  return (args...) -> op(args...)
-end
-```
-
 ## Generate simulation
 
 ``` @example DEC
 sim = eval(gensim(ice_dynamics2D, dimension=2))
-fₘ = sim(sd, generate)
+fₘ = sim(sd, nothing)
 ```
 
 ## Pre-compile and run 2D
@@ -447,7 +430,7 @@ constants_and_parameters = (
 
 ``` @example DEC
 sim = eval(gensim(ice_dynamics2D, dimension=2))
-fₘ = sim(sd, generate)
+fₘ = sim(sd, nothing)
 ```
 
 For brevity's sake, we'll skip the pre-compilation cell.
