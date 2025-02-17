@@ -494,7 +494,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == d(0, earth) * A
+  @test du.A == CombinatorialSpaces.d(0, earth) * A
 
   # Testing no contraction of unallowed operators
   no_unallowed = @decapode begin
@@ -522,7 +522,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == d(0, earth) * 20 * A
+  @test du.A == CombinatorialSpaces.d(0, earth) * 20 * A
 
   # Testing wedge 01 operators function
   wedges01 = @decapode begin
