@@ -139,7 +139,7 @@ A = 1e-16
 # Ice height is a primal 0-form, with values at vertices.
 # We choose a distribution that obeys the shallow height and shallow slope conditions.
 h₀ = map(point(s)) do (x,_)
-  ((7072-((x-5000)^2))/9e3+2777)/2777e-1
+  10 - ((x-5000)*1e-5)^2
 end
 
 # Visualize initial conditions for ice sheet height.
@@ -158,44 +158,13 @@ constants_and_parameters = (
   stress_A = A)
 ```
 
-## Define functions
-
-In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. In the DEC, there are a handful of operators that one uses to construct all the usual vector calculus operations, namely: ♯, ♭, ∧, d, ⋆. The CombinatorialSpaces.jl library specifies many of these for us.
-
-``` @example DEC
-function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :♯ᵖᵖ => x -> begin
-      # This is an implementation of the "sharp" operator from the exterior
-      # calculus, which takes co-vector fields to vector fields.
-      # This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
-      # this operation is not bespoke to this simulation.)
-      e_vecs = map(edges(sd)) do e
-        point(sd, sd[e, :∂v0]) - point(sd, sd[e, :∂v1])
-      end
-      neighbors = map(vertices(sd)) do v
-        union(incident(sd, v, :∂v0), incident(sd, v, :∂v1))
-      end
-      n_vecs = map(neighbors) do es
-        [e_vecs[e] for e in es]
-      end
-      map(neighbors, n_vecs) do es, nvs
-        sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
-      end
-    end
-    x => default_dec_generate(sd, my_symbol, hodge)
-  end
-  return (args...) -> op(args...)
-end
-```
-
 ## Generate the simulation
 
 Now, we have everything we need to generate our simulation:
 
 ``` @example DEC
 sim = eval(gensim(ice_dynamics1D, dimension=1))
-fₘ = sim(sd, generate)
+fₘ = sim(sd, nothing)
 ```
 
 ## Pre-compile and run
@@ -208,7 +177,7 @@ prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
 soln = solve(prob, Tsit5())
 soln.retcode != :Unstable || error("Solver was not stable")
 
-tₑ = 8_000
+tₑ = 3e17
 
 # This next run should be fast.
 @info("Solving")
@@ -241,11 +210,13 @@ Let's create a GIF to examine an animation of these dynamics:
 ``` @example DEC
 # Create a gif
 begin
-  frames = 100
-  fig, ax, ob = lines(map(x -> x[1], point(s)), soln(0).dynamics_h)
-  ylims!(ax, extrema(h₀))
-  record(fig, "ice_dynamics1D.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-    lines!(map(x -> x[1], point(s)), soln(t).dynamics_h)
+  time = Observable(0.0)
+  ys = @lift(getproperty(soln($time), :dynamics_h))
+  xcoords = map(x -> x[1], point(s))
+  fig, ax, ob = lines(xcoords, ys, colorrange=extrema(h₀);
+    axis = (; title = "1D Ice Thickness"))
+  record(fig, "ice_dynamics1D.gif", range(0, tₑ, length=30); framerate=15) do t
+    time[] = t
   end
 end
 ```
