@@ -34,6 +34,10 @@ Eq11InviscidPoisson = @decapode begin
   𝐮 == ⋆(d(ψ))
 
   ∂ₜ(d𝐮) == μ * ∘(⋆, d, ⋆, d)(d𝐮) - ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
+
+  C::Form0
+  (L,k,J)::Constant
+  μ == L / (1 + exp(-(k)*C)) + J
 end
 
 to_graphviz(Eq11InviscidPoisson)
@@ -68,9 +72,11 @@ CahnHilliard = @decapode begin
   C::Form0
   𝐯::DualForm1
   (D,γ)::Constant
+  η::Constant
+  F::Constant
   ∂ₜ(C) == D * ∘(⋆,d,⋆)(
-    d(C^3 - C - γ * Δ(C)) +
-    C ∧ ♭♯(𝐯))
+    F * d(C^3 - C - γ * Δ(C)) +
+    η * (C ∧ ♭♯(𝐯)))
 end
 
 to_graphviz(CahnHilliard)
@@ -78,16 +84,16 @@ to_graphviz(CahnHilliard)
 ## Compose bounded Navier-Stokes with phase field
 
 NSPhaseFieldDiagram = @relation () begin
-  navierstokes(𝐮)
+  navierstokes(𝐮,C)
 
-  phasefield(𝐮)
+  phasefield(𝐮,C)
 end
 
 draw_composition(NSPhaseFieldDiagram)
 
 vort_ch = apex(oapply(NSPhaseFieldDiagram,
-  [Open(VorticityBounded, [:𝐮]),
-   Open(CahnHilliard, [:𝐯])]))
+  [Open(VorticityBounded, [:𝐮,:C]),
+   Open(CahnHilliard, [:𝐯,:C])]))
 
 to_graphviz(vort_ch)
 
@@ -110,29 +116,36 @@ f
 # Define constants, parameters, and initial conditions
 
 ## This is a dual 2-form, with values at the dual cells around primal vertices.
-★ = dec_hodge_star(0,sd)
-#d𝐮₀ = ★ * ones(nv(sd))
+★0 = dec_hodge_star(0,sd)
 distribution = MvNormal([0.5, 0.5, 0.0], Diagonal([1/8, 1/8, 1e-9]))
-d𝐮₀ = normalize(★ * map(x -> pdf(distribution, x), point(sd)), 1)
+d𝐮₀ = normalize(★0 * map(x -> pdf(distribution, x), point(sd)), 1)
+
 DU₀ = zeros(nv(sd))
 
 ## This is a dual 1-form, with values orthogonal to primal edges.
 U₀ = zeros(ne(sd))
 
 ## This is a primal 0-form, with values at primal vertices.
-C₀ = (rand(nv(sd)) .- 0.5) * 2
+C₀ = map(point(sd)) do (x,y,z)
+  x < 0.5 + sin((y)*10)/4 ? -1 : +1
+end
 
 ## Store these values to be passed to the solver.
 u₀ = ComponentArray(
   navierstokes_d𝐮 = d𝐮₀,
   navierstokes_U = U₀,
   navierstokes_DU = DU₀,
-  phasefield_C = C₀)
+  C = C₀)
 
 constants_and_parameters = (
-  navierstokes_μ = 1e-3,
+  navierstokes_μ = 1e-1,
+  navierstokes_L = 9e-3,
+  navierstokes_k = 6,
+  navierstokes_J = 1e-3,
+  navierstokes_F = 1e-3,
   phasefield_D = 5e-3,
-  phasefield_γ = (1e-2)^2)
+  phasefield_γ = (1e-2)^2,
+  phasefield_η = 1e12)
 
 # Define how symbols map to Julia functions
 
@@ -152,6 +165,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :bound_dual1form => simple_dual1form_bounds
     :bound_dual2form => simple_dual2form_bounds
+    :exp => x -> exp.(x)
     x => error("$x not matched")
   end
   return (args...) -> op(args...)
@@ -163,15 +177,14 @@ end
 open("collage_mpf.jl", "w") do f
   write(f, string(gensim(vort_ch)))
 end
-#sim = include("collage_mpf.jl") # in VSCode: sim = include("../../collage_mpf.jl")
-sim = include("../../collage_mpf.jl")
+sim = include("../../collage_mpf.jl") # At the terminal, use: sim = include("collage_mpf.jl")
 
 ## Generate the simulation
 fₘ = sim(sd, generate)
 
 ## Run simulation 
 
-tₑ = 1e0
+tₑ = 2e1
 
 # Julia will pre-compile the generated simulation the first time it is run.
 @info("Precompiling Solver")
@@ -191,19 +204,33 @@ soln = solve(prob, Tsit5())
 # Visualize 
 ★ = dec_inv_hodge_star(0,sd)
 f = Figure()
-ax = CairoMakie.Axis(f[1,1])
-sctr = scatter!(ax, point(sd), color= ★ * soln(tₑ).navierstokes_d𝐮)
+ax = CairoMakie.Axis(f[1,1], aspect=1)
+sctr = scatter!(ax, point(sd), color= ★ * soln(0).navierstokes_d𝐮)
 Colorbar(f[1,2], sctr)
-ax2 = CairoMakie.Axis(f[2,1])
-sctr2 = scatter!(ax2, point(sd), color= ★ * soln(0).navierstokes_d𝐮)
+ax2 = CairoMakie.Axis(f[2,1], aspect=1)
+sctr2 = scatter!(ax2, point(sd), color= ★ * soln(tₑ).navierstokes_d𝐮)
 Colorbar(f[2,2], sctr2)
-ax3 = CairoMakie.Axis(f[3,1])
+ax3 = CairoMakie.Axis(f[3,1], aspect=1)
 sctr3 = scatter!(ax3, point(sd), color= ★ * (soln(tₑ).navierstokes_d𝐮 - soln(0).navierstokes_d𝐮))
 Colorbar(f[3,2], sctr3)
 f
 
 f = Figure()
 ax = CairoMakie.Axis(f[1,1])
-msh = mesh!(ax, s, color=soln(tₑ).phasefield_C)
+msh = mesh!(ax, s, color=soln(tₑ).C)
 Colorbar(f[1,2], msh)
 f
+
+function visualize_dynamics(file_name, soln)
+  time = Observable(0.0)
+  fig = Figure()
+  Label(fig[1, 1, Top()], @lift("...at $($time)"), padding = (0, 0, 5, 0))
+  ax = CairoMakie.Axis(fig[1,1])
+  msh = CairoMakie.mesh!(ax, s,
+    color=@lift(soln($time).C))
+  Colorbar(fig[1,2], msh)
+  record(fig, file_name, range(0, tₑ; length=40); framerate = 10) do t
+    time[] = t
+  end
+end
+visualize_dynamics("pfc.mp4", soln)
