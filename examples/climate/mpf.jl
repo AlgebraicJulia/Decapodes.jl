@@ -97,35 +97,40 @@ vort_ch = apex(oapply(NSPhaseFieldDiagram,
 
 to_graphviz(vort_ch)
 
+### Infer types and resolve operators here for illustrative purposes.
+### This code is called internally in `gensim`.
 vort_ch = (resolve_overloads! ∘ infer_types! ∘ expand_operators)(vort_ch)
 
 to_graphviz(vort_ch)
 
 # Define the mesh
 
-s = triangulated_grid(1.0, 1.0, 0.0125, 0.0125, Point3D)
-sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
+s = triangulated_grid(1.0, 1.0, 0.0125, 0.0125, Point3D);
+sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s);
 subdivide_duals!(sd, Circumcenter())
 
-f = Figure()
-ax = CairoMakie.Axis(f[1,1])
-wireframe!(ax, s, linewidth=2)
-wireframe!(ax, sd)
-f
+function plot_primal_dual_wireframes()
+  f = Figure()
+  ax = CairoMakie.Axis(f[1,1])
+  wireframe!(ax, s, linewidth=2)
+  wireframe!(ax, sd)
+  f
+end
+plot_primal_dual_wireframes()
 
 # Define constants, parameters, and initial conditions
 
-## This is a dual 2-form, with values at the dual cells around primal vertices.
+## d𝐮₀ is a dual 2-form, with values at the dual cells around primal vertices.
 ★0 = dec_hodge_star(0,sd)
 distribution = MvNormal([0.5, 0.5, 0.0], Diagonal([1/8, 1/8, 1e-9]))
 d𝐮₀ = normalize(★0 * map(x -> pdf(distribution, x), point(sd)), 1)
 
 DU₀ = zeros(nv(sd))
 
-## This is a dual 1-form, with values orthogonal to primal edges.
+## U₀ is a dual 1-form, with values orthogonal to primal edges.
 U₀ = zeros(ne(sd))
 
-## This is a primal 0-form, with values at primal vertices.
+## C₀ is a primal 0-form, with values at primal vertices.
 C₀ = map(point(sd)) do (x,y,z)
   x < 0.5 + sin((y)*10)/4 ? -1 : +1
 end
@@ -142,8 +147,8 @@ constants_and_parameters = (
   navierstokes_L = 9e-3,
   navierstokes_k = 6,
   navierstokes_J = 1e-3,
-  navierstokes_F = 1e-3,
-  phasefield_D = 5e-3,
+  phasefield_F = 1e-1,
+  phasefield_D = 5e-2,
   phasefield_γ = (1e-2)^2,
   phasefield_η = 1e12)
 
@@ -202,26 +207,32 @@ soln = solve(prob, Tsit5())
 @save "collage_mpf.jld2" soln
 
 # Visualize 
-★ = dec_inv_hodge_star(0,sd)
-f = Figure()
-ax = CairoMakie.Axis(f[1,1], aspect=1)
-sctr = scatter!(ax, point(sd), color= ★ * soln(0).navierstokes_d𝐮)
-Colorbar(f[1,2], sctr)
-ax2 = CairoMakie.Axis(f[2,1], aspect=1)
-sctr2 = scatter!(ax2, point(sd), color= ★ * soln(tₑ).navierstokes_d𝐮)
-Colorbar(f[2,2], sctr2)
-ax3 = CairoMakie.Axis(f[3,1], aspect=1)
-sctr3 = scatter!(ax3, point(sd), color= ★ * (soln(tₑ).navierstokes_d𝐮 - soln(0).navierstokes_d𝐮))
-Colorbar(f[3,2], sctr3)
-f
+function plot_star_vorticities()
+  ★ = dec_inv_hodge_star(0,sd)
+  f = Figure()
+  ax = CairoMakie.Axis(f[1,1], aspect=1)
+  sctr = scatter!(ax, point(sd), color= ★ * soln(0).navierstokes_d𝐮)
+  Colorbar(f[1,2], sctr)
+  ax2 = CairoMakie.Axis(f[2,1], aspect=1)
+  sctr2 = scatter!(ax2, point(sd), color= ★ * soln(tₑ).navierstokes_d𝐮)
+  Colorbar(f[2,2], sctr2)
+  ax3 = CairoMakie.Axis(f[3,1], aspect=1)
+  sctr3 = scatter!(ax3, point(sd), color= ★ * (soln(tₑ).navierstokes_d𝐮 - soln(0).navierstokes_d𝐮))
+  Colorbar(f[3,2], sctr3)
+  f
+end
+plot_star_vorticities()
 
-f = Figure()
-ax = CairoMakie.Axis(f[1,1])
-msh = mesh!(ax, s, color=soln(tₑ).C)
-Colorbar(f[1,2], msh)
-f
+function plot_final_phasefield()
+  f = Figure()
+  ax = CairoMakie.Axis(f[1,1])
+  msh = mesh!(ax, s, color=soln(tₑ).C)
+  Colorbar(f[1,2], msh)
+  f
+end
+plot_final_phasefield()
 
-function visualize_dynamics(file_name, soln)
+function animate_phasefield(file_name, soln)
   time = Observable(0.0)
   fig = Figure()
   Label(fig[1, 1, Top()], @lift("...at $($time)"), padding = (0, 0, 5, 0))
@@ -233,4 +244,4 @@ function visualize_dynamics(file_name, soln)
     time[] = t
   end
 end
-visualize_dynamics("pfc.mp4", soln)
+animate_phasefield("pfc.mp4", soln)
