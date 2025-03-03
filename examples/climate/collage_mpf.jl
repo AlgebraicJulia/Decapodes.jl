@@ -56,19 +56,19 @@ begin
                 var"__navierstokes_•2" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
                 var"__navierstokes_•4" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
                 __𝐮 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-                var"__navierstokes_•7" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+                var"__navierstokes_•8" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
                 var"__phasefield_•4" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
                 var"__phasefield_•12" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-                var"__navierstokes_•10" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+                var"__navierstokes_•6" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
                 var"__phasefield_•3" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
                 var"__phasefield_•11" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
                 var"__phasefield_•10" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
-                __navierstokes_sum_1 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+                __viscosity_sum_1 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
                 __phasefield_sum_1 = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :E)))
                 var"__phasefield_•2" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-                var"__navierstokes_•11" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+                var"__viscosity_•1" = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
                 __phasefield_Ċ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
-                __navierstokes_μ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
+                __μ = Decapodes.FixedSizeDiffCache(Vector{Float64}(undef, nparts(mesh, :V)))
             end
             #= /Users/hacker/Code/Decapodes.jl/src/simulation.jl:697 =#
             f(__du__, __u__, __p__, __t__) = begin
@@ -77,12 +77,12 @@ begin
                     begin
                         #= /Users/hacker/Code/Decapodes.jl/src/simulation.jl:261 =#
                         navierstokes_d𝐮 = __u__.navierstokes_d𝐮
-                        C = __u__.C
-                        navierstokes_L = __p__.navierstokes_L
-                        navierstokes_k = __p__.navierstokes_k
-                        navierstokes_J = __p__.navierstokes_J
                         navierstokes_U = __u__.navierstokes_U
                         navierstokes_DU = __u__.navierstokes_DU
+                        C = __u__.C
+                        viscosity_L = __p__.viscosity_L
+                        viscosity_k = __p__.viscosity_k
+                        viscosity_J = __p__.viscosity_J
                         phasefield_D = __p__.phasefield_D
                         phasefield_γ = __p__.phasefield_γ
                         phasefield_η = __p__.phasefield_η
@@ -100,25 +100,25 @@ begin
                         var"navierstokes_•2" = Decapodes.get_tmp(var"__navierstokes_•2", __u__)
                         var"navierstokes_•4" = Decapodes.get_tmp(var"__navierstokes_•4", __u__)
                         𝐮 = Decapodes.get_tmp(__𝐮, __u__)
-                        var"navierstokes_•7" = Decapodes.get_tmp(var"__navierstokes_•7", __u__)
+                        var"navierstokes_•8" = Decapodes.get_tmp(var"__navierstokes_•8", __u__)
                         var"phasefield_•4" = Decapodes.get_tmp(var"__phasefield_•4", __u__)
                         var"phasefield_•12" = Decapodes.get_tmp(var"__phasefield_•12", __u__)
-                        var"navierstokes_•10" = Decapodes.get_tmp(var"__navierstokes_•10", __u__)
+                        var"navierstokes_•6" = Decapodes.get_tmp(var"__navierstokes_•6", __u__)
                         var"phasefield_•3" = Decapodes.get_tmp(var"__phasefield_•3", __u__)
                         var"phasefield_•11" = Decapodes.get_tmp(var"__phasefield_•11", __u__)
                         var"phasefield_•10" = Decapodes.get_tmp(var"__phasefield_•10", __u__)
-                        navierstokes_sum_1 = Decapodes.get_tmp(__navierstokes_sum_1, __u__)
+                        viscosity_sum_1 = Decapodes.get_tmp(__viscosity_sum_1, __u__)
                         phasefield_sum_1 = Decapodes.get_tmp(__phasefield_sum_1, __u__)
                         var"phasefield_•2" = Decapodes.get_tmp(var"__phasefield_•2", __u__)
-                        var"navierstokes_•11" = Decapodes.get_tmp(var"__navierstokes_•11", __u__)
+                        var"viscosity_•1" = Decapodes.get_tmp(var"__viscosity_•1", __u__)
                         phasefield_Ċ = Decapodes.get_tmp(__phasefield_Ċ, __u__)
-                        navierstokes_μ = Decapodes.get_tmp(__navierstokes_μ, __u__)
+                        μ = Decapodes.get_tmp(__μ, __u__)
                     end
                     #= /Users/hacker/Code/Decapodes.jl/src/simulation.jl:700 =#
                     mul!(var"phasefield_•9", var"GenSim-M_GenSim-ConMat_2", C)
-                    var"navierstokes_•3" = -navierstokes_k
-                    var"navierstokes_•1" = var"navierstokes_•3" .* C
+                    var"viscosity_•4" = -viscosity_k
                     navierstokes_r2_d𝐮 = bound_dual2form(navierstokes_d𝐮, navierstokes_DU)
+                    var"viscosity_•3" = var"viscosity_•4" .* C
                     var"phasefield_•7" = C .^ var"3"
                     var"phasefield_•6" .= var"phasefield_•7" .- C
                     var"phasefield_•8" .= phasefield_γ .* var"phasefield_•9"
@@ -127,25 +127,25 @@ begin
                     navierstokes_ψ = Δ₀⁻¹(var"navierstokes_•2")
                     mul!(var"navierstokes_•4", var"GenSim-M_d₀", navierstokes_ψ)
                     mul!(𝐮, var"GenSim-M_⋆₁", var"navierstokes_•4")
-                    mul!(var"navierstokes_•7", var"GenSim-M_GenSim-ConMat_0", navierstokes_r2_d𝐮)
+                    mul!(var"navierstokes_•8", var"GenSim-M_GenSim-ConMat_0", navierstokes_r2_d𝐮)
                     mul!(var"phasefield_•4", var"GenSim-M_d₀", var"phasefield_•5")
                     mul!(var"phasefield_•12", var"GenSim-M_♭♯", 𝐮)
-                    mul!(var"navierstokes_•10", var"GenSim-M_⋆₀⁻¹", navierstokes_r2_d𝐮)
-                    var"navierstokes_•12" = exp(var"navierstokes_•1")
+                    mul!(var"navierstokes_•6", var"GenSim-M_⋆₀⁻¹", navierstokes_r2_d𝐮)
+                    var"viscosity_•2" = exp(var"viscosity_•3")
                     navierstokes_r1_𝐮 = bound_dual1form(𝐮, navierstokes_U)
                     var"phasefield_•3" .= phasefield_F .* var"phasefield_•4"
                     var"GenSim-M_∧₀₁"(var"phasefield_•11", C, var"phasefield_•12")
                     var"phasefield_•10" .= phasefield_η .* var"phasefield_•11"
-                    navierstokes_sum_1 .= (.+)(var"1", var"navierstokes_•12")
+                    viscosity_sum_1 .= (.+)(var"1", var"viscosity_•2")
                     phasefield_sum_1 .= (.+)(var"phasefield_•3", var"phasefield_•10")
                     mul!(var"phasefield_•2", var"GenSim-M_GenSim-ConMat_3", phasefield_sum_1)
-                    var"navierstokes_•9" = navierstokes_r1_𝐮 ∧ᵈᵖ₁₀ var"navierstokes_•10"
-                    var"navierstokes_•11" .= navierstokes_L ./ navierstokes_sum_1
+                    var"navierstokes_•3" = navierstokes_r1_𝐮 ∧ᵈᵖ₁₀ var"navierstokes_•6"
+                    var"viscosity_•1" .= viscosity_L ./ viscosity_sum_1
                     phasefield_Ċ .= phasefield_D .* var"phasefield_•2"
-                    navierstokes_μ .= (.+)(var"navierstokes_•11", navierstokes_J)
-                    var"navierstokes_•8" = var"GenSim-ConMat_1"(var"navierstokes_•9")
-                    var"navierstokes_•6" = navierstokes_μ .* var"navierstokes_•7"
-                    navierstokes_d𝐮̇ = var"navierstokes_•6" .- var"navierstokes_•8"
+                    μ .= (.+)(var"viscosity_•1", viscosity_J)
+                    var"navierstokes_•1" = var"GenSim-ConMat_1"(var"navierstokes_•3")
+                    var"navierstokes_•7" = μ .* var"navierstokes_•8"
+                    navierstokes_d𝐮̇ = var"navierstokes_•7" .- var"navierstokes_•1"
                     #= /Users/hacker/Code/Decapodes.jl/src/simulation.jl:701 =#
                     begin
                         #= /Users/hacker/Code/Decapodes.jl/src/simulation.jl:302 =#

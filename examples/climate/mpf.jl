@@ -34,10 +34,6 @@ Eq11InviscidPoisson = @decapode begin
   𝐮 == ⋆(d(ψ))
 
   ∂ₜ(d𝐮) == μ * ∘(⋆, d, ⋆, d)(d𝐮) - ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
-
-  C::Form0
-  (L,k,J)::Constant
-  μ == L / (1 + exp(-(k)*C)) + J
 end
 
 to_graphviz(Eq11InviscidPoisson)
@@ -81,10 +77,22 @@ end
 
 to_graphviz(CahnHilliard)
 
+## Define viscosity
+
+SigmoidalViscosity = @decapode begin
+  (C,μ)::Form0
+  (L,k,J)::Constant
+  μ == L / (1 + exp(-(k)*C)) + J
+end
+
+to_graphviz(SigmoidalViscosity)
+
 ## Compose bounded Navier-Stokes with phase field
 
 NSPhaseFieldDiagram = @relation () begin
-  navierstokes(𝐮,C)
+  navierstokes(𝐮,μ)
+
+  viscosity(μ,C)
 
   phasefield(𝐮,C)
 end
@@ -92,7 +100,8 @@ end
 draw_composition(NSPhaseFieldDiagram)
 
 vort_ch = apex(oapply(NSPhaseFieldDiagram,
-  [Open(VorticityBounded, [:𝐮,:C]),
+  [Open(VorticityBounded, [:𝐮,:μ]),
+   Open(SigmoidalViscosity, [:μ,:C]),
    Open(CahnHilliard, [:𝐯,:C])]))
 
 to_graphviz(vort_ch)
@@ -143,10 +152,9 @@ u₀ = ComponentArray(
   C = C₀)
 
 constants_and_parameters = (
-  navierstokes_μ = 1e-1,
-  navierstokes_L = 9e-3,
-  navierstokes_k = 6,
-  navierstokes_J = 1e-3,
+  viscosity_L = 9e-3,
+  viscosity_k = 6,
+  viscosity_J = 1e-3,
   phasefield_F = 1e-1,
   phasefield_D = 5e-2,
   phasefield_γ = (1e-2)^2,
