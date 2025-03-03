@@ -28,7 +28,7 @@ Eq11InviscidPoisson = @decapode begin
   d𝐮::DualForm2
   𝐮::DualForm1
   ψ::Form0
-  μ::Constant
+  μ::Form0
 
   ψ == Δ₀⁻¹(⋆(d𝐮))
   𝐮 == ⋆(d(ψ))
