@@ -217,33 +217,50 @@ soln = solve(prob, Tsit5())
 # Visualize 
 function plot_star_vorticities()
   ★ = dec_inv_hodge_star(0,sd)
-  f = Figure()
-  ax = CairoMakie.Axis(f[1,1], aspect=1)
-  sctr = scatter!(ax, point(sd), color= ★ * soln(0).navierstokes_d𝐮)
-  Colorbar(f[1,2], sctr)
-  ax2 = CairoMakie.Axis(f[2,1], aspect=1)
-  sctr2 = scatter!(ax2, point(sd), color= ★ * soln(tₑ).navierstokes_d𝐮)
-  Colorbar(f[2,2], sctr2)
-  ax3 = CairoMakie.Axis(f[3,1], aspect=1)
-  sctr3 = scatter!(ax3, point(sd), color= ★ * (soln(tₑ).navierstokes_d𝐮 - soln(0).navierstokes_d𝐮))
-  Colorbar(f[3,2], sctr3)
+  f = Figure(size = (400, 1200))
+  ax = CairoMakie.Axis(f[1,1], aspect=1, title="★(d𝐮(0))")
+  msh = mesh!(ax, s, color= ★ * soln(0).navierstokes_d𝐮)
+  Colorbar(f[1,2], msh)
+  ax2 = CairoMakie.Axis(f[2,1], aspect=1, title="★(d𝐮(tₑ))")
+  msh2 = mesh!(ax2, s, color= ★ * soln(tₑ).navierstokes_d𝐮)
+  Colorbar(f[2,2], msh2)
+  ax3 = CairoMakie.Axis(f[3,1], aspect=1, title="★(d𝐮(tₑ) - d𝐮(0))")
+  msh3 = mesh!(ax3, s, color= ★ * (soln(tₑ).navierstokes_d𝐮 - soln(0).navierstokes_d𝐮))
+  Colorbar(f[3,2], msh3)
   f
 end
-plot_star_vorticities()
+f = plot_star_vorticities()
+save("star_vorticities.png", f)
 
 function plot_final_phasefield()
   f = Figure()
-  ax = CairoMakie.Axis(f[1,1])
+  ax = CairoMakie.Axis(f[1,1], title="C(0)")
   msh = mesh!(ax, s, color=soln(tₑ).C)
   Colorbar(f[1,2], msh)
   f
 end
-plot_final_phasefield()
+f = plot_final_phasefield()
+save("final_phasefield.png", f)
+
+function animate_star_vorticity(file_name, soln)
+  ★ = dec_inv_hodge_star(0,sd)
+  time = Observable(0.0)
+  fig = Figure()
+  Label(fig[1, 1, Top()], @lift("★(d𝐮) at $($time)"), padding = (0, 0, 5, 0))
+  ax = CairoMakie.Axis(fig[1,1])
+  msh = CairoMakie.mesh!(ax, s,
+    color=@lift(★ * soln($time).navierstokes_d𝐮))
+  Colorbar(fig[1,2], msh)
+  record(fig, file_name, range(0, tₑ; length=40); framerate = 10) do t
+    time[] = t
+  end
+end
+animate_star_vorticity("star_vorticity.mp4", soln)
 
 function animate_phasefield(file_name, soln)
   time = Observable(0.0)
   fig = Figure()
-  Label(fig[1, 1, Top()], @lift("...at $($time)"), padding = (0, 0, 5, 0))
+  Label(fig[1, 1, Top()], @lift("C at $($time)"), padding = (0, 0, 5, 0))
   ax = CairoMakie.Axis(fig[1,1])
   msh = CairoMakie.mesh!(ax, s,
     color=@lift(soln($time).C))
@@ -252,4 +269,4 @@ function animate_phasefield(file_name, soln)
     time[] = t
   end
 end
-animate_phasefield("pfc.mp4", soln)
+animate_phasefield("phasefield.mp4", soln)
