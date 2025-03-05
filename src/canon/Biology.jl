@@ -6,7 +6,7 @@ using ..Canon
 using Markdown
 
 @docapode("Klausmeier (Eq. 2a)"
-  ,"https://www.google.com"
+  ,""
   ,"Klausmeier, CA. “Regular and irregular patterns in semiarid vegetation.” Science (New York, N.Y.) vol. 284,5421 (1999): 1826-8. doi:10.1126/science.284.5421.1826"
   ,klausmeier_2a
   ,begin
@@ -18,7 +18,7 @@ using Markdown
 )
 
 @docapode("Klausmeier (Eq. 2b)"
-  ,"https://www.google.com"
+  ,""
   ,"ibid."
   ,klausmeier_2b
   ,begin
@@ -28,7 +28,7 @@ using Markdown
   end)
 
 @docapode("Lejeune"
-  ,"https://www.google.com"
+  ,""
   ,"Lejeune, O., & Tlidi, M. (1999). A Model for the Explanation of Vegetation Stripes (Tiger Bush). Journal of Vegetation Science, 10(2), 201–208. https://doi.org/10.2307/3237141"
   ,lejeune
   ,begin
@@ -41,7 +41,7 @@ using Markdown
 
 
 @docapode("Kealy"
-          ,"https://www.google.com"
+          ,""
           ,""
           ,kealy
           ,begin
@@ -53,7 +53,7 @@ using Markdown
 )
 
 @docapode("Turing Continuous Ring"
-  ,"https://www.google.com"
+  ,""
   ,""
   ,turing_continuous_ring
   ,begin
