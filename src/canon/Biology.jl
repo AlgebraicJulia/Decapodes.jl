@@ -19,7 +19,7 @@ using Markdown
 
 @docapode("Klausmeier (Eq. 2b)"
   ,""
-  ,"ibid."
+  ,"see [`klausmeier_2a`](@ref)"
   ,klausmeier_2b
   ,begin
     (n,w)::DualForm0
