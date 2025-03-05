@@ -7,12 +7,13 @@ using Markdown
 
 @docapode("Klausmeier (Eq. 2a)"
   ,""
-  ,"Klausmeier, CA. “Regular and irregular patterns in semiarid vegetation.” Science (New York, N.Y.) vol. 284,5421 (1999): 1826-8. doi:10.1126/science.284.5421.1826"
+  ,"[klausmeier_regular_1999](@cite)"
   ,klausmeier_2a
   ,begin
     (n,w)::DualForm0
     dX::Form1
     (a,ν)::Constant
+
     ∂ₜ(w) == a - w - w * n^2 + ν * ℒ(dX, w)
   end
 )
@@ -24,12 +25,13 @@ using Markdown
   ,begin
     (n,w)::DualForm0
     m::Constant
+
     ∂ₜ(n) == w * n^2 - m*n + Δ(n)
   end)
 
 @docapode("Lejeune"
   ,""
-  ,"Lejeune, O., & Tlidi, M. (1999). A Model for the Explanation of Vegetation Stripes (Tiger Bush). Journal of Vegetation Science, 10(2), 201–208. https://doi.org/10.2307/3237141"
+  ,"[lejeune_model_1999](@cite)"
   ,lejeune
   ,begin
     ρ::Form0

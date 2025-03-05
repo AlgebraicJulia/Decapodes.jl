@@ -3,13 +3,17 @@ module Canon
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 
-using MLStyle
+using DocumenterCitations
 using Markdown
+
+bib = CitationBibliography(
+    joinpath(@__DIR__, "../../docs", "src", "decapodes_documenter.bib");
+    style=:numeric)
+
 
 struct DecapodeModel
     value::Symbol
 end
-
 
 export @docapode
 
