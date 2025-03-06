@@ -20,11 +20,6 @@ on:
       version:
         description: "Tag and release version:"
         required: false
-      docs:
-        description: "Whether or not to build and deploy Documenter.jl docs"
-        default: false
-        required: false
-        type: boolean
 
 permissions:
   actions: read
@@ -45,6 +40,8 @@ jobs:
     if: github.event_name == 'pull_request' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'test')
     uses: AlgebraicJulia/.github/.github/workflows/julia_ci.yml@main
     secrets: inherit
+    with:
+      docs: false
   CompatHelper:
     if: github.event_name == 'schedule'
     uses: AlgebraicJulia/.github/.github/workflows/julia_compat.yml@main
