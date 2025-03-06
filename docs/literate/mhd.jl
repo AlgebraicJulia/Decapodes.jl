@@ -118,7 +118,6 @@ function generate(dualmesh, my_symbol; hodge=GeometricHodge())
       y = fΔ0 \ x
       y .- minimum(y)
     end
-    :♭♯ => x -> ♭♯_m * x
     _ => default_dec_matrix_generate(dualmesh, my_symbol, hodge)
   end
   return (args...) -> op(args...)

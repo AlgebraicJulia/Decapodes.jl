@@ -102,7 +102,7 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     :∧₂₀ => dec_pair_wedge_product(Tuple{2,0}, sd)
     :∧₁₁ => dec_pair_wedge_product(Tuple{1,1}, sd)
 
-    :♭♯ => ♭♯_mat(sd)
+    :♭♯ => dec_♭♯(sd)
 
     # Averaging Operator
     :avg₀₁ => dec_avg₀₁(sd)
@@ -142,6 +142,11 @@ end
 function dec_mat_dual_differential(k::Int, sd::HasDeltaSet)
   dualdiff = dec_dual_derivative(k, sd)
   return (dualdiff, x -> dualdiff * x)
+end
+
+function dec_♭♯(sd)
+  ♭♯m = ♭♯_mat(sd)
+  return (♭♯m, x -> ♭♯m * x)
 end
 
 function dec_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where {k}
