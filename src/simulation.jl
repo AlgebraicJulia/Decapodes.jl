@@ -594,7 +594,7 @@ Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapode
 
 const MATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
                                               :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
-                                              :avg₀₁])
+                                              :avg₀₁, :♭♯])
 
 const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
