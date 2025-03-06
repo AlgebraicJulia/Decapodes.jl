@@ -6,8 +6,8 @@ using ..Canon
 using Markdown
 
 @docapode("Glens Law"
-  ,"https://www.google.com"
-  ,"Nye, J. F. (1957). The Distribution of Stress and Velocity in Glaciers and Ice-Sheets. Proceedings of the Royal Society of London. Series A, Mathematical and Physical Sciences, 239(1216), 113–133. http://www.jstor.org/stable/100184"
+  ,""
+  ,"[glen_flow_1958](@cite)"
   ,glen
   ,begin 
     Γ::Form1
@@ -18,8 +18,8 @@ using Markdown
 )
 
 @docapode("Halfar (Eq. 2)"
-  ,"https://www.google.com"
-  ,"Halfar, P. (1981), On the dynamics of the ice sheets, J. Geophys. Res., 86(C11), 11065–11072, doi:10.1029/JC086iC11p11065"
+  ,""
+  ,"[halfar_dynamics_1981](@cite)"
   ,halfar_eq2
   ,begin
     h::Form0
@@ -31,7 +31,7 @@ end)
 
 
 @docapode("Energy balance"
-          ,"https://google.com"
+          ,""
           ,"energy balance equation from Budyko Sellers"
           ,energy_balance
           ,begin
@@ -44,7 +44,7 @@ end)
 end)
 
 @docapode("Insolation"
-          ,"https://google.com"
+          ,""
           ,""
           ,insolation
           , begin
@@ -55,7 +55,7 @@ end)
 end)
 
 @docapode("Warming"
-          ,"https://google.com"
+          ,""
           ,""
           ,warming
           , begin
@@ -66,7 +66,7 @@ end)
 end)
 
 @docapode("Tracer"
-          ,"https://google.com"
+          ,""
           ,""
           ,tracer
           , begin
@@ -77,7 +77,7 @@ end)
 end)
 
 @docapode("Equation of State"
-          ,"https://google.com"
+          ,""
           ,""
           ,equation_of_state
           , begin
@@ -88,7 +88,7 @@ end)
 end)
 
 @docapode("Boundary Conditions"
-          ,"https://google.com"
+          ,""
           ,""
           ,boundary_conditions
           , begin

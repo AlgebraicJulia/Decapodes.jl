@@ -28,7 +28,7 @@ using Markdown
 end)
 
 @docapode("Gray-Scott"
-  ,"https://www.google.com"
+  ,""
   ,"A model of reaction-diffusion"
   ,GrayScott
   ,begin
@@ -36,6 +36,7 @@ end)
     (UV2)::Form0
     (U̇, V̇)::Form0
     (f, k, rᵤ, rᵥ)::Constant
+
     UV2 == (U .* (V .* V))
     U̇ == rᵤ * Δ(U) - UV2 + f * (1 .- U)
     V̇ == rᵥ * Δ(V) + UV2 - (f + k) .* V

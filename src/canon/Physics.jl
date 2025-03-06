@@ -6,8 +6,8 @@ using ..Canon
 using Markdown
 
 @docapode("Mohamed Eq. 10, N2"
-          ,"https://google.com"
           ,""
+          ,"[mohamed_discrete_2016](@cite)"
           ,mohamed_flow
           ,begin
   (𝐮,w)::DualForm1
@@ -65,7 +65,7 @@ end)
 )
 
 @docapode("Absorbed Shortwave Radiation"
-  ,"https://www.google.com"
+  ,""
   ,"The proportion of light reflected by a surface is the **albedo**. The absorbed shortwave radiation is the complement of this quantity."
   ,absorbed_shortwave_radiation
   ,begin
@@ -76,9 +76,8 @@ end)
   end
  )
 
-## TODO
 @docapode("Outgoing Longwave Radiation"
-  ,"https://www.google.com"
+  ,""
   ,""
   ,:outgoing_longwave_radiation
   ,begin
@@ -90,7 +89,7 @@ end)
 )
 
 @docapode("Heat Transfer"
-  ,"https://www.google.com"
+  ,""
   ,""
   ,:heat_transfer
   ,begin
@@ -181,8 +180,8 @@ end)
 )
 
 @docapode("Jordan-Kinderlehrer-Otto"
-  ,"https://www.google.com"
-  ,"Jordan, R., Kinderlehrer, D., & Otto, F. (1998). The Variational Formulation of the Fokker--Planck Equation. In SIAM Journal on Mathematical Analysis (Vol. 29, Issue 1, pp. 1–17). Society for Industrial & Applied Mathematics (SIAM). https://doi.org/10.1137/s0036141096303359"
+  ,""
+  ,"[jordan_variational_1998](@cite)"
   ,jko_scheme
   ,begin
     (ρ,Ψ)::Form0

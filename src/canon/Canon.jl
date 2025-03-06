@@ -36,7 +36,8 @@ function create_pode_expr(t)
 
   **$modelname**
 
-  $(!isempty(source) ? """[Source]($source)""" : "")
+  $(!isempty(source) ? """[Source]($source)
+    """ : "")
   $desc
 
   **Model** 

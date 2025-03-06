@@ -44,7 +44,7 @@ using Markdown
 
 @docapode("Kealy"
           ,""
-          ,""
+          ,"[kealy_nonlinear_2012](@cite)"
           ,kealy
           ,begin
             (n,w)::DualForm0
@@ -56,7 +56,7 @@ using Markdown
 
 @docapode("Turing Continuous Ring"
   ,""
-  ,""
+  ,"[turing_chemical_1952](@cite)"
   ,turing_continuous_ring
   ,begin
     (X, Y)::Form0
