@@ -94,4 +94,6 @@ deploydocs(
   target = "build",
   repo   = "github.com/AlgebraicJulia/Decapodes.jl.git",
   branch = "gh-pages",
+  push_preview = true,
+  deploy_config = Documenter.Buildkite(),
   devbranch = "main")
