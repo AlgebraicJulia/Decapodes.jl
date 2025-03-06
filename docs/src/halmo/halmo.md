@@ -201,7 +201,7 @@ soln.retcode != :Unstable || error("Solver was not stable")
 
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Vern7())
+soln = solve(prob, Vern7(), saveat=10, reltol=1e-2)
 @show soln.retcode
 @info("Done")
 ```

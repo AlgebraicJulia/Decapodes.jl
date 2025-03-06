@@ -51,7 +51,7 @@ Run the simulation.
 ``` @example DEC
 tₑ= 20.0
 problem = ODEProblem(f, u0, (0, tₑ), constants_and_parameters);
-solution = solve(problem, Tsit5(), progress=true, progress_steps=1);
+solution = solve(problem, Tsit5(), saveat=2, progress=true, progress_steps=1);
 ```
 
 Verify that the probability distribbution function is still a probability distribution. We'll show that the sum of the values on the

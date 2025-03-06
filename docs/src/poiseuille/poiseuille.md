@@ -100,7 +100,7 @@ P = [10.0, 5.0]
 u = ComponentArray(q=q,P=P)
 params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
-soln = solve(prob, Tsit5())
+soln = solve(prob, Tsit5(), reltol=1e-2, saveat=1000)
 soln.u
 ```
 
@@ -133,7 +133,7 @@ q = [5,3,4,2,5,2,8,4,3]
 u = ComponentArray(q=q,P=P)
 params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
-sol = solve(prob, Tsit5());
+sol = solve(prob, Tsit5(), reltol=1e-2, saveat=1000);
 sol.u
 ```
 
@@ -172,7 +172,7 @@ q = fill(5.0, ne(sd))
 u = ComponentArray(q=q,P=P)
 params = (k = -0.01, μ̃ = 0.5, R=0.005)
 prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
-sol = solve(prob, Tsit5())
+sol = solve(prob, Tsit5(), reltol=1e-2, saveat=1000)
 sol.u
 ```
 
@@ -227,7 +227,7 @@ u = ComponentArray(q=q,ρ=ρ)
 params = (k = -0.01, μ̃ = 0.5, R=0.005)
 
 prob = ODEProblem(func, u, (0.0, 10000.0), params)
-sol = solve(prob, Tsit5())
+sol = solve(prob, Tsit5(), saveat=1000, reltol=1e-2)
 sol.u
 ```
 

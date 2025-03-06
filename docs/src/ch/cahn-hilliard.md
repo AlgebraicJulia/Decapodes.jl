@@ -96,7 +96,7 @@ Now that everything is set up and ready, we can solve the equation. We run the s
 ```@example DEC
 tₑ = 200
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants)
-soln = solve(prob, Tsit5(), saveat=0.1);
+soln = solve(prob, Tsit5(), saveat=0.1, reltol=1e-2);
 soln.retcode
 ```
 

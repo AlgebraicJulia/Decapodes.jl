@@ -321,7 +321,7 @@ tₑ = 1e6
 
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5())
+soln = solve(prob, Tsit5(), saveat=tₑ/10, reltol=1e-2)
 @show soln.retcode
 @info("Done")
 ```

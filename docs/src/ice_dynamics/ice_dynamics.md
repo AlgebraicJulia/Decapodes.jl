@@ -182,7 +182,7 @@ tₑ = 3e17
 # This next run should be fast.
 @info("Solving")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5())
+soln = solve(prob, Tsit5(), reltol=1e-2, saveat=3e16)
 @show soln.retcode
 @info("Done")
 ```

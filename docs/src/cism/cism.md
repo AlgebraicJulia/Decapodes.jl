@@ -210,7 +210,7 @@ Julia is a "Just-In-Time" compiled language. That means that functions are compi
 @info("Precompiling Solver")
 # We run for a short timespan to pre-compile.
 problem = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
-solution = solve(problem, Tsit5())
+solution = solve(problem, Tsit5(), saveat=0.1, reltol=1e-2)
 solution.retcode != :Unstable || error("Solver was not stable")
 ```
 
@@ -221,7 +221,7 @@ tₑ = 200
 # This next run should be fast.
 @info("Solving")
 problem = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-solution = solve(problem, Tsit5(), saveat=0.1)
+solution = solve(problem, Tsit5(), saveat=0.1; reltol=1e-2)
 @show solution.retcode
 @info("Done")
 ```

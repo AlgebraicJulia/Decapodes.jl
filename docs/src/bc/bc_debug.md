@@ -169,7 +169,7 @@ u₀ = ComponentArray(C=c)
 params = (V = v,)
 
 prob = ODEProblem(fₘ, u₀, (0.0, 100.0), params)
-sol = solve(prob, Tsit5());
+sol = solve(prob, Tsit5(), saveat=10);
 
 # Plot the result
 times = range(0.0, 100.0, length=150)
