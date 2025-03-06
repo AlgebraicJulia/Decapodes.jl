@@ -75,25 +75,28 @@ function default_dec_matrix_generate(fs::PrimalGeometricMapSeries, my_symbol::Sy
 end
 
 function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge)
+
+  matmul(m) = (m, x -> m * x)
+
   op = @match my_symbol begin
 
     # Regular Hodge Stars
-    :⋆₀ => dec_mat_hodge(0, sd, hodge)
-    :⋆₁ => dec_mat_hodge(1, sd, hodge)
-    :⋆₂ => dec_mat_hodge(2, sd, hodge)
+    :⋆₀ => dec_hodge_star(0, sd, hodge=hodge) |> matmul
+    :⋆₁ => dec_hodge_star(1, sd, hodge=hodge) |> matmul
+    :⋆₂ => dec_hodge_star(2, sd, hodge=hodge) |> matmul
 
     # Inverse Hodge Stars
-    :⋆₀⁻¹ => dec_mat_inverse_hodge(0, sd, hodge)
+    :⋆₀⁻¹ => dec_inv_hodge_star(0, sd, hodge) |> matmul
     :⋆₁⁻¹ => dec_pair_inv_hodge(Val{1}, sd, hodge) # Special since Geo is a solver
-    :⋆₂⁻¹ => dec_mat_inverse_hodge(1, sd, hodge)
+    :⋆₂⁻¹ => dec_inv_hodge_star(1, sd, hodge) |> matmul
 
     # Differentials
-    :d₀ => dec_mat_differential(0, sd)
-    :d₁ => dec_mat_differential(1, sd)
+    :d₀ => dec_differential(0, sd) |> matmul
+    :d₁ => dec_differential(1, sd) |> matmul
 
     # Dual Differentials
-    :dual_d₀ || :d̃₀ => dec_mat_dual_differential(0, sd)
-    :dual_d₁ || :d̃₁ => dec_mat_dual_differential(1, sd)
+    :dual_d₀ || :d̃₀ => dec_dual_derivative(0, sd) |> matmul
+    :dual_d₁ || :d̃₁ => dec_dual_derivative(1, sd) |> matmul
 
     # Wedge Products
     :∧₀₁ => dec_pair_wedge_product(Tuple{0,1}, sd)
@@ -102,25 +105,15 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     :∧₂₀ => dec_pair_wedge_product(Tuple{2,0}, sd)
     :∧₁₁ => dec_pair_wedge_product(Tuple{1,1}, sd)
 
-    :♭♯ => dec_♭♯(sd)
+    :♭♯ => ♭♯_mat(sd) |> matmul
 
     # Averaging Operator
-    :avg₀₁ => dec_avg₀₁(sd)
+    :avg₀₁ => avg₀₁_mat(sd) |> matmul
 
      _ => error("Unmatched operator $my_symbol")
   end
 
   return op
-end
-
-function dec_mat_hodge(k::Int, sd::HasDeltaSet, hodge::DiscreteHodge)
-  hodge = dec_hodge_star(k, sd, hodge=hodge)
-  return (hodge, x -> hodge * x)
-end
-
-function dec_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge::DiscreteHodge)
-  invhodge = dec_inv_hodge_star(k, sd, hodge=hodge)
-  return (invhodge, x -> invhodge * x)
 end
 
 # Special case for inverse hodge for DualForm1 to Form1
@@ -132,21 +125,6 @@ end
 function dec_pair_inv_hodge(::Type{Val{1}}, sd::HasDeltaSet, ::DiagonalHodge)
   inv_hdg = dec_inv_hodge_star(1, sd, DiagonalHodge())
   ((y, x) -> mul!(y, inv_hdg, x), x -> inv_hdg * x)
-end
-
-function dec_mat_differential(k::Int, sd::HasDeltaSet)
-  diff = dec_differential(k, sd)
-  return (diff, x -> diff * x)
-end
-
-function dec_mat_dual_differential(k::Int, sd::HasDeltaSet)
-  dualdiff = dec_dual_derivative(k, sd)
-  return (dualdiff, x -> dualdiff * x)
-end
-
-function dec_♭♯(sd)
-  ♭♯m = ♭♯_mat(sd)
-  return (♭♯m, x -> ♭♯m * x)
 end
 
 function dec_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where {k}
@@ -196,11 +174,6 @@ end
 function dec_♭(sd::HasDeltaSet2D)
   ♭_m = ♭_mat(sd)
   x -> ♭_m * x
-end
-
-function dec_avg₀₁(sd::HasDeltaSet)
-  avg_mat = avg₀₁_mat(sd)
-  (avg_mat, x -> avg_mat * x)
 end
 
 function dec_inv_lap_solver(::Type{Val{0}}, sd::HasDeltaSet)
