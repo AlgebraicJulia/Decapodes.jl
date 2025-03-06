@@ -1,6 +1,6 @@
 # Brusselator
 
-This Brusselator example is adapted from [MethodOfLines.jl](https://docs.sciml.ai/MethodOfLines/stable/tutorials/brusselator/#brusselator)'s page on the same topic. The [Brusselator](https://en.wikipedia.org/wiki/Brusselator) is a autocatalytic chemical reaction that takes place between two reactants `U` and `V`.
+This Brusselator example is adapted from [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/advanced_ode_example/)'s page on the same topic. The [Brusselator](https://en.wikipedia.org/wiki/Brusselator) is a autocatalytic chemical reaction that takes place between two reactants `U` and `V`.
 
 ```@setup INFO
 include(joinpath(Base.@__DIR__, ".." , "..", "docinfo.jl"))
