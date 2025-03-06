@@ -6,8 +6,8 @@ using ..Canon
 using Markdown
 
 @docapode("Brusselator"
-  ,"https://en.wikipedia.org/wiki/Brusselator"
-  ,"A model of reaction-diffusion for an oscillatory chemical system."
+  ,""
+  ,"[prigogine_symmetry_1968](@cite)"
   ,brusselator
   ,begin
     # Values living on vertices.
@@ -29,7 +29,7 @@ end)
 
 @docapode("Gray-Scott"
   ,""
-  ,"A model of reaction-diffusion"
+  ,"[pearson_complex_1993](@cite)"
   ,GrayScott
   ,begin
     (U, V)::Form0
