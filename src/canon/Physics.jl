@@ -66,7 +66,7 @@ end)
 
 @docapode("Absorbed Shortwave Radiation"
   ,""
-  ,"The proportion of light reflected by a surface is the **albedo**. The absorbed shortwave radiation is the complement of this quantity."
+  ,"The proportion of light reflected by a surface is the **albedo**. The absorbed shortwave radiation is the complement of this quantity. [budyko1969effect](@cite) and [sellers1969global](@cite)"
   ,absorbed_shortwave_radiation
   ,begin
     (Q, ASR)::Form0
@@ -78,7 +78,7 @@ end)
 
 @docapode("Outgoing Longwave Radiation"
   ,""
-  ,""
+  ,"[budyko1969effect](@cite) and [sellers1969global](@cite)"
   ,:outgoing_longwave_radiation
   ,begin
     (Tₛ, OLR)::Form0
@@ -90,7 +90,7 @@ end)
 
 @docapode("Heat Transfer"
   ,""
-  ,""
+  ,"[budyko1969effect](@cite) and [sellers1969global](@cite)"
   ,:heat_transfer
   ,begin
     (HT, Tₛ)::Form0

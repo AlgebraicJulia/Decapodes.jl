@@ -32,7 +32,7 @@ end)
 
 @docapode("Energy balance"
           ,""
-          ,"energy balance equation from Budyko Sellers"
+          ,"Energy balance equation from Budyko-Sellers [budyko1969effect](@cite) and [sellers1969global](@cite)."
           ,energy_balance
           ,begin
   (Tₛ, ASR, OLR, HT)::Form0
@@ -45,7 +45,7 @@ end)
 
 @docapode("Insolation"
           ,""
-          ,""
+          ,"[budyko1969effect](@cite) and [sellers1969global](@cite)"
           ,insolation
           , begin
   Q::Form0
@@ -56,7 +56,7 @@ end)
 
 @docapode("Warming"
           ,""
-          ,""
+          ,"[budyko1969effect](@cite) and [sellers1969global](@cite)"
           ,warming
           , begin
   (Tₛ)::Form0
