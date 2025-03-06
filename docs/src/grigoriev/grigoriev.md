@@ -159,7 +159,7 @@ tₑ = 10
 
 @info("Solving Grigoriev Ice Cap")
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5())
+soln = solve(prob, Tsit5(), saveat=1, reltol=1e-2)
 @show soln.retcode
 @info("Done")
 

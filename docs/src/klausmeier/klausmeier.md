@@ -170,7 +170,7 @@ Let's execute our simulation.
 # Run Simulation
 tₑ = 300.0
 problem = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
-solution = solve(problem, Tsit5(), saveat=0.1, save_idxs=[:N, :W])
+solution = solve(problem, Tsit5(), saveat=0.1, reltol=1e-2, save_idxs=[:N, :W])
 solution.retcode
 ```
 

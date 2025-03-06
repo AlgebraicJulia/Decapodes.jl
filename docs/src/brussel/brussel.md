@@ -173,7 +173,7 @@ u₀ = ComponentArray(U=U, V=V)
 tₑ = 11.5
 
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, Tsit5())
+soln = solve(prob, Tsit5(), reltol=1e-2, saveat=1)
 soln.retcode
 ```
 

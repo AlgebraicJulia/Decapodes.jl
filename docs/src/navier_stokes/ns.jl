@@ -430,6 +430,7 @@ prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob,
   Tsit5(),
   dtmax = 0.01,
+  reltol=1e-2,
   saveat=tₑ/10.0,
   dense=false,
   progress=true, progress_steps=1);

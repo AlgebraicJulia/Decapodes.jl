@@ -75,7 +75,6 @@ function default_dec_matrix_generate(fs::PrimalGeometricMapSeries, my_symbol::Sy
 end
 
 function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge)
-
   matmul(m) = (m, x -> m * x)
 
   op = @match my_symbol begin

@@ -1,3 +1,8 @@
+```@meta
+EditURL = "../../../literate/chemistry/gray_scott.jl"
+```
+
+````@example gray_scott
 using Catlab
 using CombinatorialSpaces
 using DiagrammaticEquations
@@ -12,11 +17,14 @@ using ComponentArrays
 using GeometryBasics: Point2, Point3
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
+````
 
-# We use the model equations as stated here:
-# https://github.com/JuliaParallel/julia-hpc-tutorial-sc24/blob/main/parts/gpu/gray-scott.ipynb
-# Initial conditions were based off those given here:
-# https://itp.uni-frankfurt.de/~gros/StudentProjects/Projects_2020/projekt_schulz_kaefer/#header
+We use the model equations as stated here:
+https://github.com/JuliaParallel/julia-hpc-tutorial-sc24/blob/main/parts/gpu/gray-scott.ipynb
+Initial conditions were based off those given here:
+https://itp.uni-frankfurt.de/~gros/StudentProjects/Projects_2020/projekt_schulz_kaefer/#header
+
+````@example gray_scott
 GrayScott = @decapode begin
   (U, V)::Form0
   (UV2)::Form0
@@ -71,8 +79,11 @@ mid = div(n, 2)
 mid_p = Point2D(mid, mid)
 
 init = map(p -> if norm(p - mid_p, Inf) <= 5; 1.0 .* init_multi; else 0.0; end, sd[:point])
+````
 
-# Set up an initial small disturbance
+Set up an initial small disturbance
+
+````@example gray_scott
 U .+= init
 V .+= 0.5 * init
 
@@ -86,19 +97,21 @@ constants_and_parameters = (
   f = f,
   k = k,
   B = 0)
+````
 
-# fig = Figure();
-# ax = CairoMakie.Axis(fig[1,1], aspect=1, title = "Initial value of U")
-# msh = CairoMakie.mesh!(ax, s, color=U, colormap=:jet, colorrange=(extrema(U)))
-# Colorbar(fig[1,2], msh)
-# display(fig)
+fig = Figure();
+ax = CairoMakie.Axis(fig[1,1], aspect=1, title = "Initial value of U")
+msh = CairoMakie.mesh!(ax, s, color=U, colormap=:jet, colorrange=(extrema(U)))
+Colorbar(fig[1,2], msh)
+display(fig)
 
-# fig = Figure()
-# ax = CairoMakie.Axis(fig[1,1], aspect=1, title = "Initial value of V") # hide
-# msh = CairoMakie.mesh!(ax, s, color=V, colormap=:jet, colorrange=extrema(V)) # hide
-# Colorbar(fig[1,2], msh)
-# fig
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect=1, title = "Initial value of V") # hide
+msh = CairoMakie.mesh!(ax, s, color=V, colormap=:jet, colorrange=extrema(V)) # hide
+Colorbar(fig[1,2], msh)
+fig
 
+````@example gray_scott
 tₑ = 10_000
 
 @info("Solving")
@@ -122,3 +135,5 @@ function save_dynamics(save_file_name)
 end
 
 save_dynamics("gs_f=$(f)_k=$(k).mp4")
+````
+

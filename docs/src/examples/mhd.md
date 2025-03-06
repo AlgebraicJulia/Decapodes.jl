@@ -160,7 +160,6 @@ function generate(dualmesh, my_symbol; hodge=GeometricHodge())
       y = fΔ0 \ x
       y .- minimum(y)
     end
-    :♭♯ => x -> ♭♯_m * x
     _ => default_dec_matrix_generate(dualmesh, my_symbol, hodge)
   end
   return (args...) -> op(args...)
@@ -293,6 +292,7 @@ prob = ODEProblem(f, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob,
   Tsit5(),
   dtmax = 1e-3,
+  reltol= 1e-2,
   dense=false,
   progress=true, progress_steps=1);
 
