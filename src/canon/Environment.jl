@@ -66,7 +66,7 @@ end)
 end)
 
 @docapode("Tracer"
-          ,""
+          ,"https://clima.github.io/OceananigansDocumentation/stable/physics/buoyancy_and_equations_of_state/#Buoyancy-tracer"
           ,""
           ,tracer
           , begin

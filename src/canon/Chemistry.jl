@@ -7,7 +7,7 @@ using Markdown
 
 @docapode("Brusselator"
   ,""
-  ,"[prigogine_symmetry_1968](@cite)"
+  ,"A model of reaction-diffusion for an oscillatory chemical system [prigogine_symmetry_1968](@cite)"
   ,brusselator
   ,begin
     # Values living on vertices.
@@ -29,7 +29,7 @@ end)
 
 @docapode("Gray-Scott"
   ,""
-  ,"[pearson_complex_1993](@cite)"
+  ,"A model of reaction-diffusion [pearson_complex_1993](@cite)"
   ,GrayScott
   ,begin
     (U, V)::Form0

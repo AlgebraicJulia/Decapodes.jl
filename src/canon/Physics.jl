@@ -7,7 +7,7 @@ using Markdown
 
 @docapode("Mohamed Eq. 10, N2"
           ,""
-          ,"[mohamed_discrete_2016](@cite)"
+          ,"A DEC formulation of fluid mechanics for surfaces. [mohamed_discrete_2016](@cite)"
           ,mohamed_flow
           ,begin
   (𝐮,w)::DualForm1
@@ -20,7 +20,7 @@ using Markdown
 end)
 
 @docapode("Momentum"
-  ,"https://www.google.com"
+  ,""
   ,""
   ,momentum
   ,begin
@@ -233,7 +233,7 @@ end)
 
 @docapode("IceBlockingWater"
   ,""
-  ,""
+  ,"This model is an approach to modeling interface conditions of an obstruction within a flow developed by J. Fairbanks and L. Morris during the DARPA ASKEM hackathons. It should not be relied on as a realistic model of the physics of obstructions to flows."
   ,iceblockingwater
   ,begin
   h::Form0
