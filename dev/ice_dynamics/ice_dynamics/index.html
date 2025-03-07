@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Glacial Flow · Decapodes.jl</title><meta name="title" content="Glacial Flow · Decapodes.jl"/><meta property="og:title" content="Glacial Flow · Decapodes.jl"/><meta property="twitter:title" content="Glacial Flow · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../equations/equations/">Equations</a></li><li><a class="tocitem" href="../../meshes/meshes/">Meshes</a></li><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li class="is-active"><a class="tocitem" href>Glacial Flow</a><ul class="internal"><li><a class="tocitem" href="#Defining-the-models"><span>Defining the models</span></a></li><li><a class="tocitem" href="#Composing-models"><span>Composing models</span></a></li><li><a class="tocitem" href="#Provide-a-semantics"><span>Provide a semantics</span></a></li><li><a class="tocitem" href="#Define-a-mesh"><span>Define a mesh</span></a></li><li><a class="tocitem" href="#Define-input-data"><span>Define input data</span></a></li><li><a class="tocitem" href="#Define-functions"><span>Define functions</span></a></li><li><a class="tocitem" href="#Generate-the-simulation"><span>Generate the simulation</span></a></li><li><a class="tocitem" href="#Pre-compile-and-run"><span>Pre-compile and run</span></a></li><li><a class="tocitem" href="#Visualize"><span>Visualize</span></a></li><li><a class="tocitem" href="#2D-Re-interpretation"><span>2D Re-interpretation</span></a></li><li><a class="tocitem" href="#Store-as-JSON"><span>Store as JSON</span></a></li><li><a class="tocitem" href="#Define-our-mesh"><span>Define our mesh</span></a></li><li><a class="tocitem" href="#Define-our-input-data"><span>Define our input data</span></a></li><li><a class="tocitem" href="#Define-our-functions"><span>Define our functions</span></a></li><li><a class="tocitem" href="#Generate-simulation"><span>Generate simulation</span></a></li><li><a class="tocitem" href="#Pre-compile-and-run-2D"><span>Pre-compile and run 2D</span></a></li><li><a class="tocitem" href="#Visualize-2D"><span>Visualize 2D</span></a></li><li><a class="tocitem" href="#2-Manifold-in-3D"><span>2-Manifold in 3D</span></a></li></ul></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Glacial Flow</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Glacial Flow</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/ice_dynamics/ice_dynamics.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Halfar&#39;s-model-of-glacial-flow"><a class="docs-heading-anchor" href="#Halfar&#39;s-model-of-glacial-flow">Halfar&#39;s model of glacial flow</a><a id="Halfar&#39;s-model-of-glacial-flow-1"></a><a class="docs-heading-anchor-permalink" href="#Halfar&#39;s-model-of-glacial-flow" title="Permalink"></a></h1><p>Let&#39;s model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar&#39;s 1981 paper: <a href="https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/JC086iC11p11065">&quot;On the dynamics of the ice sheets&quot;</a>.</p><pre><code class="language-julia hljs"># AlgebraicJulia Dependencies
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Glacial Flow · Decapodes.jl</title><meta name="title" content="Glacial Flow · Decapodes.jl"/><meta property="og:title" content="Glacial Flow · Decapodes.jl"/><meta property="twitter:title" content="Glacial Flow · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li class="is-active"><a class="tocitem" href>Glacial Flow</a><ul class="internal"><li><a class="tocitem" href="#Defining-the-models"><span>Defining the models</span></a></li><li><a class="tocitem" href="#Composing-models"><span>Composing models</span></a></li><li><a class="tocitem" href="#Provide-a-semantics"><span>Provide a semantics</span></a></li><li><a class="tocitem" href="#Define-a-mesh"><span>Define a mesh</span></a></li><li><a class="tocitem" href="#Define-input-data"><span>Define input data</span></a></li><li><a class="tocitem" href="#Generate-the-simulation"><span>Generate the simulation</span></a></li><li><a class="tocitem" href="#Pre-compile-and-run"><span>Pre-compile and run</span></a></li><li><a class="tocitem" href="#Visualize"><span>Visualize</span></a></li><li><a class="tocitem" href="#2D-Re-interpretation"><span>2D Re-interpretation</span></a></li><li><a class="tocitem" href="#Store-as-JSON"><span>Store as JSON</span></a></li><li><a class="tocitem" href="#Define-our-mesh"><span>Define our mesh</span></a></li><li><a class="tocitem" href="#Define-our-input-data"><span>Define our input data</span></a></li><li><a class="tocitem" href="#Generate-simulation"><span>Generate simulation</span></a></li><li><a class="tocitem" href="#Pre-compile-and-run-2D"><span>Pre-compile and run 2D</span></a></li><li><a class="tocitem" href="#Visualize-2D"><span>Visualize 2D</span></a></li><li><a class="tocitem" href="#2-Manifold-in-3D"><span>2-Manifold in 3D</span></a></li></ul></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../concepts/equations/">Equations</a></li><li><a class="tocitem" href="../../concepts/composition/">Composition</a></li><li><a class="tocitem" href="../../concepts/meshes/">Meshes</a></li><li><a class="tocitem" href="../../concepts/generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/chemistry/gray_scott/">Gray-Scott</a></li><li><a class="tocitem" href="../../examples/oncology/tumor_proliferation_invasion/">Oncology</a></li><li><a class="tocitem" href="../../examples/mhd/">MHD</a></li></ul></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Glacial Flow</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Glacial Flow</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/ice_dynamics/ice_dynamics.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Halfar&#39;s-model-of-glacial-flow"><a class="docs-heading-anchor" href="#Halfar&#39;s-model-of-glacial-flow">Halfar&#39;s model of glacial flow</a><a id="Halfar&#39;s-model-of-glacial-flow-1"></a><a class="docs-heading-anchor-permalink" href="#Halfar&#39;s-model-of-glacial-flow" title="Permalink"></a></h1><p>Let&#39;s model glacial flow using a model of how ice height of a glacial sheet changes over time, from P. Halfar&#39;s 1981 paper: <a href="https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/JC086iC11p11065">&quot;On the dynamics of the ice sheets&quot;</a>.</p><pre><code class="language-julia hljs"># AlgebraicJulia Dependencies
 using Catlab
 using CombinatorialSpaces
 using DiagrammaticEquations
@@ -16,24 +16,23 @@ using OrdinaryDiffEq
 using SparseArrays
 using Statistics
 Point2D = Point2{Float64};
-Point3D = Point3{Float64};</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GeometryBasics.Point{3, Float64}</code></pre><h2 id="Defining-the-models"><a class="docs-heading-anchor" href="#Defining-the-models">Defining the models</a><a id="Defining-the-models-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-models" title="Permalink"></a></h2><p>The first step is to find a suitable equation for our model, and translate it into the Discrete Exterior Calculus. The Exterior Calculus is a generalization of vector calculus, so for low-dimensional spaces, this translation is straightforward. For example, divergence is typically written as (⋆, d, ⋆). Scalar fields are typically interpreted as &quot;0Forms&quot;, i.e. values assigned to vertices of a mesh.</p><p>We use the <code>@decapode</code> macro to interpret the equations. Here, we have equation 2 from Halfar:</p><p class="math-container">\[\frac{\partial h}{\partial t} = \frac{2}{n + 2} (\frac{\rho g}{A})^n \frac{\partial}{\partial x}(\frac{\partial h}{\partial x} |\frac{\partial h}{\partial x}| ^{n-1} h^{n+2}).\]</p><p>We&#39;ll change the term out front to Γ so we can demonstrate composition in a moment.</p><p>In the exterior calculus, we could write the above equations like so:</p><p class="math-container">\[\partial_t(h) = \circ(\star, d, \star)(\Gamma\quad d(h)\quad \text{avg}_{01}|d(h)^\sharp|^{n-1} \quad \text{avg}_{01}(h^{n+2})).\]</p><p><code>avg</code> here is an operator that performs the midpoint rule, setting the value at an edge to be the average of the values at its two vertices.</p><pre><code class="language-julia hljs">halfar_eq2 = @decapode begin
+Point3D = Point3{Float64};</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GeometryBasics.Point{3, Float64}</code></pre><h2 id="Defining-the-models"><a class="docs-heading-anchor" href="#Defining-the-models">Defining the models</a><a id="Defining-the-models-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-models" title="Permalink"></a></h2><p>The first step is to find a suitable equation for our model, and translate it into the Discrete Exterior Calculus. The Exterior Calculus is a generalization of vector calculus, so for low-dimensional spaces, this translation is straightforward. For example, divergence is typically written as (⋆, d, ⋆). Scalar fields are typically interpreted as &quot;0Forms&quot;, i.e. values assigned to vertices of a mesh.</p><p>We use the <code>@decapode</code> macro to interpret the equations. Here, we have equation 2 from Halfar:</p><p class="math-container">\[\frac{\partial h}{\partial t} = \frac{2}{n + 2} (\frac{\rho g}{A})^n \frac{\partial}{\partial x}(\frac{\partial h}{\partial x} |\frac{\partial h}{\partial x}| ^{n-1} h^{n+2}).\]</p><p>We&#39;ll change the term out front to Γ so we can demonstrate composition in a moment.</p><p>In the exterior calculus, we could write the above equations like so:</p><p class="math-container">\[\partial_t(h) = \Gamma\quad \circ(\star, d, \star)(d(h)\quad \wedge \quad|d(h)^\sharp|^{n-1} \quad \wedge \quad (h^{n+2})).\]</p><pre><code class="language-julia hljs">halfar_eq2 = @decapode begin
   h::Form0
-  Γ::Form1
+  Γ::Form0
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
 end
 
-to_graphviz(halfar_eq2)</code></pre><img src="9cd40f49.svg" alt="Example block output"/><p>And here, a formulation of Glen&#39;s law from J.W. Glen&#39;s 1958 <a href="http://go.owu.edu/~chjackso/Climate/papers/Glen_1958_The%20flow%20law%20of%20ice.pdf">&quot;The flow law of ice&quot;</a>.</p><pre><code class="language-julia hljs">glens_law = @decapode begin
-  #Γ::Form0
-  Γ::Form1
+to_graphviz(halfar_eq2)</code></pre><img src="57f6814d.svg" alt="Example block output"/><p>And here, a formulation of Glen&#39;s law from J.W. Glen&#39;s 1958 <a href="http://go.owu.edu/~chjackso/Climate/papers/Glen_1958_The%20flow%20law%20of%20ice.pdf">&quot;The flow law of ice&quot;</a>.</p><pre><code class="language-julia hljs">glens_law = @decapode begin
+  Γ::Form0
   (A,ρ,g,n)::Constant
 
   Γ == (2/(n+2))*A*(ρ*g)^n
 end
 
-to_graphviz(glens_law)</code></pre><img src="23f87477.svg" alt="Example block output"/><h2 id="Composing-models"><a class="docs-heading-anchor" href="#Composing-models">Composing models</a><a id="Composing-models-1"></a><a class="docs-heading-anchor-permalink" href="#Composing-models" title="Permalink"></a></h2><p>We can use <a href="https://arxiv.org/abs/2105.12282">operadic composition</a> to specify how our models come together. In this example, we have two Decapodes, and two quantities that are shared between them.</p><pre><code class="language-julia hljs">ice_dynamics_composition_diagram = @relation () begin
+to_graphviz(glens_law)</code></pre><img src="9416e942.svg" alt="Example block output"/><h2 id="Composing-models"><a class="docs-heading-anchor" href="#Composing-models">Composing models</a><a id="Composing-models-1"></a><a class="docs-heading-anchor-permalink" href="#Composing-models" title="Permalink"></a></h2><p>We can use <a href="https://arxiv.org/abs/2105.12282">operadic composition</a> to specify how our models come together. In this example, we have two Decapodes, and two quantities that are shared between them.</p><pre><code class="language-julia hljs">ice_dynamics_composition_diagram = @relation () begin
   dynamics(Γ,n)
   stress(Γ,n)
 end
@@ -41,59 +40,59 @@ end
 draw_composition(ice_dynamics_composition_diagram)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 2.40.1 (0)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="229pt" height="250pt"
- viewBox="0.00 0.00 228.60 249.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 245.6)">
+<svg width="230pt" height="251pt"
+ viewBox="0.00 0.00 230.10 251.10" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 247.0976)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-245.6 224.6,-245.6 224.6,4 -4,4"/>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-247.0976 226.0976,-247.0976 226.0976,4 -4,4"/>
 <!-- n1 -->
 <g id="box1" class="node">
 <title>n1</title>
-<ellipse fill="none" stroke="black" cx="115.3" cy="-18" rx="44.98" ry="18"/>
-<text text-anchor="middle" x="115.3" y="-14.3" font-family="Serif" font-size="14.00">dynamics</text>
+<ellipse fill="none" stroke="%23000000" cx="116.0488" cy="-18" rx="45.1548" ry="18"/>
+<text text-anchor="middle" x="116.0488" y="-14.3" font-family="Serif" font-size="14.00" fill="%23000000">dynamics</text>
 </g>
 <!-- n3 -->
 <!-- junction -->
 <g id="junction1" class="node">
 <title>n3</title>
-<ellipse fill="black" stroke="black" cx="12.5" cy="-120.8" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="5" y="-127.1" font-family="Serif" font-size="14.00">Γ</text>
+<ellipse fill="%23000000" stroke="%23000000" cx="12.5" cy="-121.5488" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="5" y="-127.8488" font-family="Serif" font-size="14.00" fill="%23000000">Γ</text>
 </g>
 <!-- n1&%2345;&%2345;n3 -->
 <g id="edge1" class="edge">
 <title>n1&%2345;&%2345;n3</title>
-<path fill="none" stroke="black" d="M98.32,-34.98C72.32,-60.98 24.56,-108.74 14.42,-118.88"/>
+<path fill="none" stroke="%23000000" d="M98.9498,-35.099C72.7559,-61.2929 24.6468,-109.402 14.4363,-119.6125"/>
 </g>
 <!-- n4 -->
 <!-- junction -->
 <g id="junction2" class="node">
 <title>n4</title>
-<ellipse fill="black" stroke="black" cx="218.1" cy="-120.8" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="210.6" y="-127.1" font-family="Serif" font-size="14.00">n</text>
+<ellipse fill="%23000000" stroke="%23000000" cx="219.5976" cy="-121.5488" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="212.0976" y="-127.8488" font-family="Serif" font-size="14.00" fill="%23000000">n</text>
 </g>
 <!-- n1&%2345;&%2345;n4 -->
 <g id="edge3" class="edge">
 <title>n1&%2345;&%2345;n4</title>
-<path fill="none" stroke="black" d="M132.27,-34.98C158.28,-60.98 206.04,-108.74 216.18,-118.88"/>
+<path fill="none" stroke="%23000000" d="M133.1478,-35.099C159.3418,-61.2929 207.4508,-109.402 217.6614,-119.6125"/>
 </g>
 <!-- n2 -->
 <g id="box2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="black" cx="115.3" cy="-223.6" rx="30.72" ry="18"/>
-<text text-anchor="middle" x="115.3" y="-219.9" font-family="Serif" font-size="14.00">stress</text>
+<ellipse fill="none" stroke="%23000000" cx="116.0488" cy="-225.0976" rx="30.7213" ry="18"/>
+<text text-anchor="middle" x="116.0488" y="-221.3976" font-family="Serif" font-size="14.00" fill="%23000000">stress</text>
 </g>
 <!-- n2&%2345;&%2345;n3 -->
 <g id="edge2" class="edge">
 <title>n2&%2345;&%2345;n3</title>
-<path fill="none" stroke="black" d="M99.69,-207.99C74.07,-182.37 24.93,-133.23 14.48,-122.78"/>
+<path fill="none" stroke="%23000000" d="M100.322,-209.3708C74.5228,-183.5716 25.0169,-134.0657 14.4961,-123.5449"/>
 </g>
 <!-- n2&%2345;&%2345;n4 -->
 <g id="edge4" class="edge">
 <title>n2&%2345;&%2345;n4</title>
-<path fill="none" stroke="black" d="M130.91,-207.99C156.52,-182.37 205.67,-133.23 216.12,-122.78"/>
+<path fill="none" stroke="%23000000" d="M131.7756,-209.3708C157.5748,-183.5716 207.0807,-134.0657 217.6015,-123.5449"/>
 </g>
 </g>
 </svg>
@@ -102,11 +101,11 @@ draw_composition(ice_dynamics_composition_diagram)</code></pre><img src='data:im
   Open(glens_law, [:Γ,:n])])
 
 ice_dynamics = apex(ice_dynamics_cospan)
-to_graphviz(ice_dynamics)</code></pre><img src="debe43e8.svg" alt="Example block output"/><h2 id="Provide-a-semantics"><a class="docs-heading-anchor" href="#Provide-a-semantics">Provide a semantics</a><a id="Provide-a-semantics-1"></a><a class="docs-heading-anchor-permalink" href="#Provide-a-semantics" title="Permalink"></a></h2><p>To interpret our composed Decapode, we need to specify what Discrete Exterior Calculus to interpret our quantities in. Let&#39;s choose the 1D Discrete Exterior Calculus:</p><pre><code class="language-julia hljs">ice_dynamics1D = expand_operators(ice_dynamics)
+to_graphviz(ice_dynamics)</code></pre><img src="90c1efab.svg" alt="Example block output"/><h2 id="Provide-a-semantics"><a class="docs-heading-anchor" href="#Provide-a-semantics">Provide a semantics</a><a id="Provide-a-semantics-1"></a><a class="docs-heading-anchor-permalink" href="#Provide-a-semantics" title="Permalink"></a></h2><p>To interpret our composed Decapode, we need to specify what Discrete Exterior Calculus to interpret our quantities in. Let&#39;s choose the 1D Discrete Exterior Calculus:</p><pre><code class="language-julia hljs">ice_dynamics1D = expand_operators(ice_dynamics)
 infer_types!(ice_dynamics1D, op1_inf_rules_1D, op2_inf_rules_1D)
 resolve_overloads!(ice_dynamics1D, op1_res_rules_1D, op2_res_rules_1D)
 
-to_graphviz(ice_dynamics1D)</code></pre><img src="8b744570.svg" alt="Example block output"/><h2 id="Define-a-mesh"><a class="docs-heading-anchor" href="#Define-a-mesh">Define a mesh</a><a id="Define-a-mesh-1"></a><a class="docs-heading-anchor-permalink" href="#Define-a-mesh" title="Permalink"></a></h2><p>We&#39;ll need a mesh to simulate on. Since this is a 1D mesh, we can go ahead and make one right now:</p><pre><code class="language-julia hljs"># This is an empty 1D mesh.
+to_graphviz(ice_dynamics1D)</code></pre><img src="23dd8c31.svg" alt="Example block output"/><h2 id="Define-a-mesh"><a class="docs-heading-anchor" href="#Define-a-mesh">Define a mesh</a><a id="Define-a-mesh-1"></a><a class="docs-heading-anchor-permalink" href="#Define-a-mesh" title="Permalink"></a></h2><p>We&#39;ll need a mesh to simulate on. Since this is a 1D mesh, we can go ahead and make one right now:</p><pre><code class="language-julia hljs"># This is an empty 1D mesh.
 s = EmbeddedDeltaSet1D{Bool, Point2D}()
 
 # 20 vertices along a line, connected by edges.
@@ -124,47 +123,23 @@ A = 1e-16
 # Ice height is a primal 0-form, with values at vertices.
 # We choose a distribution that obeys the shallow height and shallow slope conditions.
 h₀ = map(point(s)) do (x,_)
-  ((7072-((x-5000)^2))/9e3+2777)/2777e-1
+  10 - ((x-5000)*1e-5)^2
 end
 
 # Visualize initial conditions for ice sheet height.
-lines(map(x -&gt; x[1], point(s)), h₀, linewidth=5)</code></pre><img src="745135e1.png" alt="Example block output"/><p>We need to tell our Decapode which data maps to which symbols. We can wrap up our data like so:</p><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
+lines(map(x -&gt; x[1], point(s)), h₀, linewidth=5)</code></pre><img src="dd087a40.png" alt="Example block output"/><p>We need to tell our Decapode which data maps to which symbols. We can wrap up our data like so:</p><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
 
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
   stress_g = g,
-  stress_A = A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(n = 3, stress_ρ = 910, stress_g = 9.8, stress_A = 1.0e-16)</code></pre><h2 id="Define-functions"><a class="docs-heading-anchor" href="#Define-functions">Define functions</a><a id="Define-functions-1"></a><a class="docs-heading-anchor-permalink" href="#Define-functions" title="Permalink"></a></h2><p>In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. In the DEC, there are a handful of operators that one uses to construct all the usual vector calculus operations, namely: ♯, ♭, ∧, d, ⋆. The CombinatorialSpaces.jl library specifies many of these for us.</p><pre><code class="language-julia hljs">function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :♯ =&gt; x -&gt; begin
-      # This is an implementation of the &quot;sharp&quot; operator from the exterior
-      # calculus, which takes co-vector fields to vector fields.
-      # This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
-      # this operation is not bespoke to this simulation.)
-      e_vecs = map(edges(sd)) do e
-        point(sd, sd[e, :∂v0]) - point(sd, sd[e, :∂v1])
-      end
-      neighbors = map(vertices(sd)) do v
-        union(incident(sd, v, :∂v0), incident(sd, v, :∂v1))
-      end
-      n_vecs = map(neighbors) do es
-        [e_vecs[e] for e in es]
-      end
-      map(neighbors, n_vecs) do es, nvs
-        sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
-      end
-    end
-    :mag =&gt; x -&gt; norm.(x)
-    x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
-  end
-  return (args...) -&gt; op(args...)
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><h2 id="Generate-the-simulation"><a class="docs-heading-anchor" href="#Generate-the-simulation">Generate the simulation</a><a id="Generate-the-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-the-simulation" title="Permalink"></a></h2><p>Now, we have everything we need to generate our simulation:</p><pre><code class="language-julia hljs">sim = eval(gensim(ice_dynamics1D, dimension=1))
-fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#28&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Main.var&quot;#14#23&quot;{Main.var&quot;#13#22&quot;}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, Main.var&quot;#14#23&quot;{Main.var&quot;#6#15&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}) (generic function with 1 method)</code></pre><h2 id="Pre-compile-and-run"><a class="docs-heading-anchor" href="#Pre-compile-and-run">Pre-compile and run</a><a id="Pre-compile-and-run-1"></a><a class="docs-heading-anchor-permalink" href="#Pre-compile-and-run" title="Permalink"></a></h2><p>The first time that you run a function, Julia will pre-compile it, so that later runs will be fast. We&#39;ll solve our simulation for a short time span, to trigger this pre-compilation, and then run it.</p><pre><code class="language-julia hljs">@info(&quot;Precompiling Solver&quot;)
+  stress_A = A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(n = 3, stress_ρ = 910, stress_g = 9.8, stress_A = 1.0e-16)</code></pre><h2 id="Generate-the-simulation"><a class="docs-heading-anchor" href="#Generate-the-simulation">Generate the simulation</a><a id="Generate-the-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-the-simulation" title="Permalink"></a></h2><p>Now, we have everything we need to generate our simulation:</p><pre><code class="language-julia hljs">sim = eval(gensim(ice_dynamics1D, dimension=1))
+fₘ = sim(sd, nothing)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#9&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Decapodes.var&quot;#22#24&quot;{1, Tuple{Matrix{Int32}, Int64}}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#36#37&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><h2 id="Pre-compile-and-run"><a class="docs-heading-anchor" href="#Pre-compile-and-run">Pre-compile and run</a><a id="Pre-compile-and-run-1"></a><a class="docs-heading-anchor-permalink" href="#Pre-compile-and-run" title="Permalink"></a></h2><p>The first time that you run a function, Julia will pre-compile it, so that later runs will be fast. We&#39;ll solve our simulation for a short time span, to trigger this pre-compilation, and then run it.</p><pre><code class="language-julia hljs">@info(&quot;Precompiling Solver&quot;)
 prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
 soln = solve(prob, Tsit5())
 soln.retcode != :Unstable || error(&quot;Solver was not stable&quot;)
 
-tₑ = 8_000
+tₑ = 3e17
 
 # This next run should be fast.
 @info(&quot;Solving&quot;)
@@ -174,68 +149,70 @@ soln = solve(prob, Tsit5())
 @info(&quot;Done&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Precompiling Solver
 [ Info: Solving
 soln.retcode = SciMLBase.ReturnCode.Success
-[ Info: Done</code></pre><p>We can save our <a href="../ice_dynamics1D.jld2">solution file</a> in case we want to examine its contents when this Julia session ends.</p><pre><code class="language-julia hljs">@save &quot;ice_dynamics1D.jld2&quot; soln</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: Attempting to store Main.var&quot;#14#23&quot;{Main.var&quot;#13#22&quot;}.
+[ Info: Done</code></pre><p>We can save our <a href="../ice_dynamics1D.jld2">solution file</a> in case we want to examine its contents when this Julia session ends.</p><pre><code class="language-julia hljs">@save &quot;ice_dynamics1D.jld2&quot; soln</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: Attempting to store Decapodes.var&quot;#22#24&quot;{1, Tuple{Matrix{Int32}, Int64}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#13#22&quot;.
+┌ Warning: Attempting to store Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}.
+┌ Warning: Attempting to store Decapodes.var&quot;#4#9&quot;.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#6#15&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}.
+┌ Warning: Attempting to store Decapodes.var&quot;#36#37&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#14#23&quot;{Main.var&quot;#6#15&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}.
+┌ Warning: Attempting to store Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#36#37&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#f#28&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Main.var&quot;#14#23&quot;{Main.var&quot;#13#22&quot;}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, Main.var&quot;#14#23&quot;{Main.var&quot;#6#15&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}.
+┌ Warning: Attempting to store Main.var&quot;#f#9&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Decapodes.var&quot;#22#24&quot;{1, Tuple{Matrix{Int32}, Int64}}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#36#37&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#14#23&quot;{Main.var&quot;#13#22&quot;}.
+┌ Warning: Attempting to store Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#13#22&quot;.
+┌ Warning: Attempting to store Decapodes.var&quot;#4#9&quot;.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store SciMLBase.ODEFunction{true, SciMLBase.AutoSpecialize, Main.var&quot;#f#28&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Main.var&quot;#14#23&quot;{Main.var&quot;#13#22&quot;}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, Main.var&quot;#14#23&quot;{Main.var&quot;#6#15&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}.
+┌ Warning: Attempting to store SciMLBase.ODEFunction{true, SciMLBase.AutoSpecialize, Main.var&quot;#f#9&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 10}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Decapodes.var&quot;#22#24&quot;{1, Tuple{Matrix{Int32}, Int64}}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#36#37&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447</code></pre><h2 id="Visualize"><a class="docs-heading-anchor" href="#Visualize">Visualize</a><a id="Visualize-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize" title="Permalink"></a></h2><p>Let&#39;s examine the final conditions:</p><pre><code class="language-julia hljs">fig,ax,ob = lines(map(x -&gt; x[1], point(s)), soln(tₑ).dynamics_h, linewidth=5)
 ylims!(ax, extrema(h₀))
-fig</code></pre><img src="f4abf226.png" alt="Example block output"/><p>We see that our distribution converges to a more uniform ice height across our domain, which matches our physical intuition.</p><p>Let&#39;s create a GIF to examine an animation of these dynamics:</p><pre><code class="language-julia hljs"># Create a gif
+fig</code></pre><img src="7e460b2c.png" alt="Example block output"/><p>We see that our distribution converges to a more uniform ice height across our domain, which matches our physical intuition.</p><p>Let&#39;s create a GIF to examine an animation of these dynamics:</p><pre><code class="language-julia hljs"># Create a gif
 begin
-  frames = 100
-  fig, ax, ob = lines(map(x -&gt; x[1], point(s)), soln(0).dynamics_h)
-  ylims!(ax, extrema(h₀))
-  record(fig, &quot;ice_dynamics1D.gif&quot;, range(0.0, tₑ; length=frames); framerate = 15) do t
-    lines!(map(x -&gt; x[1], point(s)), soln(t).dynamics_h)
+  time = Observable(0.0)
+  ys = @lift(getproperty(soln($time), :dynamics_h))
+  xcoords = map(x -&gt; x[1], point(s))
+  fig, ax, ob = lines(xcoords, ys, colorrange=extrema(h₀);
+    axis = (; title = &quot;1D Ice Thickness&quot;))
+  record(fig, &quot;ice_dynamics1D.gif&quot;, range(0, tₑ, length=30); framerate=15) do t
+    time[] = t
   end
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics1D.gif&quot;</code></pre><p><img src="../ice_dynamics1D.gif" alt="IceDynamics1D"/></p><h2 id="2D-Re-interpretation"><a class="docs-heading-anchor" href="#2D-Re-interpretation">2D Re-interpretation</a><a id="2D-Re-interpretation-1"></a><a class="docs-heading-anchor-permalink" href="#2D-Re-interpretation" title="Permalink"></a></h2><p>The first, one-dimensional, semantics that we provided to our Decapode restricted the kinds of glacial sheets that we could model. (i.e. We could only look at glacial sheets which were constant along y). We can give our Decapode an alternate semantics, as some physics on a 2-dimensional manifold.</p><p>Note that for these physics, we make no adjustments to the underlying &quot;dimension-agnostic&quot; Decapode, we only provide a different set of rules for inferring what the type of each quantity is.</p><pre><code class="language-julia hljs">ice_dynamics2D = expand_operators(ice_dynamics)
 infer_types!(ice_dynamics2D)
 resolve_overloads!(ice_dynamics2D)
 
-to_graphviz(ice_dynamics2D)</code></pre><img src="a1b14549.svg" alt="Example block output"/><h2 id="Store-as-JSON"><a class="docs-heading-anchor" href="#Store-as-JSON">Store as JSON</a><a id="Store-as-JSON-1"></a><a class="docs-heading-anchor-permalink" href="#Store-as-JSON" title="Permalink"></a></h2><p>We quickly demonstrate how to serialize a Decapode to JSON and read it back in:</p><pre><code class="language-julia hljs">write_json_acset(ice_dynamics2D, &quot;ice_dynamics2D.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D.json&quot;</code></pre><p>You can view the JSON file <a href="../ice_dynamics2D.json">here</a>.</p><pre><code class="language-julia hljs"># When reading back in, we specify that all attributes are &quot;Symbol&quot;s.
+to_graphviz(ice_dynamics2D)</code></pre><img src="7e40c418.svg" alt="Example block output"/><h2 id="Store-as-JSON"><a class="docs-heading-anchor" href="#Store-as-JSON">Store as JSON</a><a id="Store-as-JSON-1"></a><a class="docs-heading-anchor-permalink" href="#Store-as-JSON" title="Permalink"></a></h2><p>We quickly demonstrate how to serialize a Decapode to JSON and read it back in:</p><pre><code class="language-julia hljs">write_json_acset(ice_dynamics2D, &quot;ice_dynamics2D.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D.json&quot;</code></pre><p>You can view the JSON file <a href="../ice_dynamics2D.json">here</a>.</p><pre><code class="language-julia hljs"># When reading back in, we specify that all attributes are &quot;Symbol&quot;s.
 ice_dynamics2 = read_json_acset(SummationDecapode{Symbol,Symbol,Symbol}, &quot;ice_dynamics2D.json&quot;)
 # Or, you could choose to interpret the data as &quot;String&quot;s.
 ice_dynamics3 = read_json_acset(SummationDecapode{String,String,String}, &quot;ice_dynamics2D.json&quot;)
 
-to_graphviz(ice_dynamics3)</code></pre><img src="4729a3c4.svg" alt="Example block output"/><h2 id="Define-our-mesh"><a class="docs-heading-anchor" href="#Define-our-mesh">Define our mesh</a><a id="Define-our-mesh-1"></a><a class="docs-heading-anchor-permalink" href="#Define-our-mesh" title="Permalink"></a></h2><pre><code class="language-julia hljs">s = triangulated_grid(10_000,10_000,800,800,Point3D)
+to_graphviz(ice_dynamics3)</code></pre><img src="d8db9be2.svg" alt="Example block output"/><h2 id="Define-our-mesh"><a class="docs-heading-anchor" href="#Define-our-mesh">Define our mesh</a><a id="Define-our-mesh-1"></a><a class="docs-heading-anchor-permalink" href="#Define-our-mesh" title="Permalink"></a></h2><pre><code class="language-julia hljs">s = triangulated_grid(10_000,10_000,800,800,Point3D)
 sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
 subdivide_duals!(sd, Barycenter())
 
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1])
 wf = wireframe!(ax, s)
-fig</code></pre><img src="91fa223c.png" alt="Example block output"/><h2 id="Define-our-input-data"><a class="docs-heading-anchor" href="#Define-our-input-data">Define our input data</a><a id="Define-our-input-data-1"></a><a class="docs-heading-anchor-permalink" href="#Define-our-input-data" title="Permalink"></a></h2><pre><code class="language-julia hljs">n = 3
+fig</code></pre><img src="50f52516.png" alt="Example block output"/><h2 id="Define-our-input-data"><a class="docs-heading-anchor" href="#Define-our-input-data">Define our input data</a><a id="Define-our-input-data-1"></a><a class="docs-heading-anchor-permalink" href="#Define-our-input-data" title="Permalink"></a></h2><pre><code class="language-julia hljs">n = 3
 ρ = 910
 g = 9.8
 A = 1e-16
@@ -251,24 +228,14 @@ fig = Figure()
 ax = CairoMakie.Axis(fig[1,1])
 msh = mesh!(ax, s, color=h₀, colormap=:jet)
 Colorbar(fig[1,2], msh)
-fig</code></pre><img src="25d22794.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
+fig</code></pre><img src="a79e83d6.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
 
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
   stress_g = g,
-  stress_A = A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(n = 3, stress_ρ = 910, stress_g = 9.8, stress_A = 1.0e-16)</code></pre><h2 id="Define-our-functions"><a class="docs-heading-anchor" href="#Define-our-functions">Define our functions</a><a id="Define-our-functions-1"></a><a class="docs-heading-anchor-permalink" href="#Define-our-functions" title="Permalink"></a></h2><pre><code class="language-julia hljs">function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :♯ =&gt; begin
-      sharp_mat = ♯_mat(sd, AltPPSharp())
-      x -&gt; sharp_mat * x
-    end
-    :mag =&gt; x -&gt; norm.(x)
-    x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
-  end
-  return (args...) -&gt; op(args...)
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><h2 id="Generate-simulation"><a class="docs-heading-anchor" href="#Generate-simulation">Generate simulation</a><a id="Generate-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-simulation" title="Permalink"></a></h2><pre><code class="language-julia hljs">sim = eval(gensim(ice_dynamics2D, dimension=2))
-fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#50&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Main.var&quot;#42#45&quot;{Main.var&quot;#41#44&quot;}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, Main.var&quot;#42#45&quot;{Main.var&quot;#40#43&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}}) (generic function with 1 method)</code></pre><h2 id="Pre-compile-and-run-2D"><a class="docs-heading-anchor" href="#Pre-compile-and-run-2D">Pre-compile and run 2D</a><a id="Pre-compile-and-run-2D-1"></a><a class="docs-heading-anchor-permalink" href="#Pre-compile-and-run-2D" title="Permalink"></a></h2><pre><code class="language-julia hljs">@info(&quot;Precompiling Solver&quot;)
+  stress_A = A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(n = 3, stress_ρ = 910, stress_g = 9.8, stress_A = 1.0e-16)</code></pre><h2 id="Generate-simulation"><a class="docs-heading-anchor" href="#Generate-simulation">Generate simulation</a><a id="Generate-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-simulation" title="Permalink"></a></h2><pre><code class="language-julia hljs">sim = eval(gensim(ice_dynamics2D, dimension=2))
+fₘ = sim(sd, nothing)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#24&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Decapodes.var&quot;#22#24&quot;{1, Tuple{Matrix{Int32}, Int64}}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#38#39&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><h2 id="Pre-compile-and-run-2D"><a class="docs-heading-anchor" href="#Pre-compile-and-run-2D">Pre-compile and run 2D</a><a id="Pre-compile-and-run-2D-1"></a><a class="docs-heading-anchor-permalink" href="#Pre-compile-and-run-2D" title="Permalink"></a></h2><pre><code class="language-julia hljs">@info(&quot;Precompiling Solver&quot;)
 # We run for a short timespan to pre-compile.
 prob = ODEProblem(fₘ, u₀, (0, 1e-8), constants_and_parameters)
 soln = solve(prob, Tsit5())
@@ -280,39 +247,39 @@ soln = solve(prob, Tsit5())
 @show soln.retcode
 @info(&quot;Done&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Solving
 soln.retcode = SciMLBase.ReturnCode.Success
-[ Info: Done</code></pre><pre><code class="language-julia hljs">@save &quot;ice_dynamics2D.jld2&quot; soln</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: Attempting to store Main.var&quot;#42#45&quot;{Main.var&quot;#41#44&quot;}.
+[ Info: Done</code></pre><pre><code class="language-julia hljs">@save &quot;ice_dynamics2D.jld2&quot; soln</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: Attempting to store Decapodes.var&quot;#22#24&quot;{1, Tuple{Matrix{Int32}, Int64}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#41#44&quot;.
+┌ Warning: Attempting to store Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}.
+┌ Warning: Attempting to store Decapodes.var&quot;#4#9&quot;.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#40#43&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}.
+┌ Warning: Attempting to store Decapodes.var&quot;#38#39&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#42#45&quot;{Main.var&quot;#40#43&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}.
+┌ Warning: Attempting to store Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#38#39&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#f#50&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Main.var&quot;#42#45&quot;{Main.var&quot;#41#44&quot;}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, Main.var&quot;#42#45&quot;{Main.var&quot;#40#43&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}}.
+┌ Warning: Attempting to store Main.var&quot;#f#24&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Decapodes.var&quot;#22#24&quot;{1, Tuple{Matrix{Int32}, Int64}}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#38#39&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#42#45&quot;{Main.var&quot;#41#44&quot;}.
+┌ Warning: Attempting to store Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#41#44&quot;.
+┌ Warning: Attempting to store Decapodes.var&quot;#4#9&quot;.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store SciMLBase.ODEFunction{true, SciMLBase.AutoSpecialize, Main.var&quot;#f#50&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Main.var&quot;#42#45&quot;{Main.var&quot;#41#44&quot;}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, Main.var&quot;#42#45&quot;{Main.var&quot;#40#43&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}.
+┌ Warning: Attempting to store SciMLBase.ODEFunction{true, SciMLBase.AutoSpecialize, Main.var&quot;#f#24&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Decapodes.var&quot;#22#24&quot;{1, Tuple{Matrix{Int32}, Int64}}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#38#39&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447</code></pre><h2 id="Visualize-2D"><a class="docs-heading-anchor" href="#Visualize-2D">Visualize 2D</a><a id="Visualize-2D-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize-2D" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Final conditions:
@@ -320,7 +287,7 @@ fig = Figure()
 ax = CairoMakie.Axis(fig[1,1])
 msh = mesh!(ax, s, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 Colorbar(fig[1,2], msh)
-fig</code></pre><img src="6a171b42.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
+fig</code></pre><img src="856f3ee7.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
   frames = 100
   fig = Figure()
   ax = CairoMakie.Axis(fig[1,1])
@@ -332,7 +299,7 @@ fig</code></pre><img src="6a171b42.png" alt="Example block output"/><pre><code c
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D.gif&quot;</code></pre><p><img src="../ice_dynamics2D.gif" alt="IceDynamics2D"/></p><h2 id="2-Manifold-in-3D"><a class="docs-heading-anchor" href="#2-Manifold-in-3D">2-Manifold in 3D</a><a id="2-Manifold-in-3D-1"></a><a class="docs-heading-anchor-permalink" href="#2-Manifold-in-3D" title="Permalink"></a></h2><p>We note that just because our physics is happening on a 2-manifold, (a surface), this doesn&#39;t restrict us to the 2D plane. In fact, we can &quot;embed&quot; our 2-manifold in 3D space to simulate a glacial sheets spread across the globe.</p><pre><code class="language-julia hljs">s = loadmesh(Icosphere(3, 10_000))
 sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
 subdivide_duals!(sd, Barycenter())
-wireframe(sd)</code></pre><img src="3709a666.png" alt="Example block output"/><pre><code class="language-julia hljs">n = 3
+wireframe(sd)</code></pre><img src="ac62ee08.png" alt="Example block output"/><pre><code class="language-julia hljs">n = 3
 ρ = 910
 g = 9.8
 A = 1e-16
@@ -348,14 +315,14 @@ fig = Figure()
 ax = LScene(fig[1,1], scenekw=(lights=[],))
 msh = CairoMakie.mesh!(ax, s, color=h₀, colormap=:jet)
 Colorbar(fig[1,2], msh)
-fig</code></pre><img src="c361cf18.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
+fig</code></pre><img src="e9379f94.png" alt="Example block output"/><pre><code class="language-julia hljs">u₀ = ComponentArray(dynamics_h=h₀)
 
 constants_and_parameters = (
   n = n,
   stress_ρ = ρ,
   stress_g = g,
   stress_A = A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(n = 3, stress_ρ = 910, stress_g = 9.8, stress_A = 1.0e-16)</code></pre><pre><code class="language-julia hljs">sim = eval(gensim(ice_dynamics2D, dimension=2))
-fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#59&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Main.var&quot;#42#45&quot;{Main.var&quot;#41#44&quot;}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, Main.var&quot;#42#45&quot;{Main.var&quot;#40#43&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}}) (generic function with 1 method)</code></pre><p>For brevity&#39;s sake, we&#39;ll skip the pre-compilation cell.</p><pre><code class="language-julia hljs">tₑ = 5e25
+fₘ = sim(sd, nothing)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#33&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Decapodes.var&quot;#22#24&quot;{1, Tuple{Matrix{Int32}, Int64}}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#38#39&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><p>For brevity&#39;s sake, we&#39;ll skip the pre-compilation cell.</p><pre><code class="language-julia hljs">tₑ = 5e25
 
 @info(&quot;Solving&quot;)
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
@@ -364,11 +331,11 @@ soln = solve(prob, Tsit5())
 @info(&quot;Done&quot;)
 
 # Compare the extrema of the initial and final conditions of ice height.
-extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((0.0, 1.0), (0.3216234695887106, 0.3459218269063618))</code></pre><pre><code class="language-julia hljs">fig = Figure()
+extrema(soln(0).dynamics_h), extrema(soln(tₑ).dynamics_h)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((0.0, 1.0), (0.3248007694428785, 0.34581812444119503))</code></pre><pre><code class="language-julia hljs">fig = Figure()
 ax = LScene(fig[1,1], scenekw=(lights=[],))
 msh = CairoMakie.mesh!(ax, s, color=soln(tₑ).dynamics_h, colormap=:jet, colorrange=extrema(soln(0).dynamics_h))
 Colorbar(fig[1,2], msh)
-fig</code></pre><img src="75d0ed7f.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
+fig</code></pre><img src="964c7acc.png" alt="Example block output"/><pre><code class="language-julia hljs">begin
   frames = 200
   fig = Figure()
   ax = LScene(fig[1,1], scenekw=(lights=[],))
@@ -380,5 +347,5 @@ fig</code></pre><img src="75d0ed7f.png" alt="Example block output"/><pre><code c
   record(fig, &quot;ice_dynamics2D_sphere.gif&quot;, range(0.0, tₑ/64; length=frames); framerate = 20) do t
     msh.color = soln(t).dynamics_h
   end
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D_sphere.gif&quot;</code></pre><p><img src="../ice_dynamics2D_sphere.gif" alt="IceDynamics2DSphere"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 53 seconds.
-[ Info: This page was last built at 2025-01-30T05:42:33.229.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../cism/cism/">« CISM v2.1</a><a class="docs-footer-nextpage" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Thursday 30 January 2025 05:44">Thursday 30 January 2025</span>. Using Julia version 1.11.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;ice_dynamics2D_sphere.gif&quot;</code></pre><p><img src="../ice_dynamics2D_sphere.gif" alt="IceDynamics2DSphere"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 46 seconds.
+[ Info: This page was last built at 2025-03-07T09:57:13.354.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../overview/overview/">« Overview</a><a class="docs-footer-nextpage" href="../../concepts/equations/">Equations »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 7 March 2025 09:59">Friday 7 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

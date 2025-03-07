@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Budyko-Sellers-Halfar · Decapodes.jl</title><meta name="title" content="Budyko-Sellers-Halfar · Decapodes.jl"/><meta property="og:title" content="Budyko-Sellers-Halfar · Decapodes.jl"/><meta property="twitter:title" content="Budyko-Sellers-Halfar · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../equations/equations/">Equations</a></li><li><a class="tocitem" href="../../meshes/meshes/">Meshes</a></li><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li class="is-active"><a class="tocitem" href>Budyko-Sellers-Halfar</a><ul class="internal"><li><a class="tocitem" href="#Warming"><span>Warming</span></a></li><li><a class="tocitem" href="#Composition"><span>Composition</span></a></li><li><a class="tocitem" href="#Defining-the-mesh"><span>Defining the mesh</span></a></li><li><a class="tocitem" href="#Define-input-data"><span>Define input data</span></a></li><li><a class="tocitem" href="#Symbols-to-functions"><span>Symbols to functions</span></a></li><li><a class="tocitem" href="#Simulation-generation"><span>Simulation generation</span></a></li><li><a class="tocitem" href="#Run-simulation"><span>Run simulation</span></a></li><li><a class="tocitem" href="#Visualize"><span>Visualize</span></a></li></ul></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Budyko-Sellers-Halfar</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Budyko-Sellers-Halfar</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/bsh/budyko_sellers_halfar.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Budko-Sellers-Halfar"><a class="docs-heading-anchor" href="#Budko-Sellers-Halfar">Budko-Sellers-Halfar</a><a id="Budko-Sellers-Halfar-1"></a><a class="docs-heading-anchor-permalink" href="#Budko-Sellers-Halfar" title="Permalink"></a></h1><p>In this example, we will compose the Budyko-Sellers 1D energy balance model of the Earth&#39;s surface temperature with the Halfar model of glacial dynamics. Note that each of these components models is itself a composition of smaller physical models. In this walkthrough, we will compose them together using the same techniques.</p><pre><code class="language-julia hljs"># AlgebraicJulia Dependencies
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Budyko-Sellers-Halfar · Decapodes.jl</title><meta name="title" content="Budyko-Sellers-Halfar · Decapodes.jl"/><meta property="og:title" content="Budyko-Sellers-Halfar · Decapodes.jl"/><meta property="twitter:title" content="Budyko-Sellers-Halfar · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../concepts/equations/">Equations</a></li><li><a class="tocitem" href="../../concepts/composition/">Composition</a></li><li><a class="tocitem" href="../../concepts/meshes/">Meshes</a></li><li><a class="tocitem" href="../../concepts/generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li class="is-active"><a class="tocitem" href>Budyko-Sellers-Halfar</a><ul class="internal"><li><a class="tocitem" href="#Warming"><span>Warming</span></a></li><li><a class="tocitem" href="#Composition"><span>Composition</span></a></li><li><a class="tocitem" href="#Defining-the-mesh"><span>Defining the mesh</span></a></li><li><a class="tocitem" href="#Define-input-data"><span>Define input data</span></a></li><li><a class="tocitem" href="#Symbols-to-functions"><span>Symbols to functions</span></a></li><li><a class="tocitem" href="#Simulation-generation"><span>Simulation generation</span></a></li><li><a class="tocitem" href="#Run-simulation"><span>Run simulation</span></a></li><li><a class="tocitem" href="#Visualize"><span>Visualize</span></a></li></ul></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/chemistry/gray_scott/">Gray-Scott</a></li><li><a class="tocitem" href="../../examples/oncology/tumor_proliferation_invasion/">Oncology</a></li><li><a class="tocitem" href="../../examples/mhd/">MHD</a></li></ul></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Zoo</a></li><li class="is-active"><a href>Budyko-Sellers-Halfar</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Budyko-Sellers-Halfar</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/bsh/budyko_sellers_halfar.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Budyko-Sellers-Halfar"><a class="docs-heading-anchor" href="#Budyko-Sellers-Halfar">Budyko-Sellers-Halfar</a><a id="Budyko-Sellers-Halfar-1"></a><a class="docs-heading-anchor-permalink" href="#Budyko-Sellers-Halfar" title="Permalink"></a></h1><p>In this example, we will compose the Budyko-Sellers 1D energy balance model of the Earth&#39;s surface temperature with the Halfar model of glacial dynamics. Note that each of these components models is itself a composition of smaller physical models. In this walkthrough, we will compose them together using the same techniques.</p><pre><code class="language-julia hljs"># AlgebraicJulia Dependencies
 using Catlab
 using CombinatorialSpaces
 using DiagrammaticEquations
@@ -16,16 +16,16 @@ using OrdinaryDiffEq
 using SparseArrays
 Point2D = Point2{Float64};</code></pre><p>We have defined the <a href="../../ice_dynamics/ice_dynamics/">Halfar ice model</a> in other docs pages, and so will quickly define it here.</p><pre><code class="language-julia hljs">halfar_eq2 = @decapode begin
   h::Form0
-  Γ::Form1
+  Γ::Form0
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
 end
 
 glens_law = @decapode begin
-  Γ::Form1
-  A::Form1
+  Γ::Form0
+  A::Form0
   (ρ,g,n)::Constant
 
   Γ == (2/(n+2))*A*(ρ*g)^n
@@ -41,7 +41,7 @@ ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
    Open(glens_law, [:Γ,:n])])
 halfar = apex(ice_dynamics_cospan)
 
-to_graphviz(halfar, verbose=false)</code></pre><img src="6b6fec22.svg" alt="Example block output"/><p>We will introduce the Budyko-Sellers energy balance model in more detail. First, let&#39;s define the composite physics. We will visualize them all in a single diagram without any composition at first:</p><pre><code class="language-julia hljs">energy_balance = @decapode begin
+to_graphviz(halfar, verbose=false)</code></pre><img src="43bd539f.svg" alt="Example block output"/><p>We will introduce the Budyko-Sellers energy balance model in more detail. First, let&#39;s define the composite physics. We will visualize them all in a single diagram without any composition at first:</p><pre><code class="language-julia hljs">energy_balance = @decapode begin
   (Tₛ, ASR, OLR, HT)::Form0
   (C)::Constant
 
@@ -78,7 +78,7 @@ insolation = @decapode begin
   Q == 450 * cosϕᵖ
 end
 
-to_graphviz(oplus([energy_balance, absorbed_shortwave_radiation, outgoing_longwave_radiation, heat_transfer, insolation]), directed=false)</code></pre><img src="26875a95.svg" alt="Example block output"/><p>Now let&#39;s compose the Budyko-Sellers model:</p><pre><code class="language-julia hljs">budyko_sellers_composition_diagram = @relation () begin
+to_graphviz(oplus([energy_balance, absorbed_shortwave_radiation, outgoing_longwave_radiation, heat_transfer, insolation]), directed=false)</code></pre><img src="b2069423.svg" alt="Example block output"/><p>Now let&#39;s compose the Budyko-Sellers model together. We first specify a <em>composition shape</em> by declaring there are models called <code>energy</code> with four inputs, <code>absorbed_radiation</code> with two inputs, etc.</p><pre><code class="language-julia hljs">budyko_sellers_composition_diagram = @relation () begin
   energy(Tₛ, ASR, OLR, HT)
   absorbed_radiation(Q, ASR)
   outgoing_radiation(Tₛ, OLR)
@@ -89,154 +89,154 @@ end
 draw_composition(budyko_sellers_composition_diagram)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 2.40.1 (0)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="903pt" height="874pt"
- viewBox="0.00 0.00 902.56 873.77" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 869.77)">
+<svg width="908pt" height="878pt"
+ viewBox="0.00 0.00 907.86 877.85" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 873.8454)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-869.77 898.56,-869.77 898.56,4 -4,4"/>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-873.8454 903.8592,-873.8454 903.8592,4 -4,4"/>
 <!-- n1 -->
 <g id="box1" class="node">
 <title>n1</title>
-<ellipse fill="none" stroke="black" cx="390.42" cy="-847.77" rx="34.29" ry="18"/>
-<text text-anchor="middle" x="390.42" y="-844.07" font-family="Serif" font-size="14.00">energy</text>
+<ellipse fill="none" stroke="%23000000" cx="393.1019" cy="-851.8454" rx="34.2855" ry="18"/>
+<text text-anchor="middle" x="393.1019" y="-848.1454" font-family="Serif" font-size="14.00" fill="%23000000">energy</text>
 </g>
 <!-- n6 -->
 <!-- junction -->
 <g id="junction1" class="node">
 <title>n6</title>
-<ellipse fill="black" stroke="black" cx="628.56" cy="-813.53" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="619.06" y="-819.83" font-family="Serif" font-size="14.00">Tₛ</text>
+<ellipse fill="%23000000" stroke="%23000000" cx="632.3901" cy="-817.4409" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="622.3901" y="-823.7409" font-family="Serif" font-size="14.00" fill="%23000000">Tₛ</text>
 </g>
 <!-- n1&%2345;&%2345;n6 -->
 <g id="edge1" class="edge">
 <title>n1&%2345;&%2345;n6</title>
-<path fill="none" stroke="black" d="M423.53,-843C483.6,-834.37 606.15,-816.75 625.86,-813.91"/>
+<path fill="none" stroke="%23000000" d="M426.3739,-847.0616C486.7302,-838.3837 609.8791,-820.6775 629.6771,-817.831"/>
 </g>
 <!-- n7 -->
 <!-- junction -->
 <g id="junction2" class="node">
 <title>n7</title>
-<ellipse fill="black" stroke="black" cx="810.38" cy="-194.29" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="792.38" y="-200.59" font-family="Serif" font-size="14.00">ASR</text>
+<ellipse fill="%23000000" stroke="%23000000" cx="815.0917" cy="-195.2163" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="797.0917" y="-201.5163" font-family="Serif" font-size="14.00" fill="%23000000">ASR</text>
 </g>
 <!-- n1&%2345;&%2345;n7 -->
 <g id="edge4" class="edge">
 <title>n1&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M401.43,-830.62C465.11,-731.55 784.03,-235.29 808.85,-196.67"/>
+<path fill="none" stroke="%23000000" d="M404.1722,-834.6197C468.1524,-735.0645 788.6141,-236.4163 813.5526,-197.6113"/>
 </g>
 <!-- n8 -->
 <!-- junction -->
 <g id="junction3" class="node">
 <title>n8</title>
-<ellipse fill="black" stroke="black" cx="878.16" cy="-425.13" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="860.16" y="-431.43" font-family="Serif" font-size="14.00">OLR</text>
+<ellipse fill="%23000000" stroke="%23000000" cx="883.2003" cy="-427.1727" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="864.2003" y="-433.4727" font-family="Serif" font-size="14.00" fill="%23000000">OLR</text>
 </g>
 <!-- n1&%2345;&%2345;n8 -->
 <g id="edge6" class="edge">
 <title>n1&%2345;&%2345;n8</title>
-<path fill="none" stroke="black" d="M408.36,-832.22C492.57,-759.25 845.89,-453.09 876.1,-426.92"/>
+<path fill="none" stroke="%23000000" d="M411.126,-836.2274C495.7469,-762.9029 850.7751,-455.2693 881.1291,-428.9674"/>
 </g>
 <!-- n9 -->
 <!-- junction -->
 <g id="junction4" class="node">
 <title>n9</title>
-<ellipse fill="black" stroke="black" cx="171.57" cy="-747.82" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="158.07" y="-754.12" font-family="Serif" font-size="14.00">HT</text>
+<ellipse fill="%23000000" stroke="%23000000" cx="173.1993" cy="-751.4193" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="159.1993" y="-757.7193" font-family="Serif" font-size="14.00" fill="%23000000">HT</text>
 </g>
 <!-- n1&%2345;&%2345;n9 -->
 <g id="edge8" class="edge">
 <title>n1&%2345;&%2345;n9</title>
-<path fill="none" stroke="black" d="M364.45,-835.91C311.01,-811.5 192.18,-757.23 173.94,-748.9"/>
+<path fill="none" stroke="%23000000" d="M367.0126,-839.9308C313.3135,-815.4073 193.9092,-760.8772 175.5801,-752.5065"/>
 </g>
 <!-- n2 -->
 <g id="box2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="black" cx="628.56" cy="-36.74" rx="85.89" ry="18"/>
-<text text-anchor="middle" x="628.56" y="-33.04" font-family="Serif" font-size="14.00">absorbed_radiation</text>
+<ellipse fill="none" stroke="%23000000" cx="632.3901" cy="-36.9045" rx="86.5669" ry="18"/>
+<text text-anchor="middle" x="632.3901" y="-33.2045" font-family="Serif" font-size="14.00" fill="%23000000">absorbed_radiation</text>
 </g>
 <!-- n2&%2345;&%2345;n7 -->
 <g id="edge5" class="edge">
 <title>n2&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M649.06,-54.51C692.9,-92.49 793.01,-179.24 808.38,-192.56"/>
+<path fill="none" stroke="%23000000" d="M652.6405,-54.4515C696.4928,-92.4497 797.5522,-180.0182 813.0751,-193.4689"/>
 </g>
 <!-- n10 -->
 <!-- junction -->
 <g id="junction5" class="node">
 <title>n10</title>
-<ellipse fill="black" stroke="black" cx="390.42" cy="-2.5" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="381.92" y="-8.8" font-family="Serif" font-size="14.00">Q</text>
+<ellipse fill="%23000000" stroke="%23000000" cx="393.1019" cy="-2.5" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="384.1019" y="-8.8" font-family="Serif" font-size="14.00" fill="%23000000">Q</text>
 </g>
 <!-- n2&%2345;&%2345;n10 -->
 <g id="edge10" class="edge">
 <title>n2&%2345;&%2345;n10</title>
-<path fill="none" stroke="black" d="M557.43,-26.51C494.38,-17.45 409.81,-5.29 393.28,-2.91"/>
+<path fill="none" stroke="%23000000" d="M560.9199,-26.6286C497.5709,-17.5204 412.5911,-5.3021 395.983,-2.9142"/>
 </g>
 <!-- n3 -->
 <g id="box3" class="node">
 <title>n3</title>
-<ellipse fill="none" stroke="black" cx="810.38" cy="-655.97" rx="84.36" ry="18"/>
-<text text-anchor="middle" x="810.38" y="-652.27" font-family="Serif" font-size="14.00">outgoing_radiation</text>
+<ellipse fill="none" stroke="%23000000" cx="815.0917" cy="-659.1291" rx="84.5356" ry="18"/>
+<text text-anchor="middle" x="815.0917" y="-655.4291" font-family="Serif" font-size="14.00" fill="%23000000">outgoing_radiation</text>
 </g>
 <!-- n3&%2345;&%2345;n6 -->
 <g id="edge2" class="edge">
 <title>n3&%2345;&%2345;n6</title>
-<path fill="none" stroke="black" d="M789.88,-673.74C746.04,-711.73 645.93,-798.47 630.55,-811.8"/>
+<path fill="none" stroke="%23000000" d="M794.8414,-676.6761C750.9891,-714.6743 649.9297,-802.2428 634.4068,-815.6935"/>
 </g>
 <!-- n3&%2345;&%2345;n8 -->
 <g id="edge7" class="edge">
 <title>n3&%2345;&%2345;n8</title>
-<path fill="none" stroke="black" d="M815.7,-637.86C830.49,-587.48 871.43,-448.06 877.42,-427.64"/>
+<path fill="none" stroke="%23000000" d="M820.4361,-640.9278C835.3004,-590.3047 876.4359,-450.2102 882.46,-429.6937"/>
 </g>
 <!-- n4 -->
 <g id="box4" class="node">
 <title>n4</title>
-<ellipse fill="none" stroke="black" cx="41.5" cy="-545.43" rx="41.41" ry="18"/>
-<text text-anchor="middle" x="41.5" y="-541.73" font-family="Serif" font-size="14.00">diffusion</text>
+<ellipse fill="none" stroke="%23000000" cx="42.5" cy="-548.0472" rx="41.5911" ry="18"/>
+<text text-anchor="middle" x="42.5" y="-544.3472" font-family="Serif" font-size="14.00" fill="%23000000">diffusion</text>
 </g>
 <!-- n4&%2345;&%2345;n6 -->
 <g id="edge3" class="edge">
 <title>n4&%2345;&%2345;n6</title>
-<path fill="none" stroke="black" d="M70.21,-558.54C183.01,-610.05 591.3,-796.51 626.18,-812.44"/>
+<path fill="none" stroke="%23000000" d="M71.3509,-561.2229C184.6941,-612.985 594.9521,-800.3436 629.9994,-816.3491"/>
 </g>
 <!-- n4&%2345;&%2345;n9 -->
 <g id="edge9" class="edge">
 <title>n4&%2345;&%2345;n9</title>
-<path fill="none" stroke="black" d="M52.82,-563.03C81.99,-608.43 158.3,-727.17 170.04,-745.45"/>
+<path fill="none" stroke="%23000000" d="M53.8701,-565.7393C83.1842,-611.3529 159.8628,-730.6672 171.6649,-749.0317"/>
 </g>
 <!-- n11 -->
 <!-- junction -->
 <g id="junction6" class="node">
 <title>n11</title>
-<ellipse fill="black" stroke="black" cx="41.5" cy="-304.84" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="19.5" y="-311.14" font-family="Serif" font-size="14.00">cosϕᵖ</text>
+<ellipse fill="%23000000" stroke="%23000000" cx="42.5" cy="-306.2982" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="20" y="-312.5982" font-family="Serif" font-size="14.00" fill="%23000000">cosϕᵖ</text>
 </g>
 <!-- n4&%2345;&%2345;n11 -->
 <g id="edge12" class="edge">
 <title>n4&%2345;&%2345;n11</title>
-<path fill="none" stroke="black" d="M41.5,-527.34C41.5,-475.54 41.5,-328.95 41.5,-307.48"/>
+<path fill="none" stroke="%23000000" d="M42.5,-529.8767C42.5,-477.8279 42.5,-330.5281 42.5,-308.95"/>
 </g>
 <!-- n5 -->
 <g id="box5" class="node">
 <title>n5</title>
-<ellipse fill="none" stroke="black" cx="171.57" cy="-102.44" rx="45.83" ry="18"/>
-<text text-anchor="middle" x="171.57" y="-98.74" font-family="Serif" font-size="14.00">insolation</text>
+<ellipse fill="none" stroke="%23000000" cx="173.1993" cy="-102.9261" rx="45.8316" ry="18"/>
+<text text-anchor="middle" x="173.1993" y="-99.2261" font-family="Serif" font-size="14.00" fill="%23000000">insolation</text>
 </g>
 <!-- n5&%2345;&%2345;n10 -->
 <g id="edge11" class="edge">
 <title>n5&%2345;&%2345;n10</title>
-<path fill="none" stroke="black" d="M201.54,-88.76C256.33,-63.74 368.77,-12.39 387.69,-3.75"/>
+<path fill="none" stroke="%23000000" d="M203.3147,-89.1729C258.8354,-63.8174 373.2811,-11.5518 390.8244,-3.5401"/>
 </g>
 <!-- n5&%2345;&%2345;n11 -->
 <g id="edge13" class="edge">
 <title>n5&%2345;&%2345;n11</title>
-<path fill="none" stroke="black" d="M160.26,-120.05C131.08,-165.45 54.77,-284.19 43.03,-302.46"/>
+<path fill="none" stroke="%23000000" d="M161.8293,-120.6183C132.5152,-166.2319 55.8365,-285.5462 44.0344,-303.9106"/>
 </g>
 </g>
 </svg>
-'/><pre><code class="language-julia hljs">budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
+'/><p>We&#39;ve obtained a composition shape. Now we <code>oapply</code> the composition diagram to a list of open models. By &quot;opening&quot; the models, we&#39;re specifying that they are models with inputs exposed to a larger system.</p><pre><code class="language-julia hljs">budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
   [Open(energy_balance,               [:Tₛ, :ASR, :OLR, :HT]),
    Open(absorbed_shortwave_radiation, [:Q, :ASR]),
    Open(outgoing_longwave_radiation,  [:Tₛ, :OLR]),
@@ -248,15 +248,14 @@ budyko_sellers = apex(budyko_sellers_cospan)
 # Save this Decapode as a JSON file
 write_json_acset(budyko_sellers, &quot;budyko_sellers.json&quot;)
 
-to_graphviz(budyko_sellers, verbose=false)</code></pre><img src="ea76c5bb.svg" alt="Example block output"/><h2 id="Warming"><a class="docs-heading-anchor" href="#Warming">Warming</a><a id="Warming-1"></a><a class="docs-heading-anchor-permalink" href="#Warming" title="Permalink"></a></h2><p>We need to specify physically what it means for these two terms to interact. We will say that ice will diffuse faster as temperature increases, and will pick some coefficients that demonstrate interesting dynamics on short timescales.</p><pre><code class="language-julia hljs">warming = @decapode begin
+to_graphviz(budyko_sellers, verbose=false)</code></pre><img src="22c8b3d1.svg" alt="Example block output"/><p>The resulting system is a <code>cospan</code> diagram which specifies how each subsystem fits.</p><h2 id="Warming"><a class="docs-heading-anchor" href="#Warming">Warming</a><a id="Warming-1"></a><a class="docs-heading-anchor-permalink" href="#Warming" title="Permalink"></a></h2><p>We need to specify physically what it means for these two terms to interact. We will say that ice will diffuse faster as temperature increases, and will pick some coefficients that demonstrate interesting dynamics on short timescales.</p><pre><code class="language-julia hljs">warming = @decapode begin
   Tₛ::Form0
-  A::Form1
+  A::Form0
 
-  A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e7)
-
+  A == 5.8282*10^(-0.236 * Tₛ)*1.65e7
 end
 
-to_graphviz(warming)</code></pre><img src="a09449de.svg" alt="Example block output"/><h2 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h2><p>Observe that Decapodes composition is hierarchical. This composition technique is the same as that used in composing each of the Budyko-Sellers and Halfar models.</p><pre><code class="language-julia hljs">budyko_sellers_halfar_composition_diagram = @relation () begin
+to_graphviz(warming)</code></pre><img src="c78b7a70.svg" alt="Example block output"/><h2 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h2><p>Observe that Decapodes composition is hierarchical. This composition technique is the same as that used in composing each of the Budyko-Sellers and Halfar models.</p><pre><code class="language-julia hljs">budyko_sellers_halfar_composition_diagram = @relation () begin
   budyko_sellers(Tₛ)
   warming(A, Tₛ)
   halfar(A)
@@ -265,65 +264,65 @@ end
 draw_composition(budyko_sellers_halfar_composition_diagram)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 2.40.1 (0)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="585pt" height="44pt"
- viewBox="0.00 0.00 585.03 44.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg width="587pt" height="44pt"
+ viewBox="0.00 0.00 587.38 44.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 40)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-40 581.03,-40 581.03,4 -4,4"/>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-40 583.3809,-40 583.3809,4 -4,4"/>
 <!-- n1 -->
 <g id="box1" class="node">
 <title>n1</title>
-<ellipse fill="none" stroke="black" cx="67.11" cy="-18" rx="67.22" ry="18"/>
-<text text-anchor="middle" x="67.11" y="-14.3" font-family="Serif" font-size="14.00">budyko_sellers</text>
+<ellipse fill="none" stroke="%23000000" cx="68.2849" cy="-18" rx="68.0705" ry="18"/>
+<text text-anchor="middle" x="68.2849" y="-14.3" font-family="Serif" font-size="14.00" fill="%23000000">budyko_sellers</text>
 </g>
 <!-- n4 -->
 <!-- junction -->
 <g id="junction1" class="node">
 <title>n4</title>
-<ellipse fill="black" stroke="black" cx="208.72" cy="-18" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="199.22" y="-24.3" font-family="Serif" font-size="14.00">Tₛ</text>
+<ellipse fill="%23000000" stroke="%23000000" cx="211.0698" cy="-18" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="201.0698" y="-24.3" font-family="Serif" font-size="14.00" fill="%23000000">Tₛ</text>
 </g>
 <!-- n1&%2345;&%2345;n4 -->
 <g id="edge1" class="edge">
 <title>n1&%2345;&%2345;n4</title>
-<path fill="none" stroke="black" d="M134.59,-18C165.37,-18 196.98,-18 206.11,-18"/>
+<path fill="none" stroke="%23000000" d="M136.7499,-18C167.669,-18 199.3215,-18 208.458,-18"/>
 </g>
 <!-- n2 -->
 <g id="box2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="black" cx="325.6" cy="-18" rx="42.27" ry="18"/>
-<text text-anchor="middle" x="325.6" y="-14.3" font-family="Serif" font-size="14.00">warming</text>
+<ellipse fill="none" stroke="%23000000" cx="327.9535" cy="-18" rx="42.2678" ry="18"/>
+<text text-anchor="middle" x="327.9535" y="-14.3" font-family="Serif" font-size="14.00" fill="%23000000">warming</text>
 </g>
 <!-- n2&%2345;&%2345;n4 -->
 <g id="edge2" class="edge">
 <title>n2&%2345;&%2345;n4</title>
-<path fill="none" stroke="black" d="M283.07,-18C254.61,-18 220.7,-18 211.26,-18"/>
+<path fill="none" stroke="%23000000" d="M285.4252,-18C256.966,-18 223.0569,-18 213.6172,-18"/>
 </g>
 <!-- n5 -->
 <!-- junction -->
 <g id="junction2" class="node">
 <title>n5</title>
-<ellipse fill="black" stroke="black" cx="442.48" cy="-18" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="434.98" y="-24.3" font-family="Serif" font-size="14.00">A</text>
+<ellipse fill="%23000000" stroke="%23000000" cx="444.8373" cy="-18" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="436.8373" y="-24.3" font-family="Serif" font-size="14.00" fill="%23000000">A</text>
 </g>
 <!-- n2&%2345;&%2345;n5 -->
 <g id="edge3" class="edge">
 <title>n2&%2345;&%2345;n5</title>
-<path fill="none" stroke="black" d="M368.13,-18C396.59,-18 430.5,-18 439.94,-18"/>
+<path fill="none" stroke="%23000000" d="M370.4819,-18C398.9411,-18 432.8502,-18 442.2899,-18"/>
 </g>
 <!-- n3 -->
 <g id="box3" class="node">
 <title>n3</title>
-<ellipse fill="none" stroke="black" cx="547" cy="-18" rx="30.04" ry="18"/>
-<text text-anchor="middle" x="547" y="-14.3" font-family="Serif" font-size="14.00">halfar</text>
+<ellipse fill="none" stroke="%23000000" cx="549.3591" cy="-18" rx="30.0436" ry="18"/>
+<text text-anchor="middle" x="549.3591" y="-14.3" font-family="Serif" font-size="14.00" fill="%23000000">halfar</text>
 </g>
 <!-- n3&%2345;&%2345;n5 -->
 <g id="edge4" class="edge">
 <title>n3&%2345;&%2345;n5</title>
-<path fill="none" stroke="black" d="M516.77,-18C490.49,-18 455.1,-18 445.17,-18"/>
+<path fill="none" stroke="%23000000" d="M519.127,-18C492.8399,-18 457.4512,-18 447.5243,-18"/>
 </g>
 </g>
 </svg>
@@ -333,10 +332,10 @@ draw_composition(budyko_sellers_halfar_composition_diagram)</code></pre><img src
    Open(halfar,         [:stress_A])])
 budyko_sellers_halfar = apex(budyko_sellers_halfar_cospan)
 
-to_graphviz(budyko_sellers_halfar)</code></pre><img src="6b508a66.svg" alt="Example block output"/><p>We can perform type inference to determine what kind of differential form each of our variables are. This is done automatically with the <code>dimension=1</code> keyword given to <code>gensim</code>, but we will do it in-place for demonstration purposes.</p><pre><code class="language-julia hljs">budyko_sellers_halfar = expand_operators(budyko_sellers_halfar)
+to_graphviz(budyko_sellers_halfar)</code></pre><img src="e0a9e4c3.svg" alt="Example block output"/><p>We can perform type inference to determine what kind of differential form each of our variables are. This is done automatically with the <code>dimension=1</code> keyword given to <code>gensim</code>, but we will do it in-place for demonstration purposes.</p><pre><code class="language-julia hljs">budyko_sellers_halfar = expand_operators(budyko_sellers_halfar)
 infer_types!(budyko_sellers_halfar, op1_inf_rules_1D, op2_inf_rules_1D)
 resolve_overloads!(budyko_sellers_halfar, op1_res_rules_1D, op2_res_rules_1D)
-to_graphviz(budyko_sellers_halfar)</code></pre><img src="b4a87a15.svg" alt="Example block output"/><h2 id="Defining-the-mesh"><a class="docs-heading-anchor" href="#Defining-the-mesh">Defining the mesh</a><a id="Defining-the-mesh-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-mesh" title="Permalink"></a></h2><p>These dynamics will occur on a 1-D manifold (a line). Points near +-π/2 will represent points near the North/ South poles. Points near 0 represent those at the equator.</p><pre><code class="language-julia hljs">s = EmbeddedDeltaSet1D{Bool, Point2D}()
+to_graphviz(budyko_sellers_halfar)</code></pre><img src="45f9029a.svg" alt="Example block output"/><h2 id="Defining-the-mesh"><a class="docs-heading-anchor" href="#Defining-the-mesh">Defining the mesh</a><a id="Defining-the-mesh-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-mesh" title="Permalink"></a></h2><p>These dynamics will occur on a 1-D manifold (a line). Points near +-π/2 will represent points near the North/ South poles. Points near 0 represent those at the equator.</p><pre><code class="language-julia hljs">s = EmbeddedDeltaSet1D{Bool, Point2D}()
 add_vertices!(s, 100, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=100), 0))
 add_edges!(s, 1:nv(s)-1, 2:nv(s))
 orient!(s)
@@ -371,7 +370,7 @@ Tₛ₀ = map(point(s)) do ϕ
 end
 
 # Visualize initial condition for temperature.
-lines(map(x -&gt; x[1], point(s)), Tₛ₀)</code></pre><img src="9aebb73b.png" alt="Example block output"/><pre><code class="language-julia hljs">n = 3
+lines(map(x -&gt; x[1], point(s)), Tₛ₀)</code></pre><img src="c1402a79.png" alt="Example block output"/><pre><code class="language-julia hljs">n = 3
 ρ = 910
 g = 9.8
 
@@ -381,7 +380,7 @@ h₀ = map(point(s)) do (x,_)
 end
 
 # Visualize initial condition for ice sheet height.
-lines(map(x -&gt; x[1], point(s)), h₀)</code></pre><img src="5392d560.png" alt="Example block output"/><pre><code class="language-julia hljs"># Store these values to be passed to the solver.
+lines(map(x -&gt; x[1], point(s)), h₀)</code></pre><img src="3a0ec02e.png" alt="Example block output"/><pre><code class="language-julia hljs"># Store these values to be passed to the solver.
 u₀ = ComponentArray(Tₛ=Tₛ₀, halfar_dynamics_h=h₀)
 
 constants_and_parameters = (
@@ -414,12 +413,11 @@ constants_and_parameters = (
         sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
       end
     end
-    :mag =&gt; x -&gt; norm.(x)
-    x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
+    x =&gt; default_dec_generate(sd, my_symbol, hodge)
   end
   return (args...) -&gt; op(args...)
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><h2 id="Simulation-generation"><a class="docs-heading-anchor" href="#Simulation-generation">Simulation generation</a><a id="Simulation-generation-1"></a><a class="docs-heading-anchor-permalink" href="#Simulation-generation" title="Permalink"></a></h2><p>From our Decapode, we automatically generate a finite difference method solver that performs explicit time-stepping to solve our system of multiphysics equations.</p><pre><code class="language-julia hljs">sim = eval(gensim(budyko_sellers_halfar, dimension=1))
-fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#44&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}) (generic function with 1 method)</code></pre><h2 id="Run-simulation"><a class="docs-heading-anchor" href="#Run-simulation">Run simulation</a><a id="Run-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Run-simulation" title="Permalink"></a></h2><p>We wrap our simulator and initial conditions and solve them with the stability-detection and time-stepping methods provided by DifferentialEquations.jl .</p><pre><code class="language-julia hljs">tₑ = 1e6
+fₘ = sim(sd, generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#42&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}, Main.var&quot;#25#33&quot;{Main.var&quot;#18#26&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#11#13&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}}) (generic function with 1 method)</code></pre><h2 id="Run-simulation"><a class="docs-heading-anchor" href="#Run-simulation">Run simulation</a><a id="Run-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Run-simulation" title="Permalink"></a></h2><p>We wrap our simulator and initial conditions and solve them with the stability-detection and time-stepping methods provided by DifferentialEquations.jl .</p><pre><code class="language-julia hljs">tₑ = 1e6
 
 @info(&quot;Solving&quot;)
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
@@ -427,100 +425,40 @@ soln = solve(prob, Tsit5())
 @show soln.retcode
 @info(&quot;Done&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Solving
 soln.retcode = SciMLBase.ReturnCode.Success
-[ Info: Done</code></pre><p>We can save the <a href="../budyko_sellers_halfar.jld2">solution file</a> to examine later.</p><pre><code class="language-julia hljs">@save &quot;budyko_sellers_halfar.jld2&quot; soln</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: Attempting to store SciMLBase.ODEFunction{true, SciMLBase.AutoSpecialize, Main.var&quot;#f#44&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}.
+[ Info: Done</code></pre><p>We can save the <a href="../budyko_sellers_halfar.jld2">solution file</a> to examine later.</p><pre><code class="language-julia hljs">@save &quot;budyko_sellers_halfar.jld2&quot; soln</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: Attempting to store Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#f#44&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}.
+┌ Warning: Attempting to store Decapodes.var&quot;#4#9&quot;.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}.
+┌ Warning: Attempting to store Main.var&quot;#18#26&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#25#34&quot;.
+┌ Warning: Attempting to store Main.var&quot;#25#33&quot;{Main.var&quot;#18#26&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}.
+┌ Warning: Attempting to store Decapodes.var&quot;#11#13&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}.
+┌ Warning: Attempting to store Main.var&quot;#f#42&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}, Main.var&quot;#25#33&quot;{Main.var&quot;#18#26&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#11#13&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}.
+┌ Warning: Attempting to store Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store SciMLBase.ODEFunction{true, SciMLBase.AutoSpecialize, Main.var&quot;#f#44&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}.
+┌ Warning: Attempting to store Decapodes.var&quot;#4#9&quot;.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
 └ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#f#44&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}.
+┌ Warning: Attempting to store SciMLBase.ODEFunction{true, SciMLBase.AutoSpecialize, Main.var&quot;#f#42&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}, Main.var&quot;#25#33&quot;{Main.var&quot;#18#26&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#11#13&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}.
 │ JLD2 only stores functions by name.
 │  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#25#34&quot;.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store SciMLBase.ODEFunction{true, SciMLBase.AutoSpecialize, Main.var&quot;#f#44&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#f#44&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#25#34&quot;.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#25#34&quot;.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#f#44&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#25#34&quot;.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store SciMLBase.ODEFunction{true, SciMLBase.AutoSpecialize, Main.var&quot;#f#44&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#f#44&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 11}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int32}, SparseArrays.SparseMatrixCSC{Float64, Int64}, Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}, SparseArrays.SparseMatrixCSC{Int8, Int32}, Decapodes.var&quot;#37#38&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Main.var&quot;#26#35&quot;{Main.var&quot;#18#27&quot;{CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{2, Float64}}}}}.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#26#35&quot;{Main.var&quot;#25#34&quot;}.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447
-┌ Warning: Attempting to store Main.var&quot;#25#34&quot;.
-│ JLD2 only stores functions by name.
-│  This may not be useful for anonymous functions.
-└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447</code></pre><h2 id="Visualize"><a class="docs-heading-anchor" href="#Visualize">Visualize</a><a id="Visualize-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize" title="Permalink"></a></h2><p>Quickly examine the final conditions for temperature:</p><pre><code class="language-julia hljs">lines(map(x -&gt; x[1], point(s)), soln(tₑ).Tₛ)</code></pre><img src="7792dd1d.png" alt="Example block output"/><p>Quickly examine the final conditions for ice height:</p><pre><code class="language-julia hljs">lines(map(x -&gt; x[1], point(s)), soln(tₑ).halfar_dynamics_h)</code></pre><img src="ec9751b0.png" alt="Example block output"/><p><img src="../budyko_sellers_halfar_T.gif" alt="BSH_Temperature"/></p><p><img src="../budyko_sellers_halfar_h.gif" alt="BSH_IceHeight"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 56 seconds.
-[ Info: This page was last built at 2025-01-30T05:35:19.494.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../grigoriev/grigoriev/">« Grigoriev Ice Cap</a><a class="docs-footer-nextpage" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Thursday 30 January 2025 05:44">Thursday 30 January 2025</span>. Using Julia version 1.11.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+└ @ JLD2 ~/.julia/packages/JLD2/nPYlZ/src/data/writing_datatypes.jl:447</code></pre><h2 id="Visualize"><a class="docs-heading-anchor" href="#Visualize">Visualize</a><a id="Visualize-1"></a><a class="docs-heading-anchor-permalink" href="#Visualize" title="Permalink"></a></h2><p>Quickly examine the final conditions for temperature:</p><pre><code class="language-julia hljs">lines(map(x -&gt; x[1], point(s)), soln(tₑ).Tₛ)</code></pre><img src="3a3a7f91.png" alt="Example block output"/><p>Quickly examine the final conditions for ice height:</p><pre><code class="language-julia hljs">lines(map(x -&gt; x[1], point(s)), soln(tₑ).halfar_dynamics_h)</code></pre><img src="ddd05451.png" alt="Example block output"/><p><img src="../budyko_sellers_halfar_T.gif" alt="BSH_Temperature"/></p><p><img src="../budyko_sellers_halfar_h.gif" alt="BSH_IceHeight"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 39 seconds.
+[ Info: This page was last built at 2025-03-07T09:41:20.212.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../grigoriev/grigoriev/">« Grigoriev Ice Cap</a><a class="docs-footer-nextpage" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 7 March 2025 09:59">Friday 7 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
