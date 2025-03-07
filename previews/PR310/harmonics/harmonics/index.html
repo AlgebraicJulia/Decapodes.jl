@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Harmonics · Decapodes.jl</title><meta name="title" content="Harmonics · Decapodes.jl"/><meta property="og:title" content="Harmonics · Decapodes.jl"/><meta property="twitter:title" content="Harmonics · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../concepts/equations/">Equations</a></li><li><a class="tocitem" href="../../concepts/composition/">Composition</a></li><li><a class="tocitem" href="../../concepts/meshes/">Meshes</a></li><li><a class="tocitem" href="../../concepts/generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li class="is-active"><a class="tocitem" href>Harmonics</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Exploring-solutions-with-Krylov-methods"><span>Exploring solutions with Krylov methods</span></a></li></ul></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/chemistry/gray_scott/">Gray-Scott</a></li><li><a class="tocitem" href="../../examples/oncology/tumor_proliferation_invasion/">Oncology</a></li><li><a class="tocitem" href="../../examples/mhd/">MHD</a></li></ul></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Zoo</a></li><li class="is-active"><a href>Harmonics</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Harmonics</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/harmonics/harmonics.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Harmonics-of-the-Sphere"><a class="docs-heading-anchor" href="#Harmonics-of-the-Sphere">Harmonics of the Sphere</a><a id="Harmonics-of-the-Sphere-1"></a><a class="docs-heading-anchor-permalink" href="#Harmonics-of-the-Sphere" title="Permalink"></a></h1><p>This page shows how to use Decapodes tooling to explore the harmonics of a discrete manifold. This isn&#39;t using any Decapodes specific code, but it  is emblematic of a more advanced analysis you might want to do on your Decapode.</p><p>In this case we are trying to visualize the roots of the Laplacian on a discrete manifold.</p><p>Load the dependencies</p><pre><code class="language-julia hljs"># Meshing:
+using CombinatorialSpaces
+using CoordRefSystems
+using GeometryBasics: Point3
+const Point3D = Point3{Float64};
+
+# Visualization:
+using CairoMakie
+
+# Simulation:
+using LinearAlgebra</code></pre><p>Load the mesh</p><pre><code class="language-julia hljs">const RADIUS = 1.0
+s = loadmesh(Icosphere(3, RADIUS));
+sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s);
+subdivide_duals!(sd, Barycenter());</code></pre><p>Compute the Laplacian eigenvectors using <a href="https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#LinearAlgebra.eigen">LinearAlgebra.eigen</a>. This requires making the sparse Laplacian matrix dense with <code>collect</code>. Alternatively, use <a href="https://arpack.julialinearalgebra.org/stable/">Arpack.jl</a>.</p><pre><code class="language-julia hljs">Δ0 = -Δ(0,sd)
+λ = eigen(collect(Δ0))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">LinearAlgebra.Eigen{Float64, Float64, Matrix{Float64}, Vector{Float64}}
+values:
+162-element Vector{Float64}:
+ -2.0704638247248837e-14
+  1.8501953398213986
+  1.9229341081041063
+  1.9658810495474257
+  5.146220910776444
+  5.528877811211725
+  5.639164681656211
+  5.737050666884067
+  5.859943695790198
+  9.317272553998787
+  ⋮
+ 77.17507216665028
+ 86.5076598062551
+ 86.51040566694189
+ 86.581685003028
+ 86.59363600121746
+ 86.67718662766414
+ 86.68365853045175
+ 86.68546749816456
+ 86.68738445511143
+vectors:
+162×162 Matrix{Float64}:
+ 0.0785674  -0.00139719  -0.104545   …   0.000848792  -0.00294379
+ 0.0785674   0.0696797    0.0192111      0.153257     -0.00715503
+ 0.0785674   0.107855    -0.0713353     -0.488914      0.487552
+ 0.0785674   0.00417104  -0.128525       0.00110173   -0.00296474
+ 0.0785674  -0.112362    -0.0657565      0.575396      0.387291
+ 0.0785674  -0.0834091    0.0226547  …  -0.117539      0.00955895
+ 0.0785674   0.114972     0.0665464      0.216674     -0.476139
+ 0.0785674   0.0820901   -0.0259179      0.115597     -0.00385017
+ 0.0785674  -0.0704939   -0.0222209     -0.155239      0.0135661
+ 0.0785674  -0.110218     0.0716917     -0.301402     -0.409684
+ ⋮                                   ⋱   ⋮            
+ 0.0785674   0.0323531   -0.130654       0.00544982   -0.00626171
+ 0.0785674   0.0306632   -0.122617       0.00539986   -0.00625665
+ 0.0785674   0.0654118   -0.113619   …  -0.0338602     0.0338033
+ 0.0785674  -0.0284136   -0.0111406     -0.0102456     0.000514537
+ 0.0785674   0.02021     -0.0121854      0.0124337    -0.000887686
+ 0.0785674  -0.0018298   -0.0418315     -0.000199872  -0.000553123
+ 0.0785674   0.0856251   -0.068554      -0.0357922     0.0341249
+ 0.0785674   0.0508548   -0.0772451  …   0.00421754   -0.00604669
+ 0.0785674   0.0734731   -0.040202       0.0163659    -0.00595885</code></pre><p>Let&#39;s check that our eigenvalues satisfy the right equation. The first eigenvector should be the kernel of the laplacian. So the following norm should be close to 0.</p><pre><code class="language-julia hljs">q1 = λ.vectors[:,1]
+norm(Δ0 *q1)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.674928852844355e-14</code></pre><p>The first eigenvector is boring to visualize, because it is constant. So we will make some plots of the second eigenvector. If you run this on the desktop, you can use GLMakie and get an interactive plot to explore. We will just draw two angles.</p><pre><code class="language-julia hljs">q = λ.vectors[:,2]
+fig = Figure()
+Label(fig[1, 1, Top()], &quot;Default Angle&quot;, padding = (0, 0, 5, 0))
+ax = LScene(fig[1,1], scenekw=(lights=[],))
+msh = CairoMakie.mesh!(ax, s, color=q)
+Colorbar(fig[1,2], msh, size=32)
+# Second Angle
+Label(fig[2, 1, Top()], &quot;Bottom Angle&quot;, padding = (0, 0, 5, 0))
+ax = LScene(fig[2,1], scenekw=(lights=[],))
+update_cam!(ax.scene, Vec3f(-1/2,-1/2,1.0/2), Vec3f(1,1,1), Vec3f(0, 0, 1))
+msh = CairoMakie.mesh!(ax, s, color=q)
+Colorbar(fig[2,2], msh, size=32)
+fig</code></pre><img src="fd5b8fca.png" alt="Example block output"/><pre><code class="language-julia hljs">q = λ.vectors[:,12]
+fig = Figure()
+Label(fig[1, 1, Top()], &quot;Default Angle&quot;, padding = (0, 0, 5, 0))
+ax = LScene(fig[1,1], scenekw=(lights=[],))
+msh = CairoMakie.mesh!(ax, s, color=q)
+Colorbar(fig[1,2], msh, size=32)
+# Second Angle
+Label(fig[2, 1, Top()], &quot;Bottom Angle&quot;, padding = (0, 0, 5, 0))
+ax = LScene(fig[2,1], scenekw=(lights=[],))
+update_cam!(ax.scene, Vec3f(-1/2,-1/2,1.0/2), Vec3f(1,1,1), Vec3f(0, 0, 1))
+msh = CairoMakie.mesh!(ax, s, color=q)
+Colorbar(fig[2,2], msh, size=32)
+fig</code></pre><img src="9bd0a9ce.png" alt="Example block output"/><h1 id="Exploring-solutions-with-Krylov-methods"><a class="docs-heading-anchor" href="#Exploring-solutions-with-Krylov-methods">Exploring solutions with Krylov methods</a><a id="Exploring-solutions-with-Krylov-methods-1"></a><a class="docs-heading-anchor-permalink" href="#Exploring-solutions-with-Krylov-methods" title="Permalink"></a></h1><p>We can also use the information about the eigenvectors for spectral techniques in solving the equations. Krylov methods are a bridge between linear solvers and spectral information.</p><pre><code class="language-julia hljs">using Krylov
+b = zeros(nv(sd))
+b[1] = 1
+b[end] = -1
+x, stats = Krylov.gmres(Δ0, b, randn(nv(sd)), restart=true, memory=20, atol = 1e-10, rtol=1e-8, history=true, itmax=10000)
+x̂ = x .- sum(x)./length(x)
+norm(x̂)
+stats
+norm(Δ0*(x) - b)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../navier_stokes/ns/">« Vortices</a><a class="docs-footer-nextpage" href="../../ch/cahn-hilliard/">Cahn-Hilliard »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 7 March 2025 08:59">Friday 7 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

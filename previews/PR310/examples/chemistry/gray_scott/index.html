@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Gray-Scott · Decapodes.jl</title><meta name="title" content="Gray-Scott · Decapodes.jl"/><meta property="og:title" content="Gray-Scott · Decapodes.jl"/><meta property="twitter:title" content="Gray-Scott · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../../concepts/equations/">Equations</a></li><li><a class="tocitem" href="../../../concepts/composition/">Composition</a></li><li><a class="tocitem" href="../../../concepts/meshes/">Meshes</a></li><li><a class="tocitem" href="../../../concepts/generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li class="is-active"><a class="tocitem" href>Gray-Scott</a></li><li><a class="tocitem" href="../../oncology/tumor_proliferation_invasion/">Oncology</a></li><li><a class="tocitem" href="../../mhd/">MHD</a></li></ul></li><li><a class="tocitem" href="../../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Gray-Scott</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Gray-Scott</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/literate/chemistry/gray_scott.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre><code class="language-julia hljs">using Catlab
+using CombinatorialSpaces
+using DiagrammaticEquations
+using Decapodes
+using MLStyle
+using OrdinaryDiffEq
+using LinearAlgebra
+using CairoMakie
+import CairoMakie: wireframe, mesh, Figure, Axis
+using ComponentArrays
+
+using GeometryBasics: Point2, Point3
+Point2D = Point2{Float64}
+Point3D = Point3{Float64}</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GeometryBasics.Point{3, Float64}</code></pre><p>We use the model equations as stated here: https://github.com/JuliaParallel/julia-hpc-tutorial-sc24/blob/main/parts/gpu/gray-scott.ipynb Initial conditions were based off those given here: https://itp.uni-frankfurt.de/~gros/StudentProjects/Projects<em>2020/projekt</em>schulz_kaefer/#header</p><pre><code class="language-julia hljs">GrayScott = @decapode begin
+  (U, V)::Form0
+  (UV2)::Form0
+  (U̇, V̇)::Form0
+  (f, k, rᵤ, rᵥ)::Constant
+  B::Constant
+
+  UV2 == (U .* (V .* V))
+  lap_U == mask(Δ(U), B)
+  lap_V == mask(Δ(V), B)
+
+  U̇ == rᵤ * lap_U - UV2 + f * (1 .- U)
+  V̇ == rᵥ * lap_V + UV2 - (f + k) .* V
+  ∂ₜ(U) == U̇
+  ∂ₜ(V) == V̇
+end
+
+n = 100
+h = 1
+
+s = triangulated_grid(n,n,h,h,Point3D);
+sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s);
+subdivide_duals!(sd, Circumcenter());
+
+sim = eval(gensim(GrayScott))
+
+left_wall_idxs = findall(x -&gt; x[1] &lt;= h, s[:point])
+right_wall_idxs = findall(x -&gt; x[1] &gt;= n - h, s[:point])
+top_wall_idxs = findall(y -&gt; y[2] == 0.0, s[:point])
+bot_wall_idxs = findall(y -&gt; y[2] == n, s[:point])
+
+wall_idxs = unique(vcat(left_wall_idxs, right_wall_idxs, top_wall_idxs, bot_wall_idxs))
+function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :mask =&gt; (x,y) -&gt; begin
+      x[wall_idxs] .= y
+      x
+    end
+    _ =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
+  end
+end
+
+fₘ = sim(sd, generate, DiagonalHodge())
+
+init_multi = 0.5
+
+U = rand(0.0:0.001:0.1, nv(sd))
+V = zeros(nv(sd))
+
+mid = div(n, 2)
+
+mid_p = Point2D(mid, mid)
+
+init = map(p -&gt; if norm(p - mid_p, Inf) &lt;= 5; 1.0 .* init_multi; else 0.0; end, sd[:point])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10201-element Vector{Float64}:
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ ⋮
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0</code></pre><p>Set up an initial small disturbance</p><pre><code class="language-julia hljs">U .+= init
+V .+= 0.5 * init
+
+u₀ = ComponentArray(U=U,V=V)
+
+f = 0.055
+k = 0.062
+constants_and_parameters = (
+  rᵤ = 0.16,
+  rᵥ = 0.08,
+  f = f,
+  k = k,
+  B = 0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(rᵤ = 0.16, rᵥ = 0.08, f = 0.055, k = 0.062, B = 0)</code></pre><p>fig = Figure(); ax = CairoMakie.Axis(fig[1,1], aspect=1, title = &quot;Initial value of U&quot;) msh = CairoMakie.mesh!(ax, s, color=U, colormap=:jet, colorrange=(extrema(U))) Colorbar(fig[1,2], msh) display(fig)</p><p>fig = Figure() ax = CairoMakie.Axis(fig[1,1], aspect=1, title = &quot;Initial value of V&quot;) # hide msh = CairoMakie.mesh!(ax, s, color=V, colormap=:jet, colorrange=extrema(V)) # hide Colorbar(fig[1,2], msh) fig</p><pre><code class="language-julia hljs">tₑ = 10_000
+
+@info(&quot;Solving&quot;)
+problem = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+solution = solve(problem, Tsit5())
+@info(&quot;Done&quot;)
+
+function save_dynamics(save_file_name)
+  time = Observable(0.0)
+  u = @lift(solution($time).U)
+  f = Figure()
+  ax_U = CairoMakie.Axis(f[1,1], title = @lift(&quot;Concentration of U at Time $($time)&quot;))
+
+  msh_U = mesh!(ax_U, s, color=u, colormap=:jet, colorrange=(0, 1.1))
+  Colorbar(f[1,2], msh_U)
+
+  timestamps = range(0, tₑ, step=50)
+  record(f, save_file_name, timestamps; framerate = 30) do t
+    time[] = t
+  end
+end
+
+save_dynamics(&quot;gs_f=$(f)_k=$(k).mp4&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;gs_f=0.055_k=0.062.mp4&quot;</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../fokker_planck/fokker_planck/">« Fokker-Planck</a><a class="docs-footer-nextpage" href="../../oncology/tumor_proliferation_invasion/">Oncology »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 7 March 2025 08:59">Friday 7 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

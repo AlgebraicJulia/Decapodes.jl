@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Composition · Decapodes.jl</title><meta name="title" content="Composition · Decapodes.jl"/><meta property="og:title" content="Composition · Decapodes.jl"/><meta property="twitter:title" content="Composition · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../equations/">Equations</a></li><li class="is-active"><a class="tocitem" href>Composition</a></li><li><a class="tocitem" href="../meshes/">Meshes</a></li><li><a class="tocitem" href="../generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/chemistry/gray_scott/">Gray-Scott</a></li><li><a class="tocitem" href="../../examples/oncology/tumor_proliferation_invasion/">Oncology</a></li><li><a class="tocitem" href="../../examples/mhd/">MHD</a></li></ul></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Concepts</a></li><li class="is-active"><a href>Composition</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Composition</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/concepts/composition.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h1><pre><code class="language-julia hljs">using Catlab
+using DiagrammaticEquations
+using Decapodes</code></pre><details open>
+  <summary><i>Dependencies</i></summary>
+  <pre><code>
+  using Catlab
+  using DiagrammaticEquations
+  using Decapodes
+  </code></pre>
+</details><p>Decapodes composition is formally known as an &quot;operad algebra&quot;. That means that we don&#39;t have to encode our composition in a single undirected wiring diagram (UWD) and then apply it. Rather, we can define several UWDs, compose those, and then apply those. Of course, since the output of oapply is another Decapode, we could perform an intermediate oapply, if that is convenient. In this tutorial we will learn how to use this capability to define more complex models, and how this modularity allows us to swap out models.</p><p>Besides it being convenient to break apart large UWDs into component UWDs, this hierarchical composition can enforce rules on our physical quantities.</p><h3 id="Example:-Klausmeier"><a class="docs-heading-anchor" href="#Example:-Klausmeier">Example: Klausmeier</a><a id="Example:-Klausmeier-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Klausmeier" title="Permalink"></a></h3><p>We will study how the <a href="../../klausmeier/klausmeier/#Klausmeier">Klausmeier model</a> uses the operad algebra to describe a phenomenon of vegetation patterns can be governed by the interaction of two different dynamics.</p><pre><code class="language-julia hljs"># See Klausmeier Equation 2.a
+Hydrodynamics = @decapode begin
+  (n,w)::DualForm0
+  dX::Form1
+  (a,ν)::Constant
+
+  ∂ₜ(w) == a - w - w * n^2 + ν * L(dX, w)
+end
+
+# See Klausmeier Equation 2.b
+Phytodynamics = @decapode begin
+  (n,w)::DualForm0
+  m::Constant
+
+  ∂ₜ(n) == w * n^2 - m*n + Δ(n)
+end</code></pre><p>However let&#39;s for a moment pretend we don&#39;t have a very good understanding of the hydrodynamics. We&#39;ll create an incorrect model:</p><pre><code class="language-julia hljs">WrongHydrodynamics = @decapode begin
+    (n,w)::DualForm0
+    dX::Form1
+    ∂ₜ(w) == L(dX, w)
+end</code></pre><p>Now that we have our two component models, we can specify a means of composing them via a composition pattern. This defines placeholder models which accept variables as inputs. If the variables between any two models are the same, then we have asserted that they are shared. For example, in this <code>@relation</code> diagram, we assert that there are two models, <code>phyto</code> and <code>hydro</code>, which each share the <code>N</code> and <code>W</code> variables.</p><pre><code class="language-julia hljs"># Specify Composition
+compose_klausmeier = @relation () begin
+  phyto(N, W)
+  hydro(N, W)
+end
+
+draw_composition(compose_klausmeier)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.40.1 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="193pt" height="211pt"
+ viewBox="0.00 0.00 192.62 210.62" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 206.6241)">
+<title>G</title>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-206.6241 188.6241,-206.6241 188.6241,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%23000000" cx="98.8121" cy="-18" rx="28.6898" ry="18"/>
+<text text-anchor="middle" x="98.8121" y="-14.3" font-family="Serif" font-size="14.00" fill="%23000000">phyto</text>
+</g>
+<!-- n3 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n3</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="15.5" cy="-101.3121" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="6.5" y="-107.6121" font-family="Serif" font-size="14.00" fill="%23000000">N</text>
+</g>
+<!-- n1&%2345;&%2345;n3 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n3</title>
+<path fill="none" stroke="%23000000" d="M83.5314,-33.2807C62.4863,-54.3258 26.1836,-90.6285 17.4367,-99.3753"/>
+</g>
+<!-- n4 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n4</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="182.1241" cy="-101.3121" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="171.6241" y="-107.6121" font-family="Serif" font-size="14.00" fill="%23000000">W</text>
+</g>
+<!-- n1&%2345;&%2345;n4 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&%2345;n4</title>
+<path fill="none" stroke="%23000000" d="M114.0928,-33.2807C135.1378,-54.3258 171.4406,-90.6285 180.1874,-99.3753"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%23000000" cx="98.8121" cy="-184.6241" rx="29.3664" ry="18"/>
+<text text-anchor="middle" x="98.8121" y="-180.9241" font-family="Serif" font-size="14.00" fill="%23000000">hydro</text>
+</g>
+<!-- n2&%2345;&%2345;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&%2345;n3</title>
+<path fill="none" stroke="%23000000" d="M83.1417,-168.9538C62.0249,-147.837 26.0743,-111.8864 17.4166,-103.2287"/>
+</g>
+<!-- n2&%2345;&%2345;n4 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&%2345;n4</title>
+<path fill="none" stroke="%23000000" d="M114.4824,-168.9538C135.5992,-147.837 171.5498,-111.8864 180.2075,-103.2287"/>
+</g>
+</g>
+</svg>
+'/><p>We apply our composition pattern by plugging in component Decapodes, and specifying which internal quantities to share along edges. Decapodes are formalized via the field of Applied Category Theory. A practical consequence here is that we can view a Decapode as a sort of computation graph.</p><pre><code class="language-julia hljs"># Apply Composition
+klausmeier_cospan = oapply(compose_klausmeier,
+                           [Open(Phytodynamics, [:n, :w]),
+                            Open(WrongHydrodynamics, [:n, :w])])
+Klausmeier = apex(klausmeier_cospan)
+to_graphviz(Klausmeier)</code></pre><img src="cd1548c0.svg" alt="Example block output"/><p>Let&#39;s pretend our understanding of the hydrodynamics model has improved. Since the composition pattern has not changed, we can just substitute the <code>WrongHydrodynamics</code> model out for the correct one.</p><pre><code class="language-julia hljs"># Apply Composition
+klausmeier_cospan = oapply(compose_klausmeier,
+                           [Open(Phytodynamics, [:n, :w]),
+                            Open(Hydrodynamics, [:n, :w])])
+Klausmeier = apex(klausmeier_cospan)
+to_graphviz(Klausmeier)</code></pre><img src="2e47bfe0.svg" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../equations/">« Equations</a><a class="docs-footer-nextpage" href="../meshes/">Meshes »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 7 March 2025 08:59">Friday 7 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Oncology · Decapodes.jl</title><meta name="title" content="Oncology · Decapodes.jl"/><meta property="og:title" content="Oncology · Decapodes.jl"/><meta property="twitter:title" content="Oncology · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../../concepts/equations/">Equations</a></li><li><a class="tocitem" href="../../../concepts/composition/">Composition</a></li><li><a class="tocitem" href="../../../concepts/meshes/">Meshes</a></li><li><a class="tocitem" href="../../../concepts/generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../chemistry/gray_scott/">Gray-Scott</a></li><li class="is-active"><a class="tocitem" href>Oncology</a></li><li><a class="tocitem" href="../../mhd/">MHD</a></li></ul></li><li><a class="tocitem" href="../../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Oncology</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Oncology</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/literate/oncology/tumor_proliferation_invasion.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre><code class="language-julia hljs">using Catlab
+using Catlab.Graphics
+using CombinatorialSpaces
+using Decapodes
+using DiagrammaticEquations, DiagrammaticEquations.Deca
+using Distributions
+using MLStyle
+using OrdinaryDiffEq
+using LinearAlgebra
+using ComponentArrays
+using CairoMakie
+using GeometryBasics: Point2, Point3
+Point2D = Point2{Float64}
+Point3D = Point3{Float64}</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GeometryBasics.Point{3, Float64}</code></pre><p>Load in our Decapodes models</p><pre><code class="language-julia hljs">using Decapodes.Canon.Oncology</code></pre><p>Let&#39;s examine our models. Here&#39;s the tumor invasion model with the logistic and Gompertz growth models.</p><pre><code class="language-julia hljs">@doc invasion</code></pre><div class="markdown"><p><strong>TumorInvasion</strong></p>
+<p><a href="https://en.wikipedia.org/wiki/Cancer_cell#Causes">Source</a></p>
+<p>Eq. 35 from Yi et al.   A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance   Evolution of Solid Tumors</p>
+<p><strong>Model</strong> </p>
+<pre><code>&#40;C, fC&#41;::Form0
+              
+&#40;Dif, Kd, Cmax&#41;::Constant
+              
+∂ₜ&#40;C&#41; &#61;&#61; &#40;Dif * Δ&#40;C&#41; &#43; fC&#41; - Kd * C</code></pre>
+
+</div><pre><code class="language-julia hljs">@doc logistic</code></pre><div class="markdown"><p><strong>Logistic</strong></p>
+<p><a href="https://en.wikipedia.org/wiki/Logistic_function">Source</a></p>
+<p>Eq. 5 from Yi et al.   A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance   Evolution of Solid Tumors</p>
+<p><strong>Model</strong> </p>
+<pre><code>&#40;C, fC&#41;::Form0
+              
+Cmax::Constant
+              
+fC &#61;&#61; C * &#40;1 - C / Cmax&#41;</code></pre>
+
+</div><pre><code class="language-julia hljs">@doc gompertz</code></pre><div class="markdown"><p><strong>Gompertz</strong></p>
+<p><a href="https://en.wikipedia.org/wiki/Gompertz_function">Source</a></p>
+<p>Eq. 6 from Yi et al.   A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance   Evolution of Solid Tumors</p>
+<p><strong>Model</strong> </p>
+<pre><code>&#40;C, fC&#41;::Form0
+              
+Cmax::Constant
+              
+fC &#61;&#61; C * ln&#40;Cmax / C&#41;</code></pre>
+
+</div><p>Load in a mesh and a plotting function</p><pre><code class="language-julia hljs">function show_heatmap(Cdata)
+  heatmap(reshape(Cdata, (floor(Int64, sqrt(length(Cdata))), floor(Int64, sqrt(length(Cdata))))))
+end
+
+mesh = triangulated_grid(50,50,0.2,0.2,Point2D);
+dualmesh = EmbeddedDeltaDualComplex2D{Bool, Float64, Point2D}(mesh);
+subdivide_duals!(dualmesh, Circumcenter());</code></pre><p>Let&#39;s define initial conditions</p><pre><code class="language-julia hljs">constants_and_parameters = (invasion_Dif = 0.005, invasion_Kd = 0.5, Cmax = 10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(invasion_Dif = 0.005, invasion_Kd = 0.5, Cmax = 10)</code></pre><p>Here we follow the assumption &quot;The model ... considers an equivalent radially symmetric tumour&quot;, Murray J.D., Glioblastoma brain tumours, by initializing the tumor with a normal distribution.</p><pre><code class="language-julia hljs">c_dist  = MvNormal([25, 25], 2)
+C = 100 * [pdf(c_dist, [p[1], p[2]]) for p in dualmesh[:point]]
+u₀ = ComponentArray(C=C)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ComponentVector{Float64}(C = [5.511214862387883e-68, 1.9092775400857783e-67, 6.548851755254674e-67, 2.2240043394148634e-66, 7.477914169088552e-66, 2.4894287267884957e-65, 8.205277862067283e-65, 2.6776959591999733e-64, 8.65174297332636e-64, 2.76770838562399e-63  …  4.931812766956773e-63, 1.5493611873482188e-63, 4.8191799040821854e-64, 1.484116457322235e-64, 4.52519394953736e-65, 1.3660946469233806e-65, 4.0831821701849867e-66, 1.2083454136756992e-66, 3.5404446954827926e-67, 1.0270673098994496e-67])</code></pre><p>Let&#39;s define how our Proliferation-Invasion models will relate to one another.</p><pre><code class="language-julia hljs">proliferation_invasion_composition_diagram = @relation () begin
+  proliferation(C, fC, Cmax)
+  invasion(C, fC, Cmax)
+end</code></pre><div class="c-set">
+<span class="c-set-summary">Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol} {Box:2, Port:6, OuterPort:0, Junction:3, Name:0, VarName:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Box</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">proliferation</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">invasion</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Port</th>
+      <th style = "text-align: right;">box</th>
+      <th style = "text-align: right;">junction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Junction</th>
+      <th style = "text-align: right;">variable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">C</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">fC</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Cmax</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Now let&#39;s specify which sub-models slot into our system. We use the same pattern for two different models: the first model pertains to a logistic growth model,</p><pre><code class="language-julia hljs">logistic_proliferation_invasion_cospan = oapply(proliferation_invasion_composition_diagram,
+  [Open(logistic, [:C, :fC, :Cmax]),
+   Open(invasion, [:C, :fC, :Cmax])])
+logistic_proliferation_invasion = apex(logistic_proliferation_invasion_cospan)</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:13, TVar:1, Op1:2, Op2:6, Σ:1, Summand:2, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">C</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">fC</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">Cmax</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">proliferation_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">proliferation_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">Literal</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">invasion_Dif</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">invasion_Kd</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">invasion_Ċ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">invasion_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">invasion_•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">invasion_•4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">invasion_sum_1</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">9</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">Δ</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">/</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">13</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Σ</th>
+      <th style = "text-align: right;">sum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">13</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Summand</th>
+      <th style = "text-align: right;">summand</th>
+      <th style = "text-align: right;">summation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>The second model uses the same composition pattern but swaps out the logistic growth mode for a Gompertz growth model.</p><pre><code class="language-julia hljs">gompertz_proliferation_invasion_cospan = oapply(proliferation_invasion_composition_diagram,
+  [Open(gompertz, [:C, :fC, :Cmax]),
+   Open(invasion, [:C, :fC, :Cmax])])
+gompertz_proliferation_invasion = apex(gompertz_proliferation_invasion_cospan)</code></pre><div class="c-set">
+<span class="c-set-summary">DiagrammaticEquations.decapodeacset.SummationDecapode{Any, Any, Symbol} {Var:12, TVar:1, Op1:3, Op2:5, Σ:1, Summand:2, Type:0, Operator:0, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Var</th>
+      <th style = "text-align: right;">type</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">C</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">Form0</td>
+      <td style = "text-align: right;">fC</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">Cmax</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">proliferation_•1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">proliferation_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">invasion_Dif</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">Constant</td>
+      <td style = "text-align: right;">invasion_Kd</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">invasion_Ċ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">invasion_•2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">invasion_•3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">invasion_•4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">infer</td>
+      <td style = "text-align: right;">invasion_sum_1</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">TVar</th>
+      <th style = "text-align: right;">incl</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">8</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op1</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">op1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">ln</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">∂ₜ</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">Δ</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Op2</th>
+      <th style = "text-align: right;">proj1</th>
+      <th style = "text-align: right;">proj2</th>
+      <th style = "text-align: right;">res</th>
+      <th style = "text-align: right;">op2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">/</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">11</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">12</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">-</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Σ</th>
+      <th style = "text-align: right;">sum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">12</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Summand</th>
+      <th style = "text-align: right;">summand</th>
+      <th style = "text-align: right;">summation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">10</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Generate the logistic simulation</p><pre><code class="language-julia hljs">logistic_sim = evalsim(logistic_proliferation_invasion)
+lₘ = logistic_sim(dualmesh, default_dec_generate, DiagonalHodge())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Decapodes.var&quot;#f#99&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}}) (generic function with 1 method)</code></pre><p>Execute the logistic simulation</p><pre><code class="language-julia hljs">tₑ = 15.0
+problem = ODEProblem(lₘ, u₀, (0, tₑ), constants_and_parameters)
+logistic_solution = solve(problem, Tsit5());</code></pre><p>Let&#39;s examine the solution using the heatmap equation we defined.</p><pre><code class="language-julia hljs">show_heatmap(logistic_solution(tₑ).C)</code></pre><img src="cd169306.png" alt="Example block output"/><p>Generate the Gompertz simulation</p><pre><code class="language-julia hljs">gompertz_sim = evalsim(gompertz_proliferation_invasion)
+gₘ = gompertz_sim(dualmesh, default_dec_generate, DiagonalHodge())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Decapodes.var&quot;#f#104&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int32}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#3#8&quot;}}) (generic function with 1 method)</code></pre><p>Execute the Gompertz simulation</p><pre><code class="language-julia hljs">problem = ODEProblem(gₘ, u₀, (0, tₑ), constants_and_parameters)
+gompertz_solution = solve(problem, Tsit5());</code></pre><p>Let&#39;s examine this solution now.</p><pre><code class="language-julia hljs">show_heatmap(gompertz_solution(tₑ).C)</code></pre><img src="4f428379.png" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../chemistry/gray_scott/">« Gray-Scott</a><a class="docs-footer-nextpage" href="../../mhd/">MHD »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 7 March 2025 08:59">Friday 7 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
