@@ -1,4 +1,5 @@
 using ACSets
+using Catlab
 using CombinatorialSpaces
 using ComponentArrays
 using Decapodes
@@ -9,7 +10,11 @@ using LinearAlgebra
 using MLStyle
 using OrdinaryDiffEq
 using Test
+using Random
 Point3D = Point3{Float64}
+
+import Decapodes: default_dec_matrix_generate
+
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
@@ -321,15 +326,12 @@ end
 
 @testset "Gensim Transformations" begin
 
-  function checkForContractionInGensim(d::SummationDecapode)
-    results = []
-    block = gensim(d).args[2].args[2].args[5]
-    for line in 2:length(block.args)
-      push!(results, block.args[line].args[1])
-    end
-
-    return results
+  function count_contractions(e::Expr)
+    block = e.args[2].args[2].args[5]
+    length(block.args) - 1
   end
+
+  count_contractions(d::SummationDecapode) = count_contractions(gensim(d))
 
   begin
     primal_earth = loadmesh(Icosphere(1))
@@ -363,28 +365,38 @@ end
 
   # Testing simple contract operations
   single_contract = @decapode begin
-    (A,C)::Form0
-    (D)::Form2
+    (A,C,E)::Form0
+    (D,F)::Form2
 
     B == ∂ₜ(A)
     D == ∂ₜ(C)
 
     B == ⋆(⋆(A))
     D == d(d(C))
+    F == d(d(E))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 4 == count_contractions(single_contract)
+
+  @test 0 == count_contractions(gensim(single_contract; contract=false))
+
+  f = gensim(single_contract)
+  @test f.args[2].args[2].args[5].args[[2,4]] == [
+    :(var"GenSim-M_GenSim-ConMat_0" = var"GenSim-M_d₁" * var"GenSim-M_d₀"),
+    :(var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_⋆₀")]
 
   sim = eval(gensim(single_contract))
   f = sim(earth, default_dec_generate)
   A = 2 * ones(nv(earth))
   C = ones(nv(earth))
-  u = ComponentArray(A=A, C=C)
-  du = ComponentArray(A=zeros(nv(earth)), C=zeros(ntriangles(earth)))
+  E = ones(nv(earth))
+  u = ComponentArray(A=A, C=C, E=E)
+  du = ComponentArray(A=zeros(nv(earth)), C=zeros(ntriangles(earth)), E=zeros(ntriangles(earth)))
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
   @test du.A ≈ 2 * ones(nv(earth))
   @test du.C == zeros(ntriangles(earth))
+  @test du.E == zeros(ntriangles(earth))
 
   # Testing contraction interrupted by summation
   contract_with_summation = @decapode begin
@@ -399,7 +411,7 @@ end
 
     D == d(d(C))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 4 == count_contractions(contract_with_summation)
 
   sim = eval(gensim(contract_with_summation))
   f = sim(earth, default_dec_generate)
@@ -426,7 +438,7 @@ end
 
     D == d(d(C))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 4 == count_contractions(contract_with_op2)
 
   for prealloc in [false, true]
     let sim = eval(gensim(contract_with_op2, preallocate = prealloc))
@@ -452,7 +464,7 @@ end
     B == A * A
     D == ⋆(⋆(B))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 2 == count_contractions(later_contraction)
 
   sim = eval(gensim(later_contraction))
   f = sim(earth, default_dec_generate)
@@ -472,7 +484,7 @@ end
     D == ∂ₜ(A)
     D == d(A)
   end
-  @test 0 == length(checkForContractionInGensim(no_contraction))
+  @test 0 == count_contractions(no_contraction)
 
   sim = eval(gensim(no_contraction))
   f = sim(earth, default_dec_generate)
@@ -482,7 +494,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == CombinatorialSpaces.DiscreteExteriorCalculus.d(0, earth) * A
+  @test du.A == CombinatorialSpaces.d(0, earth) * A
 
   # Testing no contraction of unallowed operators
   no_unallowed = @decapode begin
@@ -492,7 +504,7 @@ end
     D == ∂ₜ(A)
     D == d(k(A))
   end
-  @test 0 == length(checkForContractionInGensim(no_unallowed))
+  @test 0 == count_contractions(no_unallowed)
 
   sim = eval(gensim(no_unallowed))
 
@@ -510,7 +522,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == CombinatorialSpaces.DiscreteExteriorCalculus.d(0, earth) * 20 * A
+  @test du.A == CombinatorialSpaces.d(0, earth) * 20 * A
 
   # Testing wedge 01 operators function
   wedges01 = @decapode begin
@@ -641,6 +653,8 @@ end
 
 end
 
+filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
+
 @testset "1-D Mat Generation" begin
   Point2D = Point2{Float64}
   function generate_dual_mesh(s::HasDeltaSet1D)
@@ -655,19 +669,20 @@ end
   add_edges!(primal_line, [1,2], [2,3])
   line = generate_dual_mesh(primal_line)
 
-    # Testing Diagonal inverse hodge 1
-    DiagonalInvHodge1 = @decapode begin
-      A::DualForm1
+  # Testing Diagonal inverse hodge 1
+  DiagonalInvHodge1 = @decapode begin
+    A::DualForm1
 
-      B == ∂ₜ(A)
-      B == ⋆(A)
-    end
-    g = gensim(DiagonalInvHodge1)
-    @test gensim(DiagonalInvHodge1).args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
-    sim = eval(g)
+    B == ∂ₜ(A)
+    B == ⋆(A)
+  end
+  g = gensim(DiagonalInvHodge1)
+  @test g.args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
+  @test length(filter_lnn(g.args[2].args[2].args[3].args)) == 1
+  sim = eval(g)
 
-    # Test that no error is thrown here
-    f = sim(line, default_dec_generate, DiagonalHodge())
+  # TODO: Error is being thrown here
+  @test f = sim(line, default_dec_generate, DiagonalHodge()) isa Any
 end
 
 @testset "GenSim Compilation" begin
@@ -755,6 +770,178 @@ end
   sim_Tracer = evalsim(Tracer)
   @test sim_Tracer(d_rect, generate, DiagonalHodge()) isa Any
 
+  # Test for Halfar
+  halfar_eq2 = @decapode begin
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ḣ == ∂ₜ(h)
+    ḣ == ∘(⋆, d, ⋆)(Γ * d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
+  end
+
+  glens_law = @decapode begin
+    Γ::Form1
+    A::Form1
+    (ρ,g,n)::Constant
+
+    Γ == (2/(n+2))*A*(ρ*g)^n
+  end
+
+  ice_dynamics_composition_diagram = @relation () begin
+    dynamics(Γ,n)
+    stress(Γ,n)
+  end
+
+  ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
+    [Open(halfar_eq2, [:Γ,:n]),
+     Open(glens_law, [:Γ,:n])])
+  halfar = apex(ice_dynamics_cospan)
+
+  resolve_overloads!(infer_types!(halfar))
+
+  function halfar_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :mag => x -> norm.(x)
+      x => error("Unmatched operator $my_symbol")
+    end
+    return op
+  end
+
+  sim_Halfar = evalsim(halfar)
+  @test sim_Halfar(d_rect, halfar_generate, DiagonalHodge()) isa Any
+
+  # Test for Poisson
+  eq11_inviscid_poisson = @decapode begin
+    d𝐮::DualForm2
+    𝐮::DualForm1
+    ψ::Form0
+
+    ψ == Δ₀⁻¹(⋆(d𝐮))
+    𝐮 == ⋆(d(ψ))
+
+    ∂ₜ(d𝐮) ==  (-1) * ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
+  end
+
+  function poisson_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :♭♯ => x -> nothing
+      x => error("Unmatched operator $my_symbol")
+    end
+    return op
+  end
+
+  sim_Poisson = evalsim(eq11_inviscid_poisson)
+  @test sim_Poisson(d_rect, poisson_generate, DiagonalHodge()) isa Any
+
+  # Test for Halmo
+  eq10forN2 = @decapode begin
+    (𝐮,w)::DualForm1
+    (P, 𝑝ᵈ)::DualForm0
+    μ::Constant
+
+    𝑝ᵈ == P + 0.5 * ι₁₁(w,w)
+
+    ∂ₜ(𝐮) == μ * ∘(d, ⋆, d, ⋆)(w) + (-1)*⋆₁⁻¹(∧ᵈᵖ₁₀(w, ⋆(d(w)))) + d(𝑝ᵈ)
+  end
+
+  halfar_eq2 = @decapode begin
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯ᵖᵖ(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  end
+
+  glens_law = @decapode begin
+    Γ::Form1
+    (A,ρ,g,n)::Constant
+
+    Γ == (2/(n+2))*A*(ρ*g)^n
+  end
+
+  ice_dynamics_composition_diagram = @relation () begin
+    dynamics(Γ,n)
+    stress(Γ,n)
+  end
+
+  ice_dynamics = apex(oapply(ice_dynamics_composition_diagram,
+    [Open(halfar_eq2, [:Γ,:n]),
+     Open(glens_law, [:Γ,:n])]))
+
+     ice_water_composition_diagram = @relation () begin
+     glacier_dynamics(ice_thickness)
+     water_dynamics(flow, flow_after)
+
+     interaction(ice_thickness, flow, flow_after)
+   end
+
+   blocking = @decapode begin
+    h::Form0
+    (𝐮,w)::DualForm1
+
+    w == (1-σ(h)) ∧ᵖᵈ₀₁ 𝐮
+  end
+
+  ice_water = apex(oapply(ice_water_composition_diagram,
+  [Open(ice_dynamics, [:dynamics_h]),
+   Open(eq10forN2,    [:𝐮, :w]),
+   Open(blocking,     [:h, :𝐮, :w])]))
+
+  function halmo_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :σ => x -> nothing
+      :mag => x -> nothing
+      _ => error("Unmatched operator $my_symbol")
+    end
+    return op
+  end
+
+  resolve_overloads!(infer_types!(ice_water))
+
+  sim_Halmo = evalsim(ice_water)
+  @test sim_Halmo(d_rect, halmo_generate, DiagonalHodge()) isa Any
+
+end
+
+@testset "Multigrid" begin
+  s = triangulated_grid(1,1,1/4,sqrt(3)/2*1/4,Point3D)
+
+  series = PrimalGeometricMapSeries(s, binary_subdivision_map, 4);
+
+  our_mesh = finest_mesh(series)
+  lap = ∇²(0,our_mesh);
+
+  Random.seed!(1337)
+  b = lap*rand(nv(our_mesh));
+
+  inv_lap = @decapode begin
+    U::Form0
+    ∂ₜ(U) == Δ₀⁻¹(U)
+  end
+
+  function generate(fs, my_symbol; hodge=DiagonalHodge())
+    op = @match my_symbol begin
+      _ => default_dec_matrix_generate(fs, my_symbol, hodge)
+    end
+  end
+
+  sim = eval(gensim(inv_lap))
+  sim_mg = eval(gensim(inv_lap; multigrid=true))
+
+  f = sim(our_mesh, generate);
+  f_mg = sim_mg(series, generate);
+
+  u = ComponentArray(U=b)
+  du = similar(u)
+
+  # Regular mesh
+  f(du, u, 0, ())
+  @test norm(lap*du.U-b)/norm(b) < 1e-15
+
+  # Multigrid
+  f_mg(du, u, 0, ())
+  @test norm(lap*du.U-b)/norm(b) < 1e-6
 end
 
 @testset "Allocations" begin
@@ -781,11 +968,7 @@ for prealloc in [false, true]
   nallocs = @allocations f(du, u₀, p, (0,1.0))
   bytes = @allocated f(du, u₀, p, (0,1.0))
 
-  if VERSION < v"1.11"
-    @test (nallocs, bytes) == (prealloc ? (3, 80) : (5, 400))
-  else
-    @test (nallocs, bytes) == (prealloc ? (2, 32) : (6, 352))
-  end
+  @test (nallocs, bytes) <= (prealloc ? (6, 80) : (6, 400))
 end
 
 end

@@ -1,5 +1,7 @@
 .DS_Store
 .ipynb_checkpoints
+*.ipynb
+*.mp4
 /Manifest.toml
 /dev/
 *.mem

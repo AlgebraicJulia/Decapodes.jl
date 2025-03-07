@@ -48,16 +48,16 @@ In this equation `C` will represent the concentration of the binary fluid, rangi
 
 ## Loading the Data
 
-We now generate the mesh information. We'll run the equation on a triangulated grid. We hide the mesh visualization code for clarity.
+We now generate the mesh information. We'll run the equation on a triangulated grid.
 
 ```@example DEC
 s = triangulated_grid(100, 100, 0.5, 0.5, Point3D);
 sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s);
 subdivide_duals!(sd, Circumcenter());
-fig = Figure() # hide
-ax = CairoMakie.Axis(fig[1,1], aspect=1) # hide
-wf = wireframe!(ax, s; linewidth=1) # hide
-save("CahnHilliard_Rect.png", fig) # hide
+fig = Figure() 
+ax = CairoMakie.Axis(fig[1,1], aspect=1) 
+wf = wireframe!(ax, s; linewidth=1) 
+save("CahnHilliard_Rect.png", fig) 
 nothing # hide
 ```
 
@@ -72,11 +72,11 @@ C = rand(Float64, nv(sd)) * 2 .- 1
 u₀ = ComponentArray(C=C)
 constants = (D = 0.5, γ = 0.5);
 
-fig = Figure() # hide
-ax = CairoMakie.Axis(fig[1,1], aspect=1) # hide
-msh = CairoMakie.mesh!(ax, s, color=C, colormap=:jet, colorrange=extrema(C)) # hide
+fig = Figure() 
+ax = CairoMakie.Axis(fig[1,1], aspect=1) 
+msh = CairoMakie.mesh!(ax, s, color=C, colormap=:jet, colorrange=extrema(C)) 
 Colorbar(fig[1,2], msh)
-save("CahnHilliard_initial.png", fig) # hide
+save("CahnHilliard_initial.png", fig) 
 nothing # hide
 ```
 

@@ -5,6 +5,10 @@ using DiagrammaticEquations.Deca
 
 using Markdown
 
+struct DecapodeModel
+    value::Symbol
+end
+
 export @docapode
 
 function create_pode_expr(t) 
@@ -18,13 +22,13 @@ function create_pode_expr(t)
 
   docstring = Markdown.parse("""
 
-  # $modelname
+  **$modelname**
 
   [Source]($source)
 
   $desc
 
-  ## Model 
+  **Model** 
 
   $modeldef
 

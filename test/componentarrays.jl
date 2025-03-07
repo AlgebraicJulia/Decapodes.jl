@@ -69,22 +69,6 @@ prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())
 
 soln(0.9)
-# plotform0(plot_mesh, findnode((soln(1)-u₀), :C))
-# plotform0(plot_mesh, findnode((soln(0.0000000000001)-u₀), :C))
-
-# times = range(0.0, tₑ, length=150)
-# colors = [findnode(soln(t), :C)[point_map] for t in times]
-
-# Initial frame
-# fig, ax, ob = mesh(plot_mesh, color=colors[1], colorrange = extrema(vcat(colors...)))
-# ax.aspect = AxisAspect(3.0)
-# Colorbar(fig[1,2], ob)
-# framerate = 30
-
-# Animation
-# record(fig, "diff.gif", range(0.0, tₑ; length=150); framerate = 30) do t
-#     ob.color = findnode(soln(t), :C)[point_map]
-# end
 
 function closest_point(p1, p2, dims)
   p_res = collect(p2)

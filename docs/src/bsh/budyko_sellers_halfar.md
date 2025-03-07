@@ -1,4 +1,4 @@
-# Budko-Sellers-Halfar
+# Budyko-Sellers-Halfar
 
 ```@setup INFO
 include(joinpath(Base.@__DIR__, "..", "..","docinfo.jl"))
@@ -32,16 +32,16 @@ We have defined the [Halfar ice model](../ice_dynamics/ice_dynamics.md) in other
 ``` @example DEC
 halfar_eq2 = @decapode begin
   h::Form0
-  Γ::Form1
+  Γ::Form0
   n::Constant
 
   ḣ == ∂ₜ(h)
-  ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
 end
 
 glens_law = @decapode begin
-  Γ::Form1
-  A::Form1
+  Γ::Form0
+  A::Form0
   (ρ,g,n)::Constant
   
   Γ == (2/(n+2))*A*(ρ*g)^n
@@ -103,7 +103,7 @@ end
 to_graphviz(oplus([energy_balance, absorbed_shortwave_radiation, outgoing_longwave_radiation, heat_transfer, insolation]), directed=false)
 ```
 
-Now let's compose the Budyko-Sellers model:
+Now let's compose the Budyko-Sellers model together. We first specify a *composition shape* by declaring there are models called `energy` with four inputs, `absorbed_radiation` with two inputs, etc.
 
 ``` @example DEC
 budyko_sellers_composition_diagram = @relation () begin
@@ -116,6 +116,10 @@ end
 
 draw_composition(budyko_sellers_composition_diagram)
 ```
+
+We've obtained a composition shape. Now we `oapply` the composition diagram to
+a list of open models. By "opening" the models, we're specifying that they are models
+with inputs exposed to a larger system.
 
 ``` @example DEC
 budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
@@ -133,6 +137,9 @@ write_json_acset(budyko_sellers, "budyko_sellers.json")
 to_graphviz(budyko_sellers, verbose=false)
 ```
 
+The resulting system is a `cospan` diagram which specifies how each subsystem
+fits.
+
 ## Warming
 
 We need to specify physically what it means for these two terms to interact. We will say that ice will diffuse faster as temperature increases, and will pick some coefficients that demonstrate interesting dynamics on short timescales.
@@ -140,10 +147,9 @@ We need to specify physically what it means for these two terms to interact. We 
 ``` @example DEC
 warming = @decapode begin
   Tₛ::Form0
-  A::Form1
-
-  A == avg₀₁(5.8282*10^(-0.236 * Tₛ)*1.65e7)
-
+  A::Form0
+  
+  A == 5.8282*10^(-0.236 * Tₛ)*1.65e7
 end
 
 to_graphviz(warming)
@@ -291,8 +297,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
         sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
       end
     end
-    :mag => x -> norm.(x)
-    x => error("Unmatched operator $my_symbol")
+    x => default_dec_generate(sd, my_symbol, hodge)
   end
   return (args...) -> op(args...)
 end
