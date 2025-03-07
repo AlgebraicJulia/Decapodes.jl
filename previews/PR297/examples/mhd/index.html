@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>MHD · Decapodes.jl</title><meta name="title" content="MHD · Decapodes.jl"/><meta property="og:title" content="MHD · Decapodes.jl"/><meta property="twitter:title" content="MHD · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../concepts/equations/">Equations</a></li><li><a class="tocitem" href="../../concepts/composition/">Composition</a></li><li><a class="tocitem" href="../../concepts/meshes/">Meshes</a></li><li><a class="tocitem" href="../../concepts/generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../chemistry/gray_scott/">Gray-Scott</a></li><li><a class="tocitem" href="../oncology/tumor_proliferation_invasion/">Oncology</a></li><li class="is-active"><a class="tocitem" href>MHD</a></li></ul></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>MHD</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>MHD</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/literate/mhd.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>The model in this file is copied from the stream function formulation introduced here: https://algebraicjulia.github.io/Decapodes.jl/dev/navier_stokes/ns/ , but updated with terms representing β being advected by the fluid. The initial conditions setup code is copied outright.</p><p>The main reference used for developing this model is: &quot;Magnetohydrodynamics Simulation via Discrete Exterior Calculus&quot;, Gillespie, M. https://markjgillespie.com/Research/MHD/MHD<em>Simulation</em>with_DEC.pdf Note that the Gillespie paper does not use a stream function-vorticity formulation.</p><pre><code class="language-julia hljs">@info &quot;Loading Dependencies&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Loading Dependencies</code></pre><p>Dependencies can be installed with the following command:</p><pre><code class="language-julia hljs">using Pkg</code></pre><p>Pkg.add([&quot;ACSets&quot;, &quot;CairoMakie&quot;, &quot;CombinatorialSpaces&quot;, &quot;ComponentArrays&quot;,   &quot;CoordRefSystems&quot;, &quot;DiagrammaticEquations&quot;, &quot;GeometryBasics&quot;, &quot;JLD2&quot;,   &quot;LinearAlgebra&quot;, &quot;Logging&quot;, &quot;LoggingExtras&quot;, &quot;OrdinaryDiffEq&quot;, &quot;SparseArrays&quot;,   &quot;StaticArrays&quot;, &quot;TerminalLoggers&quot;])</p><p>Saving</p><pre><code class="language-julia hljs">using JLD2</code></pre><p>other dependencies</p><pre><code class="language-julia hljs">using MLStyle
+using Statistics: mean</code></pre><p>AlgebraicJulia</p><pre><code class="language-julia hljs">using ACSets
+using CombinatorialSpaces
+using Decapodes
+using DiagrammaticEquations</code></pre><p>Meshing</p><pre><code class="language-julia hljs">using CoordRefSystems
+using GeometryBasics: Point3
+Point3D = Point3{Float64};</code></pre><p>Visualization</p><pre><code class="language-julia hljs">using CairoMakie</code></pre><p>Simulation</p><pre><code class="language-julia hljs">using ComponentArrays
+using LinearAlgebra
+using LinearAlgebra: factorize
+using Logging: global_logger
+using LoggingExtras
+using OrdinaryDiffEq
+using SparseArrays
+using StaticArrays</code></pre><p>Saving</p><pre><code class="language-julia hljs">using JLD2</code></pre><p>other dependencies</p><pre><code class="language-julia hljs">using MLStyle
+using Statistics: mean
+
+@info &quot;Defining models&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Defining models</code></pre><p>Beta is out-of-plane:</p><pre><code class="language-julia hljs">mhd_out_of_plane = @decapode begin
+    ψ::Form0
+    η::DualForm1
+    (dη,β)::DualForm2
+
+    ∂ₜ(dη) == -1*(∘(⋆₁, dual_d₁)((⋆(dη) ∧₀₁ ♭♯(η)) + (⋆(β) ∧₀₁ ♭♯(∘(⋆, d, ⋆)(β)))))
+    ∂ₜ(β) == -1*(∘(⋆₁, dual_d₁)(⋆(β) ∧₀₁ ♭♯(η)))
+
+    ψ == ∘(⋆, Δ⁻¹)(dη)
+    η == ⋆(d(ψ))
+end;</code></pre><p>Beta lies in-plane:</p><pre><code class="language-julia hljs">mhd = @decapode begin
+    ψ::Form0
+    (η,β)::DualForm1
+    dη::DualForm2
+
+    ∂ₜ(dη) == -1*(∘(⋆₁, dual_d₁)((⋆(dη) ∧₀₁ ♭♯(η)) + (♭♯(⋆(β)) ∧ᵈᵈ₁₀ ∘(⋆, d, ⋆)(β))))
+    ∂ₜ(β) == -1*(∘(⋆₂, dual_d₀)(⋆(β) ∧ᵖᵈ₁₁ η))
+
+    ψ == ∘(⋆, Δ⁻¹)(dη)
+    η == ⋆(d(ψ))
+end;
+
+@info &quot;Allocating Mesh and Operators&quot;
+const RADIUS = 1.0;
+sphere = :ICO7;
+s = @match sphere begin
+    :ICO5 =&gt; loadmesh(Icosphere(4, RADIUS));
+    :ICO6 =&gt; loadmesh(Icosphere(6, RADIUS));
+    :ICO7 =&gt; loadmesh(Icosphere(7, RADIUS));
+    :ICO8 =&gt; loadmesh(Icosphere(8, RADIUS));
+    :flat =&gt; triangulated_grid(10, 10, 0.2, 0.2, Point3D)
+    :UV =&gt; begin
+        s, _, _ = makeSphere(0, 180, 2.5, 0, 360, 2.5, RADIUS);
+        s;
+    end
+end;
+dualmesh = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s);
+subdivide_duals!(dualmesh, Circumcenter());
+
+Δ0 = Δ(0,dualmesh);
+fΔ0 = factorize(Δ0);
+d0 = dec_differential(0,dualmesh);
+d1 = dec_differential(1,dualmesh);
+dd0 = dec_dual_derivative(0,dualmesh);
+dd1 = dec_dual_derivative(1,dualmesh);
+δ1 = δ(1,dualmesh);
+s0 = dec_hodge_star(0,dualmesh,GeometricHodge());
+s1 = dec_hodge_star(1,dualmesh,GeometricHodge());
+s2 = dec_hodge_star(2, dualmesh);
+s0inv = dec_inv_hodge_star(0,dualmesh,GeometricHodge());
+♭♯_m = ♭♯_mat(dualmesh);
+
+function generate(dualmesh, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :Δ⁻¹ =&gt; x -&gt; begin
+      y = fΔ0 \ x
+      y .- minimum(y)
+    end
+    _ =&gt; default_dec_matrix_generate(dualmesh, my_symbol, hodge)
+  end
+  return (args...) -&gt; op(args...)
+end;
+
+sim = evalsim(mhd);
+f = sim(dualmesh, generate);
+
+constants_and_parameters = (μ = 0.001,)
+
+@info &quot;Setting Initial Conditions&quot;
+
+&quot;&quot;&quot;    function great_circle_dist(pnt,G,a,cntr)
+Compute the length of the shortest path along a sphere, given Cartesian coordinates.
+&quot;&quot;&quot;
+function great_circle_dist(pnt1::Point3D, pnt2::Point3D)
+  RADIUS * acos(dot(pnt1,pnt2))
+end
+
+abstract type AbstractVortexParams end
+
+struct TaylorVortexParams &lt;: AbstractVortexParams
+  G::Real
+  a::Real
+end
+
+struct PointVortexParams &lt;: AbstractVortexParams
+  τ::Real
+  a::Real
+end
+
+&quot;&quot;&quot;    function taylor_vortex(pnt::Point3D, cntr::Point3D, p::TaylorVortexParams)
+Compute the value of a Taylor vortex at the given point.
+&quot;&quot;&quot;
+function taylor_vortex(pnt::Point3D, cntr::Point3D, p::TaylorVortexParams)
+  gcd = great_circle_dist(pnt,cntr)
+  (p.G/p.a) * (2 - (gcd/p.a)^2) * exp(0.5 * (1 - (gcd/p.a)^2))
+end
+
+&quot;&quot;&quot;    function point_vortex(pnt::Point3D, cntr::Point3D, p::PointVortexParams)
+Compute the value of a smoothed point vortex at the given point.
+&quot;&quot;&quot;
+function point_vortex(pnt::Point3D, cntr::Point3D, p::PointVortexParams)
+  gcd = great_circle_dist(pnt,cntr)
+  p.τ / (cosh(3gcd/p.a)^2)
+end
+
+taylor_vortex(dualmesh::HasDeltaSet, cntr::Point3D, p::TaylorVortexParams) =
+  map(x -&gt; taylor_vortex(x, cntr, p), point(dualmesh))
+point_vortex(dualmesh::HasDeltaSet, cntr::Point3D, p::PointVortexParams) =
+  map(x -&gt; point_vortex(x, cntr, p), point(dualmesh))
+
+&quot;&quot;&quot;    function ring_centers(lat, n)
+Find n equispaced points at the given latitude.
+&quot;&quot;&quot;
+function ring_centers(lat, n)
+  ϕs = range(0.0, 2π; length=n+1)[1:n]
+  map(ϕs) do ϕ
+    v_sph = Spherical(RADIUS, lat, ϕ)
+    v_crt = convert(Cartesian, v_sph)
+    Point3D(v_crt.x.val, v_crt.y.val, v_crt.z.val)
+  end
+end
+
+&quot;&quot;&quot;    function vort_ring(lat, n_vorts, p::T, formula) where {T&lt;:AbstractVortexParams}
+Compute vorticity as primal 0-forms for a ring of vortices.
+Specify the latitude, number of vortices, and a formula for computing vortex strength centered at a point.
+&quot;&quot;&quot;
+function vort_ring(lat, n_vorts, p::T, formula) where {T&lt;:AbstractVortexParams}
+  sum(map(x -&gt; formula(dualmesh, x, p), ring_centers(lat, n_vorts)))
+end
+
+&quot;&quot;&quot;    function vort_ring(lat, n_vorts, p::PointVortexParams, formula)
+Compute vorticity as primal 0-forms for a ring of vortices.
+Specify the latitude, number of vortices, and a formula for computing vortex strength centered at a point.
+Additionally, place a counter-balance vortex at the South Pole such that the integral of vorticity is 0.
+&quot;&quot;&quot;
+function vort_ring(lat, n_vorts, p::PointVortexParams, formula)
+  Xs = sum(map(x -&gt; formula(dualmesh, x, p), ring_centers(lat, n_vorts)))
+  Xsp = point_vortex(dualmesh, Point3D(0.0, 0.0, -1.0), PointVortexParams(-1*n_vorts*p.τ, p.a))
+  Xs + Xsp
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Main.vort_ring</code></pre><p>Six equidistant points at latitude θ=0.4. &quot;... an additional vortex, with strength τ=-18 and a radius a=0.15, is placed at the south pole (θ=π).&quot;</p><pre><code class="language-julia hljs">X = vort_ring(0.4, 6, PointVortexParams(3.0, 0.15), point_vortex)
+
+&quot;&quot;&quot;    function solve_poisson(vort::VForm)
+Compute the stream function by solving the Poisson equation.
+&quot;&quot;&quot;
+function solve_poisson(vort::VForm)
+  ψ = fΔ0 \ vort.data
+  ψ = ψ .- minimum(ψ)
+end
+solve_poisson(vort::DualForm{2}) =
+  solve_poisson(VForm(s0inv * vort.data))
+
+ψ = solve_poisson(VForm(X))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">40962-element Vector{Float64}:
+ 0.05195899307727814
+ 0.033801913261413574
+ 0.01192215085029602
+ 0.05214565992355347
+ 0.09183783829212189
+ 0.07075336575508118
+ 0.011984512209892273
+ 0.033312514424324036
+ 0.07111315429210663
+ 0.09179426729679108
+ ⋮
+ 0.035103052854537964
+ 0.03488406538963318
+ 0.03467221558094025
+ 0.03446738421916962
+ 0.034269556403160095
+ 0.034078702330589294
+ 0.03389476239681244
+ 0.033717572689056396
+ 0.033547163009643555</code></pre><p>Compute velocity as curl (⋆d) of the stream function.</p><pre><code class="language-julia hljs">curl_stream(ψ) = s1 * d0 * ψ
+divergence(u) = s2 * d1 * (s1 \ u)
+RMS(x) = √(mean(x&#39; * x))
+
+integral_of_curl(curl::DualForm{2}) = sum(curl.data)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">integral_of_curl (generic function with 1 method)</code></pre><p>Recall that s0 effectively multiplies each entry by a solid angle. i.e. (sum ∘ ⋆₀) computes a Riemann sum.</p><pre><code class="language-julia hljs">integral_of_curl(curl::VForm) = integral_of_curl(DualForm{2}(s0*curl.data))
+
+u₀ = ComponentArray(dη = s0*X, β = zeros(ne(dualmesh)))
+
+constants_and_parameters = (μ = 0.0,)
+
+
+@info(&quot;Solving&quot;)
+tₑ = 1.0;
+
+prob = ODEProblem(f, u₀, (0, tₑ), constants_and_parameters)
+soln = solve(prob,
+  Tsit5(),
+  dtmax = 1e-3,
+  dense=false,
+  progress=true, progress_steps=1);
+
+function visualize_dynamics(file_name, soln)
+    time = Observable(0.0)
+    fig = Figure()
+    Label(fig[1, 1, Top()], @lift(&quot;...at $($time)&quot;), padding = (0, 0, 5, 0))
+    ax = CairoMakie.Axis(fig[1,1])
+    msh = CairoMakie.mesh!(ax, s,
+      color=@lift(s0inv*soln($time).dη),
+      colormap=Reverse(:redsblues))
+    Colorbar(fig[1,2], msh)
+    record(fig, file_name, soln.t[1:10:end]; framerate = 10) do t
+      time[] = t
+    end
+end
+visualize_dynamics(&quot;mhd.mp4&quot;, soln)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;mhd.mp4&quot;</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../oncology/tumor_proliferation_invasion/">« Oncology</a><a class="docs-footer-nextpage" href="../../bc/bc_debug/">Misc Features »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 7 March 2025 17:31">Friday 7 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

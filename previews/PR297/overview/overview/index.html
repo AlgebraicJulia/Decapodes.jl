@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Overview · Decapodes.jl</title><meta name="title" content="Overview · Decapodes.jl"/><meta property="og:title" content="Overview · Decapodes.jl"/><meta property="twitter:title" content="Overview · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li class="is-active"><a class="tocitem" href>Overview</a><ul class="internal"><li><a class="tocitem" href="#Your-First-Decapode"><span>Your First Decapode</span></a></li><li><a class="tocitem" href="#A-Little-More-Complicated"><span>A Little More Complicated</span></a></li><li><a class="tocitem" href="#Bring-in-the-Dynamics"><span>Bring in the Dynamics</span></a></li><li><a class="tocitem" href="#Merging-Multiple-Physics"><span>Merging Multiple Physics</span></a></li></ul></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../concepts/equations/">Equations</a></li><li><a class="tocitem" href="../../concepts/composition/">Composition</a></li><li><a class="tocitem" href="../../concepts/meshes/">Meshes</a></li><li><a class="tocitem" href="../../concepts/generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/chemistry/gray_scott/">Gray-Scott</a></li><li><a class="tocitem" href="../../examples/oncology/tumor_proliferation_invasion/">Oncology</a></li><li><a class="tocitem" href="../../examples/mhd/">MHD</a></li></ul></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Overview</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Overview</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/overview/overview.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Introduction-to-Decapodes"><a class="docs-heading-anchor" href="#Introduction-to-Decapodes">Introduction to Decapodes</a><a id="Introduction-to-Decapodes-1"></a><a class="docs-heading-anchor-permalink" href="#Introduction-to-Decapodes" title="Permalink"></a></h1><p>Discrete Exterior Calculus Applied to Partial and Ordinary Differential Equations (Decapodes) is a diagrammatic language used to express systems of ordinary and partial differential equations. Decapodes provides a visual framework for understanding the coupling between variables within a PDE or ODE system, and a combinatorial data structure for working with them. Below, we provide a high-level overview of how Decapodes can be generated and interpreted.</p><h2 id="Your-First-Decapode"><a class="docs-heading-anchor" href="#Your-First-Decapode">Your First Decapode</a><a id="Your-First-Decapode-1"></a><a class="docs-heading-anchor-permalink" href="#Your-First-Decapode" title="Permalink"></a></h2><p>In the Decapodes graphical paradigm, nodes represent variables and arrows represent operators which relate variables to each other. Since Decapodes applies this diagrammatic language specifically to the Discrete Exterior Calculus (DEC), variables are typed by the dimension and orientation of the information they contain. So a variable of type <code>Form0</code> will be the 0-dimensional data points defined the vertices of a mesh. Similarly, <code>Form1</code> will be values stored on edges of the mesh and <code>Form2</code> will be values stored on the surfaces of the mesh.</p><p>Below, we provide a Decapode with just a single variable <code>C</code> and display it.</p><pre><code class="language-julia hljs">using Decapodes
+using DiagrammaticEquations
+using Catlab
+
+Variable = @decapode begin
+  C::Form0
+end
+
+to_graphviz(Variable)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.40.1 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="56pt" height="69pt"
+ viewBox="0.00 0.00 56.08 69.21" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 65.2132)">
+<title>G</title>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-65.2132 52.0833,-65.2132 52.0833,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%23000000" cx="24.0416" cy="-10.6066" rx="24.0833" ry="10.7143"/>
+<text text-anchor="middle" x="24.0416" y="-6.9066" font-family="Times,serif" font-size="14.00" fill="%23000000">C:Ω₀</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+</g>
+<!-- n2&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n2&%2345;&gt;n1</title>
+<path fill="none" stroke="%23000000" d="M24.0416,-57.1246C24.0416,-51.9402 24.0416,-38.0886 24.0416,-26.8394"/>
+<polygon fill="%23000000" stroke="%23000000" points="25.7917,-26.5754 24.0416,-21.5755 22.2917,-26.5755 25.7917,-26.5754"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+</g>
+</g>
+</svg>
+'/><p>The resulting diagram contains a single node, showing the single variable in this system. The arrow into this node represents that <code>C</code> is a source term.</p><p>Note that to display these diagrams you will require <a href="https://graphviz.org/">Graphviz</a>.</p><p>We can add a second variable.</p><pre><code class="language-julia hljs">TwoVariables = @decapode begin
+  C::Form0
+  dC::Form1
+end
+
+to_graphviz(TwoVariables)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.40.1 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="134pt" height="69pt"
+ viewBox="0.00 0.00 134.45 69.21" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 65.2132)">
+<title>G</title>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-65.2132 130.4472,-65.2132 130.4472,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%23000000" cx="24.0416" cy="-10.6066" rx="24.0833" ry="10.7143"/>
+<text text-anchor="middle" x="24.0416" y="-6.9066" font-family="Times,serif" font-size="14.00" fill="%23000000">C:Ω₀</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%23000000" cx="96.0416" cy="-10.6066" rx="30.3115" ry="10.7143"/>
+<text text-anchor="middle" x="96.0416" y="-6.9066" font-family="Times,serif" font-size="14.00" fill="%23000000">dC:Ω₁</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="%23000000" d="M58.4948,-57.1246C54.4194,-51.6222 43.1133,-36.3568 34.5549,-24.8014"/>
+<polygon fill="%23000000" stroke="%23000000" points="35.9268,-23.7134 31.5446,-20.737 33.1142,-25.7965 35.9268,-23.7134"/>
+</g>
+<!-- n3&%2345;&gt;n2 -->
+<g id="edge2" class="edge">
+<title>n3&%2345;&gt;n2</title>
+<path fill="none" stroke="%23000000" d="M61.5885,-57.1246C65.6159,-51.6869 76.705,-36.7147 85.2252,-25.2108"/>
+<polygon fill="%23000000" stroke="%23000000" points="86.6605,-26.2131 88.2302,-21.1535 83.848,-24.1299 86.6605,-26.2131"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+</g>
+</g>
+</svg>
+'/><p>We can also add a relationship between them. In this case, we make an equation which states that <code>dC</code> is the derivative of <code>C</code>.</p><pre><code class="language-julia hljs">Equation = @decapode begin
+  C::Form0
+  dC::Form1
+
+  dC == d(C)
+end
+
+to_graphviz(Equation)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.40.1 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="69pt" height="142pt"
+ viewBox="0.00 0.00 68.81 142.43" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 138.4264)">
+<title>G</title>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-138.4264 64.8112,-138.4264 64.8112,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%23000000" cx="30.4056" cy="-82.8198" rx="24.0833" ry="10.7143"/>
+<text text-anchor="middle" x="30.4056" y="-79.1198" font-family="Times,serif" font-size="14.00" fill="%23000000">C:Ω₀</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%23000000" cx="30.4056" cy="-10.6066" rx="30.3115" ry="10.7143"/>
+<text text-anchor="middle" x="30.4056" y="-6.9066" font-family="Times,serif" font-size="14.00" fill="%23000000">dC:Ω₁</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge2" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="%23000000" d="M30.4056,-72.1645C30.4056,-60.1114 30.4056,-40.3593 30.4056,-26.4873"/>
+<polygon fill="%23000000" stroke="%23000000" points="32.1557,-26.3056 30.4056,-21.3056 28.6557,-26.3057 32.1557,-26.3056"/>
+<text text-anchor="middle" x="35.4056" y="-43.0132" font-family="Times,serif" font-size="14.00" fill="%23000000">d</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="%23000000" d="M30.4056,-130.2949C30.4056,-124.8913 30.4056,-110.2625 30.4056,-98.6584"/>
+<polygon fill="%23000000" stroke="%23000000" points="32.1557,-98.5837 30.4056,-93.5837 28.6557,-98.5837 32.1557,-98.5837"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+</g>
+</g>
+</svg>
+'/><p>Here, the two nodes represent the two variables, and the arrow between them shows how they are related by the derivative.</p><h2 id="A-Little-More-Complicated"><a class="docs-heading-anchor" href="#A-Little-More-Complicated">A Little More Complicated</a><a id="A-Little-More-Complicated-1"></a><a class="docs-heading-anchor-permalink" href="#A-Little-More-Complicated" title="Permalink"></a></h2><p>Now that we&#39;ve seen how to construct a simple equation, it&#39;s time to move on to some actual PDE systems! One classic PDE example is the diffusion equation. This equation states that the change of concentration at each point is proportional to the Laplacian of the concentration.</p><pre><code class="language-julia hljs">Diffusion = @decapode begin
+  (C, Ċ)::Form0
+  ϕ::Form1
+  k::Constant
+
+  # Fick&#39;s first law
+  ϕ ==  k*(d₀(C))
+
+  # Diffusion equation
+  Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
+  ∂ₜ(C) == Ċ
+
+end
+
+to_graphviz(Diffusion)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.40.1 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="162pt" height="544pt"
+ viewBox="0.00 0.00 162.20 544.49" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 540.4924)">
+<title>G</title>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-540.4924 158.2046,-540.4924 158.2046,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%23000000" cx="66.0416" cy="-484.8858" rx="24.0833" ry="10.7143"/>
+<text text-anchor="middle" x="66.0416" y="-481.1858" font-family="Times,serif" font-size="14.00" fill="%23000000">C:Ω₀</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%23000000" cx="24.0416" cy="-51.6066" rx="24.0833" ry="10.7143"/>
+<text text-anchor="middle" x="24.0416" y="-47.9066" font-family="Times,serif" font-size="14.00" fill="%23000000">Ċ:Ω₀</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge8" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="%23000000" d="M53.1696,-475.8756C36.0823,-462.7442 8.0416,-436.603 8.0416,-406.4594 8.0416,-406.4594 8.0416,-406.4594 8.0416,-123.8198 8.0416,-103.9202 13.9047,-81.6508 18.5325,-67.1727"/>
+<polygon fill="%23000000" stroke="%23000000" points="20.2651,-67.5066 20.1685,-62.2101 16.941,-66.4108 20.2651,-67.5066"/>
+<text text-anchor="middle" x="14.0416" y="-264.5462" font-family="Times,serif" font-size="14.00" fill="%23000000">∂ₜ</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="%23000000" cx="66.0416" cy="-406.4594" rx="30.3115" ry="10.7143"/>
+<text text-anchor="middle" x="66.0416" y="-402.7594" font-family="Times,serif" font-size="14.00" fill="%23000000">•2:Ω•</text>
+</g>
+<!-- n1&%2345;&gt;n6 -->
+<g id="edge4" class="edge">
+<title>n1&%2345;&gt;n6</title>
+<path fill="none" stroke="%23000000" d="M66.0416,-473.981C66.0416,-460.6362 66.0416,-437.9257 66.0416,-422.5667"/>
+<polygon fill="%23000000" stroke="%23000000" points="67.7917,-422.2716 66.0416,-417.2717 64.2917,-422.2717 67.7917,-422.2716"/>
+<text text-anchor="middle" x="74.0416" y="-441.9726" font-family="Times,serif" font-size="14.00" fill="%23000000">d₀</text>
+</g>
+<!-- n9 -->
+<g id="node9" class="node">
+<title>n9</title>
+</g>
+<!-- n2&%2345;&gt;n9 -->
+<g id="edge3" class="edge">
+<title>n2&%2345;&gt;n9</title>
+<path fill="none" stroke="%23000000" d="M24.0416,-40.5973C24.0416,-31.135 24.0416,-17.7454 24.0416,-9.4807"/>
+<polygon fill="%23000000" stroke="%23000000" points="25.7917,-9.3096 24.0416,-4.3096 22.2917,-9.3096 25.7917,-9.3096"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="%23000000" cx="66.0416" cy="-268.2462" rx="23.1702" ry="10.7143"/>
+<text text-anchor="middle" x="66.0416" y="-264.5462" font-family="Times,serif" font-size="14.00" fill="%23000000">ϕ:Ω₁</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="%23000000" cx="66.0416" cy="-196.033" rx="30.3115" ry="10.7143"/>
+<text text-anchor="middle" x="66.0416" y="-192.333" font-family="Times,serif" font-size="14.00" fill="%23000000">•3:Ω•</text>
+</g>
+<!-- n3&%2345;&gt;n7 -->
+<g id="edge5" class="edge">
+<title>n3&%2345;&gt;n7</title>
+<path fill="none" stroke="%23000000" d="M66.0416,-257.5909C66.0416,-245.5378 66.0416,-225.7857 66.0416,-211.9137"/>
+<polygon fill="%23000000" stroke="%23000000" points="67.7917,-211.732 66.0416,-206.732 64.2917,-211.7321 67.7917,-211.732"/>
+<text text-anchor="middle" x="74.0416" y="-228.4396" font-family="Times,serif" font-size="14.00" fill="%23000000">⋆₁</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="%23000000" cx="128.0416" cy="-445.6726" rx="26.3269" ry="10.7143"/>
+<text text-anchor="middle" x="128.0416" y="-441.9726" font-family="Times,serif" font-size="14.00" fill="%23000000">k:ΩC</text>
+</g>
+<!-- n10 -->
+<g id="node10" class="node">
+<title>n10</title>
+<polygon fill="none" stroke="%23000000" points="94.0416,-344.8528 38.0416,-344.8528 38.0416,-329.8528 94.0416,-329.8528 94.0416,-344.8528"/>
+<text text-anchor="middle" x="66.0416" y="-333.6528" font-family="Times,serif" font-size="14.00" fill="%23000000">ΩC×Ω•</text>
+</g>
+<!-- n4&%2345;&gt;n10 -->
+<g id="edge9" class="edge">
+<title>n4&%2345;&gt;n10</title>
+<path fill="none" stroke="%23000000" stroke-dasharray="5,2" d="M123.6573,-435.009C116.7602,-418.7723 102.4574,-387.1724 86.0416,-362.8528 82.9253,-358.2361 79.2283,-353.3766 75.8657,-349.1524"/>
+<polygon fill="%23000000" stroke="%23000000" points="77.1528,-347.9609 72.6485,-345.1727 74.4309,-350.1613 77.1528,-347.9609"/>
+<text text-anchor="middle" x="122.0416" y="-402.7594" font-family="Times,serif" font-size="14.00" fill="%23000000">π₁</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="%23000000" cx="66.0416" cy="-123.8198" rx="30.3115" ry="10.7143"/>
+<text text-anchor="middle" x="66.0416" y="-120.1198" font-family="Times,serif" font-size="14.00" fill="%23000000">•1:Ω•</text>
+</g>
+<!-- n5&%2345;&gt;n2 -->
+<g id="edge7" class="edge">
+<title>n5&%2345;&gt;n2</title>
+<path fill="none" stroke="%23000000" d="M59.8444,-113.1645C52.7101,-100.898 40.9381,-80.6577 32.8529,-66.7563"/>
+<polygon fill="%23000000" stroke="%23000000" points="34.2909,-65.7479 30.2643,-62.3056 31.2654,-67.5076 34.2909,-65.7479"/>
+<text text-anchor="middle" x="62.5416" y="-84.0132" font-family="Times,serif" font-size="14.00" fill="%23000000">⋆₀⁻¹</text>
+</g>
+<!-- n6&%2345;&gt;n10 -->
+<g id="edge10" class="edge">
+<title>n6&%2345;&gt;n10</title>
+<path fill="none" stroke="%23000000" stroke-dasharray="5,2" d="M66.0416,-395.6615C66.0416,-383.3051 66.0416,-363.0931 66.0416,-350.0079"/>
+<polygon fill="%23000000" stroke="%23000000" points="67.7917,-349.88 66.0416,-344.88 64.2917,-349.88 67.7917,-349.88"/>
+<text text-anchor="middle" x="74.0416" y="-366.6528" font-family="Times,serif" font-size="14.00" fill="%23000000">π₂</text>
+</g>
+<!-- n7&%2345;&gt;n5 -->
+<g id="edge6" class="edge">
+<title>n7&%2345;&gt;n5</title>
+<path fill="none" stroke="%23000000" d="M66.0416,-185.3777C66.0416,-173.3246 66.0416,-153.5725 66.0416,-139.7005"/>
+<polygon fill="%23000000" stroke="%23000000" points="67.7917,-139.5188 66.0416,-134.5188 64.2917,-139.5189 67.7917,-139.5188"/>
+<text text-anchor="middle" x="93.0416" y="-156.2264" font-family="Times,serif" font-size="14.00" fill="%23000000">dual_d₁</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+</g>
+<!-- n8&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n8&%2345;&gt;n1</title>
+<path fill="none" stroke="%23000000" d="M93.7955,-532.3609C90.5414,-526.7945 81.5642,-511.4384 74.6926,-499.6839"/>
+<polygon fill="%23000000" stroke="%23000000" points="76.1199,-498.6579 72.0857,-495.2246 73.0984,-500.4244 76.1199,-498.6579"/>
+</g>
+<!-- n8&%2345;&gt;n4 -->
+<g id="edge2" class="edge">
+<title>n8&%2345;&gt;n4</title>
+<path fill="none" stroke="%23000000" d="M95.8574,-532.2969C99.456,-522.611 114.098,-483.2021 122.3376,-461.0249"/>
+<polygon fill="%23000000" stroke="%23000000" points="123.9887,-461.6056 124.0897,-456.3092 120.7079,-460.3866 123.9887,-461.6056"/>
+</g>
+<!-- n10&%2345;&gt;n3 -->
+<g id="edge11" class="edge">
+<title>n10&%2345;&gt;n3</title>
+<path fill="none" stroke="%23000000" d="M66.0416,-329.6932C66.0416,-318.7728 66.0416,-298.4732 66.0416,-284.2022"/>
+<polygon fill="%23000000" stroke="%23000000" points="67.7917,-283.8738 66.0416,-278.8738 64.2917,-283.8738 67.7917,-283.8738"/>
+<text text-anchor="middle" x="70.0416" y="-300.6528" font-family="Times,serif" font-size="14.00" fill="%23000000">*</text>
+</g>
+</g>
+</svg>
+'/><p>The resulting Decapode shows the relationships between the three variables with the triangle diagram.</p><h2 id="Bring-in-the-Dynamics"><a class="docs-heading-anchor" href="#Bring-in-the-Dynamics">Bring in the Dynamics</a><a id="Bring-in-the-Dynamics-1"></a><a class="docs-heading-anchor-permalink" href="#Bring-in-the-Dynamics" title="Permalink"></a></h2><p>Now that we have a reasonably complex PDE, we can demonstrate some of the developed tooling for actually solving the PDE. Currently, the tooling will automatically generate an explicit method for solving the system (using <a href="https://docs.sciml.ai/OrdinaryDiffEq/stable/">OrdinaryDiffEq.jl</a> to handle time-stepping and instability detection).</p><p>To start with, we solve our PDE on a flat <code>triangulated_grid</code> as provided by <a href="https://algebraicjulia.github.io/CombinatorialSpaces.jl/stable/meshes/#CombinatorialSpaces.Meshes.triangulated_grid">CombinatorialSpaces.jl</a>.</p><pre><code class="language-julia hljs">using CairoMakie
+using CombinatorialSpaces
+using GeometryBasics: Point3
+
+mesh = triangulated_grid(30,10,1,1,Point3{Float64})
+
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
+wireframe!(ax, mesh)
+fig</code></pre><img src="9bee9b05.png" alt="Example block output"/><p>We first create a mesh that is &quot;dual&quot; to the original mesh by creating an <code>EmbeddedDeltaDualComplex2D</code> and calling <code>subdivide_duals!</code>. This is done to allow important DEC operators to be created and used in the simulation.</p><p>We then compile the simulation by using <code>gensim</code> and create functional simulation by calling the evaluated <code>sim</code>  with the mesh. Decapodes supports providing custom functions to the simulator, but for the time being we will keep things simple by passing in <code>nothing</code> to this value.</p><pre><code class="language-julia hljs">dualmesh = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}(mesh)
+subdivide_duals!(dualmesh, Circumcenter())
+sim = eval(gensim(Diffusion))
+fₘ = sim(dualmesh, nothing, DiagonalHodge())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#5&quot;{PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, PreallocationTools.FixedSizeDiffCache{Vector{Float64}, Vector{ForwardDiff.Dual{nothing, Float64, 12}}}, SparseArrays.SparseMatrixCSC{Float64, Int64}, SparseArrays.SparseMatrixCSC{Int8, Int32}}) (generic function with 1 method)</code></pre><p>We go ahead and set up our initial conditions for this problem. In this case we generate a Gaussian over our mesh.</p><pre><code class="language-julia hljs">using Distributions
+c_dist = MvNormal([7, 5], [1.5, 1.5])
+c = [pdf(c_dist, [p[1], p[2]]) for p in mesh[:point]]
+
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
+mesh!(ax, mesh; color=c)
+fig</code></pre><img src="c4526b01.png" alt="Example block output"/><p>Finally, we solve this PDE problem using the <code>Tsit5()</code> solver provided by <a href="https://docs.sciml.ai/OrdinaryDiffEq/stable/explicit/Tsit5/">OrdinaryDiffEq</a>. We will need to make two ComponentArrays to store the state variable data and constants, respectively.</p><pre><code class="language-julia hljs">using LinearAlgebra
+using ComponentArrays
+using OrdinaryDiffEq
+
+u₀ = ComponentArray(C=c)
+constants = ComponentArray(k=0.05)
+
+tₑ = 100
+prob = ODEProblem(fₘ, u₀, (0.0, tₑ), constants)
+soln = solve(prob, Tsit5())
+soln.retcode</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ReturnCode.Success = 1</code></pre><p>Now that the simulation has succeeded we can plot out our results with <a href="https://github.com/MakieOrg/Makie.jl">CairoMakie.jl</a>.</p><pre><code class="language-julia hljs">fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
+pmsh = mesh!(ax, mesh; color=c, colorrange = extrema(c))
+Colorbar(fig[1,2], pmsh)
+
+
+times = range(0.0, tₑ, length=150)
+record(fig, &quot;diffusion.gif&quot;, times; framerate = 30) do t
+  pmsh.color = soln(t).C
+end</code></pre><p><img src="../diffusion.gif" alt="Your first Decapode!"/></p><h2 id="Merging-Multiple-Physics"><a class="docs-heading-anchor" href="#Merging-Multiple-Physics">Merging Multiple Physics</a><a id="Merging-Multiple-Physics-1"></a><a class="docs-heading-anchor-permalink" href="#Merging-Multiple-Physics" title="Permalink"></a></h2><p>Now that we&#39;ve seen the basic pipeline, it&#39;s time for a more complex example that demonstrates some of the benefits reaped from using <a href="https://github.com/AlgebraicJulia/Catlab.jl">Catlab.jl</a> as the backend to our data structures. In this example, we will take two separate physics (diffusion and advection), and combine them together using a higher-level composition pattern.</p><p>We begin by defining the three systems we need. The first two systems are the relationships between concentration and flux under diffusion and advection respectively. The third is the relationship between the two fluxes and the change of concentration under superposition of fluxes.</p><pre><code class="language-julia hljs">Diffusion = @decapode begin
+  C::Form0
+  ϕ::Form1
+  k::Constant
+
+  # Fick&#39;s first law
+  ϕ == k*(d₀(C))
+end
+
+Advection = @decapode begin
+  C::Form0
+  ϕ::Form1
+  V::Form1
+
+  ϕ == ∧₀₁(C,V)
+end
+
+Superposition = @decapode begin
+  (C, Ċ)::Form0
+  (ϕ, ϕ₁, ϕ₂)::Form1
+
+  ϕ == ϕ₁ + ϕ₂
+  Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
+  ∂ₜ(C) == Ċ
+end</code></pre><p>The diffusion Decapode.</p><pre><code class="language-julia hljs">to_graphviz(Diffusion)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.40.1 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="130pt" height="287pt"
+ viewBox="0.00 0.00 129.57 286.85" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 282.8528)">
+<title>G</title>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-282.8528 125.5685,-282.8528 125.5685,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%23000000" cx="40.4056" cy="-227.2462" rx="24.0833" ry="10.7143"/>
+<text text-anchor="middle" x="40.4056" y="-223.5462" font-family="Times,serif" font-size="14.00" fill="%23000000">C:Ω₀</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="%23000000" cx="30.4056" cy="-148.8198" rx="30.3115" ry="10.7143"/>
+<text text-anchor="middle" x="30.4056" y="-145.1198" font-family="Times,serif" font-size="14.00" fill="%23000000">•1:Ω•</text>
+</g>
+<!-- n1&%2345;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&gt;n4</title>
+<path fill="none" stroke="%23000000" d="M39.0151,-216.3414C37.3136,-202.9966 34.4178,-180.2861 32.4594,-164.9271"/>
+<polygon fill="%23000000" stroke="%23000000" points="34.1527,-164.3705 31.7842,-159.632 30.6808,-164.8133 34.1527,-164.3705"/>
+<text text-anchor="middle" x="45.4056" y="-184.333" font-family="Times,serif" font-size="14.00" fill="%23000000">d₀</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%23000000" cx="63.4056" cy="-10.6066" rx="23.1702" ry="10.7143"/>
+<text text-anchor="middle" x="63.4056" y="-6.9066" font-family="Times,serif" font-size="14.00" fill="%23000000">ϕ:Ω₁</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="%23000000" cx="95.4056" cy="-188.033" rx="26.3269" ry="10.7143"/>
+<text text-anchor="middle" x="95.4056" y="-184.333" font-family="Times,serif" font-size="14.00" fill="%23000000">k:ΩC</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<polygon fill="none" stroke="%23000000" points="91.4056,-87.2132 35.4056,-87.2132 35.4056,-72.2132 91.4056,-72.2132 91.4056,-87.2132"/>
+<text text-anchor="middle" x="63.4056" y="-76.0132" font-family="Times,serif" font-size="14.00" fill="%23000000">ΩC×Ω•</text>
+</g>
+<!-- n3&%2345;&gt;n7 -->
+<g id="edge4" class="edge">
+<title>n3&%2345;&gt;n7</title>
+<path fill="none" stroke="%23000000" stroke-dasharray="5,2" d="M92.2203,-177.2509C86.2743,-157.1236 73.5141,-113.9304 67.1602,-92.4226"/>
+<polygon fill="%23000000" stroke="%23000000" points="68.7859,-91.7483 65.6909,-87.449 65.4293,-92.7399 68.7859,-91.7483"/>
+<text text-anchor="middle" x="94.4056" y="-145.1198" font-family="Times,serif" font-size="14.00" fill="%23000000">π₁</text>
+</g>
+<!-- n4&%2345;&gt;n7 -->
+<g id="edge5" class="edge">
+<title>n4&%2345;&gt;n7</title>
+<path fill="none" stroke="%23000000" stroke-dasharray="5,2" d="M35.4176,-138.324C41.3389,-125.9239 51.1789,-105.3176 57.4744,-92.1339"/>
+<polygon fill="%23000000" stroke="%23000000" points="59.2012,-92.5788 59.7767,-87.3127 56.0428,-91.0706 59.2012,-92.5788"/>
+<text text-anchor="middle" x="58.4056" y="-109.0132" font-family="Times,serif" font-size="14.00" fill="%23000000">π₂</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+</g>
+<!-- n5&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n5&%2345;&gt;n1</title>
+<path fill="none" stroke="%23000000" d="M66.2454,-274.7213C63.2158,-269.1549 54.8577,-253.7988 48.4599,-242.0443"/>
+<polygon fill="%23000000" stroke="%23000000" points="49.9602,-241.14 46.0328,-237.585 46.8861,-242.8133 49.9602,-241.14"/>
+</g>
+<!-- n5&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n5&%2345;&gt;n3</title>
+<path fill="none" stroke="%23000000" d="M68.0977,-274.6573C71.1383,-265.0121 83.4704,-225.8932 90.4774,-203.6658"/>
+<polygon fill="%23000000" stroke="%23000000" points="92.2181,-203.9644 92.0525,-198.6695 88.8801,-202.912 92.2181,-203.9644"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+</g>
+<!-- n7&%2345;&gt;n2 -->
+<g id="edge6" class="edge">
+<title>n7&%2345;&gt;n2</title>
+<path fill="none" stroke="%23000000" d="M63.4056,-72.0535C63.4056,-61.1331 63.4056,-40.8335 63.4056,-26.5626"/>
+<polygon fill="%23000000" stroke="%23000000" points="65.1557,-26.2342 63.4056,-21.2342 61.6557,-26.2342 65.1557,-26.2342"/>
+<text text-anchor="middle" x="67.4056" y="-43.0132" font-family="Times,serif" font-size="14.00" fill="%23000000">*</text>
+</g>
+</g>
+</svg>
+'/><p>The advection Decapode.</p><pre><code class="language-julia hljs">to_graphviz(Advection)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.40.1 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="120pt" height="208pt"
+ viewBox="0.00 0.00 119.67 208.43" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 204.4264)">
+<title>G</title>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-204.4264 115.669,-204.4264 115.669,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%23000000" cx="24.0416" cy="-148.8198" rx="24.0833" ry="10.7143"/>
+<text text-anchor="middle" x="24.0416" y="-145.1198" font-family="Times,serif" font-size="14.00" fill="%23000000">C:Ω₀</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<polygon fill="none" stroke="%23000000" points="80.5416,-87.2132 31.5416,-87.2132 31.5416,-72.2132 80.5416,-72.2132 80.5416,-87.2132"/>
+<text text-anchor="middle" x="56.0416" y="-76.0132" font-family="Times,serif" font-size="14.00" fill="%23000000">Ω₀×Ω₁</text>
+</g>
+<!-- n1&%2345;&gt;n6 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&gt;n6</title>
+<path fill="none" stroke="%23000000" stroke-dasharray="5,2" d="M28.7814,-138.4099C32.8159,-129.5671 38.7776,-116.5434 44.0416,-105.2132 46.0568,-100.8758 48.2826,-96.1329 50.2644,-91.9265"/>
+<polygon fill="%23000000" stroke="%23000000" points="51.9004,-92.5602 52.4516,-87.2915 48.7351,-91.0665 51.9004,-92.5602"/>
+<text text-anchor="middle" x="52.0416" y="-109.0132" font-family="Times,serif" font-size="14.00" fill="%23000000">π₁</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%23000000" cx="56.0416" cy="-10.6066" rx="23.1702" ry="10.7143"/>
+<text text-anchor="middle" x="56.0416" y="-6.9066" font-family="Times,serif" font-size="14.00" fill="%23000000">ϕ:Ω₁</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="%23000000" cx="89.0416" cy="-148.8198" rx="22.7556" ry="10.7143"/>
+<text text-anchor="middle" x="89.0416" y="-145.1198" font-family="Times,serif" font-size="14.00" fill="%23000000">V:Ω₁</text>
+</g>
+<!-- n3&%2345;&gt;n6 -->
+<g id="edge4" class="edge">
+<title>n3&%2345;&gt;n6</title>
+<path fill="none" stroke="%23000000" stroke-dasharray="5,2" d="M84.0296,-138.324C78.1083,-125.9239 68.2683,-105.3176 61.9728,-92.1339"/>
+<polygon fill="%23000000" stroke="%23000000" points="63.4044,-91.0706 59.6706,-87.3127 60.246,-92.5788 63.4044,-91.0706"/>
+<text text-anchor="middle" x="82.0416" y="-109.0132" font-family="Times,serif" font-size="14.00" fill="%23000000">π₂</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+</g>
+<!-- n4&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n4&%2345;&gt;n1</title>
+<path fill="none" stroke="%23000000" d="M54.6666,-196.2949C51.0759,-190.7285 41.17,-175.3724 33.5875,-163.6179"/>
+<polygon fill="%23000000" stroke="%23000000" points="34.8919,-162.4116 30.7109,-159.1586 31.9508,-164.3089 34.8919,-162.4116"/>
+</g>
+<!-- n4&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n4&%2345;&gt;n3</title>
+<path fill="none" stroke="%23000000" d="M57.4596,-196.2949C61.1625,-190.7285 71.378,-175.3724 79.1975,-163.6179"/>
+<polygon fill="%23000000" stroke="%23000000" points="80.8516,-164.2909 82.1639,-159.1586 77.9374,-162.3523 80.8516,-164.2909"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+</g>
+<!-- n6&%2345;&gt;n2 -->
+<g id="edge5" class="edge">
+<title>n6&%2345;&gt;n2</title>
+<path fill="none" stroke="%23000000" d="M56.0416,-72.0535C56.0416,-61.1331 56.0416,-40.8335 56.0416,-26.5626"/>
+<polygon fill="%23000000" stroke="%23000000" points="57.7917,-26.2342 56.0416,-21.2342 54.2917,-26.2342 57.7917,-26.2342"/>
+<text text-anchor="middle" x="67.5416" y="-43.0132" font-family="Times,serif" font-size="14.00" fill="%23000000">∧₀₁</text>
+</g>
+</g>
+</svg>
+'/><p>And the superposition Decapode.</p><pre><code class="language-julia hljs">to_graphviz(Superposition)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.40.1 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="189pt" height="484pt"
+ viewBox="0.00 0.00 188.62 484.15" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 480.1493)">
+<title>G</title>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-480.1493 184.6188,-480.1493 184.6188,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%23000000" cx="24.0416" cy="-385.3295" rx="24.0833" ry="10.7143"/>
+<text text-anchor="middle" x="24.0416" y="-381.6295" font-family="Times,serif" font-size="14.00" fill="%23000000">C:Ω₀</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%23000000" cx="40.0416" cy="-51.6066" rx="24.0833" ry="10.7143"/>
+<text text-anchor="middle" x="40.0416" y="-47.9066" font-family="Times,serif" font-size="14.00" fill="%23000000">Ċ:Ω₀</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge8" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="%23000000" d="M24.0416,-374.5886C24.0416,-359.081 24.0416,-329.5174 24.0416,-304.3528 24.0416,-304.3528 24.0416,-304.3528 24.0416,-123.8198 24.0416,-103.9202 29.9047,-81.6508 34.5325,-67.1727"/>
+<polygon fill="%23000000" stroke="%23000000" points="36.2651,-67.5066 36.1685,-62.2101 32.941,-66.4108 36.2651,-67.5066"/>
+<text text-anchor="middle" x="30.0416" y="-228.4396" font-family="Times,serif" font-size="14.00" fill="%23000000">∂ₜ</text>
+</g>
+<!-- n9 -->
+<g id="node9" class="node">
+<title>n9</title>
+</g>
+<!-- n2&%2345;&gt;n9 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&gt;n9</title>
+<path fill="none" stroke="%23000000" d="M40.0416,-40.5973C40.0416,-31.135 40.0416,-17.7454 40.0416,-9.4807"/>
+<polygon fill="%23000000" stroke="%23000000" points="41.7917,-9.3096 40.0416,-4.3096 38.2917,-9.3096 41.7917,-9.3096"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="%23000000" cx="103.0416" cy="-268.2462" rx="23.1702" ry="10.7143"/>
+<text text-anchor="middle" x="103.0416" y="-264.5462" font-family="Times,serif" font-size="14.00" fill="%23000000">ϕ:Ω₁</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="%23000000" cx="103.0416" cy="-196.033" rx="30.3115" ry="10.7143"/>
+<text text-anchor="middle" x="103.0416" y="-192.333" font-family="Times,serif" font-size="14.00" fill="%23000000">•1:Ω•</text>
+</g>
+<!-- n3&%2345;&gt;n7 -->
+<g id="edge5" class="edge">
+<title>n3&%2345;&gt;n7</title>
+<path fill="none" stroke="%23000000" d="M103.0416,-257.5909C103.0416,-245.5378 103.0416,-225.7857 103.0416,-211.9137"/>
+<polygon fill="%23000000" stroke="%23000000" points="104.7917,-211.732 103.0416,-206.732 101.2917,-211.7321 104.7917,-211.732"/>
+<text text-anchor="middle" x="111.0416" y="-228.4396" font-family="Times,serif" font-size="14.00" fill="%23000000">⋆₁</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="%23000000" cx="80.0416" cy="-424.5427" rx="27.6545" ry="10.7143"/>
+<text text-anchor="middle" x="80.0416" y="-420.8427" font-family="Times,serif" font-size="14.00" fill="%23000000">ϕ₁:Ω₁</text>
+</g>
+<!-- n10 -->
+<g id="node10" class="node">
+<title>n10</title>
+<ellipse fill="none" stroke="%23000000" cx="103.0416" cy="-343.2878" rx="13.3704" ry="13.3704"/>
+<text text-anchor="middle" x="103.0416" y="-339.5878" font-family="Times,serif" font-size="14.00" fill="%23000000">Σ1</text>
+</g>
+<!-- n4&%2345;&gt;n10 -->
+<g id="edge10" class="edge">
+<title>n4&%2345;&gt;n10</title>
+<path fill="none" stroke="%23000000" stroke-dasharray="5,2" d="M83.0485,-413.92C86.8118,-400.6249 93.3168,-377.6438 97.8823,-361.5148"/>
+<polygon fill="%23000000" stroke="%23000000" points="99.6715,-361.6192 99.3495,-356.3316 96.3038,-360.6659 99.6715,-361.6192"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="%23000000" cx="153.0416" cy="-424.5427" rx="27.6545" ry="10.7143"/>
+<text text-anchor="middle" x="153.0416" y="-420.8427" font-family="Times,serif" font-size="14.00" fill="%23000000">ϕ₂:Ω₁</text>
+</g>
+<!-- n5&%2345;&gt;n10 -->
+<g id="edge11" class="edge">
+<title>n5&%2345;&gt;n10</title>
+<path fill="none" stroke="%23000000" stroke-dasharray="5,2" d="M146.505,-413.92C137.9396,-400.0004 122.841,-375.4637 112.8881,-359.2893"/>
+<polygon fill="%23000000" stroke="%23000000" points="114.3379,-358.306 110.227,-354.9648 111.357,-360.1403 114.3379,-358.306"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="%23000000" cx="103.0416" cy="-123.8198" rx="50.8235" ry="10.7143"/>
+<text text-anchor="middle" x="103.0416" y="-120.1198" font-family="Times,serif" font-size="14.00" fill="%23000000">sum_1:Ω•</text>
+</g>
+<!-- n6&%2345;&gt;n2 -->
+<g id="edge7" class="edge">
+<title>n6&%2345;&gt;n2</title>
+<path fill="none" stroke="%23000000" d="M93.7458,-113.1645C82.8272,-100.6492 64.6669,-79.8331 52.5272,-65.9181"/>
+<polygon fill="%23000000" stroke="%23000000" points="53.5734,-64.4553 48.9677,-61.838 50.936,-66.7562 53.5734,-64.4553"/>
+<text text-anchor="middle" x="92.5416" y="-84.0132" font-family="Times,serif" font-size="14.00" fill="%23000000">⋆₀⁻¹</text>
+</g>
+<!-- n7&%2345;&gt;n6 -->
+<g id="edge6" class="edge">
+<title>n7&%2345;&gt;n6</title>
+<path fill="none" stroke="%23000000" d="M103.0416,-185.3777C103.0416,-173.3246 103.0416,-153.5725 103.0416,-139.7005"/>
+<polygon fill="%23000000" stroke="%23000000" points="104.7917,-139.5188 103.0416,-134.5188 101.2917,-139.5189 104.7917,-139.5188"/>
+<text text-anchor="middle" x="130.0416" y="-156.2264" font-family="Times,serif" font-size="14.00" fill="%23000000">dual_d₁</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+</g>
+<!-- n8&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n8&%2345;&gt;n1</title>
+<path fill="none" stroke="%23000000" d="M77.7176,-472.283C71.3449,-467.0566 53.3817,-451.5792 43.0416,-435.1493 36.4076,-424.6082 31.4986,-411.3857 28.3339,-401.2121"/>
+<polygon fill="%23000000" stroke="%23000000" points="29.945,-400.4909 26.838,-396.2003 26.5912,-401.492 29.945,-400.4909"/>
+</g>
+<!-- n8&%2345;&gt;n4 -->
+<g id="edge2" class="edge">
+<title>n8&%2345;&gt;n4</title>
+<path fill="none" stroke="%23000000" d="M80.0416,-472.0177C80.0416,-466.6142 80.0416,-451.9854 80.0416,-440.3813"/>
+<polygon fill="%23000000" stroke="%23000000" points="81.7917,-440.3065 80.0416,-435.3066 78.2917,-440.3066 81.7917,-440.3065"/>
+</g>
+<!-- n8&%2345;&gt;n5 -->
+<g id="edge3" class="edge">
+<title>n8&%2345;&gt;n5</title>
+<path fill="none" stroke="%23000000" d="M82.1477,-472.7181C89.7766,-467.5339 116.4822,-449.3864 134.8464,-436.9071"/>
+<polygon fill="%23000000" stroke="%23000000" points="136.167,-438.1256 139.3189,-433.8678 134.1998,-435.2307 136.167,-438.1256"/>
+</g>
+<!-- n10&%2345;&gt;n3 -->
+<g id="edge9" class="edge">
+<title>n10&%2345;&gt;n3</title>
+<path fill="none" stroke="%23000000" d="M103.0416,-329.5241C103.0416,-316.6743 103.0416,-297.5095 103.0416,-284.0418"/>
+<polygon fill="%23000000" stroke="%23000000" points="104.7917,-284.0078 103.0416,-279.0078 101.2917,-284.0079 104.7917,-284.0078"/>
+<text text-anchor="middle" x="109.5416" y="-300.6528" font-family="Times,serif" font-size="14.00" fill="%23000000">+</text>
+</g>
+</g>
+</svg>
+'/><p>Next, we define the pattern of composition which we want to compose these physics under. This pattern of composition is described by an undirected wiring diagram, which has the individual physics as nodes and the shared variables as the small junctions.</p><p>For this example, we will invoke <code>Catlab</code>&#39;s exported <a href="https://algebraicjulia.github.io/Catlab.jl/v0.9/apis/programs/#Catlab.Programs.RelationalPrograms.@relation-Tuple"><code>@relation</code></a> to specify a composition pattern. We are essentially saying here that the <code>C</code> in each Decapode should be fused into the same variable. Likewise for <code>ϕ₁</code> between <code>diffusion</code> and <code>superposition</code> as well as <code>ϕ₂</code> between <code>advection</code> and <code>superposition</code>.</p><pre><code class="language-julia hljs">using Catlab
+compose_diff_adv = @relation (C, V) begin
+  diffusion(C, ϕ₁)
+  advection(C, ϕ₂, V)
+  superposition(ϕ₁, ϕ₂, ϕ, C)
+end
+
+draw_composition(compose_diff_adv)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.40.1 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="607pt" height="434pt"
+ viewBox="0.00 0.00 606.85 433.52" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 429.5178)">
+<title>G</title>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-429.5178 602.8537,-429.5178 602.8537,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%23000000" cx="243.9634" cy="-18" rx="41.5911" ry="18"/>
+<text text-anchor="middle" x="243.9634" y="-14.3" font-family="Serif" font-size="14.00" fill="%23000000">diffusion</text>
+</g>
+<!-- n6 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n6</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="525.8537" cy="-180.7494" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="517.3537" y="-187.0494" font-family="Serif" font-size="14.00" fill="%23000000">C</text>
+</g>
+<!-- n1&%2345;&%2345;n6 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n6</title>
+<path fill="none" stroke="%23000000" d="M268.9793,-32.4429C333.3871,-69.6288 501.4245,-166.6452 523.4579,-179.3662"/>
+</g>
+<!-- n8 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n8</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="431.8903" cy="-18" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="421.3903" y="-24.3" font-family="Serif" font-size="14.00" fill="%23000000">ϕ₁</text>
+</g>
+<!-- n1&%2345;&%2345;n8 -->
+<g id="edge7" class="edge">
+<title>n1&%2345;&%2345;n8</title>
+<path fill="none" stroke="%23000000" d="M286.1379,-18C335.9177,-18 413.8993,-18 429.2258,-18"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%23000000" cx="150" cy="-180.7494" rx="45.8316" ry="18"/>
+<text text-anchor="middle" x="150" y="-177.0494" font-family="Serif" font-size="14.00" fill="%23000000">advection</text>
+</g>
+<!-- n2&%2345;&%2345;n6 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&%2345;n6</title>
+<path fill="none" stroke="%23000000" d="M196.087,-180.7494C290.1781,-180.7494 497.6824,-180.7494 523.2529,-180.7494"/>
+</g>
+<!-- n7 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n7</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="75.5" cy="-180.7494" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="67.5" y="-187.0494" font-family="Serif" font-size="14.00" fill="%23000000">V</text>
+</g>
+<!-- n2&%2345;&%2345;n7 -->
+<g id="edge5" class="edge">
+<title>n2&%2345;&%2345;n7</title>
+<path fill="none" stroke="%23000000" d="M103.6653,-180.7494C92.5393,-180.7494 82.5649,-180.7494 78.051,-180.7494"/>
+</g>
+<!-- n9 -->
+<!-- junction -->
+<g id="junction4" class="node">
+<title>n9</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="243.9634" cy="-343.4989" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="233.4634" y="-349.7989" font-family="Serif" font-size="14.00" fill="%23000000">ϕ₂</text>
+</g>
+<!-- n2&%2345;&%2345;n9 -->
+<g id="edge9" class="edge">
+<title>n2&%2345;&%2345;n9</title>
+<path fill="none" stroke="%23000000" d="M160.2346,-198.4763C182.495,-237.0324 234.0169,-326.271 242.7078,-341.3241"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="%23000000" cx="431.8903" cy="-343.4989" rx="62.2967" ry="18"/>
+<text text-anchor="middle" x="431.8903" y="-339.7989" font-family="Serif" font-size="14.00" fill="%23000000">superposition</text>
+</g>
+<!-- n3&%2345;&%2345;n6 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&%2345;n6</title>
+<path fill="none" stroke="%23000000" d="M442.305,-325.46C464.476,-287.0587 515.0797,-199.4106 524.373,-183.314"/>
+</g>
+<!-- n3&%2345;&%2345;n8 -->
+<g id="edge8" class="edge">
+<title>n3&%2345;&%2345;n8</title>
+<path fill="none" stroke="%23000000" d="M431.8903,-325.066C431.8903,-260.5124 431.8903,-47.1146 431.8903,-20.692"/>
+</g>
+<!-- n3&%2345;&%2345;n9 -->
+<g id="edge10" class="edge">
+<title>n3&%2345;&%2345;n9</title>
+<path fill="none" stroke="%23000000" d="M369.3134,-343.4989C321.0517,-343.4989 260.3096,-343.4989 246.7359,-343.4989"/>
+</g>
+<!-- n10 -->
+<!-- junction -->
+<g id="junction5" class="node">
+<title>n10</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="469.1403" cy="-408.0178" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="461.6403" y="-414.3178" font-family="Serif" font-size="14.00" fill="%23000000">ϕ</text>
+</g>
+<!-- n3&%2345;&%2345;n10 -->
+<g id="edge11" class="edge">
+<title>n3&%2345;&%2345;n10</title>
+<path fill="none" stroke="%23000000" d="M442.2665,-361.471C451.3941,-377.2804 463.8339,-398.8268 467.8405,-405.7664"/>
+</g>
+<!-- n4 -->
+<!-- n4&%2345;&%2345;n6 -->
+<g id="edge4" class="edge">
+<title>n4&%2345;&%2345;n6</title>
+<path fill="none" stroke="%23000000" d="M597.5395,-180.7494C590.5701,-180.7494 540.9127,-180.7494 528.6073,-180.7494"/>
+</g>
+<!-- n5 -->
+<!-- n5&%2345;&%2345;n7 -->
+<g id="edge6" class="edge">
+<title>n5&%2345;&%2345;n7</title>
+<path fill="none" stroke="%23000000" d="M1.3423,-180.7494C8.6164,-180.7494 60.8426,-180.7494 72.9832,-180.7494"/>
+</g>
+</g>
+</svg>
+'/><p>After this, the physics can be composed as follows. Here we specify, for example, that the <code>ϕ₁</code> that we wish to have in our final Decapode (as declared above) is called <code>ϕ</code> in <code>diffusion</code> and <code>ϕ₁</code> in <code>superposition</code>. Notice the fused result in <code>DiffusionAdvection</code>.</p><pre><code class="language-julia hljs">DiffusionAdvection_cospan = oapply(compose_diff_adv,
+                  [Open(Diffusion, [:C, :ϕ]),
+                   Open(Advection, [:C, :ϕ, :V]),
+                   Open(Superposition, [:ϕ₁, :ϕ₂, :ϕ, :C])])
+DiffusionAdvection = apex(DiffusionAdvection_cospan)
+
+to_graphviz(DiffusionAdvection)</code></pre><img src="5299b113.svg" alt="Example block output"/><p>Similar to before, this physics can be compiled, executed, and plotted.</p><p>Note that for our purposes we require a velocity vector field for the advection (remember we called this term <code>V</code> in our Decapode). We define the velocity field so as to move our fluid to the right (the negative is to account for the orientation of the edges of the mesh) and call <code>eval_constant_primal_form</code> to convert this field into a <code>Form1</code> usable by the Decapode.</p><p>We then run the simulation and create video out of the solution.</p><pre><code class="language-julia hljs">using LinearAlgebra
+using MLStyle
+using StaticArrays
+import CombinatorialSpaces.DiscreteExteriorCalculus: eval_constant_primal_form
+
+sim = eval(gensim(DiffusionAdvection))
+fₘ = sim(dualmesh, nothing, DiagonalHodge())
+
+v = eval_constant_primal_form(dualmesh, SVector{3}(-0.25, 0.0, 0.0))
+
+u₀ = ComponentArray(C=c,V=v)
+constants = ComponentArray(diffusion_k=0.05)
+
+tₑ = 50
+prob = ODEProblem(fₘ, u₀, (0.0, tₑ), constants)
+sol = solve(prob, Tsit5())
+
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
+pmsh = mesh!(ax, mesh; color=c, colorrange = extrema(c))
+Colorbar(fig[1,2], pmsh)
+
+times = range(0.0, tₑ, length=150)
+record(fig, &quot;diff_adv.gif&quot;, times; framerate = 30) do t
+  pmsh.color = soln(t).C
+end</code></pre><p><img src="../diff_adv.gif" alt="Your first composed Decapode!"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 31 seconds.
+[ Info: This page was last built at 2025-03-07T17:30:26.194.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Decapodes.jl</a><a class="docs-footer-nextpage" href="../../ice_dynamics/ice_dynamics/">Glacial Flow »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 7 March 2025 17:31">Friday 7 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

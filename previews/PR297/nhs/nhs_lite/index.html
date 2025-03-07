@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>NHS · Decapodes.jl</title><meta name="title" content="NHS · Decapodes.jl"/><meta property="og:title" content="NHS · Decapodes.jl"/><meta property="twitter:title" content="NHS · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../concepts/equations/">Equations</a></li><li><a class="tocitem" href="../../concepts/composition/">Composition</a></li><li><a class="tocitem" href="../../concepts/meshes/">Meshes</a></li><li><a class="tocitem" href="../../concepts/generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li class="is-active"><a class="tocitem" href>NHS</a><ul class="internal"><li><a class="tocitem" href="#Specify-our-models"><span>Specify our models</span></a></li><li><a class="tocitem" href="#Compatibility-Guarantees-via-Operadic-Composition"><span>Compatibility Guarantees via Operadic Composition</span></a></li><li><a class="tocitem" href="#Our-Mesh"><span>Our Mesh</span></a></li><li><a class="tocitem" href="#Results"><span>Results</span></a></li></ul></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/chemistry/gray_scott/">Gray-Scott</a></li><li><a class="tocitem" href="../../examples/oncology/tumor_proliferation_invasion/">Oncology</a></li><li><a class="tocitem" href="../../examples/mhd/">MHD</a></li></ul></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Zoo</a></li><li class="is-active"><a href>NHS</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>NHS</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/nhs/nhs_lite.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Implement-Oceananigans.jl&#39;s-NonhydrostaticModel-in-the-Discrete-Exterior-Calculus"><a class="docs-heading-anchor" href="#Implement-Oceananigans.jl&#39;s-NonhydrostaticModel-in-the-Discrete-Exterior-Calculus">Implement Oceananigans.jl&#39;s NonhydrostaticModel in the Discrete Exterior Calculus</a><a id="Implement-Oceananigans.jl&#39;s-NonhydrostaticModel-in-the-Discrete-Exterior-Calculus-1"></a><a class="docs-heading-anchor-permalink" href="#Implement-Oceananigans.jl&#39;s-NonhydrostaticModel-in-the-Discrete-Exterior-Calculus" title="Permalink"></a></h1><p>Let&#39;s use Decapodes to implement the <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/">NonhydrostaticModel</a> from Oceananigans.jl. We will take the opportunity to demonstrate how we can use our &quot;algebra of model compositions&quot; to encode certain guarantees on the models we generate. We will use the <a href="https://clima.github.io/OceananigansDocumentation/stable/literated/two_dimensional_turbulence/">2D Turbulence</a> as a guiding example, and use only equations found in the Oceananigans docs to construct our model.</p><p>The full code that generated these results is available in a <a href="../nhs.jl">julia script</a>.</p><pre><code class="language-julia hljs"># AlgebraicJulia Dependencies
+using Catlab
+using CombinatorialSpaces
+using Decapodes
+using DiagrammaticEquations
+
+# External Dependencies
+using CairoMakie
+using ComponentArrays
+using Downloads
+using GeometryBasics: Point3
+using JLD2
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+Point3D = Point3{Float64};</code></pre><h2 id="Specify-our-models"><a class="docs-heading-anchor" href="#Specify-our-models">Specify our models</a><a id="Specify-our-models-1"></a><a class="docs-heading-anchor-permalink" href="#Specify-our-models" title="Permalink"></a></h2><p>This is <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-momentum-conservation-equation">Equation 1: &quot;The momentum conservation equation&quot;</a>. This is the first formulation of mutual advection (of <code>v</code> along <code>V</code>, and <code>V</code> along <code>v</code>) that we could find in the exterior calculus.</p><pre><code class="language-julia hljs">momentum =  @decapode begin
+  (v,V)::DualForm1
+  f::Form0
+  uˢ::DualForm1
+  ∂tuˢ::DualForm1
+  p::DualForm0
+  b::DualForm0
+  ĝ::DualForm1
+  Fᵥ::DualForm1
+  StressDivergence::DualForm1
+
+  ∂ₜ(v) ==
+    -ℒ₁(v,v) + 0.5*d(ι₁₁(v,v)) -
+     d(ι₁₁(v,V)) + ι₁₂(v,d(V)) + ι₁₂(V,d(v)) -
+     (f - ∘(d,⋆)(uˢ)) ∧ᵖᵈ₀₁ v -
+     d(p) +
+     b ∧ᵈᵈ₀₁ ĝ -
+     StressDivergence +
+     ∂tuˢ +
+     Fᵥ
+end
+to_graphviz(momentum)</code></pre><img src="353cef57.svg" alt="Example block output"/><p>Why did we write &quot;StressDivergence&quot; instead of ∇⋅τ, as in the linked equation? According to <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/">this docs page</a>, the user makes a selection of what model to insert in place of the term ∇⋅τ. For example, in <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity">the isotropic case</a>, Oceananigans.jl replaces this term with: ∇⋅τ = <em>ν</em>Δv. Thus, we write StressDivergence, and replace this term with a choice of &quot;turbulence closure&quot; model. Using the &quot;constant isotropic diffusivity&quot; case, we can operate purely in terms of scalar-valued forms.</p><p>This is <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/nonhydrostatic_model/#The-tracer-conservation-equation">Equation 2: &quot;The tracer conservation equation&quot;</a>.</p><pre><code class="language-julia hljs">tracer_conservation = @decapode begin
+  (c,C,F,FluxDivergence)::DualForm0
+  (v,V)::DualForm1
+
+  ∂ₜ(c) ==
+    -1*ι₁₁(v,d(c)) -
+    ι₁₁(V,d(c)) -
+    ι₁₁(v,d(C)) -
+    FluxDivergence +
+    F
+end
+to_graphviz(tracer_conservation)</code></pre><img src="b2231185.svg" alt="Example block output"/><p>This is <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/buoyancy_and_equations_of_state/#Linear-equation-of-state">Equation 2: &quot;Linear equation of state&quot;</a> of seawater buoyancy.</p><pre><code class="language-julia hljs">equation_of_state = @decapode begin
+  (b,T,S)::DualForm0
+  (g,α,β)::Constant
+
+  b == g*(α*T - β*S)
+end
+to_graphviz(equation_of_state)</code></pre><img src="5e179903.svg" alt="Example block output"/><p>This is <a href="https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity">Equation 2: &quot;Constant isotropic diffusivity&quot;</a>.</p><pre><code class="language-julia hljs">isotropic_diffusivity = @decapode begin
+  v::DualForm1
+  c::DualForm0
+  StressDivergence::DualForm1
+  FluxDivergence::DualForm0
+  (κ,nu)::Constant
+
+  StressDivergence == nu*Δᵈ₁(v)
+  FluxDivergence == κ*Δᵈ₀(c)
+end
+to_graphviz(isotropic_diffusivity)</code></pre><img src="9148a98d.svg" alt="Example block output"/><h2 id="Compatibility-Guarantees-via-Operadic-Composition"><a class="docs-heading-anchor" href="#Compatibility-Guarantees-via-Operadic-Composition">Compatibility Guarantees via Operadic Composition</a><a id="Compatibility-Guarantees-via-Operadic-Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Compatibility-Guarantees-via-Operadic-Composition" title="Permalink"></a></h2><p>Decapodes composition is formally known as an &quot;operad algebra&quot;. That means that we don&#39;t have to encode our composition in a single undirected wiring diagram (UWD) and then apply it. Rather, we can define several UWDs, compose those, and then apply those. Of course, since the output of oapply is another Decapode, we could perform an intermediate oapply, if that is convenient.</p><p>Besides it being convenient to break apart large UWDs into component UWDs, this hierarchical composition can enforce rules on our physical quantities.</p><p>For example:</p><ol><li>We want all the tracers (salinity, temperature, etc.) in our physics to obey the same conservation equation.</li><li>We want them to obey the same &quot;turbulence closure&quot;, which affects their flux-divergence term.</li><li>At the same time, a choice of turbulence closure doesn&#39;t just affect (each of) the flux-divergence terms, it also constrains which stress-divergence is physically valid in the momentum equation.</li></ol><p>We will use our operad algebra to guarantee model compatibility and physical consistency, guarantees that would be burdensome to fit into a one-off type system.</p><p>Here, we specify the equations that any tracer obeys:</p><pre><code class="language-julia hljs">tracer_composition = @relation () begin
+  # &quot;The turbulence closure selected by the user determines the form of ... diffusive flux divergence&quot;
+  turbulence(FD,v,c)
+
+  continuity(FD,v,c)
+end
+draw_composition(tracer_composition)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.40.1 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="286pt" height="308pt"
+ viewBox="0.00 0.00 286.10 308.02" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 304.0226)">
+<title>G</title>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-304.0226 282.1004,-304.0226 282.1004,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%23000000" cx="179.6886" cy="-18" rx="51.4282" ry="18"/>
+<text text-anchor="middle" x="179.6886" y="-14.3" font-family="Serif" font-size="14.00" fill="%23000000">turbulence</text>
+</g>
+<!-- n3 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n3</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="24.5" cy="-68.4238" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="11" y="-74.7238" font-family="Serif" font-size="14.00" fill="%23000000">FD</text>
+</g>
+<!-- n1&%2345;&%2345;n3 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n3</title>
+<path fill="none" stroke="%23000000" d="M141.7252,-30.3351C100.8069,-43.6302 39.7898,-63.4559 26.9318,-67.6337"/>
+</g>
+<!-- n4 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n4</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="275.6004" cy="-150.0113" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="268.6004" y="-156.3113" font-family="Serif" font-size="14.00" fill="%23000000">v</text>
+</g>
+<!-- n1&%2345;&%2345;n4 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&%2345;n4</title>
+<path fill="none" stroke="%23000000" d="M192.4249,-35.5301C215.8651,-67.7927 264.3246,-134.4915 273.9262,-147.7069"/>
+</g>
+<!-- n5 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n5</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="24.5" cy="-231.5987" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="17.5" y="-237.8987" font-family="Serif" font-size="14.00" fill="%23000000">c</text>
+</g>
+<!-- n1&%2345;&%2345;n5 -->
+<g id="edge5" class="edge">
+<title>n1&%2345;&%2345;n5</title>
+<path fill="none" stroke="%23000000" d="M166.9888,-35.4797C132.5313,-82.9064 38.9875,-211.6585 26.0032,-229.5298"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%23000000" cx="179.6886" cy="-282.0226" rx="47.8641" ry="18"/>
+<text text-anchor="middle" x="179.6886" y="-278.3226" font-family="Serif" font-size="14.00" fill="%23000000">continuity</text>
+</g>
+<!-- n2&%2345;&%2345;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&%2345;n3</title>
+<path fill="none" stroke="%23000000" d="M166.9888,-264.5429C132.5313,-217.1162 38.9875,-88.3641 26.0032,-70.4928"/>
+</g>
+<!-- n2&%2345;&%2345;n4 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&%2345;n4</title>
+<path fill="none" stroke="%23000000" d="M192.4249,-264.4925C215.8651,-232.2299 264.3246,-165.5311 273.9262,-152.3157"/>
+</g>
+<!-- n2&%2345;&%2345;n5 -->
+<g id="edge6" class="edge">
+<title>n2&%2345;&%2345;n5</title>
+<path fill="none" stroke="%23000000" d="M143.3037,-270.2004C102.4516,-256.9268 40.1307,-236.6775 26.9867,-232.4067"/>
+</g>
+</g>
+</svg>
+'/><p>Let&#39;s &quot;lock in&quot; isotropic diffusivity by doing an intermediate oapply.</p><pre><code class="language-julia hljs">isotropic_tracer = apex(oapply(tracer_composition, [
+  Open(isotropic_diffusivity, [:FluxDivergence, :v, :c]),
+  Open(tracer_conservation,   [:FluxDivergence, :v, :c])]))
+to_graphviz(isotropic_tracer)</code></pre><img src="eebf609a.svg" alt="Example block output"/><p>Let&#39;s use this building-block tracer physics at the next level. The quotes that appear in this composition diagram appear directly in the Oceananigans.jl docs.</p><pre><code class="language-julia hljs">nonhydrostatic_composition = @relation () begin
+  # &quot;The turbulence closure selected by the user determines the form of stress divergence&quot;
+  #   =&gt; Note that the StressDivergence term, SD, is shared by momentum and all the tracers.
+  momentum(V, v, b, SD)
+
+  # &quot;Both T and S obey the tracer conservation equation&quot;
+  #   =&gt; Temperature and Salinity both receive a copy of the tracer physics.
+  temperature(V, v, T, SD, nu)
+  salinity(V, v, S, SD, nu)
+
+  # &quot;Buoyancy is determined from a linear equation of state&quot;
+  #   =&gt; The b term in momentum is that described by the equation of state here.
+  eos(b, T, S)
+end
+draw_composition(nonhydrostatic_composition)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.40.1 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="693pt" height="681pt"
+ viewBox="0.00 0.00 693.25 681.49" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 677.4891)">
+<title>G</title>
+<polygon fill="%23ffffff" stroke="transparent" points="-4,4 -4,-677.4891 689.2459,-677.4891 689.2459,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%23000000" cx="630.343" cy="-150.7766" rx="52.9593" ry="18"/>
+<text text-anchor="middle" x="630.343" y="-147.0766" font-family="Serif" font-size="14.00" fill="%23000000">momentum</text>
+</g>
+<!-- n5 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n5</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="489.7718" cy="-28.9709" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="481.7718" y="-35.2709" font-family="Serif" font-size="14.00" fill="%23000000">V</text>
+</g>
+<!-- n1&%2345;&%2345;n5 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n5</title>
+<path fill="none" stroke="%23000000" d="M610.7972,-133.84C575.7932,-103.5088 504.8371,-42.0251 491.8405,-30.7634"/>
+</g>
+<!-- n6 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n6</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="136.4689" cy="-79.7682" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="129.4689" y="-86.0682" font-family="Serif" font-size="14.00" fill="%23000000">v</text>
+</g>
+<!-- n1&%2345;&%2345;n6 -->
+<g id="edge4" class="edge">
+<title>n1&%2345;&%2345;n6</title>
+<path fill="none" stroke="%23000000" d="M581.1829,-143.7084C463.0948,-126.7299 170.8636,-84.7134 139.254,-80.1686"/>
+</g>
+<!-- n7 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n7</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="682.7459" cy="-329.2445" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="675.2459" y="-335.5445" font-family="Serif" font-size="14.00" fill="%23000000">b</text>
+</g>
+<!-- n1&%2345;&%2345;n7 -->
+<g id="edge7" class="edge">
+<title>n1&%2345;&%2345;n7</title>
+<path fill="none" stroke="%23000000" d="M635.6561,-168.8712C647.8335,-210.3438 677.0931,-309.9929 682.0322,-326.8138"/>
+</g>
+<!-- n8 -->
+<!-- junction -->
+<g id="junction4" class="node">
+<title>n8</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="305.6626" cy="-2.5" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="292.1626" y="-8.8" font-family="Serif" font-size="14.00" fill="%23000000">SD</text>
+</g>
+<!-- n1&%2345;&%2345;n8 -->
+<g id="edge9" class="edge">
+<title>n1&%2345;&%2345;n8</title>
+<path fill="none" stroke="%23000000" d="M598.6201,-136.2892C522.0282,-101.3109 331.564,-14.3287 308.0551,-3.5926"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%23000000" cx="136.4689" cy="-578.7209" rx="58.0561" ry="18"/>
+<text text-anchor="middle" x="136.4689" y="-575.0209" font-family="Serif" font-size="14.00" fill="%23000000">temperature</text>
+</g>
+<!-- n2&%2345;&%2345;n5 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&%2345;n5</title>
+<path fill="none" stroke="%23000000" d="M147.8238,-561.0524C205.6985,-470.9976 465.9906,-65.9752 488.2526,-31.3348"/>
+</g>
+<!-- n2&%2345;&%2345;n6 -->
+<g id="edge5" class="edge">
+<title>n2&%2345;&%2345;n6</title>
+<path fill="none" stroke="%23000000" d="M136.4689,-560.6681C136.4689,-475.4092 136.4689,-115.8029 136.4689,-82.2771"/>
+</g>
+<!-- n2&%2345;&%2345;n8 -->
+<g id="edge10" class="edge">
+<title>n2&%2345;&%2345;n8</title>
+<path fill="none" stroke="%23000000" d="M141.812,-560.524C169.3358,-466.7864 294.2496,-41.3693 304.9335,-4.9831"/>
+</g>
+<!-- n9 -->
+<!-- junction -->
+<g id="junction5" class="node">
+<title>n9</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="305.6626" cy="-655.9891" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="298.1626" y="-662.2891" font-family="Serif" font-size="14.00" fill="%23000000">T</text>
+</g>
+<!-- n2&%2345;&%2345;n9 -->
+<g id="edge12" class="edge">
+<title>n2&%2345;&%2345;n9</title>
+<path fill="none" stroke="%23000000" d="M169.4928,-593.8024C213.7305,-614.0051 288.3935,-648.1025 303.1031,-654.8202"/>
+</g>
+<!-- n10 -->
+<!-- junction -->
+<g id="junction6" class="node">
+<title>n10</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="35.9084" cy="-422.2457" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="23.9084" y="-428.5457" font-family="Serif" font-size="14.00" fill="%23000000">nu</text>
+</g>
+<!-- n2&%2345;&%2345;n10 -->
+<g id="edge14" class="edge">
+<title>n2&%2345;&%2345;n10</title>
+<path fill="none" stroke="%23000000" d="M124.9334,-560.7712C100.9957,-523.5235 47.3299,-440.0178 37.4779,-424.6879"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="%23000000" cx="35.9084" cy="-236.2433" rx="35.8171" ry="18"/>
+<text text-anchor="middle" x="35.9084" y="-232.5433" font-family="Serif" font-size="14.00" fill="%23000000">salinity</text>
+</g>
+<!-- n3&%2345;&%2345;n5 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&%2345;n5</title>
+<path fill="none" stroke="%23000000" d="M62.6052,-224.0513C154.9531,-181.8775 456.8683,-43.9974 487.2934,-30.1027"/>
+</g>
+<!-- n3&%2345;&%2345;n6 -->
+<g id="edge6" class="edge">
+<title>n3&%2345;&%2345;n6</title>
+<path fill="none" stroke="%23000000" d="M47.0544,-218.8999C70.782,-181.9791 124.9385,-97.7099 134.8843,-82.2339"/>
+</g>
+<!-- n3&%2345;&%2345;n8 -->
+<g id="edge11" class="edge">
+<title>n3&%2345;&%2345;n8</title>
+<path fill="none" stroke="%23000000" d="M54.0266,-220.5438C110.7287,-171.4112 282.2789,-22.7622 303.5011,-4.373"/>
+</g>
+<!-- n3&%2345;&%2345;n10 -->
+<g id="edge15" class="edge">
+<title>n3&%2345;&%2345;n10</title>
+<path fill="none" stroke="%23000000" d="M35.9084,-254.4167C35.9084,-297.1976 35.9084,-401.9925 35.9084,-419.6882"/>
+</g>
+<!-- n11 -->
+<!-- junction -->
+<g id="junction7" class="node">
+<title>n11</title>
+<ellipse fill="%23000000" stroke="%23000000" cx="489.7718" cy="-629.5182" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="482.2718" y="-635.8182" font-family="Serif" font-size="14.00" fill="%23000000">S</text>
+</g>
+<!-- n3&%2345;&%2345;n11 -->
+<g id="edge16" class="edge">
+<title>n3&%2345;&%2345;n11</title>
+<path fill="none" stroke="%23000000" d="M53.9805,-251.9029C134.7665,-321.9043 460.0681,-603.7798 487.8746,-627.8742"/>
+</g>
+<!-- n4 -->
+<g id="box4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="%23000000" cx="630.343" cy="-507.7125" rx="19.352" ry="18"/>
+<text text-anchor="middle" x="630.343" y="-504.0125" font-family="Serif" font-size="14.00" fill="%23000000">eos</text>
+</g>
+<!-- n4&%2345;&%2345;n7 -->
+<g id="edge8" class="edge">
+<title>n4&%2345;&%2345;n7</title>
+<path fill="none" stroke="%23000000" d="M635.463,-490.2753C647.5158,-449.2273 677.04,-348.6773 682.0254,-331.6984"/>
+</g>
+<!-- n4&%2345;&%2345;n9 -->
+<g id="edge13" class="edge">
+<title>n4&%2345;&%2345;n9</title>
+<path fill="none" stroke="%23000000" d="M612.8868,-515.6845C549.3989,-544.6785 333.1707,-643.4266 308.0494,-654.8991"/>
+</g>
+<!-- n4&%2345;&%2345;n11 -->
+<g id="edge17" class="edge">
+<title>n4&%2345;&%2345;n11</title>
+<path fill="none" stroke="%23000000" d="M616.0907,-520.0622C583.4246,-548.3676 504.9355,-616.3788 491.6864,-627.8592"/>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">isotropic_nonhydrostatic_buoyancy = apex(oapply(nonhydrostatic_composition, [
+  Open(momentum,          [:V, :v, :b, :StressDivergence]),
+  Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence, :turbulence_nu]),
+  Open(isotropic_tracer,  [:continuity_V, :v, :c, :turbulence_StressDivergence, :turbulence_nu]),
+  Open(equation_of_state, [:b, :T, :S])]));
+to_graphviz(isotropic_nonhydrostatic_buoyancy)</code></pre><img src="416103da.svg" alt="Example block output"/><h2 id="Our-Mesh"><a class="docs-heading-anchor" href="#Our-Mesh">Our Mesh</a><a id="Our-Mesh-1"></a><a class="docs-heading-anchor-permalink" href="#Our-Mesh" title="Permalink"></a></h2><p>We execute these dynamics on the torus explicitly, instead of using a square with periodic boundary conditions.</p><pre><code class="language-julia hljs"># This is a torus with resolution of its dual mesh similar to that
+# used by Oceananigans (explicitly represented as a torus, not as a
+# square with periodic boundary conditions!)
+Downloads.download(&quot;https://cise.ufl.edu/~luke.morris/torus.obj&quot;, &quot;torus.obj&quot;)
+s = EmbeddedDeltaSet2D(joinpath(@__DIR__, &quot;torus.obj&quot;))
+sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
+subdivide_duals!(sd, Barycenter())
+fig = Figure()
+ax = CairoMakie.Axis(fig[1,1], aspect=1)
+wf = wireframe!(ax, s; linewidth=1)
+save(&quot;NHS_mesh.png&quot;, fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: obj file contains references to .mtl files, but none could be found. Expected: [&quot;WaterWorld.mtl&quot;] in /blue/fairbanksj/.gatas/buildkite/builds/login12-ufhpc-7/algebraicjulia/decapodes/docs/build/nhs.
+└ @ MeshIO ~/.julia/packages/MeshIO/EA9dj/src/io/obj.jl:157</code></pre><p><img src="../NHS_mesh.png" alt="&quot;NHS_torus&quot;"/></p><h2 id="Results"><a class="docs-heading-anchor" href="#Results">Results</a><a id="Results-1"></a><a class="docs-heading-anchor-permalink" href="#Results" title="Permalink"></a></h2><p>In the DEC, vorticity is encoded with <code>d⋆</code>, and speed can be encoded with <code>norm ♯</code>. We can use our operators from CombinatorialSpaces.jl to create our GIFs.</p><p><img src="../vorticity.gif" alt="Vorticity"/></p><p><img src="../speed.gif" alt="Speed"/></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 4 seconds.
+[ Info: This page was last built at 2025-03-07T17:29:55.385.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../halmo/halmo/">« Halfar-NS</a><a class="docs-footer-nextpage" href="../../poiseuille/poiseuille/">Pipe Flow »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 7 March 2025 17:31">Friday 7 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

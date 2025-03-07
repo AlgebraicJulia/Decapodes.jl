@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Pipe Flow · Decapodes.jl</title><meta name="title" content="Pipe Flow · Decapodes.jl"/><meta property="og:title" content="Pipe Flow · Decapodes.jl"/><meta property="twitter:title" content="Pipe Flow · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../concepts/equations/">Equations</a></li><li><a class="tocitem" href="../../concepts/composition/">Composition</a></li><li><a class="tocitem" href="../../concepts/meshes/">Meshes</a></li><li><a class="tocitem" href="../../concepts/generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li class="is-active"><a class="tocitem" href>Pipe Flow</a><ul class="internal"><li><a class="tocitem" href="#Creating-the-Poiseuille-Equations"><span>Creating the Poiseuille Equations</span></a></li><li><a class="tocitem" href="#Defining-the-Semantics"><span>Defining the Semantics</span></a></li><li><a class="tocitem" href="#A-Single-Pipe-Segment"><span>A Single Pipe Segment</span></a></li><li><a class="tocitem" href="#A-Linear-Pipe-with-Multiple-Segments"><span>A Linear Pipe with Multiple Segments</span></a></li><li><a class="tocitem" href="#A-Distribution-Network"><span>A Distribution Network</span></a></li><li><a class="tocitem" href="#Multiphysics"><span>Multiphysics</span></a></li></ul></li><li><a class="tocitem" href="../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/chemistry/gray_scott/">Gray-Scott</a></li><li><a class="tocitem" href="../../examples/oncology/tumor_proliferation_invasion/">Oncology</a></li><li><a class="tocitem" href="../../examples/mhd/">MHD</a></li></ul></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Zoo</a></li><li class="is-active"><a href>Pipe Flow</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Pipe Flow</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/poiseuille/poiseuille.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Poissuille-Flow-for-Fluid-Mechanics"><a class="docs-heading-anchor" href="#Poissuille-Flow-for-Fluid-Mechanics">Poissuille Flow for Fluid Mechanics</a><a id="Poissuille-Flow-for-Fluid-Mechanics-1"></a><a class="docs-heading-anchor-permalink" href="#Poissuille-Flow-for-Fluid-Mechanics" title="Permalink"></a></h1><p>When modeling a fluid flowing in a pipe, one can ignore the multidimensional structure of the pipe and approximate the system as a 1 dimensional flow along the pipe. The no-slip boundary condition and the geometry of the pipe enter a 1D equation in the form of a resistance term.</p><pre><code class="language-julia hljs">using Catlab
+using CombinatorialSpaces
+using DiagrammaticEquations
+using Decapodes
+
+# Julia community libraries
+using CairoMakie
+using GeometryBasics: Point3
+using LinearAlgebra
+using OrdinaryDiffEq
+Point3D = Point3{Float64}</code></pre><h2 id="Creating-the-Poiseuille-Equations"><a class="docs-heading-anchor" href="#Creating-the-Poiseuille-Equations">Creating the Poiseuille Equations</a><a id="Creating-the-Poiseuille-Equations-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-the-Poiseuille-Equations" title="Permalink"></a></h2><p>For these physics, <code>μ̃</code> represents the negative viscosity per unit area while <code>R</code> represents the drag of the pipe boundary.</p><pre><code class="language-julia hljs">Poise = @decapode begin
+  P::Form0
+  q::Form1
+  (R, μ̃ )::Constant
+
+  # Laplacian of q for the viscous effect
+  Δq == Δ(q)
+  # Gradient of P for the pressure driving force
+  ∇P == d(P)
+
+  # Definition of the time derivative of q
+  ∂ₜ(q) == q̇
+
+  # The core equation
+  q̇ == μ̃  * ∂q(Δq) + ∇P + R * q
+end
+
+Poise = expand_operators(Poise)
+infer_types!(Poise, op1_inf_rules_1D, op2_inf_rules_1D)
+resolve_overloads!(Poise, op1_res_rules_1D, op2_res_rules_1D)
+to_graphviz(Poise)</code></pre><img src="05b3a9bd.svg" alt="Example block output"/><h2 id="Defining-the-Semantics"><a class="docs-heading-anchor" href="#Defining-the-Semantics">Defining the Semantics</a><a id="Defining-the-Semantics-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-Semantics" title="Permalink"></a></h2><p>In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The <code>generate</code> function below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. You can find the file for boundary conditions <a href="../../boundary_helpers.jl">here</a>.</p><pre><code class="language-julia hljs">using MLStyle
+include(&quot;../boundary_helpers.jl&quot;)
+
+function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :∂q =&gt; x -&gt; begin
+      x[boundary_edges(sd)] .= 0
+      x
+    end
+    :∂ρ =&gt; ρ -&gt; begin
+      ρ[1] = 0
+      ρ[end] = 0
+      ρ
+    end
+    x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
+  end
+  return op
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><h2 id="A-Single-Pipe-Segment"><a class="docs-heading-anchor" href="#A-Single-Pipe-Segment">A Single Pipe Segment</a><a id="A-Single-Pipe-Segment-1"></a><a class="docs-heading-anchor-permalink" href="#A-Single-Pipe-Segment" title="Permalink"></a></h2><p>This simulation can be validated with the Poiseuille equation for a single pipe. First we create a mesh with one pipe segment.</p><pre><code class="language-julia hljs">s = EmbeddedDeltaSet1D{Bool,Point3D}()
+add_vertices!(s, 2, point=[Point3D(-1, 0, 0), Point3D(+1, 0, 0)])
+add_edge!(s, 1, 2, edge_orientation=true)
+
+sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+subdivide_duals!(sd, Circumcenter())
+sd</code></pre><div class="c-set">
+<span class="c-set-summary">CombinatorialSpaces.DiscreteExteriorCalculus.EmbeddedDeltaDualComplex1D{Bool, Float64, GeometryBasics.Point{3, Float64}} {V:2, E:1, DualV:3, DualE:2, Orientation:0, Real:0, Point:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">V</th>
+      <th style = "text-align: right;">vertex_center</th>
+      <th style = "text-align: right;">point</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">[-1.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">[1.0, 0.0, 0.0]</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">E</th>
+      <th style = "text-align: right;">∂v0</th>
+      <th style = "text-align: right;">∂v1</th>
+      <th style = "text-align: right;">edge_center</th>
+      <th style = "text-align: right;">edge_orientation</th>
+      <th style = "text-align: right;">length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">2.0</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">DualV</th>
+      <th style = "text-align: right;">dual_point</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">[-1.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">[1.0, 0.0, 0.0]</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">[0.0, 0.0, 0.0]</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">DualE</th>
+      <th style = "text-align: right;">D_∂v0</th>
+      <th style = "text-align: right;">D_∂v1</th>
+      <th style = "text-align: right;">D_edge_orientation</th>
+      <th style = "text-align: right;">dual_length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">false</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">true</td>
+      <td style = "text-align: right;">1.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Then we solve the equations.</p><pre><code class="language-julia hljs">using ComponentArrays
+sim = eval(gensim(Poise, dimension=1))
+fₘ = sim(sd, generate)
+q = [2.0]
+P = [10.0, 5.0]
+u = ComponentArray(q=q,P=P)
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
+prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
+soln = solve(prob, Tsit5())
+soln.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">50-element Vector{ComponentArrays.ComponentVector{Float64, Vector{Float64}, Tuple{ComponentArrays.Axis{(q = ViewAxis(1:1, Shaped1DAxis((1,))), P = ViewAxis(2:3, Shaped1DAxis((2,))))}}}}:
+ ComponentVector{Float64}(q = [2.0], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [1.5359733494802201], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-3.1161760961912908], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-50.846659222193736], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-206.15225089536818], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-520.9664637549381], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-1061.8121589261825], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-2050.700968218262], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-3918.288210163013], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-7662.697065934761], P = [10.0, 5.0])
+ ⋮
+ ComponentVector{Float64}(q = [-2.5163460704313328e20], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-9.675006902066727e20], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-3.723059519216744e21], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-1.4337157663025726e22], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-5.524524525480257e22], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-2.129886642911887e23], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-8.215130352840002e23], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-3.169861178288987e24], P = [10.0, 5.0])
+ ComponentVector{Float64}(q = [-5.115638401132857e24], P = [10.0, 5.0])</code></pre><h2 id="A-Linear-Pipe-with-Multiple-Segments"><a class="docs-heading-anchor" href="#A-Linear-Pipe-with-Multiple-Segments">A Linear Pipe with Multiple Segments</a><a id="A-Linear-Pipe-with-Multiple-Segments-1"></a><a class="docs-heading-anchor-permalink" href="#A-Linear-Pipe-with-Multiple-Segments" title="Permalink"></a></h2><p>We then move on to a linear sequence of pipe segments. You can visualize this as the discretization of a single long pipe into <code>n</code> segments. First we define the mesh:</p><pre><code class="language-julia hljs">function linear_pipe(n::Int)
+  s = EmbeddedDeltaSet1D{Bool,Point3D}()
+  add_vertices!(s, n, point=[Point3D(i, 0, 0) for i in 1:n])
+  add_edges!(s, 1:n-1, 2:n, edge_orientation=true)
+  sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
+  sd
+end
+
+sd = linear_pipe(10)</code></pre><p>Then we solve the equation. Notice that the equilibrium flow is constant down the length of the pipe. This must be true because of conservation of mass. The segments are all the same length and the total flow in must equal the total flow out of each segment.</p><p>Note that we do not generate new simulation code for Poiseuille flow with <code>gensim</code> again. We simply need to provide our new mesh so that our discrete differential operators can be re-instantiated.</p><pre><code class="language-julia hljs">fₘ = sim(sd, generate)
+P = [9,8,7,6,5,4,3,2,1,0]
+q = [5,3,4,2,5,2,8,4,3]
+u = ComponentArray(q=q,P=P)
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
+prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
+sol = solve(prob, Tsit5());
+sol.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5473-element Vector{ComponentArrays.ComponentVector{Float64, Vector{Float64}, Tuple{ComponentArrays.Axis{(q = ViewAxis(1:9, Shaped1DAxis((9,))), P = ViewAxis(10:19, Shaped1DAxis((10,))))}}}}:
+ ComponentVector{Float64}(q = [5.0, 3.0, 4.0, 2.0, 5.0, 2.0, 8.0, 4.0, 3.0], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [4.906327969049855, 3.0396940772974874, 3.776868094297585, 2.1245805249365666, 4.646184347618068, 2.300321278746661, 7.4621889883835335, 4.032662930791816, 2.9053672302708793], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [4.732043802354352, 3.0690690900774658, 3.4290877515770575, 2.2655558513963157, 4.112630904503515, 2.692617988899929, 6.619562446332556, 4.016539306850135, 2.7292955336605504], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [4.515754375604082, 3.0449140970565742, 3.0854511154749438, 2.322909420277385, 3.6124961789331813, 2.9564400033324714, 5.788473178753213, 3.8968523614963413, 2.5107877538154066], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [4.239475640576921, 2.9474304828604594, 2.7365602319351146, 2.276890620604418, 3.137802875294627, 3.0557945176807824, 4.960930335136899, 3.644196431596186, 2.231675390736685], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [3.907322312629174, 2.767419568471718, 2.392990234327669, 2.1213167180595924, 2.7029708409258286, 2.962812534852026, 4.183267849442379, 3.2611269145216957, 1.8961153619894737], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [3.5064332832559697, 2.4961499842336696, 2.032298761101033, 1.8601116557641681, 2.272033387627923, 2.684045549178442, 3.4265473535502786, 2.750550821512892, 1.491114650263724], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [3.032566810996186, 2.1326541327578363, 1.6360312910466814, 1.5036946028359355, 1.8130377361956955, 2.242104699776726, 2.670708885695094, 2.132261603685318, 1.0123880090576862], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [2.471600760521656, 1.669349597310248, 1.1765327231584657, 1.0513570650429584, 1.2862830164268793, 1.6542987429741671, 1.877334374117751, 1.413368735996529, 0.4456684606295712], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [1.8109483842146132, 1.0978249431088187, 0.6295261889376094, 0.4957833355050699, 0.6619436668465359, 0.9332950418531188, 1.018158580526994, 0.5982477724867017, -0.22175983748574854], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ⋮
+ ComponentVector{Float64}(q = [-9.480731589775315e23, -9.494974887421499e23, -9.501182088097317e23, -9.522238059797533e23, -9.523893177203329e23, -9.546547627976423e23, -9.549801224455089e23, -9.56790359195817e23, -9.577969862490868e23], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [-9.567887810157485e23, -9.58226204592568e23, -9.58852631014303e23, -9.609775847810527e23, -9.611446182169516e23, -9.634308893477582e23, -9.637592401477119e23, -9.655861182926824e23, -9.666019992825676e23], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [-9.655845255666067e23, -9.670351633162346e23, -9.67667348580425e23, -9.698118368438741e23, -9.699804060168187e23, -9.722876946017355e23, -9.726190640961458e23, -9.744627365898178e23, -9.754879565980499e23], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [-9.74461129873542e23, -9.759251033671759e23, -9.765631001514957e23, -9.78727302887949e23, -9.788974214505696e23, -9.812259211696743e23, -9.815603367149441e23, -9.834209582123507e23, -9.844556030004409e23], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [-9.834193366044053e23, -9.848967684272997e23, -9.855406301852307e23, -9.877247285870296e23, -9.878964108328041e23, -9.902463166296037e23, -9.905838062703763e23, -9.924615325550185e23, -9.935056887746974e23], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [-9.924598959278152e23, -9.939509097919597e23, -9.946006904689142e23, -9.968048673932974e23, -9.969781277480454e23, -9.993496363572136e23, -9.996902283967435e23, -1.0015852166837053e24, -1.0026389717834756e24], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [-1.0015835649086626e24, -1.003088285663138e24, -1.0037440397009852e24, -1.0059684796853856e24, -1.0061433327084964e24, -1.0085366426723287e24, -1.0088803656748705e24, -1.010792774623967e24, -1.0118562168564342e24], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [-1.010791108205989e24, -1.0123096619447947e24, -1.0129714440122586e24, -1.0152163337020994e24, -1.0153927936031286e24, -1.01780810577442e24, -1.0181549881568996e24, -1.0200849781617573e24, -1.0211581964952715e24], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+ ComponentVector{Float64}(q = [-1.0110175780746801e24, -1.0125180779260655e24, -1.0132323902964871e24, -1.0153993877116675e24, -1.0156683606477358e24, -1.0179917404759591e24, -1.01841709582507e24, -1.0202951362189411e24, -1.0213869891318467e24], P = [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0])</code></pre><h2 id="A-Distribution-Network"><a class="docs-heading-anchor" href="#A-Distribution-Network">A Distribution Network</a><a id="A-Distribution-Network-1"></a><a class="docs-heading-anchor-permalink" href="#A-Distribution-Network" title="Permalink"></a></h2><p>To model a distribution network, such as residential drinking water system, we will build a binary tree of pipes that at each junction have a bifurcation into two pipes. We expect that the flow will be divided by two at each level of the tree. First we make the mesh.</p><pre><code class="language-julia hljs">function binary_pipe(depth::Int)
+  s = EmbeddedDeltaSet1D{Bool,Point3D}()
+  add_vertex!(s, point=Point3D(0, 0, 0))
+  for n in 1:depth
+    for prev_v in vertices(s)[end-2^(n-1)+1:end]
+      x, y, _ = s[:point][prev_v]
+      vs = add_vertices!(s, 2, point=[Point3D(sgn*3^0.5 + x, y+1, 0)
+                                 for sgn in [1,-1]])
+      add_edges!(s, vs, [prev_v,prev_v], edge_orientation=true)
+    end
+  end
+  v = add_vertex!(s, point=Point3D(3^0.5, -1, 0))
+  add_edge!(s, 1, v, edge_orientation=true)
+  sd = EmbeddedDeltaDualComplex1D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
+  sd
+end
+sd = binary_pipe(2)</code></pre><p>Then we solve the equations.</p><pre><code class="language-julia hljs">fₘ = sim(sd, generate)
+P = collect(1.0:nv(sd))
+q = fill(5.0, ne(sd))
+u = ComponentArray(q=q,P=P)
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
+prob = ODEProblem(fₘ, u, (0.0, 10000.0), params)
+sol = solve(prob, Tsit5())
+sol.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">701-element Vector{ComponentArrays.ComponentVector{Float64, Vector{Float64}, Tuple{ComponentArrays.Axis{(q = ViewAxis(1:7, Shaped1DAxis((7,))), P = ViewAxis(8:15, Shaped1DAxis((8,))))}}}}:
+ ComponentVector{Float64}(q = [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [4.890991274799405, 4.775266582714783, 4.772531641488928, 4.657357789078258, 4.657357789078258, 4.542183936667589, 5.809096313184952], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [4.3371707740772445, 3.4523601711464376, 3.3111846433245815, 2.4560882601977876, 2.4560882601977876, 1.6009918770709943, 11.007052091465729], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [3.885237173809361, 1.5629171526729508, 0.7684871856908548, -1.3740509481365597, -1.3740509481365597, -3.5165890819639753, 20.051330390137593], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [3.984569426500961, -0.165008463214406, -2.207800490235795, -5.857319725798223, -5.857319725798223, -9.506838961360652, 30.637872629826056], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [4.7299503673172785, -1.781633794658271, -5.763457498328577, -11.213309396216465, -11.213309396216465, -16.663161294104352, 43.28520958266241], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [6.2827799726261535, -3.383224525268197, -10.165071509150565, -17.84358872897364, -17.84358872897364, -25.522105948796703, 58.94158346925707], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [8.880889305605901, -5.097401039226276, -15.759474742566018, -26.27060119449818, -26.27060119449818, -36.78172764643033, 78.84066332482342], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [12.63826443330269, -7.024983559319618, -22.657423908088685, -36.66118284889309, -36.66118284889309, -50.66494178969747, 103.3764065591509], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [17.83519418769894, -9.413939073673895, -31.339678425386534, -49.73951560279744, -49.73951560279744, -68.13935278020834, 134.25885617131158], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ⋮
+ ComponentVector{Float64}(q = [8.381452184086745e23, -3.953952940176976e23, -1.2181212560210465e24, -1.8348915122342363e24, -1.8348915122342363e24, -2.4516617684474223e24, 4.3328110498976576e24], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [9.010695318367101e23, -4.250798605360779e23, -1.3095725249681302e24, -1.9726472211545272e24, -1.9726472211545272e24, -2.63572191734092e24, 4.658099740709437e24], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [9.687179296698297e23, -4.569930155354357e23, -1.4078895583901985e24, -2.120745030992833e24, -2.120745030992833e24, -2.8336005035954624e24, 5.007809695033504e24], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [1.0414450815876506e24, -4.9130207424719835e23, -1.513587816386908e24, -2.279961394304332e24, -2.279961394304332e24, -3.0463349722217506e24, 5.383774384869901e24], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [1.1196322728451346e24, -5.28186908402272e23, -1.627221441481809e24, -2.451131032105512e24, -2.451131032105512e24, -3.275040622729209e24, 5.787964874131511e24], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [1.203689419481936e24, -5.678408960382218e23, -1.7493861865761523e24, -2.6351513443362315e24, -2.6351513443362315e24, -3.520916502096305e24, 6.222500233264556e24], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [1.2940572122500314e24, -6.10471933174586e23, -1.8807225311068112e24, -2.832987103819123e24, -2.832987103819123e24, -3.785251676531428e24, 6.689658623303988e24], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [1.3912094270448877e24, -6.563035237597531e23, -2.0219190389195839e24, -3.0456755143219074e24, -3.0456755143219074e24, -4.0694319897242237e24, 7.19188923970132e24], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+ ComponentVector{Float64}(q = [1.4088358608263613e24, -6.650463562071957e23, -2.0479586893206375e24, -3.084899797837419e24, -3.084899797837419e24, -4.1218409063541925e24, 7.284511287330385e24], P = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])</code></pre><h2 id="Multiphysics"><a class="docs-heading-anchor" href="#Multiphysics">Multiphysics</a><a id="Multiphysics-1"></a><a class="docs-heading-anchor-permalink" href="#Multiphysics" title="Permalink"></a></h2><p>Decapodes really shines when you want to extend or refine your physics. We will change our physics by adding in a term for density of the material and the corresponding changes in pressure. This is not the only formulation for including a dynamic pressure effect into this system. If you can think of a better way to include this effect, we invite you to try it as an exercise!</p><p>Because the pressure is no longer being supplied as a parameter of the system controlled by the operators, we need to introduce a density term and a boundary condition for that density. In this system you can think of forcing a prescribed amount of material per unit time through the openings of the pipe and allowing the flow <code>q</code> and the pressure <code>P</code> to fluctuate. Before we were enforcing a fixed pressure gradient and and letting the flow fluctuate to achieve equilibrium. In the prior model, we were not accounting for the amount of material that had to flow in order to achieve that (flow, pressure) combination.</p><p>The Decapode can be visualized with <a href="https://graphviz.org/">Graphviz</a>, note that the boundary conditions are explicitly represented in the Decapode as operators that implement a masking operation. This is not consistent with the <a href="https://www.aimspress.com/article/id/62989382ba35de155149669f">Diagrammatic Equations in Physics</a> paper. This approach is more directly tied to the computational method and will eventually be replaced with one based on morphisms of diagrams.</p><pre><code class="language-julia hljs"># μ̃ = negative viscosity per unit area
+# R = drag of pipe boundary
+# k = pressure as a function of density
+Poise = @decapode begin
+  q::Form1
+  (P, ρ)::Form0
+  (k, R, μ̃ )::Constant
+
+  # Poiseuille Flow
+  ∂ₜ(q) == q̇
+  ∇P == d(P)
+  q̇ == μ̃ * ∂q(Δ(q)) - ∇P + R * q
+
+  # Pressure/Density Coupling
+  P == k * ρ
+  ∂ₜ(ρ) == ρ̇
+  ρ_up == ∘(⋆, d, ⋆)(-1 * ∧₀₁(ρ,q)) # advection
+
+  # Boundary conditions
+  ρ̇ == ∂ρ(ρ_up)
+end
+
+Poise = expand_operators(Poise)
+infer_types!(Poise, op1_inf_rules_1D, op2_inf_rules_1D)
+resolve_overloads!(Poise, op1_res_rules_1D, op2_res_rules_1D)
+to_graphviz(Poise)</code></pre><img src="ef9626aa.svg" alt="Example block output"/><p>Then we can create the mesh and solve the equation.</p><pre><code class="language-julia hljs">sd = linear_pipe(20)
+
+sim = eval(gensim(Poise, dimension=1))
+func = sim(sd, generate)
+
+q = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5]
+ρ = [5,3,4,2,5,2,3,4,3, 10,9,8,7,6,5,5,5,5,5,5]
+u = ComponentArray(q=q,ρ=ρ)
+params = (k = -0.01, μ̃ = 0.5, R=0.005)
+
+prob = ODEProblem(func, u, (0.0, 10000.0), params)
+sol = solve(prob, Tsit5())
+sol.u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">347-element Vector{ComponentArrays.ComponentVector{Float64, Vector{Float64}, Tuple{ComponentArrays.Axis{(q = ViewAxis(1:19, Shaped1DAxis((19,))), ρ = ViewAxis(20:39, Shaped1DAxis((20,))))}}}}:
+ ComponentVector{Float64}(q = [5.0, 3.0, 4.0, 2.0, 5.0, 2.0, 3.0, 4.0, 3.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 5.0, 5.0, 5.0, 5.0], ρ = [5.0, 3.0, 4.0, 2.0, 5.0, 2.0, 3.0, 4.0, 3.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0])
+ ComponentVector{Float64}(q = [5.000500271331339, 3.0908019467209105, 3.9130094575848924, 2.149420654498837, 4.82261331388356, 2.119288993589557, 3.002516497574944, 3.94382416693275, 3.2416101812722697, 9.76542618769899, 8.9986420387784, 8.0018103294322, 7.001529079838781, 6.0016419996951145, 5.031690712780209, 5.002019237945118, 5.001566385220671, 5.001562011212097, 5.001561987475998], ρ = [5.0, 3.6051964303503907, 3.9352963997399906, 2.3128704047231285, 4.360979444055991, 2.745727436612134, 2.7046423165613485, 3.791801585121034, 2.801271848291738, 5.765679405283353, 9.271223666731458, 9.006700142600339, 7.959198644172627, 6.845154755546474, 5.578205822300478, 5.047893822018265, 5.002486906207312, 5.00009623824213, 5.000002991358836, 5.0])
+ ComponentVector{Float64}(q = [5.001514273629954, 3.1824505226410786, 3.830372321953324, 2.2961783427556197, 4.64707756788672, 2.237516416505392, 3.0073854549870376, 3.893452494739547, 3.481956972374387, 9.530308695554407, 8.990370522970784, 8.003702630118694, 7.0032053103655505, 6.004327702347578, 5.0645899160205525, 5.005207825344115, 5.003341512022439, 5.003307001569074, 5.003306862252661], ρ = [5.0, 4.304365856478784, 3.931335419978158, 2.6742747813158934, 3.6863176017258628, 3.4911655330555504, 2.4827397093148194, 3.559499216165151, 2.9005654229205686, 2.311666238357478, 7.8400646637538935, 9.676931435054343, 9.079922837375205, 7.93163955184763, 6.418884353341749, 5.234621303267627, 5.025123786076479, 5.002028663976808, 5.000132273056598, 5.0])
+ ComponentVector{Float64}(q = [5.003468862535762, 3.283939636114236, 3.745903664282413, 2.4531122328774466, 4.457660971297047, 2.3655376727184434, 3.0160207921225552, 3.84668375541438, 3.7436940720140908, 9.269938707609219, 8.972703970313216, 8.006261730407124, 7.005484714395677, 6.008802496629911, 5.102164118169653, 5.010214724945887, 5.005598570990822, 5.005477534409094, 5.00547937874853], ρ = [5.0, 5.197363407364747, 4.024388254821219, 3.1657132732787368, 2.9061766923768393, 4.280787981748629, 2.354670728448612, 3.2256649597615703, 3.3552583269380674, -0.02345974589263121, 4.622052228446954, 9.176435425403877, 10.190507759506774, 9.410184437490097, 7.759433162729394, 5.7105028059983365, 5.122336714298072, 5.016095438834073, 5.0017281338476565, 5.0])
+ ComponentVector{Float64}(q = [5.006574295691511, 3.3830517940020215, 3.671877457317961, 2.599570267804288, 4.2788912032601925, 2.487203883199552, 3.0283950144543135, 3.8122695749124573, 3.9947460990631827, 9.01341610086263, 8.94483181634454, 8.009990609902594, 7.008958040491073, 6.0152935831779555, 5.140126355872161, 5.016703970885189, 5.008139231901054, 5.00788096628606, 5.007900966518564], ρ = [5.0, 6.204476752637425, 4.247919074306853, 3.798113484881916, 2.1261097297888663, 4.969481744249655, 2.3932694038078584, 2.7723625145820034, 3.9787001669656172, -0.443074452508142, 0.9633720348002127, 6.693549934293837, 10.370858333778672, 10.915425902867378, 9.581987756684423, 6.616670254053317, 5.390386882384832, 5.072879796363013, 5.011256052100235, 5.0])
+ ComponentVector{Float64}(q = [5.0103653601212725, 3.464382102806668, 3.6185961714921753, 2.7136589039629198, 4.137864521626961, 2.584248411407382, 3.0420345395991384, 3.7941345474656374, 4.197422569966904, 8.80026615429924, 8.910955506822214, 8.014171873064425, 7.013934575991083, 6.023116919785836, 5.172418638368772, 5.023251279596613, 5.010448647222715, 5.010073446386988, 5.010152824892472], ρ = [5.0, 7.137098176805797, 4.557686224238158, 4.4920932176308535, 1.5032641249721976, 5.4234237827785545, 2.5879993006002695, 2.300702474828921, 4.371217975740446, 0.4383637372987106, -1.092494406377609, 3.243396700263972, 9.019127813487685, 11.685945484000422, 11.415316287904542, 7.8413689938373405, 5.866946020485199, 5.20580736611698, 5.0409895286507185, 5.0])
+ ComponentVector{Float64}(q = [5.015081368914326, 3.5375429189582537, 3.5774988370120684, 2.8106263810928915, 4.016323809219932, 2.669178467037907, 3.057509143225982, 3.786959397950279, 4.376977785808291, 8.60702700055438, 8.868601140180242, 8.017848721736648, 7.021218868428455, 6.033401788845328, 5.202782866321855, 5.030120442642163, 5.012611387404788, 5.012179943290545, 5.012399042231604], ρ = [5.0, 8.056344677999007, 4.95372344991337, 5.310676094219572, 1.003093753365399, 5.696575456578067, 2.920334554133788, 1.8417232366310383, 4.421768176159571, 1.641755133048467, -1.2771681340796266, -0.09569059038685968, 6.169170735268992, 11.294009291740988, 13.062153541947797, 9.401198250588452, 6.6350971391401705, 5.472623194831417, 5.116327156883714, 5.0])
+ ComponentVector{Float64}(q = [5.021983759246689, 3.6161428710082415, 3.5418856266063417, 2.907654889612964, 3.892480486626417, 2.757742934579966, 3.078218169310982, 3.7902171398255593, 4.566017135374558, 8.400175152282303, 8.807158162100851, 8.018698750152913, 7.032644344259475, 6.050072785097135, 5.237945410732139, 5.038739606209692, 5.014851092578908, 5.014458093425676, 5.015000084216178], ρ = [5.0, 9.11679359469927, 5.516723748075615, 6.466818112434573, 0.6171092913825922, 5.7873618763574495, 3.4622993510288507, 1.4136976666167491, 4.0560689895243796, 2.4877886222491465, 0.4610612766619775, -2.216001545482741, 1.7006852383843012, 8.751632119325386, 14.104129275142661, 11.486085680407376, 7.99015560864474, 6.0595074979174095, 5.325609395318138, 5.0])
+ ComponentVector{Float64}(q = [5.029757006393216, 3.6826723396120973, 3.519880485503166, 2.9829730630259443, 3.7940556650473733, 2.83042898814409, 3.0998073498713716, 3.802838335469182, 4.721153168960801, 8.228473452857441, 8.741263161855166, 8.013090506177152, 7.0440231644442965, 6.070733884498485, 5.27163756717199, 5.047640830402351, 5.016540299416053, 5.0161970474680775, 5.017187931278789], ρ = [5.0, 10.053072988250355, 6.102584309340009, 7.725537547990103, 0.5270856613277999, 5.656155624809815, 4.060517699796453, 1.2115603829119808, 3.5256607726309213, 2.2597807572275928, 2.5262505316495805, -1.4764414990390657, -1.793674241727671, 4.424998841607168, 13.37559114990613, 13.199788142360449, 9.643749106401634, 6.962039333627435, 5.731748725572187, 5.0])
+ ComponentVector{Float64}(q = [5.039279286457328, 3.7462332568181402, 3.506992675475444, 3.0482558437357747, 3.706288085634514, 2.8978435877258852, 3.124769235482533, 3.824194274655928, 4.862846092297638, 8.069159010028175, 8.668103504082227, 7.999550882669706, 7.052864237944888, 6.096742491025983, 5.309733604907933, 5.058883748315248, 5.018069359226493, 5.017467634423662, 5.018875961952036], ρ = [5.0, 10.95306653803071, 6.735148698354607, 9.198710050332295, 0.7884544373314619, 5.338246497944648, 4.710268003927228, 1.2285257675713517, 3.09128699610892, 1.3255029259992042, 3.378886655674693, 1.3416743660104007, -2.737755984521239, -0.8791447200943212, 10.264584081620626, 13.988788886372143, 11.513959485264506, 8.30250351950547, 6.505708506722742, 5.0])
+ ⋮
+ ComponentVector{Float64}(q = [1.243636404382325e12, -1.7208436709736208e12, 3.8564552612462756e11, 8.793471631564679e10, 3.6213149119006023e9, 5.709333322687844e6, 20.657331771178878, 6.748007169438344, 6.604264003004136, 6.922786733469228, 6.682957266215941, 6.945403324312778, 6.7111376191735355, 6.656096080521642, 6.479123002928118, 6.147464655240535, 6.039361831497776, 5.652147818806705, 6.154271691682845], ρ = [5.0, 7.1634025475775765e25, -2.748735678898752e25, -5.273998156298946e24, -2.0891826955027025e23, -3.2886088422190455e20, -8.148663834844548e14, -9466.152367866513, 147.24610779926218, 56.36699150798497, 74.77129907610855, 19.020919411078772, 7.773619810241907, 24.81671150591907, -7.713715102737986, 9.350784612419096, -41.205540020778685, -6.3737368475400356, -107.83102825929957, 5.0])
+ ComponentVector{Float64}(q = [2.386858322683469e12, -3.3027418824271245e12, 7.401530147051415e11, 1.687693519098026e11, 6.950235533606214e9, 1.0957677978400439e7, 33.6619496179484, 6.748007169578219, 6.604264003003601, 6.922786733469177, 6.6829572662157135, 6.945403324312507, 6.71113761917378, 6.6560960805213485, 6.4791230029282225, 6.147464655240233, 6.039361831497975, 5.652147818806255, 6.1542716916838085], ρ = [5.0, 2.6386724757276186e26, -1.0125095067077755e26, -1.942701626244625e25, -7.695601170647664e23, -1.2113743665694785e21, -3.001596922239946e15, -27125.351785973202, 147.24610775499195, 56.3669915081666, 74.77129907622539, 19.020919411261996, 7.773619810228346, 24.816711505962672, -7.713715102695067, 9.35078461250492, -41.205540020740635, -6.373736847391133, -107.83102825930483, 5.0])
+ ComponentVector{Float64}(q = [4.579151047738834e12, -6.336259596980753e12, 1.4199721957150105e12, 3.237814110257593e11, 1.3333920425306343e10, 2.1022135456639707e7, 58.60016914352527, 6.748007169791369, 6.604264003003322, 6.922786733469151, 6.682957266215595, 6.945403324312366, 6.711137619173907, 6.656096080521196, 6.479123002928277, 6.147464655240076, 6.039361831498079, 5.652147818806021, 6.15427169168431], ρ = [5.0, 9.711849418821397e26, -3.726623882032609e26, -7.1502719031396875e25, -2.8324288313830455e24, -4.458562403041315e21, -1.1047620874132228e16, -84643.58220051577, 147.24610768589065, 56.366991508261194, 74.77129907628624, 19.020919411357422, 7.773619810221283, 24.81671150598538, -7.713715102672714, 9.350784612549619, -41.20554002072082, -6.373736847313584, -107.83102825930757, 5.0])
+ ComponentVector{Float64}(q = [8.782452443653961e12, -1.215244878493219e13, 2.7233952650390527e12, 6.209873439265217e11, 2.5573413520604748e10, 4.031880551306272e7, 106.41442153119011, 6.748007170144965, 6.604264003003176, 6.922786733469137, 6.682957266215534, 6.945403324312292, 6.711137619173973, 6.656096080521116, 6.479123002928305, 6.147464655239994, 6.039361831498133, 5.652147818805898, 6.154271691684571], ρ = [5.0, 3.5724278875052435e27, -1.3708094626242222e27, -2.6301716235754886e26, -1.04188680511693e25, -1.6400473620483836e22, -4.0637807815941576e16, -281883.3989447821, 147.24610756934564, 56.366991508310484, 74.77129907631794, 19.020919411407146, 7.773619810217602, 24.816711505997215, -7.713715102661067, 9.35078461257291, -41.205540020710494, -6.373736847273174, -107.831028259309, 5.0])
+ ComponentVector{Float64}(q = [1.6841644931678893e13, -2.3304108824915113e13, 5.222511178855149e12, 1.1908346131027158e12, 4.9040783959534225e10, 7.731724228158395e7, 198.09098858186167, 6.7480071707678615, 6.604264003003101, 6.92278673346913, 6.682957266215502, 6.945403324312254, 6.711137619174008, 6.656096080521074, 6.47912300292832, 6.1474646552399514, 6.039361831498161, 5.652147818805834, 6.154271691684708], ρ = [5.0, 1.313713881397849e28, -5.040973468314064e27, -9.672113983668947e26, -3.8314031886980015e25, -6.031060894168961e22, -1.4944025024983296e17, -979741.6231463689, 147.24610736190914, 56.36699150833618, 74.77129907633447, 19.020919411433066, 7.773619810215684, 24.816711506003383, -7.713715102654995, 9.350784612585052, -41.20554002070511, -6.3737368472521085, -107.83102825930973, 5.0])
+ ComponentVector{Float64}(q = [3.2293726771478035e13, -4.4685452407938164e13, 1.0014125684276186e13, 2.2834163640539697e12, 9.403533265175217e10, 1.4825522758234122e8, 373.86465256409645, 6.748007171907088, 6.604264003003061, 6.922786733469127, 6.682957266215485, 6.945403324312234, 6.711137619174026, 6.656096080521053, 6.479123002928328, 6.147464655239929, 6.0393618314981765, 5.652147818805801, 6.154271691684779], ρ = [5.0, 4.830232782641621e28, -1.8534534534604791e28, -3.5562204757896635e27, -1.4087214542676221e26, -2.217486521846196e23, -5.494584544390564e17, -3.4929553735960172e6, 147.24610698024722, 56.36699150834958, 74.7712990763431, 19.020919411446584, 7.773619810214684, 24.816711506006598, -7.713715102651829, 9.350784612591383, -41.2055400207023, -6.373736847241124, -107.83102825931012, 5.0])
+ ComponentVector{Float64}(q = [6.1920127883135164e13, -8.568007487148114e13, 1.9201126813454332e13, 4.378232165394925e12, 1.8030374371124078e11, 2.8426519954607034e8, 710.8769150994917, 6.748007174036271, 6.60426400300304, 6.922786733469125, 6.682957266215476, 6.945403324312223, 6.7111376191740355, 6.656096080521041, 6.479123002928333, 6.147464655239918, 6.0393618314981845, 5.652147818805783, 6.154271691684817], ρ = [5.0, 1.7758054753548302e29, -6.8141080132203945e28, -1.3074226599053273e28, -5.179078079719823e26, -8.152453309063853e23, -2.0200503431610353e18, -1.2631666518743517e7, 147.24610626456547, 56.36699150835656, 74.77129907634759, 19.020919411453633, 7.7736198102141625, 24.816711506008275, -7.713715102650178, 9.350784612594685, -41.20554002070084, -6.373736847235397, -107.83102825931032, 5.0])
+ ComponentVector{Float64}(q = [1.1872311497086327e14, -1.6427946335913153e14, 3.681545345912436e13, 8.394642881892475e12, 3.4570700757818317e11, 5.450384428328904e8, 1357.033806521059, 6.748007178063511, 6.6042640030030295, 6.922786733469124, 6.682957266215472, 6.945403324312218, 6.711137619174041, 6.656096080521035, 6.479123002928334, 6.1474646552399115, 6.039361831498188, 5.6521478188057745, 6.154271691684836], ρ = [5.0, 6.528332303732435e29, -2.5050469818549493e29, -4.806432744956543e28, -1.9039665777619965e27, -2.997058245157065e24, -7.426241321036376e18, -4.60344428676951e7, 147.24610490847428, 56.36699150836021, 74.77129907634993, 19.02091941145731, 7.773619810213891, 24.81671150600915, -7.713715102649317, 9.350784612596406, -41.20554002070008, -6.373736847232409, -107.83102825931041, 5.0])
+ ComponentVector{Float64}(q = [2.2763198293694738e14, -3.1497876390476056e14, 7.058755723957314e13, 1.609534256072918e13, 6.628361437609381e11, 1.0450212822498903e9, 2595.9161158413563, 6.748007185729912, 6.604264003003024, 6.922786733469123, 6.682957266215469, 6.945403324312215, 6.7111376191740435, 6.656096080521032, 6.479123002928335, 6.147464655239908, 6.03936183149819, 5.65214781880577, 6.154271691684846], ρ = [5.0, 2.3999281654352328e30, -9.208987116154255e29, -1.7669280274524022e29, -6.999311315417555e27, -1.101770585650097e25, -2.730015105335222e19, -1.6845774169172958e8, 147.24610232452667, 56.366991508362105, 74.77129907635116, 19.02091941145923, 7.773619810213749, 24.816711506009604, -7.713715102648868, 9.350784612597305, -41.20554002069968, -6.373736847230851, -107.83102825931047, 5.0])</code></pre><p>Notice that the solution contains both a vector of flows and a vector of pressures.</p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 20 seconds.
+[ Info: This page was last built at 2025-03-07T17:30:46.432.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../nhs/nhs_lite/">« NHS</a><a class="docs-footer-nextpage" href="../../fokker_planck/fokker_planck/">Fokker-Planck »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 7 March 2025 17:31">Friday 7 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
