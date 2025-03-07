@@ -313,8 +313,8 @@ end
 
     Tₛ̇ == (ASR - OLR + HT) ./ C
   end
-  infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
-  resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
+  infer_types!(budyko_sellers, dim=1)
+  resolve_overloads!(budyko_sellers, dim=1)
 
   # This test ensures that the next one does not break, since it depends on
   # arbitrary internal variable naming.
