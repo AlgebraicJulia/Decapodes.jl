@@ -1,22 +1,22 @@
-
+using CairoMakie
+using Catlab
+using CombinatorialSpaces
+using ComponentArrays
 using Decapodes
 using DiagrammaticEquations
-using CombinatorialSpaces
-using Catlab
-using LinearAlgebra
-using CairoMakie
-using GeometryBasics: Point2, Point3
 using Distributions
+using GeometryBasics: Point2, Point3
+using LinearAlgebra
 using MLStyle
-using ComponentArrays
 using OrdinaryDiffEq
 using SparseArrays
 using StaticArrays
 using StatsBase
+
 import CombinatorialSpaces.DiscreteExteriorCalculus: eval_constant_primal_form
 
-# Reference equations are at the link below, dual-time method is replaced with a Poisson equation solve
-# https://pde-on-gpu.vaw.ethz.ch/lecture4/#solving_thermal_porous_convection_using_the_pseudo-transient_method
+# This model is based on the equations, constants and meshing given at
+# https://pde-on-gpu.vaw.ethz.ch/lecture4
 
 Porous_Convection = @decapode begin
   (λ_ρ₀Cp, αρ₀, k_ηf, ϕ)::Constant
@@ -87,6 +87,8 @@ f = sim(sd, generate, DiagonalHodge())
 
 ΔT = 200.0
 
+# Initial heat distribution
+# Gaussian heat disturbance along with top and bottom elements
 T_dist = MvNormal([lx/2.0, ly/2.0], [1/sqrt(2), 1/sqrt(2)])
 T = [2 * ΔT * pdf(T_dist, [p[1], p[2]]) for p in sd[:point]]
 T[top_wall_idxs] .= -ΔT/2
@@ -98,6 +100,7 @@ grav = SVector{3}([0.0, -accl_g, 0.0])
 g = eval_constant_primal_form(sd, grav)
 u₀ = ComponentArray(T=T, g=g)
 
+# Physical constants
 Ra = 750
 k_ηf = 1.0
 αρ₀ = (1.0/accl_g)
@@ -105,15 +108,11 @@ k_ηf = 1.0
 λ_ρ₀Cp = 1/Ra*(accl_g*αρ₀*k_ηf*ΔT*ly/ϕ)
 constants = (k_ηf = k_ηf, αρ₀ = αρ₀, ϕ = ϕ, λ_ρ₀Cp = λ_ρ₀Cp)
 
-# Smallest time step in original simulation was 0.00019, largest around 0.00100, around 0.00050 from original implementation
-# Only ran for 500 time steps, but adaptive time stepping means physical time simulated could vary
 tₑ = 0.7
-
 prob = ODEProblem(f, u₀, (0, tₑ), constants)
 soln = solve(prob, Tsit5(); saveat = 0.005)
 
 # For plotting Temperature, Pressure, Advection, and Diffusion
-
 wdg10 = dec_wedge_product(Tuple{1, 0}, sd)
 codif_1 = δ(1, sd)
 d0 = dec_differential(0, sd)
