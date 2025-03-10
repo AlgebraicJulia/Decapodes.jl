@@ -7,7 +7,7 @@ info = DocInfo.Info()
 
 Let's see how to calibrate a glacial flow Decapode model's parameters to fit some data. We want to solve the inverse problem, i.e. given a model and some data, find a set of parameters that causes the output of the model to match the given data as closely as possible. 
 
-We'll be using a 2D version of the Halfar glacial flow model, for more explanation see the docs page specific to this model: #TODO link to the Halfar docs page
+We'll be using a 2D version of the Halfar glacial flow model, for more explanation see the [glacial flow docs page.](src/ice_dynamics.md)
 
 In order to set up the inverse problem, we first need our model and some reference data. So, we'll set up the 2D glacial flow model and get some data from it. In this case we'll be fitting our model parameters to data from the model itself. In general the data we want to fit to will not be from the model, but for demonstration purposes this works well. 
 
