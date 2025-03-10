@@ -110,7 +110,7 @@ constants = (k_ηf = k_ηf, αρ₀ = αρ₀, ϕ = ϕ, λ_ρ₀Cp = λ_ρ₀Cp)
 tₑ = 0.7
 
 prob = ODEProblem(f, u₀, (0, tₑ), constants)
-soln = solve(prob, Tsit5())
+soln = solve(prob, Tsit5(); saveat = 0.005)
 
 # For plotting Temperature, Pressure, Advection, and Diffusion
 
