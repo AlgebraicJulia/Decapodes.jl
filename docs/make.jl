@@ -67,6 +67,7 @@ makedocs(
         "Cahn-Hilliard" => "ch/cahn-hilliard.md",
         "Brusselator" => "brussel/brussel.md",
         "Klausmeier" => "klausmeier/klausmeier.md",
+        "Porous Convection" => "pconv/porous_convection.md",
         "CISM v2.1" => "cism/cism.md",
         "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
         "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
