@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Porous Convection · Decapodes.jl</title><meta name="title" content="Porous Convection · Decapodes.jl"/><meta property="og:title" content="Porous Convection · Decapodes.jl"/><meta property="twitter:title" content="Porous Convection · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../concepts/equations/">Equations</a></li><li><a class="tocitem" href="../../concepts/composition/">Composition</a></li><li><a class="tocitem" href="../../concepts/meshes/">Meshes</a></li><li><a class="tocitem" href="../../concepts/generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li class="is-active"><a class="tocitem" href>Porous Convection</a><ul class="internal"><li><a class="tocitem" href="#Dependencies"><span>Dependencies</span></a></li><li><a class="tocitem" href="#Porous-Convection-Decapode"><span>Porous Convection Decapode</span></a></li><li><a class="tocitem" href="#The-Mesh"><span>The Mesh</span></a></li><li><a class="tocitem" href="#Operators-and-Boundary-Conditions"><span>Operators and Boundary Conditions</span></a></li><li><a class="tocitem" href="#Initial-Conditions"><span>Initial Conditions</span></a></li><li><a class="tocitem" href="#Solving-the-Porous-Convection-Equations"><span>Solving the Porous Convection Equations</span></a></li></ul></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/chemistry/gray_scott/">Gray-Scott</a></li><li><a class="tocitem" href="../../examples/oncology/tumor_proliferation_invasion/">Oncology</a></li><li><a class="tocitem" href="../../examples/mhd/">MHD</a></li></ul></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Zoo</a></li><li class="is-active"><a href>Porous Convection</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Porous Convection</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/pconv/porous_convection.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Porous-Convection"><a class="docs-heading-anchor" href="#Porous-Convection">Porous Convection</a><a id="Porous-Convection-1"></a><a class="docs-heading-anchor-permalink" href="#Porous-Convection" title="Permalink"></a></h1><p>This Porous Convection model is based on the equations, constants and mesh structure given by ETH Zurich&#39;s course on Solving Partial Differential Equations in Parallel on GPUs <a href="https://pde-on-gpu.vaw.ethz.ch/lecture4">Lecture 4</a>.</p><h2 id="Dependencies"><a class="docs-heading-anchor" href="#Dependencies">Dependencies</a><a id="Dependencies-1"></a><a class="docs-heading-anchor-permalink" href="#Dependencies" title="Permalink"></a></h2><pre><code class="language-julia hljs">using CairoMakie
+using Catlab
+using CombinatorialSpaces
+using ComponentArrays
+using Decapodes
+using DiagrammaticEquations
+using Distributions
+using GeometryBasics: Point2, Point3
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using SparseArrays
+using StaticArrays
+using StatsBase
+
+import CombinatorialSpaces.DiscreteExteriorCalculus: eval_constant_primal_form</code></pre><h2 id="Porous-Convection-Decapode"><a class="docs-heading-anchor" href="#Porous-Convection-Decapode">Porous Convection Decapode</a><a id="Porous-Convection-Decapode-1"></a><a class="docs-heading-anchor-permalink" href="#Porous-Convection-Decapode" title="Permalink"></a></h2><p>The overall physics the model wishes to capture here are those of a fluid at different temperatures. Differences in the temperature of the fluid led to differences in the densities of that fluid which leads to convection of the fluid.</p><p>To drive the convection, the model has a cooling element at the top and a heating element at the bottom of our mesh. To avoid the need to determine the density of the fluid, the <a href="https://en.wikipedia.org/wiki/Boussinesq_approximation_(buoyancy)">Boussinesq approximation</a> is used.</p><p>The model generates a divergence-free pressure field by solving  <a href="https://en.wikipedia.org/wiki/Poisson%27s_equation">Poisson&#39;s equation</a> and the <a href="https://en.wikipedia.org/wiki/Darcy%27s_law">Darcy flux</a> is a combination of the forces caused by pressure differences and buoyant forces. This Darcy flux leads to advection of the fluid and along with some heat diffusion, the overall change in temperature is captured.</p><p>Finer details of the physics can be found at the source listed above.</p><pre><code class="language-julia hljs">Porous_Convection = @decapode begin
+  (λ_ρ₀Cp, αρ₀, k_ηf, ϕ)::Constant
+  (P, T, Adv, bound_T, bound_Ṫ)::Form0
+  (g, qD)::Form1
+
+  bound_T == adiabatic(T)
+
+  # Darcy flux
+  ρ == g ∧ (αρ₀ * bound_T)
+  P == Δ⁻¹(δ(ρ))
+  qD == -k_ηf * (d(P) - ρ)
+
+  Adv == ⋆(interpolate(∧ᵈᵖ₁₁(⋆(d(bound_T)), qD)))
+  Ṫ == -1/ϕ * Adv + λ_ρ₀Cp * Δ(bound_T)
+
+  bound_Ṫ == tb_bc(Ṫ)
+
+  ∂ₜ(T) == bound_Ṫ
+end
+infer_types!(Porous_Convection)
+resolve_overloads!(Porous_Convection)
+to_graphviz(Porous_Convection)</code></pre><img src="f337a208.svg" alt="Example block output"/><h2 id="The-Mesh"><a class="docs-heading-anchor" href="#The-Mesh">The Mesh</a><a id="The-Mesh-1"></a><a class="docs-heading-anchor-permalink" href="#The-Mesh" title="Permalink"></a></h2><p>Our mesh will be a triangulated grid mesh of width 40 units and height 20. We ues the circumcenter subdivision method as the triangulated grid&#39;s triangles are well-behaved and thus we can enjoy faster solve times.</p><pre><code class="language-julia hljs">lx, ly = 40.0, 20.0
+dx = dy = 0.4
+s = triangulated_grid(lx, ly, dx, dy, Point3{Float64});
+sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point2{Float64}}(s);
+subdivide_duals!(sd, Circumcenter());</code></pre><img src="6a442d06.png" alt="Example block output"/><h2 id="Operators-and-Boundary-Conditions"><a class="docs-heading-anchor" href="#Operators-and-Boundary-Conditions">Operators and Boundary Conditions</a><a id="Operators-and-Boundary-Conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Operators-and-Boundary-Conditions" title="Permalink"></a></h2><p>We set up our custom operators first. Since our system is fairly small, we can directly factorize our Laplacian to make solve the Poisson Equation fast and accurate.</p><p>As you may have noticed, all of our data is located on the primal mesh, including our temperature. While this means we can keep the Darcy flux on the primal elements, the Lie derivative needs to compute the advection is slightly complicated now. However, we can employ interpolation to faithfully map data from primal to dual triangle elements to sidestep this problem. For fine enough meshes, the error in doing so in negligible.</p><p>Along with our operators, we implement <a href="https://en.wikipedia.org/wiki/Adiabatic_process">adiabatic conditions</a> on the side of our mesh as well as no-change conditions on the top/bottom of our mesh, where our cooling/heating elements reside. The adiabatic condition works by giving the boundary the values of the appropriate horizontal neighbor, which easy to do on the triangulated grid as its structure allows for easy lookup of this neighbor.</p><pre><code class="language-julia hljs">Δ0 = Δ(0,sd);
+fΔ0 = LinearAlgebra.factorize(Δ0);
+
+mat = p2_d2_interpolation(sd)
+
+left_wall_idxs = findall(p -&gt; p[1] &lt; dx, s[:point]);
+right_wall_idxs = findall(p -&gt; p[1] &gt; lx - dx, s[:point]);
+
+# For adiabatic conditions:
+next_left_wall_idxs = left_wall_idxs .+ 1;
+next_right_wall_idxs = right_wall_idxs .- 1;
+
+# For no-change conditions
+bottom_wall_idxs= findall(p -&gt; p[2] == 0, s[:point]);
+top_wall_idxs = findall(p -&gt; p[2] == ly, s[:point]);
+
+apply_tb_bc(x) = begin x[bottom_wall_idxs] .= 0; x[top_wall_idxs] .= 0; return x; end
+
+function generate(sd, my_symbol; hodge=GeometricHodge())
+  op = @match my_symbol begin
+    :Δ⁻¹ =&gt; x -&gt; begin
+      y = fΔ0 \ x
+      # Constant changes in solution are valid
+      y .-= minimum(y)
+    end
+    :adiabatic =&gt; x -&gt; begin
+      x[left_wall_idxs] .= x[next_left_wall_idxs]
+      x[right_wall_idxs] .= x[next_right_wall_idxs]
+      return x
+    end
+    :tb_bc =&gt; apply_tb_bc
+    :interpolate =&gt; x -&gt; mat * x
+    _ =&gt; error(&quot;No operator $my_symbol found.&quot;)
+  end
+  return op
+end
+
+sim = eval(gensim(Porous_Convection))
+f = sim(sd, generate, DiagonalHodge())</code></pre><h2 id="Initial-Conditions"><a class="docs-heading-anchor" href="#Initial-Conditions">Initial Conditions</a><a id="Initial-Conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Initial-Conditions" title="Permalink"></a></h2><p>We set up a Gaussian heat disturbance at the center of our mesh to produce interesting convective behavior. We also set the cooling/heating elements.</p><pre><code class="language-julia hljs">ΔT = 200.0
+
+T_dist = MvNormal([lx/2.0, ly/2.0], [1/sqrt(2), 1/sqrt(2)])
+T = [2 * ΔT * pdf(T_dist, [p[1], p[2]]) for p in sd[:point]]
+T[top_wall_idxs] .= -ΔT/2
+T[bottom_wall_idxs] .= ΔT/2</code></pre><img src="b9fb0273.png" alt="Example block output"/><p>Since we depend on gravity to drive the convection, as this is why lower densities rise against higher densities, we define gravity as a force moving in the downward y-direction and use <code>eval_constant_primal_form</code> to generate the appropriate 1-Form to represent this force.</p><p>Afterwards we establish a variety of physical constants.</p><pre><code class="language-julia hljs"># Gravity
+accl_g = 9.81
+grav = SVector{3}([0.0, -accl_g, 0.0])
+g = eval_constant_primal_form(sd, grav)
+
+# Physical constants
+Ra = 750
+k_ηf = 1.0
+αρ₀ = (1.0/accl_g)
+ϕ = 0.1
+λ_ρ₀Cp = 1/Ra*(accl_g*αρ₀*k_ηf*ΔT*ly/ϕ)
+
+u₀ = ComponentArray(T=T, g=g)
+constants = (k_ηf = k_ηf, αρ₀ = αρ₀, ϕ = ϕ, λ_ρ₀Cp = λ_ρ₀Cp)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(k_ηf = 1.0, αρ₀ = 0.1019367991845056, ϕ = 0.1, λ_ρ₀Cp = 53.33333333333333)</code></pre><h2 id="Solving-the-Porous-Convection-Equations"><a class="docs-heading-anchor" href="#Solving-the-Porous-Convection-Equations">Solving the Porous Convection Equations</a><a id="Solving-the-Porous-Convection-Equations-1"></a><a class="docs-heading-anchor-permalink" href="#Solving-the-Porous-Convection-Equations" title="Permalink"></a></h2><p>We simply plug in our initial conditions and generate simulation code and solve it using <code>Tsit5()</code>. Below is an output of the full simulation.</p><pre><code class="language-julia hljs">tₑ = 0.7
+prob = ODEProblem(f, u₀, (0, tₑ), constants)
+soln = solve(prob, Tsit5(); saveat = 0.005)
+soln.retcode</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ReturnCode.Success = 1</code></pre><pre><code class="language-julia hljs">save_dynamics(&quot;Porous_Convection.mp4&quot;, 120)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;Porous_Convection.mp4&quot;</code></pre><p><video src="../Porous_Convection.mp4" controls="true" title="&quot;Porous Convection Result&quot;"><a href="../Porous_Convection.mp4">&quot;Porous Convection Result&quot;</a></video></p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Page built in 67 seconds.
+[ Info: This page was last built at 2025-03-11T17:47:05.519.</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../klausmeier/klausmeier/">« Klausmeier</a><a class="docs-footer-nextpage" href="../../cism/cism/">CISM v2.1 »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Tuesday 11 March 2025 17:47">Tuesday 11 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
