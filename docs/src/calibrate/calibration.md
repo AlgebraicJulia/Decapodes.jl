@@ -132,7 +132,7 @@ Now we can solve the problem and generate some reference data.
 ```@example Calibration
 tₑ = 8e3
 
-data_prob = ODEProblem{true,SciMLBase.FullSpecialize}(fₘ, u₀, (0, tₑ), constants_and_parameters)
+data_prob = ODEProblem{true,SciMLBase.FullSpecialize}(f_2D, u02D, (0, tₑ), constants_and_parameters)
 decapode_sol = solve(data_prob, Rodas5P())
 
 reference_dat = last(decapode_sol).dynamics_h
@@ -176,6 +176,8 @@ Now we can take the coloring pattern we found and see what it looks like when it
 
 ```@example Calibration
 compress(jac_sparsity_2D,jac_colors_2D)
+
+sparse(compress(jac_sparsity_2D,jac_colors_2D)) # hide
 ```
 We can see that this matrix has only 26 columns. This means that when the ODE solver calculates the derivative of the function, it can do it in 26 JVP operations instead of 441, a huge difference! Once the Jacobian is calculated in this compressed form, it can then be "decompressed" using the original coloring pattern. 
 
@@ -184,14 +186,14 @@ Now we can look at how much exactly this has sped up the solving process.
 First, let's solve the ODE with sparsity not used.
 
 ```@example Calibration
-no_sparse_prob_2D = ODEProblem(f_2D, u02D, (0, te), constants_and_parameters)
+no_sparse_prob_2D = ODEProblem(f_2D, u02D, (0, tₑ), constants_and_parameters)
 @btime no_sparse_soln_2D = solve(no_sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))
 ```
 
 Now the same problem but with the sparsity pattern and Jacobian coloring taken in to account. 
 ```@example Calibration
 sparse_f_2D = ODEFunction(f_2D, sparsity = jac_sparsity_2D, colorvec = column_colors(jac_colors_2D))
-sparse_prob_2D = ODEProblem(sparse_f_2D,u02D,(0,te), constants_and_parameters)
+sparse_prob_2D = ODEProblem(sparse_f_2D,u02D,(0,tₑ), constants_and_parameters)
 @btime sparse_soln_2D = solve(sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))
 ```
 
@@ -218,7 +220,8 @@ And now to calibrate the $\rho$ parameter, all we can use `Optimization.jl` to s
 ```@example Calibration
 optf = OptimizationFunction((x, p) -> loss(x), AutoForwardDiff())
 optprob = Optimization.OptimizationProblem(optf, [100.0])
-optsol = Optimization.solve(optprob, LBFGS(), callback=callback)
+optsol = Optimization.solve(optprob, LBFGS())
 ```
 
 As we can see the optimization routine was able to find the parameter that produced the reference data quite closely. 
+
