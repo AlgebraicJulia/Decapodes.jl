@@ -82,7 +82,7 @@ makedocs(
         "Oncology" => "examples/oncology/tumor_proliferation_invasion.md",
         "MHD" => "examples/mhd.md", # TODO convert original file to a docs page
     ],
-    "Calibration" => "calibration/calibration.md",
+    "Calibration" => "calibrate/calibration.md",
     "Misc Features" => "bc/bc_debug.md", # Requires overview
     "FAQ" => "faq/faq.md",
     "ASCII Operators" => "ascii.md",
