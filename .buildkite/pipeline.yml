@@ -2,10 +2,10 @@ steps:
 
   - label: ":arrow_down: Load AlgebraicJulia pipeline"
     command: |
-      if [ -f "example.yml" ]; then
+      if [ -f ".buildkite/example.yml" ]; then
         curl -s https://raw.githubusercontent.com/AlgebraicJulia/.github/main/buildkite/pipeline.yml | buildkite-agent pipeline upload
       else
-        buildkite-agent pipeline upload example.yml
+        buildkite-agent pipeline upload .buildkite/example.yml
       fi
         
 
