@@ -1,6 +1,6 @@
 # <img src='docs/src/logo/decapodes_logo.svg' width='128' alt='Georges de Prhawnm'> Decapodes.jl
 
-[![Development Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://www.cise.ufl.edu/~luke.morris/2_4_2025/build/)
+[![Development Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://algebraicjulia.github.io/Decapodes.jl/dev)
 [![Code Coverage](https://codecov.io/gh/AlgebraicJulia/Decapodes.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/AlgebraicJulia/Decapodes.jl)
 [![CI/CD](https://github.com/AlgebraicJulia/Decapodes.jl/actions/workflows/julia_ci.yml/badge.svg)](https://github.com/AlgebraicJulia/Decapodes.jl/actions/workflows/julia_ci.yml)
 
