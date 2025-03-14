@@ -7,7 +7,7 @@ info = DocInfo.Info()
 
 Let's see how to calibrate a glacial flow Decapode model's parameters to fit some data. We want to solve the inverse problem, i.e. given a model and some data, find a set of parameters that causes the output of the model to match the given data as closely as possible. 
 
-We'll be using a 2D version of the Halfar glacial flow model, for more explanation see the [glacial flow docs page.](../ice_dynamics/ice_dynamics.md).
+We'll be using a 2D version of the Halfar glacial flow model, for more explanation see the [glacial flow docs page](../ice_dynamics/ice_dynamics.md).
 
 In order to set up the inverse problem, we first need our model and some reference data. So, we'll set up the 2D glacial flow model and get some data from it. In this case we'll be fitting our model parameters to data from the model itself. In general the data we want to fit to will not be from the model, but for demonstration purposes this works well. 
 
@@ -187,14 +187,16 @@ First, let's solve the ODE with sparsity not used.
 
 ```@example Calibration
 no_sparse_prob_2D = ODEProblem(f_2D, u02D, (0, tₑ), constants_and_parameters)
-@btime no_sparse_soln_2D = solve(no_sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))
+no_sparse_soln_2D, exec_time_seconds, _, _, _ = @btimed = solve(no_sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))
+no_sparse_soln_2D.retcode, exec_time_seconds
 ```
 
 Now the same problem but with the sparsity pattern and Jacobian coloring taken in to account. 
 ```@example Calibration
 sparse_f_2D = ODEFunction(f_2D, sparsity = jac_sparsity_2D, colorvec = column_colors(jac_colors_2D))
 sparse_prob_2D = ODEProblem(sparse_f_2D,u02D,(0,tₑ), constants_and_parameters)
-@btime sparse_soln_2D = solve(sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))
+sparse_soln_2D, exec_time_seconds, _, _, _ = @btimed solve(sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))
+sparse_soln_2D.retcode, exec_time_seconds
 ```
 
 We can see quite a performance increase!
