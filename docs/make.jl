@@ -61,6 +61,7 @@ makedocs(
         "ASCII and Unicode Operators" => "ascii.md",
         "Equations" => "concepts/equations.md",
         "Composition" => "concepts/composition.md",
+        "Variable Types" => "concepts/deca_types.md",
         "Meshes" => "concepts/meshes.md",
         "Custom Operators" => "concepts/generate.md",
     ],
