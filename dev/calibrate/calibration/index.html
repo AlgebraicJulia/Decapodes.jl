@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Calibration · Decapodes.jl</title><meta name="title" content="Calibration · Decapodes.jl"/><meta property="og:title" content="Calibration · Decapodes.jl"/><meta property="twitter:title" content="Calibration · Decapodes.jl"/><meta name="description" content="Documentation for Decapodes.jl."/><meta property="og:description" content="Documentation for Decapodes.jl."/><meta property="twitter:description" content="Documentation for Decapodes.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Decapodes.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Decapodes.jl</a></li><li><a class="tocitem" href="../../overview/overview/">Overview</a></li><li><a class="tocitem" href="../../ice_dynamics/ice_dynamics/">Glacial Flow</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../concepts/equations/">Equations</a></li><li><a class="tocitem" href="../../concepts/composition/">Composition</a></li><li><a class="tocitem" href="../../concepts/meshes/">Meshes</a></li><li><a class="tocitem" href="../../concepts/generate/">Custom Operators</a></li></ul></li><li><span class="tocitem">Zoo</span><ul><li><a class="tocitem" href="../../navier_stokes/ns/">Vortices</a></li><li><a class="tocitem" href="../../harmonics/harmonics/">Harmonics</a></li><li><a class="tocitem" href="../../ch/cahn-hilliard/">Cahn-Hilliard</a></li><li><a class="tocitem" href="../../brussel/brussel/">Brusselator</a></li><li><a class="tocitem" href="../../klausmeier/klausmeier/">Klausmeier</a></li><li><a class="tocitem" href="../../pconv/porous_convection/">Porous Convection</a></li><li><a class="tocitem" href="../../cism/cism/">CISM v2.1</a></li><li><a class="tocitem" href="../../grigoriev/grigoriev/">Grigoriev Ice Cap</a></li><li><a class="tocitem" href="../../bsh/budyko_sellers_halfar/">Budyko-Sellers-Halfar</a></li><li><a class="tocitem" href="../../ebm_melt/ebm_melt/">Halfar-EBM-Water</a></li><li><a class="tocitem" href="../../halmo/halmo/">Halfar-NS</a></li><li><a class="tocitem" href="../../nhs/nhs_lite/">NHS</a></li><li><a class="tocitem" href="../../poiseuille/poiseuille/">Pipe Flow</a></li><li><a class="tocitem" href="../../fokker_planck/fokker_planck/">Fokker-Planck</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/chemistry/gray_scott/">Gray-Scott</a></li><li><a class="tocitem" href="../../examples/oncology/tumor_proliferation_invasion/">Oncology</a></li><li><a class="tocitem" href="../../examples/mhd/">MHD</a></li></ul></li><li class="is-active"><a class="tocitem" href>Calibration</a><ul class="internal"><li><a class="tocitem" href="#Sparsity-Detection-and-Jacobian-Coloring"><span>Sparsity Detection and Jacobian Coloring</span></a></li><li><a class="tocitem" href="#Calibration"><span>Calibration</span></a></li></ul></li><li><a class="tocitem" href="../../bc/bc_debug/">Misc Features</a></li><li><a class="tocitem" href="../../faq/faq/">FAQ</a></li><li><a class="tocitem" href="../../ascii/">ASCII Operators</a></li><li><a class="tocitem" href="../../canon/">Canonical Models</a></li><li><a class="tocitem" href="../../api/">Library Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Calibration</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Calibration</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs/src/calibrate/calibration.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Parameter-Calibration-for-Halfar&#39;s-Glacial-Flow-Model"><a class="docs-heading-anchor" href="#Parameter-Calibration-for-Halfar&#39;s-Glacial-Flow-Model">Parameter Calibration for Halfar&#39;s Glacial Flow Model</a><a id="Parameter-Calibration-for-Halfar&#39;s-Glacial-Flow-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Parameter-Calibration-for-Halfar&#39;s-Glacial-Flow-Model" title="Permalink"></a></h1><p>Let&#39;s see how to calibrate a glacial flow Decapode model&#39;s parameters to fit some data. We want to solve the inverse problem, i.e. given a model and some data, find a set of parameters that causes the output of the model to match the given data as closely as possible. </p><p>We&#39;ll be using a 2D version of the Halfar glacial flow model, for more explanation see the <a href="../../ice_dynamics/ice_dynamics/">glacial flow docs page.</a>.</p><p>In order to set up the inverse problem, we first need our model and some reference data. So, we&#39;ll set up the 2D glacial flow model and get some data from it. In this case we&#39;ll be fitting our model parameters to data from the model itself. In general the data we want to fit to will not be from the model, but for demonstration purposes this works well. </p><pre><code class="language-julia hljs">using Catlab
+using CombinatorialSpaces
+using DiagrammaticEquations
+using Decapodes
+using CairoMakie
+using ComponentArrays
+using GeometryBasics: Point2, Point3
+using JLD2
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEq
+using SparseArrays
+using Statistics
+using BenchmarkTools
+using SparseConnectivityTracer
+using SparseMatrixColorings
+using ADTypes
+using NaNMath
+using Optimization
+using SciMLSensitivity
+using Optimization
+using OptimizationOptimJL
+using Optim
+Point2D = Point2{Float64}
+Point3D = Point3{Float64}
+
+halfar_eq2 = @decapode begin
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ḣ == ∂ₜ(h)
+    ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n - 1)) * avg₀₁(h^(n + 2)))
+end
+
+glens_law = @decapode begin
+    #Γ::Form0
+    Γ::Form1
+    (A, ρ, g, n)::Constant
+
+    Γ == (2 / (n + 2)) * A * (ρ * g)^n
+end
+
+ice_dynamics_composition_diagram = @relation () begin
+    dynamics(Γ, n)
+    stress(Γ, n)
+end
+
+ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
+    [Open(halfar_eq2, [:Γ, :n]),
+        Open(glens_law, [:Γ, :n])])
+
+ice_dynamics = apex(ice_dynamics_cospan)
+
+ice_dynamics2D = expand_operators(ice_dynamics)
+infer_types!(ice_dynamics2D)
+resolve_overloads!(ice_dynamics2D)
+
+function generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+        :♯ =&gt; begin
+            sharp_mat = ♯_mat(sd, AltPPSharp())
+            x -&gt; sharp_mat * x
+        end
+        :mag =&gt; x -&gt; norm.(x)
+        x =&gt; error(&quot;Unmatched operator $my_symbol&quot;)
+    end
+    return (args...) -&gt; op(args...)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">generate (generic function with 1 method)</code></pre><p>Now we define the mesh and the dual mesh that the glacial flow equations will be solved on, along with initial conditions on the mesh and parameters for the model.</p><pre><code class="language-julia hljs">s2D = triangulated_grid(10_000, 10_000, 500, 500, Point3D)
+sd2D = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s2D)
+subdivide_duals!(sd2D, Barycenter())
+
+h₀2D = map(point(s2D)) do (x, y)
+    (7072 - ((x - 5000)^2 + (y - 5000)^2)^(1 / 2)) / 9e3 + 10
+end
+
+u02D = ComponentArray(dynamics_h=h₀2D)
+
+n = 3
+ρ = 910
+g = 9.8
+A = 1e-3
+
+constants_and_parameters = ComponentArray(
+    n=n,
+    stress_ρ=ρ,
+    stress_g=g,
+    stress_A=A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ComponentVector{Float64}(n = 3.0, stress_ρ = 910.0, stress_g = 9.8, stress_A = 0.001)</code></pre><p>Now we have everything we need to generate the function that will be used in the ODE solver. Thinking ahead however, the optimization routines we want to use might try non-physical parameters, e.g. maybe a set of parameters the optimizer tries will cause the ice height solution to become complex. In this case, certain parameter sets might cause an error to occur, e.g. an out of domain error could be thrown if the square root function is called on a negative number. If an error occurs, the optimization process will stop. But we would like it if when a non-physical set of parameters is used, the optimization routine rejects it and keeps going. For that we can use the <a href="https://github.com/JuliaMath/NaNMath.jl"><code>NaNMath</code> library</a>. When functions in the <code>NaNMath</code> library are called with values that would usually produce an out of domain error, they return a <code>NaN</code> value instead. This allows for the optimization routine to continue, while disregarding that set of parameters. </p><pre><code class="language-julia hljs">decapode_code =
+    quote
+        let
+            ^(x,y) = NaNMath.pow(x,y)
+            sqrt(x) = NaNMath.sqrt(x)
+            log(x) = NaNMath.log(x)
+
+            $(gensim(ice_dynamics2D, dimension = 2, preallocate = false))
+        end
+    end
+
+f_eval_2D = eval(decapode_code)
+
+f_2D = f_eval_2D(sd2D,generate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::Main.var&quot;#f#17&quot;{Main.var&quot;#11#16&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, Decapodes.var&quot;#11#13&quot;{SparseArrays.SparseMatrixCSC{Float64, Int32}}, Decapodes.var&quot;#5#10&quot;{Decapodes.var&quot;#4#9&quot;}, Main.var&quot;#4#7&quot;{Main.var&quot;#2#5&quot;{SparseArrays.SparseMatrixCSC{GeometryBasics.Point{3, Float64}, Int64}}}, Decapodes.var&quot;#11#13&quot;{SparseArrays.SparseMatrixCSC{Int8, Int32}}, Main.var&quot;#^#12&quot;}) (generic function with 1 method)</code></pre><p>Now we can solve the problem and generate some reference data.</p><pre><code class="language-julia hljs">tₑ = 8e3
+
+data_prob = ODEProblem{true,SciMLBase.FullSpecialize}(f_2D, u02D, (0, tₑ), constants_and_parameters)
+decapode_sol = solve(data_prob, Rodas5P())
+
+reference_dat = last(decapode_sol).dynamics_h</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">441-element view(::Vector{Float64}, 1:441) with eltype Float64:
+ 10.357794096943655
+ 10.358143330956384
+ 10.358849128291887
+ 10.359646648290576
+ 10.36048871724645
+ 10.361333267467144
+ 10.362147313157273
+ 10.362897856784995
+ 10.363548309877833
+ 10.36405031998834
+  ⋮
+ 10.363812270459553
+ 10.363225192532727
+ 10.362516646193889
+ 10.361727559508418
+ 10.360892176930724
+ 10.360042933825644
+ 10.359218606604353
+ 10.358455280840818
+ 10.357942416576282</code></pre><p>In order to optimize the parameters of the model, we compare the output of the model with certain parameters against the reference data. When the output of the model is as close as possible to the reference data, we&#39;ll have a set of parameters that when used in the model will reproduce the reference data. The difference between the model output and the reference data can be calculated in many ways, in this case we&#39;ll use the sum of squares. </p><pre><code class="language-julia hljs">function loss(u) #only compares last time step
+    newp = ComponentArray(n=n, stress_ρ=u[1], stress_g=g, stress_A=A)
+    prob = remake(data_prob, p=newp)
+    sol = solve(prob, Rodas5P(), sensealg=GaussAdjoint())
+    current_dat = last(sol).dynamics_h
+    sum(abs2, reference_dat .- current_dat)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">loss (generic function with 1 method)</code></pre><h2 id="Sparsity-Detection-and-Jacobian-Coloring"><a class="docs-heading-anchor" href="#Sparsity-Detection-and-Jacobian-Coloring">Sparsity Detection and Jacobian Coloring</a><a id="Sparsity-Detection-and-Jacobian-Coloring-1"></a><a class="docs-heading-anchor-permalink" href="#Sparsity-Detection-and-Jacobian-Coloring" title="Permalink"></a></h2><p>Before we get to setting up and solving the optimization problem, let&#39;s see if there are any easy things we can do to make sure we have good performance. The optimization routine will run the <code>loss</code> function with many different sets of parameters, each time checking to see how close the output of the model with that set of parameters is. If we want to speed up the optimization process, one way to do that is to speed up the solution of the ordinary differential equation involved. </p><p>Decapodes used a semi-discretization method to discretize the spatial variables of the model. This means that the system of ordinary differential equations that was generated has a state associated with every vertex of the mesh. We chose our mesh to be 21 by 21, so there are 441 vertices in our mesh, which means our ODE has 441 state variables. Since the system of equations might be <a href="https://en.wikipedia.org/wiki/Stiff_equation">stiff</a>, we want to use an implicit method, which means that for every time step the ODE solver takes, it needs to calculate the Jacobian of <code>f_2D</code> with respect to the state variables. Because we have have 441 inputs, and 441 outputs, the Jacobian matrix has a total of 194_481 entries. This seems like a lot, but actually, since not every output will depend on every input, the Jacobian will have many entries that will always be zero. In other words the Jacobian will be sparse. This means that only a few entries actually have to be calculated. We can use the package <code>SparseConnectivityTracer.jl</code> to find the sparsity pattern of the Jacobian.  </p><pre><code class="language-julia hljs">jac_sparsity_2D = jacobian_sparsity((du,u) -&gt; f_2D(du,u,constants_and_parameters,0.0),u02D, u02D, TracerLocalSparsityDetector())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">441×441 SparseArrays.SparseMatrixCSC{Bool, Int64} with 7597 stored entries:
+⎡⠻⣦⡳⣄⠳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎤
+⎢⠙⢮⡻⣮⠻⣮⠳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠙⢦⡻⣦⡻⣮⡳⣌⡳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠙⢦⡙⢮⡻⣮⡻⣎⠳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠙⢮⡻⢮⡻⣮⡳⣌⡳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠙⢦⡙⢮⡻⢎⡻⣌⠳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠙⢮⡛⢮⡻⣮⡳⣬⡳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⡙⣮⡻⣮⡳⣎⠳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢮⡹⢮⡻⣮⡳⣬⠳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⡙⣮⡻⣮⡻⣌⠳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⡛⢮⡻⣮⡳⣮⡳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⡹⣮⡻⣮⡳⣌⠳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢮⡙⢮⡻⣮⡳⣮⠳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⡹⣮⡻⣮⡳⣌⠳⣄⠀⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⡙⢮⡱⣮⡳⣎⡳⣄⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⡹⢮⡻⣮⡳⣌⠳⣄⠀⠀⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢮⡙⢮⡻⣮⡻⣬⠳⣄⠀⠀⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⡛⣮⡻⣮⠳⣌⠳⣄⎥
+⎢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⡙⢦⡻⣮⡳⣆⎥
+⎣⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⠹⢮⠻⣦⎦</code></pre><p>We can see that only 7597 entries are actually ever non-zero. If we use a sparsity aware automatic differentiation system to calculate the Jacobian while solving the ODE, we can cut down the number of calculations needed by two orders of magnitude.  </p><p>There&#39;s another way we can speed up the calculation of the Jacobian. Forward mode automatic differentiation systems use the Jacobian vector product (JVP) as their base operation. Meaning that the Jacobian is built column by column using many JVP operations. One way to cut down on the number of JVP operations needed to get the full Jacobian is to use Jacobian coloring. In many cases, the sparse Jacobian will have many columns that do not share any non-zero entries. In that case the columns can be &quot;compressed&quot; in to one column. Now all of the original columns of the Jacobian that were compressed in to one column can be calculated using one JVP operation. This can dramatically cut down the number of operations needed to evaluate a Jacobian. It&#39;s called a Jacobian coloring because seperating a matrix in to columns that do not share a non-zero entry is equivalent to a graph coloring problem. Here we can see that using a greedy coloring algorithm from <code>SparseMatrixColorings.jl</code>, the Jacobian for our function only has 26 colors.  </p><pre><code class="language-julia hljs">col_prob = ColoringProblem()
+algo = GreedyColoringAlgorithm()
+
+jac_colors_2D = coloring(jac_sparsity_2D,col_prob,algo)
+
+ncolors(jac_colors_2D)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">26</code></pre><p>Now we can take the coloring pattern we found and see what it looks like when it&#39;s applied to the sparsity pattern. </p><pre><code class="language-julia hljs">compress(jac_sparsity_2D,jac_colors_2D)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">441×26 SparseArrays.SparseMatrixCSC{Int64, Int64} with 7597 stored entries:
+⎡⣿⡆⎤
+⎢⣿⡇⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎢⣿⣿⎥
+⎣⣿⣿⎦</code></pre><p>We can see that this matrix has only 26 columns. This means that when the ODE solver calculates the derivative of the function, it can do it in 26 JVP operations instead of 441, a huge difference! Once the Jacobian is calculated in this compressed form, it can then be &quot;decompressed&quot; using the original coloring pattern. </p><p>Now we can look at how much exactly this has sped up the solving process.</p><p>First, let&#39;s solve the ODE with sparsity not used.</p><pre><code class="language-julia hljs">no_sparse_prob_2D = ODEProblem(f_2D, u02D, (0, tₑ), constants_and_parameters)
+@btime no_sparse_soln_2D = solve(no_sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">retcode: Success
+Interpolation: specialized 4rd order &quot;free&quot; stiffness-aware interpolation
+t: 29-element Vector{Float64}:
+    0.0
+    0.11924920290541303
+    0.23849840581082607
+    0.45586099892444676
+    0.7592257094318735
+    1.2431948053039183
+    1.9668437346519472
+    3.0698747923766594
+    4.664673101264434
+    6.933839280363392
+    ⋮
+  374.9618794980595
+  545.6522788518071
+  798.5501766169134
+ 1175.7566262342696
+ 1742.2557241976015
+ 2599.0752595788877
+ 3904.4411495083095
+ 5908.15876744302
+ 8000.0
+u: 29-element Vector{ComponentArrays.ComponentVector{Float64, Vector{Float64}, Tuple{ComponentArrays.Axis{(dynamics_h = ViewAxis(1:441, Shaped1DAxis((441,))),)}}}}:
+ ComponentVector{Float64}(dynamics_h = [10.000103576459392, 10.037447085556419, 10.0726234489463, 10.105296502466683, 10.135089040458375, 10.161588465784227, 10.184359321919453, 10.20296441280199, 10.21699480049281, 10.22610632986278  …  10.228736997531316, 10.222183351135897, 10.210574924748208, 10.194209215367396, 10.173467559474526, 10.148777275146712, 10.12057790197108, 10.089295540601821, 10.055326180382464, 10.01902686445555])
+ ComponentVector{Float64}(dynamics_h = [10.020647946566699, 10.048715627701498, 10.08380117383864, 10.116911925461906, 10.147234877199027, 10.174240322212396, 10.19746832725161, 10.216462488796987, 10.230795729112256, 10.240108336974977  …  10.24279770720936, 10.236098357268379, 10.224236260670816, 10.2075224398028, 10.186355326661202, 10.161181608729239, 10.132460852608107, 10.100728296527514, 10.066490761866813, 10.036170041311289])
+ ComponentVector{Float64}(dynamics_h = [10.032916796034709, 10.057092051689144, 10.09148514131079, 10.124562271696822, 10.155075087172069, 10.18228006893821, 10.205681098301365, 10.224813286001984, 10.239247327489053, 10.248623404412085  …  10.251330757301181, 10.244586313345083, 10.232642152213508, 10.215808826371411, 10.19448578831207, 10.169125832001008, 10.140205941815777, 10.108412526249397, 10.07447224774693, 10.046507542103173])
+ ComponentVector{Float64}(dynamics_h = [10.048030536566785, 10.068786944468165, 10.10184176207853, 10.134487096326446, 10.165060664217732, 10.19243251227228, 10.21599399206032, 10.235250063500303, 10.24976864708187, 10.259194216291249  …  10.261914933347947, 10.255136386972465, 10.243125920922136, 10.226188800596477, 10.204722953945437, 10.179197089065259, 10.150151385965955, 10.118532360651225, 10.085440591645659, 10.059623847669798])
+ ComponentVector{Float64}(dynamics_h = [10.062811446916353, 10.081278021799882, 10.112749502232921, 10.14458845903544, 10.17496617636399, 10.202391559748138, 10.226067342134552, 10.24542007164859, 10.260000664011706, 10.269458211021337  …  10.272186640821744, 10.26538748329694, 10.253331204191499, 10.236314951988007, 10.214740776345769, 10.189122019418782, 10.16012953595859, 10.12897987030241, 10.097085444532336, 10.072931111838667])
+ ComponentVector{Float64}(dynamics_h = [10.08014576205049, 10.096720156181291, 10.126256745292832, 10.156813676642159, 10.186584227659777, 10.213838792279434, 10.237543947005342, 10.256968089574222, 10.271598443858657, 10.281076746092774  …  10.283808570849624, 10.276998381680878, 10.26490811846335, 10.247829022382017, 10.226195203568274, 10.200629092196959, 10.172005733618352, 10.141767976032302, 10.111495954237025, 10.089029444860236])
+ ComponentVector{Float64}(dynamics_h = [10.099568937809947, 10.11454926483634, 10.141972832954915, 10.170846674913324, 10.19949884822666, 10.226165110155826, 10.249653045354988, 10.26903988289781, 10.28367712552302, 10.293154521027079  …  10.295882941546177, 10.289077783225057, 10.276983251680132, 10.259910139110563, 10.238386701768459, 10.213204442412406, 10.185422945109446, 10.1565679050266, 10.128204923696309, 10.107457919730686])
+ ComponentVector{Float64}(dynamics_h = [10.121754294830302, 10.13522303097187, 10.160315571262228, 10.187086674247434, 10.214044772028604, 10.239539124614758, 10.262357623456495, 10.28144914294162, 10.295985779401937, 10.305424168235534  …  10.308140473140018, 10.301363679726748, 10.289329580872517, 10.272435618081346, 10.251376685296826, 10.227105591760495, 10.20075694139758, 10.173796373670006, 10.147661394476046, 10.128759563832782])
+ ComponentVector{Float64}(dynamics_h = [10.145309315855982, 10.157323509196447, 10.179978259542464, 10.204377660272849, 10.229213630846154, 10.253011447783223, 10.274645967783297, 10.293059130826613, 10.307297477133389, 10.316630333161752  …  10.31932386535418, 10.312609486358514, 10.300756824078164, 10.28433056300527, 10.264194621211498, 10.241366070008787, 10.216934700748391, 10.192226123128245, 10.168510952053852, 10.15150667839847])
+ ComponentVector{Float64}(dynamics_h = [10.169227049173177, 10.179829504919207, 10.20000721517439, 10.221893020938866, 10.244350303754816, 10.266091571468317, 10.286121165429986, 10.303460626825153, 10.317135233299634, 10.326255302455166  …  10.328909967903124, 10.322311822084847, 10.310821680106692, 10.295202436628808, 10.276408675410142, 10.255419933483264, 10.233217736070229, 10.21096436101561, 10.189762264524076, 10.174663821583957])
+ ⋮
+ ComponentVector{Float64}(dynamics_h = [10.331469050123594, 10.333147578143171, 10.33649120251575, 10.34023397350282, 10.344178679352106, 10.348129449805539, 10.351935056190621, 10.35544351409802, 10.358486392351802, 10.360840284613877  …  10.361661936235002, 10.359758069273134, 10.357022158392969, 10.353720050555179, 10.350040995577682, 10.346142969705268, 10.342175579747675, 10.338317104843417, 10.33473393218558, 10.332283734213034])
+ ComponentVector{Float64}(dynamics_h = [10.337178159843306, 10.338563433625987, 10.341328924816484, 10.344428849337124, 10.347697475547093, 10.3509726083209, 10.354128799300147, 10.35704007284724, 10.359566889998453, 10.361524081116842  …  10.362207916005566, 10.360621722331292, 10.358347796846122, 10.3556061776757, 10.352553604489742, 10.349320983834232, 10.34603231611068, 10.342835478156355, 10.33986838597617, 10.337844555497968])
+ ComponentVector{Float64}(dynamics_h = [10.341996751078876, 10.343136303267588, 10.345415933398039, 10.347974600420063, 10.350673460184822, 10.353378591458542, 10.355986217421684, 10.358392197595162, 10.36048120609397, 10.36210020150274  …  10.36266541745721, 10.36135158230792, 10.359470441250838, 10.357203659899744, 10.354680730617838, 10.352009847679334, 10.349293509546078, 10.346654023029075, 10.344205387275588, 10.342539242354853])
+ ComponentVector{Float64}(dynamics_h = [10.346049141604725, 10.346983480058293, 10.348856242283466, 10.350960877679169, 10.35318144678098, 10.355407707929938, 10.357554063528491, 10.359534669837982, 10.36125446562973, 10.362587341423753  …  10.363051612466688, 10.361969071362793, 10.360419665023407, 10.35855297013969, 10.356475676175434, 10.354276953339387, 10.352041280532985, 10.349869509771322, 10.347855595029008, 10.346488474235109])
+ ComponentVector{Float64}(dynamics_h = [10.349445189124792, 10.350208701769311, 10.35174192393507, 10.353467062670278, 10.355287634306197, 10.357113176339961, 10.358873304668375, 10.360497473543196, 10.361907552537183, 10.36299995141778  …  10.363379119435296, 10.362491441640149, 10.361220584442158, 10.35968933891946, 10.357985345761291, 10.35618187305056, 10.35434833289331, 10.35256762182377, 10.350916935048337, 10.3497989493503])
+ ComponentVector{Float64}(dynamics_h = [10.352281228762426, 10.352903005928315, 10.354153847721102, 10.355562910760648, 10.3570501863221, 10.358541686465731, 10.359979725182269, 10.361306515430305, 10.362458042142556, 10.363349493298609  …  10.363657480684884, 10.362932858145344, 10.3618946736885, 10.360643407013438, 10.359250821002696, 10.357776923033619, 10.356278559574912, 10.354823642097497, 10.35347539196154, 10.352564275227524])
+ ComponentVector{Float64}(dynamics_h = [10.354641245727969, 10.355145814064347, 10.356162623926105, 10.35730936402668, 10.358519930268876, 10.359734015744468, 10.360904502626912, 10.361984215227071, 10.362920877240748, 10.363645289204703  …  10.363894148621773, 10.363305152074185, 10.36246038930916, 10.361441801575289, 10.36030795084289, 10.35910781634369, 10.357887794409928, 10.356703327774218, 10.355606019352127, 10.354866092358494])
+ ComponentVector{Float64}(dynamics_h = [10.356598188449011, 10.357006154779674, 10.357829674203588, 10.358759469854748, 10.35974113246407, 10.360725680949905, 10.361674766260265, 10.362550011807826, 10.36330887649093, 10.363895101067722  …  10.364095141648933, 10.363618356944352, 10.362933670468689, 10.362107662854298, 10.36118795185187, 10.360214372153646, 10.359224655463201, 10.358263901988508, 10.357374083517215, 10.3567753384887])
+ ComponentVector{Float64}(dynamics_h = [10.357794096943655, 10.358143330956384, 10.358849128291887, 10.359646648290576, 10.36048871724645, 10.361333267467144, 10.362147313157273, 10.362897856784995, 10.363548309877833, 10.36405031998834  …  10.364220684075468, 10.363812270459553, 10.363225192532727, 10.362516646193889, 10.361727559508418, 10.360892176930724, 10.360042933825644, 10.359218606604353, 10.358455280840818, 10.357942416576282])</code></pre><p>Now the same problem but with the sparsity pattern and Jacobian coloring taken in to account. </p><pre><code class="language-julia hljs">sparse_f_2D = ODEFunction(f_2D, sparsity = jac_sparsity_2D, colorvec = column_colors(jac_colors_2D))
+sparse_prob_2D = ODEProblem(sparse_f_2D,u02D,(0,tₑ), constants_and_parameters)
+@btime sparse_soln_2D = solve(sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">retcode: Success
+Interpolation: specialized 4rd order &quot;free&quot; stiffness-aware interpolation
+t: 29-element Vector{Float64}:
+    0.0
+    0.11924920290541303
+    0.23849840581082607
+    0.45586099892444676
+    0.7592257094318735
+    1.2431948053039183
+    1.9668437346519472
+    3.0698747923766594
+    4.664673101264434
+    6.933839280363392
+    ⋮
+  374.9618794980595
+  545.6522788518071
+  798.5501766169134
+ 1175.7566262342696
+ 1742.2557241976015
+ 2599.0752595788877
+ 3904.4411495083095
+ 5908.15876744302
+ 8000.0
+u: 29-element Vector{ComponentArrays.ComponentVector{Float64, Vector{Float64}, Tuple{ComponentArrays.Axis{(dynamics_h = ViewAxis(1:441, Shaped1DAxis((441,))),)}}}}:
+ ComponentVector{Float64}(dynamics_h = [10.000103576459392, 10.037447085556419, 10.0726234489463, 10.105296502466683, 10.135089040458375, 10.161588465784227, 10.184359321919453, 10.20296441280199, 10.21699480049281, 10.22610632986278  …  10.228736997531316, 10.222183351135897, 10.210574924748208, 10.194209215367396, 10.173467559474526, 10.148777275146712, 10.12057790197108, 10.089295540601821, 10.055326180382464, 10.01902686445555])
+ ComponentVector{Float64}(dynamics_h = [10.020647946566699, 10.048715627701498, 10.08380117383864, 10.116911925461906, 10.147234877199027, 10.174240322212396, 10.19746832725161, 10.216462488796987, 10.230795729112256, 10.240108336974977  …  10.24279770720936, 10.236098357268379, 10.224236260670816, 10.2075224398028, 10.186355326661202, 10.161181608729239, 10.132460852608107, 10.100728296527514, 10.066490761866813, 10.036170041311289])
+ ComponentVector{Float64}(dynamics_h = [10.032916796034709, 10.057092051689144, 10.09148514131079, 10.124562271696822, 10.155075087172069, 10.18228006893821, 10.205681098301365, 10.224813286001984, 10.239247327489053, 10.248623404412085  …  10.251330757301181, 10.244586313345083, 10.232642152213508, 10.215808826371411, 10.19448578831207, 10.169125832001008, 10.140205941815777, 10.108412526249397, 10.07447224774693, 10.046507542103173])
+ ComponentVector{Float64}(dynamics_h = [10.048030536566785, 10.068786944468165, 10.10184176207853, 10.134487096326446, 10.165060664217732, 10.19243251227228, 10.21599399206032, 10.235250063500303, 10.24976864708187, 10.259194216291249  …  10.261914933347947, 10.255136386972465, 10.243125920922136, 10.226188800596477, 10.204722953945437, 10.179197089065259, 10.150151385965955, 10.118532360651225, 10.085440591645659, 10.059623847669798])
+ ComponentVector{Float64}(dynamics_h = [10.062811446916353, 10.081278021799882, 10.112749502232921, 10.14458845903544, 10.17496617636399, 10.202391559748138, 10.226067342134552, 10.24542007164859, 10.260000664011706, 10.269458211021337  …  10.272186640821744, 10.26538748329694, 10.253331204191499, 10.236314951988007, 10.214740776345769, 10.189122019418782, 10.16012953595859, 10.12897987030241, 10.097085444532336, 10.072931111838667])
+ ComponentVector{Float64}(dynamics_h = [10.08014576205049, 10.096720156181291, 10.126256745292832, 10.156813676642159, 10.186584227659777, 10.213838792279434, 10.237543947005342, 10.256968089574222, 10.271598443858657, 10.281076746092774  …  10.283808570849624, 10.276998381680878, 10.26490811846335, 10.247829022382017, 10.226195203568274, 10.200629092196959, 10.172005733618352, 10.141767976032302, 10.111495954237025, 10.089029444860236])
+ ComponentVector{Float64}(dynamics_h = [10.099568937809947, 10.11454926483634, 10.141972832954915, 10.170846674913324, 10.19949884822666, 10.226165110155826, 10.249653045354988, 10.26903988289781, 10.28367712552302, 10.293154521027079  …  10.295882941546177, 10.289077783225057, 10.276983251680132, 10.259910139110563, 10.238386701768459, 10.213204442412406, 10.185422945109446, 10.1565679050266, 10.128204923696309, 10.107457919730686])
+ ComponentVector{Float64}(dynamics_h = [10.121754294830302, 10.13522303097187, 10.160315571262228, 10.187086674247434, 10.214044772028604, 10.239539124614758, 10.262357623456495, 10.28144914294162, 10.295985779401937, 10.305424168235534  …  10.308140473140018, 10.301363679726748, 10.289329580872517, 10.272435618081346, 10.251376685296826, 10.227105591760495, 10.20075694139758, 10.173796373670006, 10.147661394476046, 10.128759563832782])
+ ComponentVector{Float64}(dynamics_h = [10.145309315855982, 10.157323509196447, 10.179978259542464, 10.204377660272849, 10.229213630846154, 10.253011447783223, 10.274645967783297, 10.293059130826613, 10.307297477133389, 10.316630333161752  …  10.31932386535418, 10.312609486358514, 10.300756824078164, 10.28433056300527, 10.264194621211498, 10.241366070008787, 10.216934700748391, 10.192226123128245, 10.168510952053852, 10.15150667839847])
+ ComponentVector{Float64}(dynamics_h = [10.169227049173177, 10.179829504919207, 10.20000721517439, 10.221893020938866, 10.244350303754816, 10.266091571468317, 10.286121165429986, 10.303460626825153, 10.317135233299634, 10.326255302455166  …  10.328909967903124, 10.322311822084847, 10.310821680106692, 10.295202436628808, 10.276408675410142, 10.255419933483264, 10.233217736070229, 10.21096436101561, 10.189762264524076, 10.174663821583957])
+ ⋮
+ ComponentVector{Float64}(dynamics_h = [10.331469050123594, 10.333147578143171, 10.33649120251575, 10.34023397350282, 10.344178679352106, 10.348129449805539, 10.351935056190621, 10.35544351409802, 10.358486392351802, 10.360840284613877  …  10.361661936235002, 10.359758069273134, 10.357022158392969, 10.353720050555179, 10.350040995577682, 10.346142969705268, 10.342175579747675, 10.338317104843417, 10.33473393218558, 10.332283734213034])
+ ComponentVector{Float64}(dynamics_h = [10.337178159843306, 10.338563433625987, 10.341328924816484, 10.344428849337124, 10.347697475547093, 10.3509726083209, 10.354128799300147, 10.35704007284724, 10.359566889998453, 10.361524081116842  …  10.362207916005566, 10.360621722331292, 10.358347796846122, 10.3556061776757, 10.352553604489742, 10.349320983834232, 10.34603231611068, 10.342835478156355, 10.33986838597617, 10.337844555497968])
+ ComponentVector{Float64}(dynamics_h = [10.341996751078876, 10.343136303267588, 10.345415933398039, 10.347974600420063, 10.350673460184822, 10.353378591458542, 10.355986217421684, 10.358392197595162, 10.36048120609397, 10.36210020150274  …  10.36266541745721, 10.36135158230792, 10.359470441250838, 10.357203659899744, 10.354680730617838, 10.352009847679334, 10.349293509546078, 10.346654023029075, 10.344205387275588, 10.342539242354853])
+ ComponentVector{Float64}(dynamics_h = [10.346049141604725, 10.346983480058293, 10.348856242283466, 10.350960877679169, 10.35318144678098, 10.355407707929938, 10.357554063528491, 10.359534669837982, 10.36125446562973, 10.362587341423753  …  10.363051612466688, 10.361969071362793, 10.360419665023407, 10.35855297013969, 10.356475676175434, 10.354276953339387, 10.352041280532985, 10.349869509771322, 10.347855595029008, 10.346488474235109])
+ ComponentVector{Float64}(dynamics_h = [10.349445189124792, 10.350208701769311, 10.35174192393507, 10.353467062670278, 10.355287634306197, 10.357113176339961, 10.358873304668375, 10.360497473543196, 10.361907552537183, 10.36299995141778  …  10.363379119435296, 10.362491441640149, 10.361220584442158, 10.35968933891946, 10.357985345761291, 10.35618187305056, 10.35434833289331, 10.35256762182377, 10.350916935048337, 10.3497989493503])
+ ComponentVector{Float64}(dynamics_h = [10.352281228762426, 10.352903005928315, 10.354153847721102, 10.355562910760648, 10.3570501863221, 10.358541686465731, 10.359979725182269, 10.361306515430305, 10.362458042142556, 10.363349493298609  …  10.363657480684884, 10.362932858145344, 10.3618946736885, 10.360643407013438, 10.359250821002696, 10.357776923033619, 10.356278559574912, 10.354823642097497, 10.35347539196154, 10.352564275227524])
+ ComponentVector{Float64}(dynamics_h = [10.354641245727969, 10.355145814064347, 10.356162623926105, 10.35730936402668, 10.358519930268876, 10.359734015744468, 10.360904502626912, 10.361984215227071, 10.362920877240748, 10.363645289204703  …  10.363894148621773, 10.363305152074185, 10.36246038930916, 10.361441801575289, 10.36030795084289, 10.35910781634369, 10.357887794409928, 10.356703327774218, 10.355606019352127, 10.354866092358494])
+ ComponentVector{Float64}(dynamics_h = [10.356598188449011, 10.357006154779674, 10.357829674203588, 10.358759469854748, 10.35974113246407, 10.360725680949905, 10.361674766260265, 10.362550011807826, 10.36330887649093, 10.363895101067722  …  10.364095141648933, 10.363618356944352, 10.362933670468689, 10.362107662854298, 10.36118795185187, 10.360214372153646, 10.359224655463201, 10.358263901988508, 10.357374083517215, 10.3567753384887])
+ ComponentVector{Float64}(dynamics_h = [10.357794096943655, 10.358143330956384, 10.358849128291887, 10.359646648290576, 10.36048871724645, 10.361333267467144, 10.362147313157273, 10.362897856784995, 10.363548309877833, 10.36405031998834  …  10.364220684075468, 10.363812270459553, 10.363225192532727, 10.362516646193889, 10.361727559508418, 10.360892176930724, 10.360042933825644, 10.359218606604353, 10.358455280840818, 10.357942416576282])</code></pre><p>We can see quite a performance increase!</p><p>For more details on sparsity detection and Jacobian coloring, see the preprint <a href="https://arxiv.org/abs/2501.17737">Sparser, Better, Faster, Stronger: Efficient Automatic Differentiation for Sparse Jacobians and Hessians</a> from A. Hill and G. Dalle.</p><h2 id="Calibration"><a class="docs-heading-anchor" href="#Calibration">Calibration</a><a id="Calibration-1"></a><a class="docs-heading-anchor-permalink" href="#Calibration" title="Permalink"></a></h2><p>Now that we know we can take advantage of sparsity detection and Jacobian coloring, we actually have to tweak our loss function to use them.</p><pre><code class="language-julia hljs">function loss(u) #only compares last time step
+    newp = ComponentArray(n=n, stress_ρ=u[1], stress_g=g, stress_A=A)
+    prob = remake(sparse_prob_2D, p=newp)
+    sol = solve(prob, Rodas5P())
+    current_dat = last(sol).dynamics_h
+    sum(abs2, reference_dat .- current_dat)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">loss (generic function with 1 method)</code></pre><p>And now to calibrate the <span>$\rho$</span> parameter, all we can use <code>Optimization.jl</code> to set up an <code>OptimizationFunction</code> with our loss function, and an <code>OptimizationProblem</code> where the initial guess is <code>100.0</code>. The specific optimization routine used is the <a href="https://julianlsolvers.github.io/Optim.jl/stable/algo/lbfgs/"><code>Optim.jl</code> LFBGS</a> routine with default settings. This is a gradient based quasi-Newton method that uses automatic differentiation to find the gradient, and uses it to estimate the Hessian. Forward mode automatic differentiation from <a href="https://juliadiff.org/ForwardDiff.jl/stable/"><code>ForwardDiff.jl</code></a> is used to differentiate the loss function to provide the gradients used by LFBGS. Keep in mind that the value of <span>$\rho$</span> used to generate the reference data was 910. If the optimization works we would expect to get a value very close to that.</p><pre><code class="language-julia hljs">optf = OptimizationFunction((x, p) -&gt; loss(x), AutoForwardDiff())
+optprob = Optimization.OptimizationProblem(optf, [100.0])
+optsol = Optimization.solve(optprob, LBFGS())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">retcode: Success
+u: 1-element Vector{Float64}:
+ 910.0126146913524</code></pre><p>As we can see the optimization routine was able to find the parameter that produced the reference data quite closely. </p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../examples/mhd/">« MHD</a><a class="docs-footer-nextpage" href="../../bc/bc_debug/">Misc Features »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 14 March 2025 09:45">Friday 14 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
