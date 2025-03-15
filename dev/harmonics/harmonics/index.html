@@ -16,26 +16,26 @@ subdivide_duals!(sd, Barycenter());</code></pre><p>Compute the Laplacian eigenve
 λ = eigen(collect(Δ0))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">LinearAlgebra.Eigen{Float64, Float64, Matrix{Float64}, Vector{Float64}}
 values:
 162-element Vector{Float64}:
- -2.0704638247248837e-14
-  1.8501953398213986
-  1.9229341081041063
-  1.9658810495474257
-  5.146220910776444
-  5.528877811211725
-  5.639164681656211
-  5.737050666884067
-  5.859943695790198
-  9.317272553998787
+ -1.973336313056932e-14
+  1.8501953398214606
+  1.9229341081040987
+  1.9658810495474197
+  5.146220910776415
+  5.5288778112117285
+  5.639164681656205
+  5.737050666884056
+  5.859943695790192
+  9.317272553998736
   ⋮
- 77.17507216665028
- 86.5076598062551
- 86.51040566694189
- 86.581685003028
- 86.59363600121746
- 86.67718662766414
- 86.68365853045175
- 86.68546749816456
- 86.68738445511143
+ 77.17507216665051
+ 86.50765980625492
+ 86.51040566694213
+ 86.58168500302733
+ 86.593636001217
+ 86.67718662766485
+ 86.6836585304518
+ 86.68546749816423
+ 86.6873844551117
 vectors:
 162×162 Matrix{Float64}:
  0.0785674  -0.00139719  -0.104545   …   0.000848792  -0.00294379
@@ -58,7 +58,7 @@ vectors:
  0.0785674   0.0856251   -0.068554      -0.0357922     0.0341249
  0.0785674   0.0508548   -0.0772451  …   0.00421754   -0.00604669
  0.0785674   0.0734731   -0.040202       0.0163659    -0.00595885</code></pre><p>Let&#39;s check that our eigenvalues satisfy the right equation. The first eigenvector should be the kernel of the laplacian. So the following norm should be close to 0.</p><pre><code class="language-julia hljs">q1 = λ.vectors[:,1]
-norm(Δ0 *q1)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.674928852844355e-14</code></pre><p>The first eigenvector is boring to visualize, because it is constant. So we will make some plots of the second eigenvector. If you run this on the desktop, you can use GLMakie and get an interactive plot to explore. We will just draw two angles.</p><pre><code class="language-julia hljs">q = λ.vectors[:,2]
+norm(Δ0 *q1)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.985155843401353e-14</code></pre><p>The first eigenvector is boring to visualize, because it is constant. So we will make some plots of the second eigenvector. If you run this on the desktop, you can use GLMakie and get an interactive plot to explore. We will just draw two angles.</p><pre><code class="language-julia hljs">q = λ.vectors[:,2]
 fig = Figure()
 Label(fig[1, 1, Top()], &quot;Default Angle&quot;, padding = (0, 0, 5, 0))
 ax = LScene(fig[1,1], scenekw=(lights=[],))
@@ -90,4 +90,4 @@ x, stats = Krylov.gmres(Δ0, b, randn(nv(sd)), restart=true, memory=20, atol = 1
 x̂ = x .- sum(x)./length(x)
 norm(x̂)
 stats
-norm(Δ0*(x) - b)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../navier_stokes/ns/">« Vortices</a><a class="docs-footer-nextpage" href="../../ch/cahn-hilliard/">Cahn-Hilliard »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 14 March 2025 09:45">Friday 14 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+norm(Δ0*(x) - b)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../navier_stokes/ns/">« Vortices</a><a class="docs-footer-nextpage" href="../../ch/cahn-hilliard/">Cahn-Hilliard »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Saturday 15 March 2025 01:44">Saturday 15 March 2025</span>. Using Julia version 1.11.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

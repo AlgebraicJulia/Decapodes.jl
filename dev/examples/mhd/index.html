@@ -167,26 +167,26 @@ solve_poisson(vort::DualForm{2}) =
   solve_poisson(VForm(s0inv * vort.data))
 
 ψ = solve_poisson(VForm(X))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">40962-element Vector{Float64}:
- 0.05195899307727814
- 0.033801913261413574
- 0.01192215085029602
- 0.05214565992355347
- 0.09183783829212189
- 0.07075336575508118
- 0.011984512209892273
- 0.033312514424324036
- 0.07111315429210663
- 0.09179426729679108
+ 0.05195923149585724
+ 0.03380228579044342
+ 0.011922240257263184
+ 0.052145928144454956
+ 0.09183818101882935
+ 0.07075363397598267
+ 0.011984661221504211
+ 0.03331261873245239
+ 0.07111331820487976
+ 0.09179434180259705
  ⋮
- 0.035103052854537964
- 0.03488406538963318
- 0.03467221558094025
- 0.03446738421916962
- 0.034269556403160095
- 0.034078702330589294
- 0.03389476239681244
- 0.033717572689056396
- 0.033547163009643555</code></pre><p>Compute velocity as curl (⋆d) of the stream function.</p><pre><code class="language-julia hljs">curl_stream(ψ) = s1 * d0 * ψ
+ 0.035103410482406616
+ 0.03488440811634064
+ 0.0346725732088089
+ 0.03446769714355469
+ 0.034269869327545166
+ 0.03407904505729675
+ 0.033895090222358704
+ 0.03371794521808624
+ 0.03354752063751221</code></pre><p>Compute velocity as curl (⋆d) of the stream function.</p><pre><code class="language-julia hljs">curl_stream(ψ) = s1 * d0 * ψ
 divergence(u) = s2 * d1 * (s1 \ u)
 RMS(x) = √(mean(x&#39; * x))
 
@@ -220,4 +220,4 @@ function visualize_dynamics(file_name, soln)
       time[] = t
     end
 end
-visualize_dynamics(&quot;mhd.mp4&quot;, soln)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;mhd.mp4&quot;</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../oncology/tumor_proliferation_invasion/">« Oncology</a><a class="docs-footer-nextpage" href="../../calibrate/calibration/">Calibration »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 14 March 2025 09:45">Friday 14 March 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+visualize_dynamics(&quot;mhd.mp4&quot;, soln)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;mhd.mp4&quot;</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../oncology/tumor_proliferation_invasion/">« Oncology</a><a class="docs-footer-nextpage" href="../../calibrate/calibration/">Calibration »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Saturday 15 March 2025 01:44">Saturday 15 March 2025</span>. Using Julia version 1.11.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
