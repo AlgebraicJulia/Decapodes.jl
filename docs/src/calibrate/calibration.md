@@ -187,7 +187,7 @@ First, let's solve the ODE with sparsity not used.
 
 ```@example Calibration
 no_sparse_prob_2D = ODEProblem(f_2D, u02D, (0, tₑ), constants_and_parameters)
-no_sparse_soln_2D, exec_time_seconds, _, _, _ = @btimed = solve(no_sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))
+no_sparse_soln_2D, exec_time_seconds, _, _, _ = @btimed solve(no_sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))
 no_sparse_soln_2D.retcode, exec_time_seconds
 ```
 
