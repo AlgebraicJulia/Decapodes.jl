@@ -1,36 +1,47 @@
+using AlgebraicMultigrid
 using CairoMakie
 using Catlab
 using CombinatorialSpaces
 using ComponentArrays
+using CSV
+using DataFrames
 using Decapodes
 using DiagrammaticEquations
 using Distributions
 using GeometryBasics: Point2, Point3
+using IterativeSolvers
+using Krylov
+using KrylovPreconditioners
 using LinearAlgebra
 using MLStyle
 using OrdinaryDiffEq
 using SparseArrays
 using StaticArrays
 using StatsBase
+using LoggingExtras
+using Logging: global_logger
+using TerminalLoggers: TerminalLogger
+global_logger(TerminalLogger())
 
 import CombinatorialSpaces.DiscreteExteriorCalculus: eval_constant_primal_form
+import CombinatorialSpaces.Multigrid: _multigrid_μ_cycle, car, cdr
 
 # This model is based on the equations, constants and meshing given at
 # https://pde-on-gpu.vaw.ethz.ch/lecture4
 
 Porous_Convection = @decapode begin
   (λ_ρ₀Cp, αρ₀, k_ηf, ϕ)::Constant
-  (P, T, Adv, bound_T, bound_Ṫ)::Form0
+  (P, T, Adv, bound_Ṫ)::Form0
   (g, qD)::Form1
 
-  bound_T == adiabatic(T)
+  # bound_T == adiabatic(T)
   # Darcy flux
-  ρ == g ∧ (αρ₀ * bound_T)
+  ρ == g ∧ (αρ₀ * T)
   P == Δ⁻¹(δ(ρ))
   qD == -k_ηf * (d(P) - ρ)
 
-  Adv == ⋆(interpolate(∧ᵈᵖ₁₁(⋆(d(bound_T)), qD)))
-  Ṫ == -1/ϕ * Adv + λ_ρ₀Cp * Δ(bound_T)
+  Adv == ⋆(interpolate(∧ᵈᵖ₁₁(⋆(d(T)), qD)))
+  Ṫ == -1/ϕ * Adv + λ_ρ₀Cp * Δ(T)
 
   bound_Ṫ == tb_bc(Ṫ)
 
@@ -40,14 +51,62 @@ infer_types!(Porous_Convection)
 resolve_overloads!(Porous_Convection)
 # to_graphviz(Porous_Convection)
 
-lx, ly = 40.0, 20.0
-dx = dy = 0.4
-s = triangulated_grid(lx, ly, dx, dy, Point3{Float64});
-sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point2{Float64}}(s);
-subdivide_duals!(sd, Circumcenter());
+function repeated_subdivision(s, subdivider, n)
+  msh = s
+  for i in 1:n
+    msh = subdivider(msh)
+  end
+  msh
+end
 
-Δ0 = Δ(0,sd);
-fΔ0 = LinearAlgebra.factorize(Δ0);
+lx, ly = 22.0, 20.0
+dx = dy = 20
+
+s = triangulated_grid(lx, ly, dx, dy, Point3{Float64}, false);
+
+subs = 7
+series = PrimalGeometricMapSeries(s, BinarySubdivision(), subs, Barycenter());
+s = repeated_subdivision(s, binary_subdivision, subs);
+
+md = MGData(series, sd -> Δ(0,sd), 3, BinarySubdivision());
+sd = finest_mesh(series);
+
+Δ0 = first(md.operators)
+Δ0 = sparse(Symmetric(triu(Δ0)) .+ diagm([1e-14 for i in 1:nv(sd)]))
+# fΔ0 = LinearAlgebra.factorize(Δ0);
+# pΔ0 = ilu(Δ0);
+mlΔ0 = ruge_stuben(Δ0)
+
+function _multigrid_μ_cycle(u, b, md::MultigridData, alg=cg, μ=1)
+  A,r,p,s = CombinatorialSpaces.Multigrid.car(md)
+  u = alg(u,A,b,maxiter=s)
+  length(md) == 1 && return u
+  r_f = b - A*u
+  r_c = r * r_f
+  z = _multigrid_μ_cycle(zeros(size(r_c)), r_c, cdr(md), alg, μ)
+  if μ > 1
+    z = _multigrid_μ_cycle(z, r_c, cdr(md), alg, μ-1)
+  end
+  u += p * z
+  u = alg(u,A,b,maxiter=s)
+end
+
+function multi_solve(x)
+  max_iter = 50
+  atol = sqrt(eps(Float64))
+  rtol = sqrt(eps(Float64))
+
+  y = zeros(nv(sd))
+  ares(y) = norm(Δ0 * y - x)
+  rNorm = ares(y)
+  ϵ = atol + rtol * rNorm
+  count = 1
+  while !(ares(y) ≤ ϵ || count ≥ max_iter)
+    y = _multigrid_μ_cycle(y,x,md,gauss_seidel!,2)
+    count += 1
+  end
+  y, (niter = count, )
+end
 
 mat = p2_d2_interpolation(sd)
 
@@ -67,7 +126,10 @@ apply_tb_bc(x) = begin x[bottom_wall_idxs] .= 0; x[top_wall_idxs] .= 0; return x
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :Δ⁻¹ => x -> begin
-      y = fΔ0 \ x
+      # y = fΔ0 \ x
+      # y, _ = Krylov.gmres(Δ0, x; M = pΔ0, ldiv = true)
+      y, _ = multi_solve(x)
+      # y = AlgebraicMultigrid._solve(mlΔ0, x)
       y .-= minimum(y)
     end
     :adiabatic => x -> begin
@@ -96,90 +158,37 @@ T[bottom_wall_idxs] .= ΔT/2
 
 # Measure the force of gravity in the downwards direction
 accl_g = 9.81
-grav = SVector{3}([0.0, -accl_g, 0.0])
+# grav = SVector{3}([0.0, -accl_g, 0.0])
+grav = SVector{3}([10.0, 20.0, 0.0])
+grav = -accl_g * normalize(grav)
 g = eval_constant_primal_form(sd, grav)
 u₀ = ComponentArray(T=T, g=g)
 
 # Physical constants
-Ra = 750
+Ra = 1500
 k_ηf = 1.0
 αρ₀ = (1.0/accl_g)
 ϕ = 0.1
 λ_ρ₀Cp = 1/Ra*(accl_g*αρ₀*k_ηf*ΔT*ly/ϕ)
 constants = (k_ηf = k_ηf, αρ₀ = αρ₀, ϕ = ϕ, λ_ρ₀Cp = λ_ρ₀Cp)
 
-tₑ = 0.7
+tₑ = 0.5
 prob = ODEProblem(f, u₀, (0, tₑ), constants)
-soln = solve(prob, Tsit5(); saveat = 0.005)
+soln = solve(prob, Tsit5(); saveat = 0.005, progress=true, progress_steps=1);
 
 # For plotting Temperature, Pressure, Advection, and Diffusion
 wdg10 = dec_wedge_product(Tuple{1, 0}, sd)
 codif_1 = δ(1, sd)
-d0 = dec_differential(0, sd)
-
-hdg_1 = dec_hodge_star(1, sd)
-dp_wdg_11 = dec_wedge_product_dp(Tuple{1,1}, sd)
-inv_hdg_0 = dec_inv_hodge_star(0, sd)
-
-function calculate_pressure(T, constants)
-  fΔ0 \ (codif_1 * wdg10(g, constants.αρ₀ * T))
-end
-
-function calculate_advection(T, P, constants)
-  darcy_flux = -constants.k_ηf * (d0 * P - wdg10(g, constants.αρ₀ * T))
-  apply_tb_bc(-1/constants.ϕ *  inv_hdg_0 * mat * dp_wdg_11(hdg_1 * d0 * T, darcy_flux))
-end
-
-function calculate_diffusion(T, constants)
-  apply_tb_bc(constants.λ_ρ₀Cp * Δ0 * T)
-end
-
-function compute_colorranges(length)
-  values = hcat(map(range(0, soln.t[end], length=length)) do t
-    T = soln(t).T
-    P = calculate_pressure(T, constants)
-    Adv = calculate_advection(T, P, constants)
-    Diff = calculate_diffusion(T, constants)
-
-    [minimum(P), maximum(P), minimum(Adv), maximum(Adv), minimum(Diff), maximum(Diff)]
-  end...)
-
-  # Minimum, Maximum
-  percentile(values[1, :], 90), percentile(values[2, :], 90), # Pressure
-  percentile(values[3, :], 90), percentile(values[4, :], 90), # Advection
-  percentile(values[5, :], 75), percentile(values[6, :], 75) # Diffusion
-end
 
 function save_dynamics(save_file_name, video_length = 30)
   time = Observable(0.0)
 
   T = @lift(soln($time).T)
-  P = @lift(calculate_pressure($T, constants))
-  Adv = @lift(calculate_advection($T, $P, constants))
-  Diff = @lift(calculate_diffusion($T, constants))
-
-  colorranges = compute_colorranges(video_length)
-  P_range = colorranges[1], colorranges[2]
-  Adv_range = colorranges[3], colorranges[4]
-  Diff_range = colorranges[5], colorranges[6]
-
   f = Figure()
 
   ax_T = CairoMakie.Axis(f[1,1], title = @lift("Temperature at Time $(round($time, digits=3))"))
   msh_T = mesh!(ax_T, s; color=T, colormap=:jet, colorrange=(-ΔT/2, ΔT/2))
   Colorbar(f[1,2], msh_T)
-
-  ax_P = CairoMakie.Axis(f[2,1], title = @lift("Pressure at Time $(round($time, digits=3))"))
-  msh_P = mesh!(ax_P, s; color=P, colormap=:jet, colorrange=P_range)
-  Colorbar(f[2,2], msh_P)
-
-  ax_Adv = CairoMakie.Axis(f[1,3], title = @lift("Advection at Time $(round($time, digits=3))"))
-  msh_Adv = mesh!(ax_Adv, s; color=Adv, colormap=:jet, colorrange=Adv_range)
-  Colorbar(f[1,4], msh_Adv)
-
-  ax_Diff = CairoMakie.Axis(f[2,3], title = @lift("Diffusion at Time $(round($time, digits=3))"))
-  msh_Diff = mesh!(ax_Diff, s; color=Diff, colormap=:jet, colorrange=Diff_range)
-  Colorbar(f[2,4], msh_Diff)
 
   timestamps = range(0, soln.t[end], length=video_length)
   record(f, save_file_name, timestamps; framerate = 15) do t
@@ -187,4 +196,27 @@ function save_dynamics(save_file_name, video_length = 30)
   end
 end
 
-save_dynamics("Porous_Convection_New.mp4", 120)
+# GMRES, Direct_LU, Direct_Chol, MG, AMG
+solvername = "MG"
+filename = "Porous_Convection_$(solvername)_subs=$(subs)_dx=dy=$(dx)_Ra=$(Ra)"
+save_dynamics("$(filename).mp4", length(soln.t))
+
+# iterations = Int64[]
+# for t in soln.t
+#   rho = codif_1 * wdg10(g, constants.αρ₀ * soln(t).T)
+#   _, stats = Krylov.gmres(Δ0, rho; M = pΔ0, ldiv = true)
+#   # _, stats = multi_solve(rho)
+#   push!(iterations, stats.niter)
+# end
+
+# save("$(solvername)_iterations_histo.png", hist(iterations))
+# save("$(solvername)_iterations_lines.png", lines(iterations))
+
+# plot(soln.t, iterations)
+
+# df = DataFrame(soln);
+# CSV.write("$(filename).csv", df)
+
+# Can use to read out rows
+# out_df = CSV.read("$(filename).csv", DataFrame)
+# outT = Array(out_df[2, 2:end])
