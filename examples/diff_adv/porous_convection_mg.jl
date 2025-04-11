@@ -58,12 +58,33 @@ function repeated_subdivision(s, subdivider, n)
   msh
 end
 
-lx, ly = 22.0, 20.0
-dx = dy = 20
+lx, ly = 40.0, 20.0
 
-s = triangulated_grid(lx, ly, dx, dy, Point3{Float64}, false);
+begin
+s = EmbeddedDeltaSet2D{Bool, Point{3, Float64}}();
+xs = range(0, lx; length = 3)
+ys = range(0, ly; length = 3)
 
-subs = 7
+add_vertices!(s, 9)
+idx = 1
+for y in ys
+  for x in xs
+    s[idx, :point] = Point3([x, y, 0.0])
+    idx += 1
+  end
+end
+glue_sorted_triangle!(s, 1, 2, 4)
+glue_sorted_triangle!(s, 2, 4, 5)
+glue_sorted_triangle!(s, 2, 5, 6)
+glue_sorted_triangle!(s, 2, 3, 6)
+glue_sorted_triangle!(s, 4, 5, 7)
+glue_sorted_triangle!(s, 5, 7, 8)
+glue_sorted_triangle!(s, 5, 8, 9)
+glue_sorted_triangle!(s, 5, 6, 9)
+
+end
+
+subs = 6
 series = PrimalGeometricMapSeries(s, BinarySubdivision(), subs, Barycenter());
 s = repeated_subdivision(s, binary_subdivision, subs);
 
@@ -128,7 +149,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
 end
 
 sim = eval(gensim(Porous_Convection))
-f = sim(sd, generate, DiagonalHodge())
+f = sim(sd, generate, GeometricHodge())
 
 ΔT = 200.0
 
@@ -141,14 +162,12 @@ T[bottom_wall_idxs] .= ΔT/2
 
 # Measure the force of gravity in the downwards direction
 accl_g = 9.81
-# grav = SVector{3}([0.0, -accl_g, 0.0])
-grav = SVector{3}([10.0, 20.0, 0.0])
-grav = -accl_g * normalize(grav)
+grav = SVector{3}([0.0, -accl_g, 0.0])
 g = eval_constant_primal_form(sd, grav)
 u₀ = ComponentArray(T=T, g=g)
 
 # Physical constants
-Ra = 1500
+Ra = 1000
 k_ηf = 1.0
 αρ₀ = (1.0/accl_g)
 ϕ = 0.1
@@ -180,7 +199,7 @@ function save_dynamics(save_file_name, video_length = 30)
 end
 
 solvername = "MG"
-filename = "Porous_Convection_$(solvername)_subs=$(subs)_dx=dy=$(dx)_Ra=$(Ra)"
+filename = "Porous_Convection_$(solvername)_subs=$(subs)_Ra=$(Ra)"
 save_dynamics("$(filename).mp4", length(soln.t))
 
 iterations = Int64[]
@@ -193,8 +212,8 @@ end
 save("$(filename)_histo.png", hist(iterations))
 save("$(filename)_dots.png", plot(soln.t, iterations))
 
-df = DataFrame(soln);
-CSV.write("$(filename).csv", df)
+# df = DataFrame(soln);
+# CSV.write("$(filename).csv", df)
 
 # Can use to read out rows
 # out_df = CSV.read("$(filename).csv", DataFrame)
