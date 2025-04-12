@@ -25,6 +25,7 @@ global_logger(TerminalLogger())
 
 import CombinatorialSpaces.DiscreteExteriorCalculus: eval_constant_primal_form
 import CombinatorialSpaces.Multigrid: _multigrid_μ_cycle, car, cdr
+import LinearAlgebra: ldiv!
 
 # This model is based on the equations, constants and meshing given at
 # https://pde-on-gpu.vaw.ethz.ch/lecture4
@@ -67,11 +68,11 @@ xs = range(0, lx; length = 3)
 ys = range(0, ly; length = 3)
 
 add_vertices!(s, 9)
-idx = 1
+i = 1
 for y in ys
   for x in xs
-    s[idx, :point] = Point3([x, y, 0.0])
-    idx += 1
+    s[i, :point] = Point3([x, y, 0.0])
+    i += 1
   end
 end
 glue_sorted_triangle!(s, 1, 2, 4)
@@ -85,6 +86,9 @@ glue_sorted_triangle!(s, 5, 6, 9)
 
 end
 
+# GMRES, Direct_LU, MG, GMRES_MG, AMG
+solvername = "MG"
+
 subs = 6
 series = PrimalGeometricMapSeries(s, BinarySubdivision(), subs, Barycenter());
 s = repeated_subdivision(s, binary_subdivision, subs);
@@ -93,7 +97,56 @@ md = MGData(series, sd -> Δ(0,sd), 3, BinarySubdivision());
 sd = finest_mesh(series);
 
 Δ0 = first(md.operators)
-fΔ0 = LinearAlgebra.factorize(Δ0);
+
+function _multigrid_μ_cycle(u, b, md::MultigridData, alg=cg, μ=1)
+  A,r,p,s = CombinatorialSpaces.Multigrid.car(md)
+  u = alg(u,A,b,maxiter=s)
+  length(md) == 1 && return u
+  r_f = b - A*u
+  r_c = r * r_f
+  z = _multigrid_μ_cycle(zeros(size(r_c)), r_c, cdr(md), alg, μ)
+  if μ > 1
+    z = _multigrid_μ_cycle(z, r_c, cdr(md), alg, μ-1)
+  end
+  u += p * z
+  u = alg(u,A,b,maxiter=s)
+end
+
+function multi_solve(x; atol = √eps(Float64), rtol = √eps(Float64))
+  max_iter = 50
+
+  residuals = Float64[]
+  
+  y = zeros(nv(sd))
+  ares(y) = norm(Δ0 * y - x)
+  rNorm = ares(y)
+  ϵ = atol + rtol * rNorm
+
+  push!(residuals, rNorm)
+  count = 1
+  while !(ares(y) ≤ ϵ || count ≥ max_iter)
+    y = _multigrid_μ_cycle(y,x,md,gauss_seidel!,2)
+    push!(residuals, ares(y))
+    count += 1
+  end
+  y, (niter = count, residuals = residuals)
+end
+
+function ldiv!(Y, A::MultigridData, B)
+  Y, _ = multi_solve(B)
+end  
+
+if solvername == "Direct_LU"
+  fΔ0 = LinearAlgebra.factorize(Δ0);
+  Δ⁻¹(x) = begin y = fΔ0 \ x; y .-= minimum(y); end
+elseif solvername == "GMRES"
+  pΔ0 = ilu(Δ0);
+  Δ⁻¹(x) = begin y, _ = Krylov.gmres(Δ0, x; M = pΔ0, ldiv = true, rtol = 1e-10); y .-= minimum(y) end
+elseif solvername == "MG"
+  Δ⁻¹(x) = begin y, _ = multi_solve(x; rtol = 1e-12, atol = 1e-10); y .-= minimum(y) end
+elseif solvername == "GMRES_MG"
+  Δ⁻¹(x) = begin y, _ = Krylov.gmres(Δ0, x; M = md, ldiv = true); y .-= minimum(y) end
+end
 
 mat = p2_d2_interpolation(sd)
 
@@ -105,10 +158,7 @@ apply_tb_bc(x) = begin x[bottom_wall_idxs] .= 0; x[top_wall_idxs] .= 0; return x
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
-    :Δ⁻¹ => x -> begin
-      y = fΔ0 \ x
-      y .-= minimum(y)
-    end
+    :Δ⁻¹ => Δ⁻¹
     :tb_bc => apply_tb_bc
     :interpolate => x -> mat * x
     _ => error("No operator $my_symbol found.")
@@ -166,9 +216,43 @@ function save_dynamics(save_file_name, video_length = 30)
   end
 end
 
-solvername = "Direct_LU"
 filename = "Porous_Convection_$(solvername)_subs=$(subs)_Ra=$(Ra)"
 save_dynamics("$(filename).mp4", length(soln.t))
+
+function save_error(save_file_name, soln1, soln2, solvers::String, video_length = 30)
+  time = Observable(0.0)
+
+  T = @lift(soln1($time).T - soln2($time).T)
+  f = Figure()
+
+  ax_T = CairoMakie.Axis(f[1,1], title = @lift("Difference in Temp ($(solvers)) at Time $(round($time, digits=3))"))
+  msh_T = mesh!(ax_T, s; color=T, colormap=:jet, colorrange = (-0.01, 0.01))
+  Colorbar(f[1,2], msh_T)
+
+  timestamps = range(0, soln.t[end], length=video_length)
+  record(f, save_file_name, timestamps; framerate = 15) do t
+    time[] = t
+  end
+end
+
+comp1 = "LU MG"
+comp2 = "LU GMRES"
+comp3 = "GMRES MG"
+
+save_error("Porous_Convection_$(comp1)_subs=$(subs)_Ra=$(Ra).mp4", soln_lu, soln_mg, comp1, length(soln.t))
+save_error("Porous_Convection_$(comp2)_subs=$(subs)_Ra=$(Ra).mp4", soln_lu, soln_gmres, comp2, length(soln.t))
+save_error("Porous_Convection_$(comp3)_subs=$(subs)_Ra=$(Ra).mp4", soln_gmres, soln_mg, comp3, length(soln.t))
+
+iterations = Int64[]
+for t in soln.t
+  rho = codif_1 * wdg10(g, constants.αρ₀ * soln(t).T)
+  _, stats = Krylov.gmres(Δ0, rho; M = pΔ0, ldiv = true, rtol = 1e-12, atol = 1e-10)
+  # _, stats = multi_solve(rho; rtol = 1e-12, atol = 1e-10)
+  push!(iterations, stats.niter)
+end
+
+save("$(solvername)_iterations_histo.png", hist(iterations))
+save("$(solvername)_iterations_lines.png", plot(iterations))
 
 # df = DataFrame(soln);
 # CSV.write("$(filename).csv", df)
