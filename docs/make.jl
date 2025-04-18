@@ -56,8 +56,10 @@ makedocs(
     "Overview" => "overview/overview.md",
     "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
     "Concepts" => Any[
+        "ASCII and Unicode Operators" => "ascii.md",
         "Equations" => "concepts/equations.md",
         "Composition" => "concepts/composition.md",
+        "Variable Types" => "concepts/deca_types.md",
         "Meshes" => "concepts/meshes.md",
         "Custom Operators" => "concepts/generate.md",
     ],
@@ -85,7 +87,6 @@ makedocs(
     "Calibration" => "calibrate/calibration.md",
     "Misc Features" => "bc/bc_debug.md", # Requires overview
     "FAQ" => "faq/faq.md",
-    "ASCII Operators" => "ascii.md",
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ],

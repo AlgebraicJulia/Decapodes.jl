@@ -71,7 +71,8 @@ end
 draw_composition(compose_klausmeier)
 ```
 
-We apply our composition pattern by plugging in component Decapodes, and specifying which internal quantities to share along edges. Decapodes are formalized via the field of Applied Category Theory. A practical consequence here is that we can view a Decapode as a sort of computation graph.
+These `N` and `W` variables are placeholders, but now we can map to each
+placeholder the internal variable to each model. We'll do so by plugging in each component Decapodes into the composition pattern we defined, and specifying which internal quantities to share along edges. A practical consequence to formalizing Decapodes in the field of Applied Category Theory is that we can view a Decapode as a sort of computation graph.
 
 ```@example DEC
 # Apply Composition
