@@ -79,7 +79,7 @@ sd = finest_mesh(series)
 
   ...
 
-f_mg = sim_mg(series, generate);
+f_mg = sim_mg(series, generate; multigrid = true);
 ```
 
 ## 7. What are general workflows for DECAPODES?
