@@ -7,7 +7,7 @@ using Distributions
 using GeometryBasics: Point3
 using LinearAlgebra
 using MLStyle
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 using Test
 
 C = ones(Float64, 10)

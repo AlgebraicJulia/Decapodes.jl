@@ -8,7 +8,7 @@ using Distributions
 using GeometryBasics: Point2, Point3
 using LinearAlgebra
 using MLStyle
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 using Statistics
 using Test
 Point2D = Point2{Float64}
