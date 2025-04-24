@@ -8,7 +8,7 @@ using Distributions
 using GeometryBasics: Point2, Point3
 using LinearAlgebra
 using MLStyle
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 using Test
 using Random
 Point3D = Point3{Float64}
