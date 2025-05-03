@@ -5,8 +5,6 @@ using Decapodes
 using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
-using JLD2
-using Printf
 using CairoMakie
 import CairoMakie: wireframe, mesh, Figure, Axis
 using ComponentArrays
@@ -37,18 +35,18 @@ Brusselator = @decapode begin
 end
 
 # Visualize. You must have graphviz installed.
-to_graphviz(Brusselator)
+# to_graphviz(Brusselator)
 
 # We resolve types of intermediate variables using sets of rules.
 
 infer_types!(Brusselator)
 # Visualize. Note that variables now all have types.
-to_graphviz(Brusselator)
+# to_graphviz(Brusselator)
 
 # Resolve overloads. i.e. ~dispatch
 resolve_overloads!(Brusselator)
 # Visualize. Note that functions are renamed.
-to_graphviz(Brusselator)
+# to_graphviz(Brusselator)
 
 s = triangulated_grid(1,1,0.008,0.008,Point3D);
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point2D}(s);
@@ -92,8 +90,6 @@ prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
 @info("Done")
 
-@save "brusselator.jld2" soln
-
 # Visualize the final conditions.
 fig = Figure();
 ax = Axis(fig[1,1])
@@ -114,25 +110,6 @@ function save_dynamics(save_file_name)
 end
 
 save_dynamics("brusselator_explicit.gif")
-
-# This begins the demonstration of using implicit solvers
-sim = evalsim(Brusselator, preallocate=false)
-fₘ = sim(sd, nothing, DiagonalHodge())
-
-u₀ = ComponentArray(U=U, V=V)
-
-du₀ = copy(u₀)
-jac_sparsity = Symbolics.jacobian_sparsity((du, u) -> fₘ(du, u, constants_and_parameters, 0.0), du₀, u₀)
-
-f = ODEFunction(fₘ; jac_prototype = float.(jac_sparsity))
-tₑ = 11.5
-@info("Solving")
-prob = ODEProblem(f, u₀, (0, tₑ), constants_and_parameters)
-soln = solve(prob, FBDF(linsolve = KLUFactorization()), progress=true, progress_steps=1, saveat=0.1);
-@info("Done")
-
-save_dynamics("brusselator_implicit.gif")
-# This ends the demonstration of using implicit solvers
 
 # Run on the sphere.
 # You can use lower resolution meshes, such as Icosphere(3).
