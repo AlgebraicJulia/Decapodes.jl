@@ -6,18 +6,6 @@ using DiagrammaticEquations
 using Decapodes 
 ```
 
-```@raw html
-<details open>
-  <summary><i>Dependencies</i></summary>
-  <pre><code>
-  using Catlab
-  using DiagrammaticEquations
-  using Decapodes
-  </code></pre>
-</details>
-```
-
-
 Decapodes composition is formally known as an "operad algebra". That means that we don't have to encode our composition in a single undirected wiring diagram (UWD) and then apply it. Rather, we can define several UWDs, compose those, and then apply those. Of course, since the output of oapply is another Decapode, we could perform an intermediate oapply, if that is convenient. In this tutorial we will learn how to use this capability to define more complex models, and how this modularity allows us to swap out models.
 
 Besides it being convenient to break apart large UWDs into component UWDs, this hierarchical composition can enforce rules on our physical quantities.
@@ -72,7 +60,7 @@ draw_composition(compose_klausmeier)
 ```
 
 These `N` and `W` variables are placeholders, but now we can map to each
-placeholder the internal variable to each model. We'll do so by plugging in each component Decapodes into the composition pattern we defined, and specifying which internal quantities to share along edges. A practical consequence to formalizing Decapodes in the field of Applied Category Theory is that we can view a Decapode as a sort of computation graph.
+placeholder the internal variable to each model. We'll do so by plugging in each component Decapodes into the composition pattern we defined, and specifying which internal quantities to share along edges. A practical consequence to formalizing Decapodes with Applied Category Theory is that Decapodes can be treated as computation graphs that compose as graphs, not as abstract syntax trees or raw code.
 
 ```@example DEC
 # Apply Composition
