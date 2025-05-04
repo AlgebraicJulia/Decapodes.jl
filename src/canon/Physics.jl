@@ -6,8 +6,8 @@ using ..Canon
 using Markdown
 
 @docapode("Mohamed Eq. 10, N2"
-          ,"https://google.com"
           ,""
+          ,"A DEC formulation of fluid mechanics for surfaces. [mohamed_discrete_2016](@cite)"
           ,mohamed_flow
           ,begin
   (𝐮,w)::DualForm1
@@ -20,7 +20,7 @@ using Markdown
 end)
 
 @docapode("Momentum"
-  ,"https://www.google.com"
+  ,""
   ,""
   ,momentum
   ,begin
@@ -65,8 +65,8 @@ end)
 )
 
 @docapode("Absorbed Shortwave Radiation"
-  ,"https://www.google.com"
-  ,"The proportion of light reflected by a surface is the **albedo**. The absorbed shortwave radiation is the complement of this quantity."
+  ,""
+  ,"The proportion of light reflected by a surface is the **albedo**. The absorbed shortwave radiation is the complement of this quantity [budyko_1969_effect, sellers_global_1969](@cite)"
   ,absorbed_shortwave_radiation
   ,begin
     (Q, ASR)::Form0
@@ -76,10 +76,9 @@ end)
   end
  )
 
-## TODO
 @docapode("Outgoing Longwave Radiation"
-  ,"https://www.google.com"
   ,""
+  ,"[budyko_1969_effect, sellers_global_1969](@cite)"
   ,:outgoing_longwave_radiation
   ,begin
     (Tₛ, OLR)::Form0
@@ -90,8 +89,8 @@ end)
 )
 
 @docapode("Heat Transfer"
-  ,"https://www.google.com"
   ,""
+  ,"[budyko_1969_effect](@cite) and [sellers_global_1969](@cite)"
   ,:heat_transfer
   ,begin
     (HT, Tₛ)::Form0
@@ -181,8 +180,8 @@ end)
 )
 
 @docapode("Jordan-Kinderlehrer-Otto"
-  ,"https://www.google.com"
-  ,"Jordan, R., Kinderlehrer, D., & Otto, F. (1998). The Variational Formulation of the Fokker--Planck Equation. In SIAM Journal on Mathematical Analysis (Vol. 29, Issue 1, pp. 1–17). Society for Industrial & Applied Mathematics (SIAM). https://doi.org/10.1137/s0036141096303359"
+  ,""
+  ,"[jordan_variational_1998](@cite)"
   ,jko_scheme
   ,begin
     (ρ,Ψ)::Form0
@@ -233,8 +232,8 @@ end)
 )
 
 @docapode("IceBlockingWater"
-  ,"https://www.google.com"
   ,""
+  ,"This model is an approach to modeling interface conditions of an obstruction within a flow developed by J. Fairbanks and L. Morris during the DARPA ASKEM hackathons. It should not be relied on as a realistic model of the physics of obstructions to flows."
   ,iceblockingwater
   ,begin
   h::Form0
