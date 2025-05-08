@@ -102,8 +102,8 @@ To interpret our composed Decapode, we need to specify what Discrete Exterior Ca
 
 ``` @example DEC
 ice_dynamics1D = expand_operators(ice_dynamics)
-infer_types!(ice_dynamics1D, op1_inf_rules_1D, op2_inf_rules_1D)
-resolve_overloads!(ice_dynamics1D, op1_res_rules_1D, op2_res_rules_1D)
+infer_types!(ice_dynamics1D, dim=1)
+resolve_overloads!(ice_dynamics1D, dim=1)
 
 to_graphviz(ice_dynamics1D)
 ```
