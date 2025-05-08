@@ -49,11 +49,48 @@ proliferation_invasion_composition_diagram = @relation () begin
   invasion(C, fC, Cmax)
 end
 
+# @present SchTotallyLabeledGraph <: SchLabeledGraph begin
+#     EdgeLabel::AttrType
+#     edgelabel::Attr(E, EdgeLabel)
+#     BoxLabel::AttrType
+#     boxLabel::Attr(V, BoxLabel)
+# end
+# @acset_type TotallyLabeledGraph(SchTotallyLabeledGraph)
+
+# TotallyLabeledGraph() = TotallyLabeledGraph{SummationDecapode, ACSetTransformation, Symbol}()
+
+
 # Now let's specify which sub-models slot into our system. We use the same pattern for two different models: the first model pertains to a logistic growth model,
 logistic_proliferation_invasion_cospan = oapply(proliferation_invasion_composition_diagram,
   [Open(logistic, [:C, :fC, :Cmax]),
    Open(invasion, [:C, :fC, :Cmax])])
 logistic_proliferation_invasion = apex(logistic_proliferation_invasion_cospan)
+
+function Catlab.Span(diagram::UntypedUnnamedRelationDiagram, opens)
+    # g = TotallyLabeledGraph()
+    # g_ids = map(enumerate(opens)) do (index, open)
+        # add_part!(g, :V, label=open.cospan.apex, boxLabel=diagram[index, :name])
+    # end
+    # junctions live here. pure quantity. no relation to each other. discreteness.
+    h = SummationDecapode(parse_decapode(quote end))
+    # apex = add_part!(g, :V, label=h, boxLabel=gensym())
+    add_parts!(h, :Var, length(diagram[:variable]), name=diagram[:variable])
+    legs = map(parts(diagram, :Box)) do box
+        components = map(incident(diagram, box, :box)) do port
+            y = subpart(diagram, port, [:junction, :variable])
+            only(incident(opens[box].cospan.apex, y, :name))
+        end
+        # add_part!(g, :E, src = apex, tgt = g_ids[box], edgelabel=ACSetTransformation((Var=components), h, opens[box].cospan.apex))
+        ACSetTransformation((Var=components), h, opens[box].cospan.apex)
+    end
+    Span(h, legs...)
+end
+
+# ACSet in the shape of multicospan
+Span(proliferation_invasion_composition_diagram, [Open(logistic, [:C, :fC, :Cmax]),
+                                                    Open(invasion, [:C, :fC, :Cmax])])
+
+
 
 # The second model uses the same composition pattern but swaps out the logistic growth mode for a Gompertz growth model.
 gompertz_proliferation_invasion_cospan = oapply(proliferation_invasion_composition_diagram,
