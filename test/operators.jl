@@ -28,8 +28,8 @@ end
     C == i₁(A, B)
   end
   Decapodes.open_operators!(interior_product_1; dimension = 1)
-  infer_types!(interior_product_1, op1_inf_rules_1D, op2_inf_rules_1D)
-  resolve_overloads!(interior_product_1, op1_res_rules_1D, op2_res_rules_1D)
+  infer_types!(interior_product_1, dim=1)
+  resolve_overloads!(interior_product_1, dim=1)
 
   test_interior_product_1 = @acset SummationDecapode{Any, Any, Symbol} begin
     Var = 5
@@ -61,8 +61,8 @@ end
     C == L₀(B, A)
   end
   Decapodes.open_operators!(lie_derivative_0; dimension = 1)
-  infer_types!(lie_derivative_0, op1_inf_rules_1D, op2_inf_rules_1D)
-  resolve_overloads!(lie_derivative_0, op1_res_rules_1D, op2_res_rules_1D)
+  infer_types!(lie_derivative_0, dim=1)
+  resolve_overloads!(lie_derivative_0, dim=1)
 
   test_lie_derivative_0 = @acset SummationDecapode{Any, Any, Symbol} begin
     Var = 6
@@ -94,8 +94,8 @@ end
     C == L₁(B, A)
   end
   Decapodes.open_operators!(lie_derivative_1; dimension = 1)
-  infer_types!(lie_derivative_1, op1_inf_rules_1D, op2_inf_rules_1D)
-  resolve_overloads!(lie_derivative_1, op1_res_rules_1D, op2_res_rules_1D)
+  infer_types!(lie_derivative_1, dim=1)
+  resolve_overloads!(lie_derivative_1, dim=1)
 
   test_lie_derivative_1 = @acset SummationDecapode{Any, Any, Symbol} begin
     Var = 6
@@ -126,8 +126,8 @@ end
     B == δ₁(A)
   end
   Decapodes.open_operators!(codiff_1, dimension = 1)
-  infer_types!(codiff_1, op1_inf_rules_1D, op2_inf_rules_1D)
-  resolve_overloads!(codiff_1, op1_res_rules_1D, op2_res_rules_1D)
+  infer_types!(codiff_1, dim=1)
+  resolve_overloads!(codiff_1, dim=1)
 
   test_codiff_1 = @acset SummationDecapode{Any, Any, Symbol} begin
     Var = 4
@@ -157,8 +157,8 @@ end
     B == Δ₀(A)
   end
   Decapodes.open_operators!(laplace_de_rham_0, dimension = 1)
-  infer_types!(laplace_de_rham_0, op1_inf_rules_1D, op2_inf_rules_1D)
-  resolve_overloads!(laplace_de_rham_0, op1_res_rules_1D, op2_res_rules_1D)
+  infer_types!(laplace_de_rham_0, dim=1)
+  resolve_overloads!(laplace_de_rham_0, dim=1)
 
   test_laplace_de_rham_0 = @acset SummationDecapode{Any, Any, Symbol} begin
     Var = 5
@@ -188,8 +188,8 @@ end
     B == Δ₁(A)
   end
   Decapodes.open_operators!(laplace_de_rham_1, dimension = 1)
-  infer_types!(laplace_de_rham_1, op1_inf_rules_1D, op2_inf_rules_1D)
-  resolve_overloads!(laplace_de_rham_1, op1_res_rules_1D, op2_res_rules_1D)
+  infer_types!(laplace_de_rham_1, dim=1)
+  resolve_overloads!(laplace_de_rham_1, dim=1)
 
   test_laplace_de_rham_1 = @acset SummationDecapode{Any, Any, Symbol} begin
     Var = 5
@@ -233,7 +233,7 @@ end
     Op1 = 3
     src = [1, 6, 4]
     tgt = [5, 4, 3]
-    op1 = [:⋆₁⁻¹, :⋆₂, :neg]
+    op1 = [:⋆₁⁻¹, :⋆₂, :-]
     Op2 = 1
     proj1 = [5]
     proj2 = [2]
@@ -332,7 +332,7 @@ end
     Op1 = 7
     src = [1, 4, 7, 1, 11, 9, 8]
     tgt = [4, 6, 5, 10, 9, 8, 12]
-    op1 = [:dual_d₁, :⋆₀⁻¹, :⋆₁, :⋆₁⁻¹, :⋆₂, :neg, :dual_d₀]
+    op1 = [:dual_d₁, :⋆₀⁻¹, :⋆₁, :⋆₁⁻¹, :⋆₂, :-, :dual_d₀]
     Op2 = 2
     proj1 = [10, 6]
     proj2 = [2, 2]

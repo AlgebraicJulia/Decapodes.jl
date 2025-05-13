@@ -1,9 +1,5 @@
 using Test
 
-@testset "Code Quality (Aqua.jl)" begin
-  include("aqua.jl")
-end
-
 @testset "ComponentArrays.jl Integration" begin
   include("componentarrays.jl")
 end
@@ -29,3 +25,8 @@ else
   @info "CUDA tests were not run."
   @info CUDA.functional(true)
 end
+
+@testset "Code Quality (Aqua.jl)" begin
+  include("aqua.jl")
+end
+

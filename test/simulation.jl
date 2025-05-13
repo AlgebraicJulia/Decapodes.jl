@@ -674,11 +674,11 @@ filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
     A::DualForm1
 
     B == ∂ₜ(A)
-    B == ⋆(A)
+    B == ⋆(⋆(A))
   end
   g = gensim(DiagonalInvHodge1)
   @test g.args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
-  @test length(filter_lnn(g.args[2].args[2].args[3].args)) == 1
+  @test length(filter_lnn(g.args[2].args[2].args[3].args)) == 2
   sim = eval(g)
 
   # TODO: Error is being thrown here
@@ -802,7 +802,7 @@ end
 
   function halfar_generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
-      :mag => x -> norm.(x)
+      :norm => x -> norm.(x)
       x => error("Unmatched operator $my_symbol")
     end
     return op
@@ -891,7 +891,7 @@ end
   function halmo_generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
       :σ => x -> nothing
-      :mag => x -> nothing
+      :norm => x -> nothing
       _ => error("Unmatched operator $my_symbol")
     end
     return op
