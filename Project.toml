@@ -28,7 +28,6 @@ CUDA = "5.2"
 Catlab = "0.16.19"
 CombinatorialSpaces = "0.7"
 ComponentArrays = "0.15"
-DiagrammaticEquations = "0.1.8"
 Distributions = "0.25"
 GeometryBasics = "0.5"
 JSON = "0.21"
@@ -43,6 +42,9 @@ SparseArrays = "1.9"
 Statistics = "1.9"
 Test = "1.9"
 julia = "1.9"
+
+[sources]
+DiagrammaticEquations = {url = "https://github.com/AlgebraicJulia/DiagrammaticEquations.jl", rev = "main"}
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
