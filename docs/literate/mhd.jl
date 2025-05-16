@@ -213,7 +213,7 @@ function solve_poisson(vort::VForm)
   ψ = fΔ0 \ vort.data
   ψ = ψ .- minimum(ψ)
 end
-solve_poisson(vort::DualForm{2}) =
+solve_poisson(vort::CombinatorialSpaces.DualForm{2}) =
   solve_poisson(VForm(s0inv * vort.data))
 
 ψ = solve_poisson(VForm(X))
@@ -223,10 +223,10 @@ curl_stream(ψ) = s1 * d0 * ψ
 divergence(u) = s2 * d1 * (s1 \ u)
 RMS(x) = √(mean(x' * x))
 
-integral_of_curl(curl::DualForm{2}) = sum(curl.data)
+integral_of_curl(curl::CombinatorialSpaces.DualForm{2}) = sum(curl.data)
 # Recall that s0 effectively multiplies each entry by a solid angle.
 # i.e. (sum ∘ ⋆₀) computes a Riemann sum.
-integral_of_curl(curl::VForm) = integral_of_curl(DualForm{2}(s0*curl.data))
+integral_of_curl(curl::VForm) = integral_of_curl(CombinatorialSpaces.DualForm{2}(s0*curl.data))
 
 u₀ = ComponentArray(dη = s0*X, β = zeros(ne(dualmesh)))
 
