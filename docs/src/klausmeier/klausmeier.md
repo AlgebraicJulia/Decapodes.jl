@@ -135,6 +135,7 @@ function generate(sd, my_symbol; hodge=DiagonalHodge())
     :Δ => x -> begin
       lap_mat * x
     end
+    _ => default_dec_matrix_generate(sd, my_symbol, hodge)
   end
   return (args...) -> op(args...)
 end

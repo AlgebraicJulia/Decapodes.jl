@@ -1,4 +1,4 @@
-# Import Dependencies 
+# Import Dependencies
 
 # AlgebraicJulia Dependencies
 using Catlab
@@ -20,7 +20,7 @@ using JLD2
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 
-# Define the model 
+# Define the model
 
 # ϕ := Latitude
 # Tₛ(ϕ,t) := Surface temperature
@@ -35,7 +35,7 @@ energy_balance = @decapode begin
   (Tₛ, ASR, OLR, HT)::Form0
   (C)::Constant
 
-  Tₛ̇ == ∂ₜ(Tₛ) 
+  Tₛ̇ == ∂ₜ(Tₛ)
 
   Tₛ̇ == (ASR - OLR + HT) ./ C
 end
@@ -94,10 +94,10 @@ budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
 budyko_sellers = apex(budyko_sellers_cospan)
 to_graphviz(budyko_sellers)
 
-infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
+infer_types!(budyko_sellers, dim = 1)
 to_graphviz(budyko_sellers)
 
-resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
+resolve_overloads!(budyko_sellers, dim = 1)
 to_graphviz(budyko_sellers)
 
 # Demonstrate storing as JSON
@@ -116,7 +116,7 @@ orient!(s′)
 s = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s′)
 subdivide_duals!(s, Circumcenter())
 
-# Define constants, parameters, and initial conditions 
+# Define constants, parameters, and initial conditions
 
 # This is a primal 0-form, with values at vertices.
 cosϕᵖ = map(x -> cos(x[1]), point(s′))
@@ -162,13 +162,13 @@ constants_and_parameters = (
   cosϕᵖ = cosϕᵖ,
   diffusion_cosϕᵈ = cosϕᵈ)
 
-# Define how symbols map to Julia functions 
+# Define how symbols map to Julia functions
 
 # In this example, all operators come from the Discrete Exterior Calculus module
 # from CombinatorialSpaces.
 function generate(sd, my_symbol; hodge=GeometricHodge()) end
 
-# Generate simulation 
+# Generate simulation
 
 sim = eval(gensim(budyko_sellers, dimension=1))
 fₘ = sim(s, generate)
@@ -193,7 +193,7 @@ soln = solve(prob, Tsit5())
 
 soln = solve(prob, FBDF())
 
-# Visualize 
+# Visualize
 
 lines(map(x -> x[1], point(s′)), soln(0.0).Tₛ)
 lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)

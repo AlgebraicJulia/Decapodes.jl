@@ -313,8 +313,8 @@ end
 
     Tₛ̇ == (ASR - OLR + HT) ./ C
   end
-  infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
-  resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
+  infer_types!(budyko_sellers, dim=1)
+  resolve_overloads!(budyko_sellers, dim=1)
 
   # This test ensures that the next one does not break, since it depends on
   # arbitrary internal variable naming.
@@ -494,7 +494,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == CombinatorialSpaces.d(0, earth) * A
+  @test du.A == CombinatorialSpaces.DiscreteExteriorCalculus.d(0, earth) * A
 
   # Testing no contraction of unallowed operators
   no_unallowed = @decapode begin
@@ -522,7 +522,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == CombinatorialSpaces.d(0, earth) * 20 * A
+  @test du.A == CombinatorialSpaces.DiscreteExteriorCalculus.d(0, earth) * 20 * A
 
   # Testing wedge 01 operators function
   wedges01 = @decapode begin
@@ -674,11 +674,11 @@ filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
     A::DualForm1
 
     B == ∂ₜ(A)
-    B == ⋆(A)
+    B == ⋆(⋆(A))
   end
   g = gensim(DiagonalInvHodge1)
   @test g.args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
-  @test length(filter_lnn(g.args[2].args[2].args[3].args)) == 1
+  @test length(filter_lnn(g.args[2].args[2].args[3].args)) == 2
   sim = eval(g)
 
   # TODO: Error is being thrown here
@@ -802,7 +802,7 @@ end
 
   function halfar_generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
-      :mag => x -> norm.(x)
+      :norm => x -> norm.(x)
       x => error("Unmatched operator $my_symbol")
     end
     return op
@@ -891,7 +891,7 @@ end
   function halmo_generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
       :σ => x -> nothing
-      :mag => x -> nothing
+      :norm => x -> nothing
       _ => error("Unmatched operator $my_symbol")
     end
     return op
