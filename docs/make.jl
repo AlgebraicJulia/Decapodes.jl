@@ -56,7 +56,7 @@ makedocs(
     "Overview" => "overview/overview.md",
     "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
     "Concepts" => Any[
-        "ASCII and Unicode Operators" => "ascii.md",
+        "ASCII and Unicode Operators" => "concepts/ascii.md",
         "Equations" => "concepts/equations.md",
         "Composition" => "concepts/composition.md",
         "Variable Types" => "concepts/deca_types.md",
