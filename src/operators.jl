@@ -24,6 +24,7 @@ function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::Discret
     :(-) || :neg => x -> -1 .* x
     :ln => (x -> log.(x))
     :mag => x -> norm.(x)
+    :norm => x -> norm.(x)
 
     # Musical Isomorphisms
     :♯ᵖᵈ => dec_♯_pd(sd)
