@@ -1,15 +1,15 @@
 module DecapodesCUDAExt
 using CombinatorialSpaces
+import CombinatorialSpaces.DiscreteExteriorCalculus: DiscreteHodge
 using LinearAlgebra
 using Base.Iterators
-using Catlab
 using Krylov
 using CUDA
 using CUDA.CUSPARSE
 using MLStyle
 import Decapodes: default_dec_cu_matrix_generate
 
-function default_dec_cu_matrix_generate(sd, my_symbol, hodge)
+function default_dec_cu_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::DiscreteHodge)
   op = @match my_symbol begin
 
     # Regular Hodge Stars
@@ -37,6 +37,9 @@ function default_dec_cu_matrix_generate(sd, my_symbol, hodge)
     :∧₂₀ => dec_cu_pair_wedge_product(Tuple{2,0}, sd)
     :∧₁₁ => dec_cu_pair_wedge_product(Tuple{1,1}, sd)
 
+    # Averaging Operator
+    :avg₀₁ => dec_cu_avg₀₁(sd)
+
     _ => error("Unmatched operator $my_symbol")
   end
 
@@ -44,7 +47,7 @@ function default_dec_cu_matrix_generate(sd, my_symbol, hodge)
 end
 
 # TODO: Update this to better cast hodges
-function dec_cu_mat_hodge(k, sd::HasDeltaSet, hodge)
+function dec_cu_mat_hodge(k::Int, sd::HasDeltaSet, hodge::DiscreteHodge)
   hodge = dec_hodge_star(k, sd, hodge, Val{:CUDA})
   return (hodge, x -> hodge * x)
 end
@@ -59,7 +62,7 @@ function dec_cu_mat_hodge(::Type{Val{1}}, sd::HasDeltaSet, hodge::GeometricHodge
   return (hodge, x -> hodge * x)
 end
 
-function dec_cu_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge)
+function dec_cu_mat_inverse_hodge(k::Int, sd::HasDeltaSet, hodge::DiscreteHodge)
   invhodge = dec_inv_hodge_star(k, sd, hodge, Val{:CUDA})
   return (invhodge, x -> invhodge * x)
 end
@@ -92,21 +95,25 @@ function dec_cu_mat_dual_differential(k::Int, sd::HasDeltaSet)
 end
 
 function dec_cu_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where {k}
-  val_pack = dec_p_wedge_product(Tuple{0,k}, sd, Val{:CUDA})
-  ((y, α, g) -> dec_c_wedge_product!(Tuple{0,k}, y, g, α, val_pack, Val{:CUDA}),
-    (α, g) -> dec_c_wedge_product(Tuple{0,k}, g, α, val_pack, Val{:CUDA}))
+  val_pack = cache_wedge(Tuple{0,k}, sd, Val{:CUDA})
+  ((y, α, g) -> dec_c_wedge_product!(Tuple{0,k}, y, g, α, val_pack[1], val_pack[2]),
+    (α, g) -> dec_c_wedge_product(Tuple{0,k}, g, α, val_pack))
 end
 
 function dec_cu_pair_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where {k}
-  val_pack = dec_p_wedge_product(Tuple{0,k}, sd, Val{:CUDA})
-  ((y, f, β) -> dec_c_wedge_product!(Tuple{0,k}, y, f, β, val_pack, Val{:CUDA}),
-    (f, β) -> dec_c_wedge_product(Tuple{0,k}, f, β, val_pack, Val{:CUDA}))
+  val_pack = cache_wedge(Tuple{0,k}, sd, Val{:CUDA})
+  ((y, f, β) -> dec_c_wedge_product!(Tuple{0,k}, y, f, β, val_pack[1], val_pack[2]),
+    (f, β) -> dec_c_wedge_product(Tuple{0,k}, f, β, val_pack))
 end
 
 function dec_cu_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
-  val_pack = dec_p_wedge_product(Tuple{1,1}, sd, Val{:CUDA})
-  ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack, Val{:CUDA}),
-    (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack, Val{:CUDA}))
+  val_pack = cache_wedge(Tuple{1,1}, sd, Val{:CUDA})
+  ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack[1], val_pack[2]),
+    (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack))
+end
+
+function dec_pair_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
+  error("Replace me in compiled code with element-wise multiplication (.*)")
 end
 
 # TODO: These need to be converted into CuArrays/kernels
@@ -124,4 +131,11 @@ function dec_cu_flat(sd::HasDeltaSet2D)
   ♭_m = ♭_mat(sd)
   x -> ♭_m * x
 end
+
+function dec_cu_avg₀₁(sd::HasDeltaSet)
+  # TODO: Cast this in the CombinatorialSpaces CUDA extension directly.
+  avg_mat = CuSparseMatrixCSC(avg₀₁_mat(sd))
+  (avg_mat, x -> avg_mat * x)
+end
+
 end

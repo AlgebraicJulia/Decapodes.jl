@@ -1,11 +1,15 @@
 using Test
 
-@testset "Coordinates" begin
-  include("coordinates.jl")
-end
-
 @testset "ComponentArrays.jl Integration" begin
   include("componentarrays.jl")
+end
+
+@testset "Simulation Core" begin
+  include("simulation_core.jl")
+end
+
+@testset "Open Operators" begin
+  include("operators.jl")
 end
 
 @testset "Simulation" begin
@@ -21,3 +25,8 @@ else
   @info "CUDA tests were not run."
   @info CUDA.functional(true)
 end
+
+@testset "Code Quality (Aqua.jl)" begin
+  include("aqua.jl")
+end
+

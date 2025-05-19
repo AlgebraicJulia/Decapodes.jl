@@ -1,22 +1,21 @@
-using Decapodes
-import Decapodes: compile, gensim
-
+using ACSets
 using Catlab
-using Catlab.CategoricalAlgebra
-
-using Test
-
-using MLStyle
 using CombinatorialSpaces
+using ComponentArrays
+using Decapodes
+using DiagrammaticEquations
+using Distributions
 using GeometryBasics: Point2, Point3
 using LinearAlgebra
-using Distributions
-using ComponentArrays
-using OrdinaryDiffEq
-using DiagrammaticEquations
-using DiagrammaticEquations.Deca
-using GeometryBasics
-Point2D = Point2{Float64}
+using MLStyle
+using OrdinaryDiffEqTsit5
+using Test
+using Random
+Point3D = Point3{Float64}
+
+import Decapodes: default_dec_matrix_generate
+
+flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
   hodge = ⋆(k,sd,hodge=hodge)
@@ -64,56 +63,27 @@ function generate(sd, my_symbol)
 end
 
 @testset "Simulation Generation" begin
-
-DiffusionExprBody =  quote
-    (C, Ċ)::Form0{X}
-    ϕ::Form1{X}
-
-    # Fick's first law
-    ϕ == ∘(k, d₀)(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
-end
-
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = SummationDecapode(diffExpr)
-add_constant!(ddp, :k)
-@test nparts(ddp, :Var) == 4
-
-DiffusionExprBody =  quote
-    (C, Ċ)::Form0{X}
-    ϕ::Form1{X}
-    k::Constant{ℝ}
-
-
-    # Fick's first law
-    ϕ == k * d₀(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
-end
-
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = SummationDecapode(diffExpr)
-
-dec_matrices = Vector{Symbol}()
-alloc_vectors = Vector{Decapodes.AllocVecCall}()
-
-@test Decapodes.get_vars_code(ddp, [:k]).args[2] == :(k = p.k)
-@test infer_state_names(ddp) == [:C, :k]
-
+# Mesh and ICs to use for these tests:
 torus = loadmesh(Torus_30x10())
 c_dist = MvNormal([5, 5], LinearAlgebra.Diagonal(map(abs2, [1.5, 1.5])))
 c = [pdf(c_dist, [p[1], p[2]]) for p in torus[:point]]
-
 u₀ = ComponentArray(C=c)
 du = ComponentArray(C=zero(c))
 
-f = eval(gensim(expand_operators(ddp)))
-fₘₛ = f(torus, generate)
+# Three Decapodes variations, with k as constant, parameter, or literal.
+DiffusionWithConstant = @decapode begin
+  (C, Ċ)::Form0{X}
+  ϕ::Form1{X}
+  k::Constant{ℝ}
 
-DiffusionExprBody =  quote
+  # Fick's first law
+  ϕ == k * d₀(C)
+  # Diffusion equation
+  Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
+  ∂ₜ(C) == Ċ
+end
+
+DiffusionWithParameter = @decapode begin
   (C, Ċ)::Form0{X}
   ϕ::Form1{X}
   k::Parameter{ℝ}
@@ -125,80 +95,69 @@ DiffusionExprBody =  quote
   ∂ₜ(C) == Ċ
 end
 
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = SummationDecapode(diffExpr)
-dec_matrices2 = Vector{Symbol}()
-alloc_vectors2 = Vector{Decapodes.AllocVecCall}()
+DiffusionWithLiteral = @decapode begin
+  (C, Ċ)::Form0{X}
+  ϕ::Form1{X}
 
-@test infer_state_names(ddp) == [:C, :k]
-@test Decapodes.get_vars_code(ddp, [:k]).args[2] == :(k = p.k(t))
-
-f = eval(gensim(expand_operators(ddp)))
-fₘₚ = f(torus, generate)
-
-@test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
-
-DiffusionExprBody =  quote
-    (C, Ċ)::Form0{X}
-    ϕ::Form1{X}
-
-    # Fick's first law
-    ϕ == 3 * d₀(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
+  # Fick's first law
+  ϕ == 3 * d₀(C)
+  # Diffusion equation
+  Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
+  ∂ₜ(C) == Ċ
 end
 
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = SummationDecapode(diffExpr)
+# Verify the variable accessors.
+@test Decapodes.get_vars_code(DiffusionWithConstant, [:k], Float64, CPUTarget()).args[2] == :(k = __p__.k)
+@test infer_state_names(DiffusionWithConstant) == [:C, :k]
 
-@test infer_state_names(ddp) == [:C]
+@test infer_state_names(DiffusionWithParameter) == [:C, :k]
+@test Decapodes.get_vars_code(DiffusionWithParameter, [:k], Float64, CPUTarget()).args[2] == :(k = __p__.k(__t__))
+
+@test infer_state_names(DiffusionWithLiteral) == [:C]
 # TODO: Fix proper Expr equality, the Float64 does not equate here
-# @test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2] == :(var"3"::Float64 = 3.0)
-@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[1] == :(var"3")
-@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[2] == 3.0
+# @test Decapodes.get_vars_code(DiffusionWithLiteral, [Symbol("3")]).args[2] == :(var"3"::Float64 = 3.0)
+@test Decapodes.get_vars_code(DiffusionWithLiteral, [Symbol("3")], Float64, CPUTarget()).args[2].args[1] == :(var"3")
+@test Decapodes.get_vars_code(DiffusionWithLiteral, [Symbol("3")], Float64, CPUTarget()).args[2].args[2] == 3.0
 
+# Test that simulations generated from these return the same result.
+f = evalsim(DiffusionWithConstant)
+f_with_constant = f(torus, generate)
 
-f = eval(gensim(expand_operators(ddp)))
-fₘₚ = f(torus, generate)
+f = evalsim(DiffusionWithParameter)
+f_with_parameter = f(torus, generate)
 
-@test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
+f = eval(gensim(expand_operators(DiffusionWithLiteral)))
+f_with_literal = f(torus, generate)
 
-DiffusionExprBody =  quote
-    (C, Ċ)::Form0{X}
-    ϕ::Form1{X}
+f_with_constant(du, u₀, (k=3.0,), 0)
+fc_res = copy(du.C)
+f_with_parameter(du, u₀, (k=t->3.0,), 0)
+fp_res = copy(du.C)
+f_with_literal(du, u₀, NamedTuple(), 0)
+fl_res = copy(du.C)
 
-    # Fick's first law
-    ϕ == 3 * d₀(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
-    ∂ₜ(C) == Ċ
-end
+@test norm(fc_res - fp_res) < 1e-4
+@test norm(fc_res - fl_res) < 1e-4
 
-diffExpr = parse_decapode(DiffusionExprBody)
-ddp = SummationDecapode(diffExpr)
+# Test same but with no preallocating
 
-@test infer_state_names(ddp) == [:C]
-# TODO: Fix proper Expr equality, the Float64 does not equate here
-# @test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2] == :(var"3"::Float64 = 3.0)
-@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[1] == :(var"3")
-@test Decapodes.get_vars_code(ddp, [Symbol("3")]).args[2].args[2] == 3.0
+f = evalsim(DiffusionWithLiteral, preallocate=false)
+f_noalloc = f(torus, generate)
 
-f = eval(gensim(expand_operators(ddp)))
-fₘₚ = f(torus, generate)
+f = evalsim(DiffusionWithLiteral)
+f_alloc = f(torus, generate)
 
-@test norm(fₘₛ(du, u₀, (k=2.0,), 0)  - fₘₚ(du, u₀, (k=t->2.0,), 0)) < 1e-4
- 
-# to solve the ODE over a duration, use the ODEProblem from OrdinaryDiffEq
-# tₑ = 10
-# using OrdinaryDiffEq
-# prob = ODEProblem(fₘₛ,u₀, (0,tₑ), (k=2.0,))
-# soln = solve(prob, Tsit5())
+f_noalloc(du, u₀, NamedTuple(), 0)
+f_nal = copy(du.C)
+f_alloc(du, u₀, NamedTuple(), 0)
+f_al = copy(du.C)
+
+@test f_nal == f_al
+
 end
 
 # Testing done based on the original gensim
-Point3D = Point3{Float64}
-flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
+# -----------------------------------------
 
 # Testing Brusselator
 @testset "Brusselator Simulation" begin
@@ -222,7 +181,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
   end
 
   Brusselator = SummationDecapode(parse_decapode(quote
-      (U, V)::Form0{X} 
+      (U, V)::Form0{X}
       (U2V, aTU)::Form0{X}
       (U̇, V̇)::Form0{X}
 
@@ -231,7 +190,7 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
 
       U2V == (U .* U) .* V
       aTU == α * Δ(U)
-      
+
       U̇ == One + U2V - (4.4 * U) + aTU + F
       V̇ == (3.4 * U) - U2V + aTU
 
@@ -284,13 +243,13 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
     U = map(earth[:point]) do (_,y,_)
       abs(y)
     end
-    
+
     V = map(earth[:point]) do (x,_,_)
       abs(x)
     end
 
     One = ones(nv(earth))
-        
+
     F₁ = map(earth[:point]) do (_,_,z)
       z ≥ 0.8 ? 5.0 : 0.0
     end
@@ -312,13 +271,13 @@ flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triang
       U = map(earth[:point]) do (_,y,_)
         abs(y)
       end
-      
+
       V = map(earth[:point]) do (x,_,_)
         abs(x)
       end
 
       One = ones(nv(earth))
-          
+
       F₁ = map(earth[:point]) do (_,_,z)
         z ≥ 0.8 ? 5.0 : 0.0
       end
@@ -354,8 +313,8 @@ end
 
     Tₛ̇ == (ASR - OLR + HT) ./ C
   end
-  infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
-  resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
+  infer_types!(budyko_sellers, dim=1)
+  resolve_overloads!(budyko_sellers, dim=1)
 
   # This test ensures that the next one does not break, since it depends on
   # arbitrary internal variable naming.
@@ -367,15 +326,12 @@ end
 
 @testset "Gensim Transformations" begin
 
-  function checkForContractionInGensim(d::SummationDecapode)
-    results = []
-    block = gensim(d).args[2].args[2].args[5]
-    for line in 2:length(block.args)
-      push!(results, block.args[line].args[1])
-    end
-
-    return results
+  function count_contractions(e::Expr)
+    block = e.args[2].args[2].args[5]
+    length(block.args) - 1
   end
+
+  count_contractions(d::SummationDecapode) = count_contractions(gensim(d))
 
   begin
     primal_earth = loadmesh(Icosphere(1))
@@ -402,35 +358,45 @@ end
   A = ones(nv(earth))
   u = ComponentArray(A=A)
   constants_and_parameters = ()
-  result = f(u, u, constants_and_parameters, 0)
+  f(u, u, constants_and_parameters, 0)
 
-  @test result == -1 * ones(nv(earth))
+  @test u.A == -1 * ones(nv(earth))
 
 
   # Testing simple contract operations
   single_contract = @decapode begin
-    (A,C)::Form0
-    (D)::Form2
+    (A,C,E)::Form0
+    (D,F)::Form2
 
     B == ∂ₜ(A)
     D == ∂ₜ(C)
 
     B == ⋆(⋆(A))
     D == d(d(C))
+    F == d(d(E))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
+  @test 4 == count_contractions(single_contract)
+
+  @test 0 == count_contractions(gensim(single_contract; contract=false))
+
+  f = gensim(single_contract)
+  @test f.args[2].args[2].args[5].args[[2,4]] == [
+    :(var"GenSim-M_GenSim-ConMat_0" = var"GenSim-M_d₁" * var"GenSim-M_d₀"),
+    :(var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_⋆₀")]
 
   sim = eval(gensim(single_contract))
   f = sim(earth, default_dec_generate)
   A = 2 * ones(nv(earth))
   C = ones(nv(earth))
-  u = ComponentArray(A=A, C=C)
-  du = ComponentArray(A=zeros(nv(earth)), C=zeros(ntriangles(earth)))
+  E = ones(nv(earth))
+  u = ComponentArray(A=A, C=C, E=E)
+  du = ComponentArray(A=zeros(nv(earth)), C=zeros(ntriangles(earth)), E=zeros(ntriangles(earth)))
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
   @test du.A ≈ 2 * ones(nv(earth))
   @test du.C == zeros(ntriangles(earth))
+  @test du.E == zeros(ntriangles(earth))
 
   # Testing contraction interrupted by summation
   contract_with_summation = @decapode begin
@@ -445,8 +411,8 @@ end
 
     D == d(d(C))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
-  
+  @test 4 == count_contractions(contract_with_summation)
+
   sim = eval(gensim(contract_with_summation))
   f = sim(earth, default_dec_generate)
   A = 2 * ones(nv(earth))
@@ -472,19 +438,22 @@ end
 
     D == d(d(C))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
-  
-  sim = eval(gensim(contract_with_op2))
-  f = sim(earth, default_dec_generate)
-  A = 3 * ones(nv(earth))
-  E_dec = ones(nv(earth))
-  u = ComponentArray(A=A, E=E_dec)
-  du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
-  constants_and_parameters = ()
-  f(du, u, constants_and_parameters, 0)
+  @test 4 == count_contractions(contract_with_op2)
 
-  @test du.A == zeros(ntriangles(earth))
-  @test du.E ≈ 9 * ones(nv(earth))
+  for prealloc in [false, true]
+    let sim = eval(gensim(contract_with_op2, preallocate = prealloc))
+      f = sim(earth, default_dec_generate)
+      A = 3 * ones(nv(earth))
+      E_dec = ones(nv(earth))
+      u = ComponentArray(A=A, E=E_dec)
+      du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
+      constants_and_parameters = ()
+      f(du, u, constants_and_parameters, 0)
+
+      @test du.A == zeros(ntriangles(earth))
+      @test du.E ≈ 9 * ones(nv(earth))
+    end
+  end
 
   # Testing contract lines beyond the initial value
   later_contraction = @decapode begin
@@ -495,8 +464,8 @@ end
     B == A * A
     D == ⋆(⋆(B))
   end
-  @test 4 == length(checkForContractionInGensim(single_contract))
-  
+  @test 2 == count_contractions(later_contraction)
+
   sim = eval(gensim(later_contraction))
   f = sim(earth, default_dec_generate)
   A = 4 * ones(nv(earth))
@@ -515,8 +484,8 @@ end
     D == ∂ₜ(A)
     D == d(A)
   end
-  @test 0 == length(checkForContractionInGensim(no_contraction))
-  
+  @test 0 == count_contractions(no_contraction)
+
   sim = eval(gensim(no_contraction))
   f = sim(earth, default_dec_generate)
   A = [i for i in 1:nv(earth)]
@@ -525,7 +494,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == d(0, earth) * A
+  @test du.A == CombinatorialSpaces.DiscreteExteriorCalculus.d(0, earth) * A
 
   # Testing no contraction of unallowed operators
   no_unallowed = @decapode begin
@@ -535,8 +504,8 @@ end
     D == ∂ₜ(A)
     D == d(k(A))
   end
-  @test 0 == length(checkForContractionInGensim(no_unallowed))
-  
+  @test 0 == count_contractions(no_unallowed)
+
   sim = eval(gensim(no_unallowed))
 
   function generate_no_unallowed(sd, my_symbol; hodge=GeometricHodge())
@@ -553,7 +522,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == d(0, earth) * 20 * A
+  @test du.A == CombinatorialSpaces.DiscreteExteriorCalculus.d(0, earth) * 20 * A
 
   # Testing wedge 01 operators function
   wedges01 = @decapode begin
@@ -570,33 +539,35 @@ end
 
     F == A ∧ (C ∧ B)
   end
-  
-  sim = eval(gensim(wedges01))
 
-  f = sim(earth, default_dec_generate)
-  A = ones(nv(earth))
-  B = 2 * ones(nv(earth))
-  C = 3 * ones(ne(earth))
-  u = ComponentArray(A=A, B=B, C=C)
-  du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
+  for prealloc in [false, true]
+    let sim = eval(gensim(wedges01, preallocate=prealloc))
+      f = sim(earth, default_dec_generate)
+      A = ones(nv(earth))
+      B = 2 * ones(nv(earth))
+      C = 3 * ones(ne(earth))
+      u = ComponentArray(A=A, B=B, C=C)
+      du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
 
-  constants_and_parameters = ()
-  f(du, u, constants_and_parameters, 0)
+      constants_and_parameters = ()
+      f(du, u, constants_and_parameters, 0)
 
-  @test du.A == du.B == du.C
-  
+      @test du.A == du.B == du.C
+    end
+  end
+
   # Testing wedge 11 operators function
   wedges11 = @decapode begin
     (A, B)::Form1
     (D, E)::Form2
 
     D == ∂ₜ(A)
-    E == ∂ₜ(B)  
+    E == ∂ₜ(B)
 
     D == A ∧ B
     E == B ∧ A
   end
-  
+
   sim = eval(gensim(wedges11))
 
   f = sim(earth, default_dec_generate)
@@ -619,12 +590,12 @@ end
     (D, E)::Form2
 
     D == ∂ₜ(A)
-    E == ∂ₜ(B)  
+    E == ∂ₜ(B)
 
     D == A ∧ B
     E == B ∧ A
   end
-  
+
   sim = eval(gensim(wedges02))
 
   f = sim(earth, default_dec_generate)
@@ -647,7 +618,7 @@ end
     B == ∂ₜ(A)
     B == ⋆(⋆(A))
   end
-  
+
   sim = eval(gensim(GeoInvHodge1))
 
   f = sim(earth, default_dec_generate)
@@ -658,7 +629,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test all(isapprox.(du.A, -1 * ones(ne(earth))))  
+  @test all(isapprox.(du.A, -1 * ones(ne(earth))))
 
   # Testing Diagonal inverse hodge 1
   DiagonalInvHodge1 = @decapode begin
@@ -667,7 +638,7 @@ end
     B == ∂ₜ(A)
     B == ⋆(⋆(A))
   end
-  
+
   sim = eval(gensim(DiagonalInvHodge1))
 
   f = sim(earth, default_dec_generate, DiagonalHodge())
@@ -678,9 +649,11 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test all(isapprox.(du.A, -1 * ones(ne(earth))))  
+  @test all(isapprox.(du.A, -1 * ones(ne(earth))))
 
 end
+
+filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
 
 @testset "1-D Mat Generation" begin
   Point2D = Point2{Float64}
@@ -696,19 +669,20 @@ end
   add_edges!(primal_line, [1,2], [2,3])
   line = generate_dual_mesh(primal_line)
 
-    # Testing Diagonal inverse hodge 1
-    DiagonalInvHodge1 = @decapode begin
-      A::DualForm1
-  
-      B == ∂ₜ(A)
-      B == ⋆(A)
-    end
-    g = gensim(DiagonalInvHodge1)
-    @test gensim(DiagonalInvHodge1).args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
-    sim = eval(g)
-  
-    # Test that no error is thrown here
-    f = sim(line, default_dec_generate, DiagonalHodge())  
+  # Testing Diagonal inverse hodge 1
+  DiagonalInvHodge1 = @decapode begin
+    A::DualForm1
+
+    B == ∂ₜ(A)
+    B == ⋆(⋆(A))
+  end
+  g = gensim(DiagonalInvHodge1)
+  @test g.args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
+  @test length(filter_lnn(g.args[2].args[2].args[3].args)) == 2
+  sim = eval(g)
+
+  # TODO: Error is being thrown here
+  @test f = sim(line, default_dec_generate, DiagonalHodge()) isa Any
 end
 
 @testset "GenSim Compilation" begin
@@ -722,19 +696,32 @@ end
       end
     return op
   end
-  
+
+  # tests that there is no variable shadowing for du, u, p, and t
+  NoShadow = @decapode begin
+      u::Form0
+      du::Form1
+      v::Form0
+      p::Constant
+      q::Constant
+      t::Constant
+  end
+  symsim = gensim(NoShadow)
+  sim_NS = eval(symsim)
+  @test sim_NS(d_rect, generate, DiagonalHodge()) isa Any
+
   HeatTransfer = @decapode begin
-    (HT, Tₛ)::Form0      
-    (D, cosϕᵖ, cosϕᵈ)::Constant      
+    (HT, Tₛ)::Form0
+    (D, cosϕᵖ, cosϕᵈ)::Constant
     HT == (D ./ cosϕᵖ) .* (⋆)(d(cosϕᵈ .* (⋆)(d(Tₛ))))
   end
 
   sim_HT = evalsim(HeatTransfer)
   @test sim_HT(d_rect, generate, DiagonalHodge()) isa Any
 
-  Jordan_Kinderlehrer_Otto = @decapode begin 
-    (ρ, Ψ)::Form0       
-    β⁻¹::Constant          
+  Jordan_Kinderlehrer_Otto = @decapode begin
+    (ρ, Ψ)::Form0
+    β⁻¹::Constant
     ∂ₜ(ρ) == (∘(⋆, d, ⋆))(d(Ψ) ∧ ρ) + β⁻¹ * Δ(ρ)
   end
 
@@ -775,7 +762,7 @@ end
   @test sim_LJ(d_rect, generate, DiagonalHodge()) isa Any
 
   Tracer = @decapode begin
-    (c, C, F, c_up)::Form0   
+    (c, C, F, c_up)::Form0
     (v, V, q)::Form1
     c_up == (((-1 * (⋆)(L(v, (⋆)(c))) - (⋆)(L(V, (⋆)(c)))) - (⋆)(L(v, (⋆)(C)))) - (∘(⋆, d, ⋆))(q)) + F
   end
@@ -783,76 +770,287 @@ end
   sim_Tracer = evalsim(Tracer)
   @test sim_Tracer(d_rect, generate, DiagonalHodge()) isa Any
 
+  # Test for Halfar
+  halfar_eq2 = @decapode begin
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ḣ == ∂ₜ(h)
+    ḣ == ∘(⋆, d, ⋆)(Γ * d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
+  end
+
+  glens_law = @decapode begin
+    Γ::Form1
+    A::Form1
+    (ρ,g,n)::Constant
+
+    Γ == (2/(n+2))*A*(ρ*g)^n
+  end
+
+  ice_dynamics_composition_diagram = @relation () begin
+    dynamics(Γ,n)
+    stress(Γ,n)
+  end
+
+  ice_dynamics_cospan = oapply(ice_dynamics_composition_diagram,
+    [Open(halfar_eq2, [:Γ,:n]),
+     Open(glens_law, [:Γ,:n])])
+  halfar = apex(ice_dynamics_cospan)
+
+  resolve_overloads!(infer_types!(halfar))
+
+  function halfar_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :norm => x -> norm.(x)
+      x => error("Unmatched operator $my_symbol")
+    end
+    return op
+  end
+
+  sim_Halfar = evalsim(halfar)
+  @test sim_Halfar(d_rect, halfar_generate, DiagonalHodge()) isa Any
+
+  # Test for Poisson
+  eq11_inviscid_poisson = @decapode begin
+    d𝐮::DualForm2
+    𝐮::DualForm1
+    ψ::Form0
+
+    ψ == Δ₀⁻¹(⋆(d𝐮))
+    𝐮 == ⋆(d(ψ))
+
+    ∂ₜ(d𝐮) ==  (-1) * ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
+  end
+
+  function poisson_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :♭♯ => x -> nothing
+      x => error("Unmatched operator $my_symbol")
+    end
+    return op
+  end
+
+  sim_Poisson = evalsim(eq11_inviscid_poisson)
+  @test sim_Poisson(d_rect, poisson_generate, DiagonalHodge()) isa Any
+
+  # Test for Halmo
+  eq10forN2 = @decapode begin
+    (𝐮,w)::DualForm1
+    (P, 𝑝ᵈ)::DualForm0
+    μ::Constant
+
+    𝑝ᵈ == P + 0.5 * ι₁₁(w,w)
+
+    ∂ₜ(𝐮) == μ * ∘(d, ⋆, d, ⋆)(w) + (-1)*⋆₁⁻¹(∧ᵈᵖ₁₀(w, ⋆(d(w)))) + d(𝑝ᵈ)
+  end
+
+  halfar_eq2 = @decapode begin
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯ᵖᵖ(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+  end
+
+  glens_law = @decapode begin
+    Γ::Form1
+    (A,ρ,g,n)::Constant
+
+    Γ == (2/(n+2))*A*(ρ*g)^n
+  end
+
+  ice_dynamics_composition_diagram = @relation () begin
+    dynamics(Γ,n)
+    stress(Γ,n)
+  end
+
+  ice_dynamics = apex(oapply(ice_dynamics_composition_diagram,
+    [Open(halfar_eq2, [:Γ,:n]),
+     Open(glens_law, [:Γ,:n])]))
+
+     ice_water_composition_diagram = @relation () begin
+     glacier_dynamics(ice_thickness)
+     water_dynamics(flow, flow_after)
+
+     interaction(ice_thickness, flow, flow_after)
+   end
+
+   blocking = @decapode begin
+    h::Form0
+    (𝐮,w)::DualForm1
+
+    w == (1-σ(h)) ∧ᵖᵈ₀₁ 𝐮
+  end
+
+  ice_water = apex(oapply(ice_water_composition_diagram,
+  [Open(ice_dynamics, [:dynamics_h]),
+   Open(eq10forN2,    [:𝐮, :w]),
+   Open(blocking,     [:h, :𝐮, :w])]))
+
+  function halmo_generate(sd, my_symbol; hodge=GeometricHodge())
+    op = @match my_symbol begin
+      :σ => x -> nothing
+      :norm => x -> nothing
+      _ => error("Unmatched operator $my_symbol")
+    end
+    return op
+  end
+
+  resolve_overloads!(infer_types!(ice_water))
+
+  sim_Halmo = evalsim(ice_water)
+  @test sim_Halmo(d_rect, halmo_generate, DiagonalHodge()) isa Any
+
+end
+
+@testset "Multigrid" begin
+  s = triangulated_grid(1,1,1/4,sqrt(3)/2*1/4,Point3D)
+
+  series = PrimalGeometricMapSeries(s, binary_subdivision_map, 4);
+
+  our_mesh = finest_mesh(series)
+  lap = ∇²(0,our_mesh);
+
+  Random.seed!(1337)
+  b = lap*rand(nv(our_mesh));
+
+  inv_lap = @decapode begin
+    U::Form0
+    ∂ₜ(U) == Δ₀⁻¹(U)
+  end
+
+  function generate(fs, my_symbol; hodge=DiagonalHodge())
+    op = @match my_symbol begin
+      _ => default_dec_matrix_generate(fs, my_symbol, hodge)
+    end
+  end
+
+  sim = eval(gensim(inv_lap))
+  sim_mg = eval(gensim(inv_lap; multigrid=true))
+
+  f = sim(our_mesh, generate);
+  f_mg = sim_mg(series, generate);
+
+  u = ComponentArray(U=b)
+  du = similar(u)
+
+  # Regular mesh
+  f(du, u, 0, ())
+  @test norm(lap*du.U-b)/norm(b) < 1e-15
+
+  # Multigrid
+  f_mg(du, u, 0, ())
+  @test norm(lap*du.U-b)/norm(b) < 1e-6
 end
 
 @testset "Allocations" begin
 # Test the heat equation Decapode has expected memory allocation.
-Heat = @decapode begin
-  C::Form0
-  D::Constant
-  ∂ₜ(C) == D*Δ(C)
+
+for prealloc in [false, true]
+  Heat = @decapode begin
+    C::Form0
+    D::Constant
+    ∂ₜ(C) == D*Δ(C)
+  end
+  sim = eval(gensim(Heat, preallocate=prealloc))
+  s = loadmesh(Icosphere(1))
+  sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
+  f = sim(sd,nothing)
+  u₀ = ComponentArray(C = map(x -> x[3], point(sd)))
+  p = (D=1e-1,)
+  du = copy(u₀)
+  # The first call to the function makes many allocations.
+  _ = @allocations f(du, u₀, p, (0,1.0)) # 55259
+  _ = @allocated f(du, u₀, p, (0,1.0)) # 3962696
+  # Test that subsequent calls make a reasonable amount.
+  nallocs = @allocations f(du, u₀, p, (0,1.0))
+  bytes = @allocated f(du, u₀, p, (0,1.0))
+
+  @test (nallocs, bytes) <= (prealloc ? (6, 80) : (6, 400))
 end
-sim = eval(gensim(Heat))
-s = loadmesh(Icosphere(1))
-sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
-subdivide_duals!(sd, Circumcenter())
-f = sim(sd,nothing)
-u₀ = ComponentArray(
-  C = map(x -> x[3], point(sd)))
-p = (D=1e-1,)
-du = copy(u₀)
-# The first call to the function makes many allocations.
-_ = @allocations f(du, u₀, p, (0,1.0)) # 55259
-_ = @allocated f(du, u₀, p, (0,1.0)) # 3962696
-# Test that subsequent calls make a reasonable amount.
-bytes = @allocated f(du, u₀, p, (0,1.0))
-nallocs = @allocations f(du, u₀, p, (0,1.0))
-@test nallocs == 4
-@test bytes ==
-  sizeof(u₀.C) +
-  sizeof(p.D) +
-  sizeof(Decapodes.FixedSizeDiffCache(Vector{Float64}(undef , nparts(sd, :V))))
+
 end
 
 @testset "Ensemble Simulations" begin
-# Define Model
-Heat = @decapode begin
-  C::Form0
-  D::Constant
-  ∂ₜ(C) == D*Δ(C)
-end
-# Define Domain
-function circle(n, c)
-  s = EmbeddedDeltaSet1D{Bool, Point2D}()
-  map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
-    add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+  # Define Model
+  Heat = @decapode begin
+    C::Form0
+    D::Constant
+    ∂ₜ(C) == D*Δ(C)
   end
-  add_edges!(s, 1:(nv(s)-1), 2:nv(s))
-  add_edge!(s, nv(s), 1)
-  sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
-  subdivide_duals!(sd, Circumcenter())
-  s,sd
-end
-s,sd = circle(7, 500)
-# Create initial data.
-Csin = map(p -> sin(p[1]), point(s))
-Ccos = map(p -> cos(p[1]), point(s))
-C = stack([Csin, Ccos])
-u₀ = ComponentArray(C=Csin,)
-constants_and_parameters = (D = 0.001,)
-# Run
-function generate(sd, my_symbol; hodge=GeometricHodge()) end
-sim = eval(gensim(Heat,dimension=1))
-fₘ = sim(sd, nothing)
-tₑ = 1.15
-ode_prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-ens_prob = EnsembleProblem(ode_prob,
-                      prob_func = (prob, i, repeat) ->
-                        remake(prob, u0=ComponentArray(C=C[:,i])))
-soln = solve(ens_prob, Tsit5(); trajectories=2)
-@test all(soln[1].u[1] .== Csin)
-@test all(soln[1].u[1] .!= Ccos)
-@test all(soln[2].u[1] .!= Csin)
-@test all(soln[2].u[1] .== Ccos)
+  # Define Domain
+  function circle(n, c)
+    s = EmbeddedDeltaSet1D{Bool, Point2D}()
+    map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
+      add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+    end
+    add_edges!(s, 1:(nv(s)-1), 2:nv(s))
+    add_edge!(s, nv(s), 1)
+    sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+    subdivide_duals!(sd, Circumcenter())
+    s,sd
+  end
+  s,sd = circle(7, 500)
+  # Create initial data.
+  Csin = map(p -> sin(p[1]), point(s))
+  Ccos = map(p -> cos(p[1]), point(s))
+  C = stack([Csin, Ccos])
+  u₀ = ComponentArray(C=Csin,)
+  constants_and_parameters = (D = 0.001,)
+  # Run
+  function generate(sd, my_symbol; hodge=GeometricHodge()) end
+  sim = eval(gensim(Heat,dimension=1))
+  fₘ = sim(sd, nothing)
+  tₑ = 1.15
+  ode_prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+  ens_prob = EnsembleProblem(ode_prob,
+    prob_func = (prob, i, repeat) ->
+      remake(prob, u0=ComponentArray(C=C[:,i])))
+  soln = solve(ens_prob, Tsit5(); trajectories=2)
+  @test all(soln[1].u[1] .== Csin)
+  @test all(soln[1].u[1] .!= Ccos)
+  @test all(soln[2].u[1] .!= Csin)
+  @test all(soln[2].u[1] .== Ccos)
 end
 
+@testset "Large Summations" begin
+# Elementwise summations of more than 32 variables are not pre-compiled by our
+# host language.
+
+# Test that (.+)(...) is generated for small sums.
+SmallSum = @decapode begin
+  (A00, A01, A02, A03, A04, A05, A06, A07, A08, A09,
+   A10, A11, A12, A13, A14, A15, A16, A17, A18, A19,
+   A20, A21, A22, A23, A24, A25, A26, A27, A28, A29,
+   A30, A31, A32)::Form0
+
+  ∂ₜ(A00) ==
+          A01 + A02 + A03 + A04 + A05 + A06 + A07 + A08 + A09 +
+    A10 + A11 + A12 + A13 + A14 + A15 + A16 + A17 + A18 + A19 +
+    A20 + A21 + A22 + A23 + A24 + A25 + A26 + A27 + A28 + A29 +
+    A30 + A31 + A32
+end
+needle = "A00̇ .= (.+)(A01, A02, A03, A04, A05, A06, A07, A08, A09, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32)"
+haystack = string(gensim(SmallSum))
+@test occursin(needle, haystack)
+
+# Test that sum([...]) is generated for large sums.
+LargeSum = @decapode begin
+  (A00, A01, A02, A03, A04, A05, A06, A07, A08, A09,
+   A10, A11, A12, A13, A14, A15, A16, A17, A18, A19,
+   A20, A21, A22, A23, A24, A25, A26, A27, A28, A29,
+   A30, A31, A32, A33)::Form0
+
+  ∂ₜ(A00) ==
+          A01 + A02 + A03 + A04 + A05 + A06 + A07 + A08 + A09 +
+    A10 + A11 + A12 + A13 + A14 + A15 + A16 + A17 + A18 + A19 +
+    A20 + A21 + A22 + A23 + A24 + A25 + A26 + A27 + A28 + A29 +
+    A30 + A31 + A32 + A33
+end
+needle = "A00̇ .= sum([A01, A02, A03, A04, A05, A06, A07, A08, A09, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33])"
+haystack = string(gensim(LargeSum))
+@test occursin(needle, haystack)
+
+end

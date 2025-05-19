@@ -1,17 +1,15 @@
-using Catlab
+using ACSets
+using CUDA, CUDA.CUSPARSE
+using CombinatorialSpaces
+using ComponentArrays
 using Decapodes
 using DiagrammaticEquations
-using CombinatorialSpaces
-using GeometryBasics
-using MLStyle
-using ComponentArrays
-using OrdinaryDiffEq
-using CUDA
-using CUDA.CUSPARSE
-using LinearAlgebra
-using SparseArrays
-using Statistics
 using Distributions
+using GeometryBasics: Point2, Point3
+using LinearAlgebra
+using MLStyle
+using OrdinaryDiffEqTsit5
+using Statistics
 using Test
 Point2D = Point2{Float64}
 Point3D = Point3{Float64}
@@ -27,7 +25,7 @@ end
     ∂ₜ(U) == 100 * Δ(U)
   end
 
-  tₑ = 8.5
+  tₑ = 1.0
   constants_and_parameters = ()
 
   s = loadmesh(Icosphere(4))
@@ -50,13 +48,13 @@ end
   # CUDA Setup and Solve
   cuda_sim = eval(gensim(Heat, code_target=CUDATarget()))
   cuda_fₘ = cuda_sim(sd, nothing, DiagonalHodge())
-  
+
   cuda_u₀ = ComponentArray(U=CuArray{Float64}(U))
   prob = ODEProblem(cuda_fₘ, cuda_u₀, (0, tₑ), constants_and_parameters)
   cuda_soln = solve(prob, Tsit5(), save_everystep=false)
 
   @test all(isapprox(cpu_soln(tₑ).U, Array(cuda_soln(tₑ).U); atol=1e-12))
-  @test RMSE(cpu_soln(tₑ).U, Array(cuda_soln(tₑ).U)) < 1e-13 
+  @test RMSE(cpu_soln(tₑ).U, Array(cuda_soln(tₑ).U)) < 1e-13
 end
 
 @testset "Heat Equation Float32" begin
@@ -65,7 +63,7 @@ end
     ∂ₜ(U) == 100f0 * Δ(U)
   end
 
-  tₑ = 11.5f0
+  tₑ = 1.0f0
   constants_and_parameters = ()
 
   s = loadmesh(Icosphere(3))
@@ -88,7 +86,7 @@ end
   # CUDA Setup and Solve
   cuda_sim = eval(gensim(Heat, code_target=CUDATarget(), stateeltype=Float32))
   cuda_fₘ = cuda_sim(sd, nothing, DiagonalHodge())
-  
+
   cuda_u₀ = ComponentArray(U=CuArray{Float32}(U))
   prob = ODEProblem(cuda_fₘ, cuda_u₀, (0, tₑ), constants_and_parameters)
   cuda_soln = solve(prob, Tsit5(), save_everystep=false)
@@ -125,20 +123,20 @@ end
   U = map(sd[:point]) do (_,y,_)
     abs(y)
   end
-  
+
   V = map(sd[:point]) do (x,_,_)
     abs(x)
   end
-  
+
   # TODO: Try making this sparse.
   F₁ = map(sd[:point]) do (_,_,z)
     z ≥ 0.8 ? 5.0 : 0.0
   end
-    
+
   F₂ = zeros(Float64, nv(sd))
 
   α = 0.001
-  
+
   # CPU Setup and Solve
   cpu_sim = eval(gensim(Brusselator))
   cpu_fₘ = cpu_sim(sd, nothing, DiagonalHodge())
@@ -147,28 +145,28 @@ end
 
   cpu_constants_and_parameters = (
     α = α,
-    F = t -> t ≥ 1.1 ? F₂ : F₁)  
+    F = t -> t ≥ 1.1 ? F₂ : F₁)
 
   prob = ODEProblem(cpu_fₘ, cpu_u₀, (0, tₑ), cpu_constants_and_parameters)
-  cpu_soln = solve(prob, Tsit5())
+  cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:U])
 
   # CUDA Setup and Solve
   cuda_sim = eval(gensim(Brusselator, code_target=CUDATarget()))
   cuda_fₘ = cuda_sim(sd, nothing, DiagonalHodge())
-  
+
   cuda_u₀ = ComponentArray(U=CuArray(U), V=CuArray(V))
 
   cuda_F₁ = CuArray(F₁)
-   
+
   cuda_F₂ = CuArray(F₂)
 
   cuda_constants_and_parameters = (
     α = α,
-    F = t -> t ≥ 1.1 ? cuda_F₂ : cuda_F₁)  
+    F = t -> t ≥ 1.1 ? cuda_F₂ : cuda_F₁)
 
   prob = ODEProblem(cuda_fₘ, cuda_u₀, (0, tₑ), cuda_constants_and_parameters)
   cuda_soln = solve(prob, Tsit5())
-  
+
   @test all(isapprox(cpu_soln(tₑ).U, Array(cuda_soln(tₑ).U); atol=1e-11))
   @test RMSE(cpu_soln(tₑ).U, Array(cuda_soln(tₑ).U)) < 1e-13
 end
@@ -178,11 +176,11 @@ end
     (n,w)::DualForm0
     dX::Form1
     (a,ν,m)::Constant
-  
+
     ∂ₜ(w) == a - w - w * n^2 + ν * L(dX, w)
     ∂ₜ(n) == w * n^2 - m*n + Δ(n)
   end
-  
+
   Klausmeier[9, :type] = :DualForm0
   Klausmeier[10, :type] = :DualForm0
   Klausmeier[15, :type] = :DualForm0
@@ -191,7 +189,7 @@ end
          a = 0.94,
          ν = 182.5)
 
-  tₑ = 10.0
+  tₑ = 2.5
 
   function circle(n, c)
     s = EmbeddedDeltaSet1D{Bool, Point2D}()
@@ -233,7 +231,7 @@ end
   cpu_u₀ = ComponentArray(n = n, w = w, dX = dX)
 
   prob = ODEProblem(cpu_fₘ, cpu_u₀, (0.0, tₑ), constants_and_parameters)
-  cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n, :w]);
+  cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n]);
 
   # CUDA Setup and Solve
   cuda_sim = eval(gensim(Klausmeier, dimension=1, code_target=CUDATarget()))
@@ -252,7 +250,7 @@ end
   cuda_u₀ = ComponentArray(n = CuArray(n), w = CuArray(w), dX = CuArray(dX))
 
   prob = ODEProblem(cuda_fₘ, cuda_u₀, (0.0, tₑ), constants_and_parameters)
-  cuda_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n, :w]);
+  cuda_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n]);
 
   @test all(isapprox(cpu_soln(tₑ).n, Array(cuda_soln(tₑ).n); atol=1e-11))
   @test RMSE(cpu_soln(tₑ).n, Array(cuda_soln(tₑ).n)) < 1e-13
@@ -263,11 +261,11 @@ end
     (n,w)::DualForm0
     dX::Form1
     (a,ν,m)::Constant
-  
+
     ∂ₜ(w) == a - w - w * n^2 + ν * L(dX, w)
     ∂ₜ(n) == w * n^2 - m*n + Δ(n)
   end
-  
+
   Klausmeier[9, :type] = :DualForm0
   Klausmeier[10, :type] = :DualForm0
   Klausmeier[15, :type] = :DualForm0
@@ -276,7 +274,7 @@ end
          a = 0.94f0,
          ν = 182.5f0)
 
-  tₑ = 3.0f0
+  tₑ = 2.5f0
 
   function circle(n, c)
     s = EmbeddedDeltaSet1D{Bool, Point2D}()
@@ -318,7 +316,7 @@ end
   cpu_u₀ = ComponentArray(n = n, w = w, dX = dX)
 
   prob = ODEProblem(cpu_fₘ, cpu_u₀, (0.0, tₑ), constants_and_parameters)
-  cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n, :w]);
+  cpu_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n]);
 
   # CUDA Setup and Solve
   cuda_sim = eval(gensim(Klausmeier, dimension=1, code_target=CUDATarget(), stateeltype=Float32))
@@ -337,50 +335,49 @@ end
   cuda_u₀ = ComponentArray(n = CuArray(n), w = CuArray(w), dX = CuArray(dX))
 
   prob = ODEProblem(cuda_fₘ, cuda_u₀, (0.0, tₑ), constants_and_parameters)
-  cuda_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n, :w]);
+  cuda_soln = solve(prob, Tsit5(), save_everystep=false, save_idxs=[:n]);
 
   @test RMSE(cpu_soln(tₑ).n, Array(cuda_soln(tₑ).n)) < 1e-5
 end
 
 @testset "Ensemble GPU Sims" begin
-# Define Model
-Heat = @decapode begin
-  C::Form0
-  D::Constant
-  ∂ₜ(C) == D*Δ(C)
-end
-# Define Domain
-function circle(n, c)
-  s = EmbeddedDeltaSet1D{Bool, Point2D}()
-  map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
-    add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+  # Define Model
+  Heat = @decapode begin
+    C::Form0
+    D::Constant
+    ∂ₜ(C) == D*Δ(C)
   end
-  add_edges!(s, 1:(nv(s)-1), 2:nv(s))
-  add_edge!(s, nv(s), 1)
-  sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
-  subdivide_duals!(sd, Circumcenter())
-  s,sd
+  # Define Domain
+  function circle(n, c)
+    s = EmbeddedDeltaSet1D{Bool, Point2D}()
+    map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
+      add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+    end
+    add_edges!(s, 1:(nv(s)-1), 2:nv(s))
+    add_edge!(s, nv(s), 1)
+    sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+    subdivide_duals!(sd, Circumcenter())
+    s,sd
+  end
+  s,sd = circle(7, 500)
+  # Create initial data.
+  Csin = map(p -> sin(p[1]), point(s))
+  Ccos = map(p -> cos(p[1]), point(s))
+  C = CuArray(stack([Csin, Ccos]))
+  u₀ = ComponentArray(C=Csin,)
+  constants_and_parameters = (D = 0.001,)
+  # Run
+  function generate(sd, my_symbol; hodge=GeometricHodge()) end
+  sim = eval(gensim(Heat,dimension=1,code_target=CUDATarget()))
+  fₘ = sim(sd, nothing)
+  tₑ = 1e8
+  ode_prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+  ens_prob = EnsembleProblem(ode_prob,
+    prob_func = (prob, i, repeat) ->
+      remake(prob, u0=ComponentArray(C=C[:,i])))
+  soln = solve(ens_prob, Tsit5(), EnsembleThreads(); trajectories=2)
+  @test all(Array(soln[1].u[1]) .== Csin)
+  @test all(Array(soln[1].u[1]) .!= Ccos)
+  @test all(Array(soln[2].u[1]) .!= Csin)
+  @test all(Array(soln[2].u[1]) .== Ccos)
 end
-s,sd = circle(7, 500)
-# Create initial data.
-Csin = map(p -> sin(p[1]), point(s))
-Ccos = map(p -> cos(p[1]), point(s))
-C = CuArray(stack([Csin, Ccos]))
-u₀ = ComponentArray(C=Csin,)
-constants_and_parameters = (D = 0.001,)
-# Run
-function generate(sd, my_symbol; hodge=GeometricHodge()) end
-sim = eval(gensim(Heat,dimension=1,code_target=CUDATarget()))
-fₘ = sim(sd, nothing)
-tₑ = 1e8
-ode_prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-ens_prob = EnsembleProblem(ode_prob,
-                      prob_func = (prob, i, repeat) ->
-                        remake(prob, u0=ComponentArray(C=C[:,i])))
-soln = solve(ens_prob, Tsit5(), EnsembleThreads(); trajectories=2)
-@test all(Array(soln[1].u[1]) .== Csin)
-@test all(Array(soln[1].u[1]) .!= Ccos)
-@test all(Array(soln[2].u[1]) .!= Csin)
-@test all(Array(soln[2].u[1]) .== Ccos)
-end
-

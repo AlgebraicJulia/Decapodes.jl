@@ -1,9 +1,9 @@
+# Author: Luke Morris
 # This is a discretization of the incompressible Navier Stokes equations using the Discrete Exterior Calculus.
 #
-# The formulations are based on those given by Mohamed, Hirani, Samtaney, (in turn from Marsden, Ratiu, Abraham.)
+# These formulations are based on those given by Mohamed, Hirani, Samtaney, (in turn from Marsden, Ratiu, Abraham.)
 #
 # However, different choices in discretization are chosen for purposes of brevity, to demonstrate novel discretizations of certain operators, and to demonstrate the automated Decapodes workflow.
-
 
 ################
 # Dependencies #
@@ -221,7 +221,7 @@ function generate(s, my_symbol; hodge=GeometricHodge())
     :dinv => x -> fd0 \ x
     :♭♯ => x -> ♭♯_m * x
     :dᵦ => x -> dᵦ * x
-    _ => default_dec_matrix_generate(s, my_symbol, hodge)
+    _ => error("Unmatched operator $my_symbol")
   end
   return (args...) -> op(args...)
 end;
@@ -348,7 +348,7 @@ function solve_poisson(vort::VForm)
   ψ = fΔ0 \ vort.data
   ψ = ψ .- minimum(ψ)
 end
-solve_poisson(vort::DualForm{2}) =
+solve_poisson(vort::CombinatorialSpaces.DualForm{2}) =
   solve_poisson(VForm(s0inv * vort.data))
 
 ψ = solve_poisson(VForm(X))
@@ -358,10 +358,10 @@ curl_stream(ψ) = s1 * d0 * ψ
 div(u) = s2 * d1 * (s1 \ u)
 RMS(x) = √(mean(x' * x))
 
-integral_of_curl(curl::DualForm{2}) = sum(curl.data)
+integral_of_curl(curl::CombinatorialSpaces.DualForm{2}) = sum(curl.data)
 # Recall that s0 effectively multiplies each entry by a solid angle.
 # i.e. (sum ∘ ⋆₀) computes a Riemann sum.
-integral_of_curl(curl::VForm) = integral_of_curl(DualForm{2}(s0*curl.data))
+integral_of_curl(curl::VForm) = integral_of_curl(CombinatorialSpaces.DualForm{2}(s0*curl.data))
 
 u₀ = if USE_EQ11
   # d𝐮::DualForm2
@@ -436,15 +436,15 @@ soln = solve(prob,
 @show soln.retcode
 @info("Done")
 
-rms_init = ∘(RMS, div, curl_stream, solve_poisson)(DualForm{2}(soln(0).d𝐮))
-rms_final = ∘(RMS, div, curl_stream, solve_poisson)(DualForm{2}(soln(tₑ).d𝐮))
+rms_init = ∘(RMS, div, curl_stream, solve_poisson)(CombinatorialSpaces.DualForm{2}(soln(0).d𝐮))
+rms_final = ∘(RMS, div, curl_stream, solve_poisson)(CombinatorialSpaces.DualForm{2}(soln(tₑ).d𝐮))
 rms_reldiff = (rms_final - rms_init) / rms_init
 @info "RMS of divergence of initial velocity: $rms_init"
 @info "RMS of divergence of final velocity: $rms_final"
 @info "Relative difference of RMS of divergence: $rms_reldiff"
 
-curl_init = integral_of_curl(DualForm{2}(soln(0).d𝐮))
-curl_final = integral_of_curl(DualForm{2}(soln(tₑ).d𝐮))
+curl_init = integral_of_curl(CombinatorialSpaces.DualForm{2}(soln(0).d𝐮))
+curl_final = integral_of_curl(CombinatorialSpaces.DualForm{2}(soln(tₑ).d𝐮))
 curl_reldiff = (curl_final - curl_init) / curl_init
 @info "Integral of initial curl: $curl_init"
 @info "Integral of final curl: $curl_final"
@@ -536,10 +536,10 @@ if PLOT_FCS
     ax = CairoMakie.Axis(fig[1,1],
       title="Vorticity along θ=0.4",
       xlabel="Azimuth Angle, φ")
-    lns_ic = CairoMakie.lines!(ax, 
+    lns_ic = CairoMakie.lines!(ax,
                                range(0.0,2π; length=length(in_lat_range)),
                                form_ic.data[in_lat_range][by_phi])
-    lns_fc = CairoMakie.lines!(ax, 
+    lns_fc = CairoMakie.lines!(ax,
                                range(0.0,2π; length=length(in_lat_range)),
                                form_fc.data[in_lat_range][by_phi])
     Legend(fig[1,2], [lns_ic, lns_fc], ["T=0.0", "T=$(tₑ)"])
@@ -570,7 +570,7 @@ if PLOT_FCS
     plot_vort_fc())
 
   azimuth_name = "azimuth.png"
-  save(joinpath(DATA_DR, azimuth_name), 
+  save(joinpath(DATA_DR, azimuth_name),
     azimuth_form(0.4, 0.01, VForm(s0inv*soln(0).d𝐮), VForm(s0inv*soln(tₑ).d𝐮)))
 
   diff_name = "relsolchng.png"
@@ -586,4 +586,3 @@ if PLOT_FCS
   end
 end
 end # Plot FCs
-

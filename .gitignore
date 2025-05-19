@@ -1,8 +1,11 @@
 .DS_Store
 .ipynb_checkpoints
+*.ipynb
+*.mp4
 /Manifest.toml
 /dev/
 *.mem
 .vscode
 .buildkite/toolbox/config.json
 .buildkite/toolbox/username
+docs/Manifest.toml

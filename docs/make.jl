@@ -1,13 +1,12 @@
+@info "Loading Documenter"
 using Documenter
+using DocumenterCitations
 using Literate
 using Distributed
+using ProgressMeter
 
 @info "Loading Decapodes"
 using Decapodes
-using Catlab
-using Catlab.WiringDiagrams
-using AlgebraicPetri
-using CairoMakie
 
 # Set Literate.jl config if not being compiled on recognized service.
 config = Dict{String,String}()
@@ -16,23 +15,27 @@ if !(haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "GITLAB_CI"))
   config["repo_root_url"] = "https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/docs"
 end
 
-# const literate_dir = joinpath(@__DIR__, "..", "examples")
-# const generated_dir = joinpath(@__DIR__, "src", "examples")
+const literate_dir = joinpath(@__DIR__, "literate")
+const generated_dir = joinpath(@__DIR__, "src", "examples")
 
-# @info "Building literate files"
-# for (root, dirs, files) in walkdir(literate_dir)
-#   out_dir = joinpath(generated_dir, relpath(root, literate_dir))
-#   # @showprogress pmap(files) do file
-#   for file in files
-#     f,l = splitext(file)
-#     if l == ".jl" && !startswith(f, "_")
-#       Literate.markdown(joinpath(root, file), out_dir;
-#         config=config, documenter=true, credit=false)
-#       Literate.notebook(joinpath(root, file), out_dir;
-#         execute=true, documenter=true, credit=false)
-#     end
-#   end
-# end
+@info "Building literate files"
+for (root, dirs, files) in walkdir(literate_dir)
+  out_dir = joinpath(generated_dir, relpath(root, literate_dir))
+  @showprogress pmap(files) do file
+  # for file in files
+    f,l = splitext(file)
+    if l == ".jl" && !startswith(f, "_")
+      Literate.markdown(joinpath(root, file), out_dir;
+        config=config, documenter=true, credit=false)
+      Literate.notebook(joinpath(root, file), out_dir;
+        execute=true, documenter=true, credit=false)
+    end
+  end
+end
+
+bib = CitationBibliography(
+    joinpath(@__DIR__, "src", "decapodes_documenter.bib");
+    style=:numeric)
 
 @info "Building Documenter.jl docs"
 makedocs(
@@ -43,33 +46,57 @@ makedocs(
   sitename  = "Decapodes.jl",
   doctest   = false,
   checkdocs = :none,
+  draft = false;
+  pagesonly = true,
+  linkcheck = true,
+  linkcheck_ignore = [r"agupubs\.onlinelibrary\.wiley\.com", # This gives a 403 Forbidden
+                      r"Decapodes\.jl/dev"], # 404, probably due to bad self-reference
   pages     = Any[
     "Decapodes.jl" => "index.md",
-    "Vortices" => "navier_stokes/ns.md",
-    "Halfar-NS" => "halmo.md",
-    "Overview" => "overview.md",
-    "Klausmeier" => "klausmeier.md",
-    "Glacial Flow" => "ice_dynamics.md",
-    "Grigoriev Ice Cap" => "grigoriev.md",
-    "Budyko-Sellers-Halfar" => "budyko_sellers_halfar.md",
-    "CISM v2.1" => "cism.md",
-    "NHS" => "nhs.md",
-    "Equations" => "equations.md",
-    "ASCII Operators" => "ascii.md",
-    "Misc Features" => "bc_debug.md",
-    "Pipe Flow" => "poiseuille.md",
-    # "Examples" => Any[
-    #   "examples/cfd_example.md"
-    # ],
+    "Overview" => "overview/overview.md",
+    "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
+    "Concepts" => Any[
+        "ASCII and Unicode Operators" => "concepts/ascii.md",
+        "Equations" => "concepts/equations.md",
+        "Composition" => "concepts/composition.md",
+        "Variable Types" => "concepts/deca_types.md",
+        "Meshes" => "concepts/meshes.md",
+        "Custom Operators" => "concepts/generate.md",
+    ],
+    "Zoo" => Any[
+        "Vortices" => "navier_stokes/ns.md",
+        "Harmonics" => "harmonics/harmonics.md",
+        "Cahn-Hilliard" => "ch/cahn-hilliard.md",
+        "Brusselator" => "brussel/brussel.md",
+        "Klausmeier" => "klausmeier/klausmeier.md",
+        "Porous Convection" => "pconv/porous_convection.md",
+        "CISM v2.1" => "cism/cism.md",
+        "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
+        "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
+        "Halfar-EBM-Water" => "ebm_melt/ebm_melt.md",
+        "Halfar-NS" => "halmo/halmo.md", # Requires grigoriev
+        "NHS" => "nhs/nhs_lite.md",
+        "Pipe Flow" => "poiseuille/poiseuille.md",
+        "Fokker-Planck" => "fokker_planck/fokker_planck.md"
+    ],
+    "Examples" => Any[
+        "Gray-Scott" => "examples/chemistry/gray_scott.md",
+        "Oncology" => "examples/oncology/tumor_proliferation_invasion.md",
+        "MHD" => "examples/mhd.md", # TODO convert original file to a docs page
+    ],
+    "Calibration" => "calibrate/calibration.md",
+    "Misc Features" => "bc/bc_debug.md", # Requires overview
+    "FAQ" => "faq/faq.md",
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
-  ]
-)
+  ],
+  plugins=[bib])
 
 @info "Deploying docs"
 deploydocs(
   target = "build",
   repo   = "github.com/AlgebraicJulia/Decapodes.jl.git",
   branch = "gh-pages",
-  devbranch = "main"
-)
+  push_preview = true,
+  deploy_config = Documenter.Buildkite(),
+  devbranch = "main")

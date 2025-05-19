@@ -35,7 +35,7 @@ end)
       f∧v - ∘(⋆,d,⋆)(uˢ)∧v - d(p) + b∧g - ∘(⋆,d,⋆)(τ) + uˢ̇ + Fᵥ
 
     uˢ̇ == force(U)
-  
+
   end
  )
 
@@ -50,7 +50,7 @@ end)
     # Fick's first law
     ϕ ==  k(d₀(C))
   end
-) 
+)
 
 @docapode("Advection"
   ,"https://en.wikipedia.org/wiki/Advection"
@@ -115,14 +115,14 @@ end)
 )
 
 @docapode("Navier-Stokes"
-  ,"https://en.wikipedia.org/wiki/Navier_Stokes_equation"
+  ,"https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations"
   ,"Partial differential equations which describe the motion of viscous fluid surfaces."
   ,navier_stokes
   ,begin
     (V, V̇, G)::Form1{X}
     (ρ, ṗ, p)::Form0{X}
 
-    V̇ == neg₁(L₁′(V, V)) + 
+    V̇ == neg₁(L₁′(V, V)) +
         div₁(kᵥ(Δ₁(V) + third(d₀(δ₁(V)))), avg₀₁(ρ)) +
         d₀(half(i₁′(V, V))) +
         neg₁(div₁(d₀(p),avg₀₁(ρ))) +
@@ -157,7 +157,7 @@ end)
 )
 
 @docapode("Poiseuille Density"
-  ,"https://en.wikipedia.org/wiki/hagen-poiseuille_density"
+  ,"https://en.wikipedia.org/wiki/Hagen%E2%80%93Poiseuille_equation"
   ,""
   ,poiseuille_density
   ,begin
@@ -206,7 +206,7 @@ end)
 )
 
 @docapode(Lie
-  ,"https://en.wikipedia.org/wiki/lie_derivative"
+  ,"https://en.wikipedia.org/wiki/Lie_derivative"
   ,""
   ,lie
   ,begin
@@ -219,7 +219,7 @@ end)
 )
 
 @docapode("Superposition"
-  ,"https://en.wikipedia.org/wiki/superposition"
+  ,"https://en.wikipedia.org/wiki/Superposition"
   ,""
   ,superposition
   ,begin

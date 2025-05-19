@@ -26,16 +26,16 @@ Point3D = Point3{Float64}
 
 BrusselatorDynamics = @decapode begin
   ## Values living on vertices.
-  (U, V)::Form0{X} ## State variables.
-  (U2V, One)::Form0{X} ## Named intermediate variables.
-  (U̇, V̇)::Form0{X} ## Tangent variables.
-  (α)::Constant{X}
-  (F)::Parameter{X}
+  (U, V)::Form0 ## State variables.
+  U2V::Form0 ## Named intermediate variables.
+  (U̇, V̇)::Form0 ## Tangent variables.
+  (α)::Constant
+  (F)::Parameter
   ## A named intermediate variable.
   U2V == (U .* U) .* V
   ## Specify how to compute the tangent variables.
   U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
-  V̇ == (3.4 * U) - U2V + (α * Δ(U))
+  V̇ == (3.4 * U) - U2V + (α * Δ(V))
   ## Associate tangent variables with a state variable.
   ∂ₜ(U) == U̇
   ∂ₜ(V) == V̇
@@ -124,8 +124,6 @@ mesh(s, color=F₁, colormap=:jet)
 
 F₂ = zeros(nv(sd))
 
-One = ones(nv(sd))
-
 constants_and_parameters = (
   fourfour = 4.4,
   threefour = 3.4,
@@ -140,7 +138,7 @@ fₘ = sim(sd, generate)
 
 # Create problem and run sim for t ∈ [0,tₑ).
 # Map symbols to data.
-u₀ = ComponentArray(U=U, V=V, One=One)
+u₀ = ComponentArray(U=U, V=V)
 
 # Visualize the initial conditions.
 # If GLMakie throws errors, then update your graphics drivers,

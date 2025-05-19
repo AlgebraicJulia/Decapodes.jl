@@ -72,8 +72,8 @@ Burger = apex(Burger_cospan)
 # Specify semantics of the 1D DEC.
 # i.e. Declare these dynamics are happening on a line.
 Burger = expand_operators(Burger)
-infer_types!(Burger, op1_inf_rules_1D, op2_inf_rules_1D)
-resolve_overloads!(Burger, op1_res_rules_1D, op2_res_rules_1D)
+infer_types!(Burger, dim=1)
+resolve_overloads!(Burger, dim=1)
 
 to_graphviz(Burger)
 
