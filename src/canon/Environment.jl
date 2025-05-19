@@ -6,8 +6,8 @@ using ..Canon
 using Markdown
 
 @docapode("Glens Law"
-  ,"https://www.google.com"
-  ,"Nye, J. F. (1957). The Distribution of Stress and Velocity in Glaciers and Ice-Sheets. Proceedings of the Royal Society of London. Series A, Mathematical and Physical Sciences, 239(1216), 113–133. http://www.jstor.org/stable/100184"
+  ,""
+  ,"[glen_flow_1958](@cite)"
   ,glen
   ,begin 
     Γ::Form1
@@ -18,8 +18,8 @@ using Markdown
 )
 
 @docapode("Halfar (Eq. 2)"
-  ,"https://www.google.com"
-  ,"Halfar, P. (1981), On the dynamics of the ice sheets, J. Geophys. Res., 86(C11), 11065–11072, doi:10.1029/JC086iC11p11065"
+  ,""
+  ,"[halfar_dynamics_1981](@cite)"
   ,halfar_eq2
   ,begin
     h::Form0
@@ -31,8 +31,8 @@ end)
 
 
 @docapode("Energy balance"
-          ,"https://google.com"
-          ,"energy balance equation from Budyko Sellers"
+          ,""
+          ,"Energy balance equation from Budyko-Sellers [budyko_1969_effect, sellers_global_1969](@cite)."
           ,energy_balance
           ,begin
   (Tₛ, ASR, OLR, HT)::Form0
@@ -44,8 +44,8 @@ end)
 end)
 
 @docapode("Insolation"
-          ,"https://google.com"
           ,""
+          ,"[budyko_1969_effect, sellers_global_1969](@cite)"
           ,insolation
           , begin
   Q::Form0
@@ -55,8 +55,8 @@ end)
 end)
 
 @docapode("Warming"
-          ,"https://google.com"
           ,""
+          ,"[budyko_1969_effect, sellers_global_1969](@cite)"
           ,warming
           , begin
   (Tₛ)::Form0
@@ -66,7 +66,7 @@ end)
 end)
 
 @docapode("Tracer"
-          ,"https://google.com"
+          ,"https://clima.github.io/OceananigansDocumentation/stable/physics/buoyancy_and_equations_of_state/#Buoyancy-tracer"
           ,""
           ,tracer
           , begin
@@ -77,7 +77,7 @@ end)
 end)
 
 @docapode("Equation of State"
-          ,"https://google.com"
+          ,""
           ,""
           ,equation_of_state
           , begin
@@ -88,7 +88,7 @@ end)
 end)
 
 @docapode("Boundary Conditions"
-          ,"https://google.com"
+          ,""
           ,""
           ,boundary_conditions
           , begin
