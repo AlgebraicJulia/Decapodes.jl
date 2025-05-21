@@ -13,9 +13,10 @@ By combining the power of ACT and the DEC, we seek to improve the scientific com
 
 <img src='https://algebraicjulia.github.io/Decapodes.jl/dev/navier_stokes/vort.gif' width='512' alt='Solution of the Vorticity-Formulation of the Incompressible Navier-Stokes Equations'>
 
-# NOTE
+## Citation
 
-This library is currently under active development, and so is not yet at a
-point where a constant API/behavior can be assumed. That being said, if this
-project looks interesting/relevant please contact us and
-[let us know](https://www.algebraicjulia.org/#contributing)!
+The ideas behind this package are described in the paper:
+
+> Morris, Baas, Arias, Gatlin, Patterson, Fairbanks. Decapodes: A diagrammatic tool for representing, composing, and computing spatialized partial differential equations. *Journal of Computational Science* 81 (2024).
+> [arXiv:2401.17432](https://arxiv.org/abs/2401.17432).
+> [DOI:10.1016/j.jocs.2024.102345](https://doi.org/10.1016/j.jocs.2024.102345).
