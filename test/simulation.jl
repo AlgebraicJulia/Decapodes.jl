@@ -973,6 +973,48 @@ end
 
 end
 
+@testset "Ensemble Simulations" begin
+  # Define Model
+  Heat = @decapode begin
+    C::Form0
+    D::Constant
+    ∂ₜ(C) == D*Δ(C)
+  end
+  # Define Domain
+  function circle(n, c)
+    s = EmbeddedDeltaSet1D{Bool, Point2D}()
+    map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
+      add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+    end
+    add_edges!(s, 1:(nv(s)-1), 2:nv(s))
+    add_edge!(s, nv(s), 1)
+    sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+    subdivide_duals!(sd, Circumcenter())
+    s,sd
+  end
+  s,sd = circle(7, 500)
+  # Create initial data.
+  Csin = map(p -> sin(p[1]), point(s))
+  Ccos = map(p -> cos(p[1]), point(s))
+  C = stack([Csin, Ccos])
+  u₀ = ComponentArray(C=Csin,)
+  constants_and_parameters = (D = 0.001,)
+  # Run
+  function generate(sd, my_symbol; hodge=GeometricHodge()) end
+  sim = eval(gensim(Heat,dimension=1))
+  fₘ = sim(sd, nothing)
+  tₑ = 1.15
+  ode_prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+  ens_prob = EnsembleProblem(ode_prob,
+    prob_func = (prob, i, repeat) ->
+      remake(prob, u0=ComponentArray(C=C[:,i])))
+  soln = solve(ens_prob, Tsit5(); trajectories=2)
+  @test all(soln[1].u[1] .== Csin)
+  @test all(soln[1].u[1] .!= Ccos)
+  @test all(soln[2].u[1] .!= Csin)
+  @test all(soln[2].u[1] .== Ccos)
+end
+
 @testset "Large Summations" begin
 # Elementwise summations of more than 32 variables are not pre-compiled by our
 # host language.
