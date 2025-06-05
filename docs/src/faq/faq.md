@@ -88,6 +88,25 @@ A common workflow is to iterate through multiple different models as is done in 
 
 Similar workflows may retain the same model but may iterate on the types of meshes/initial conditions used. An excellent example of this is found in the [Glacial Flow page](../ice_dynamics/ice_dynamics.md) where the model is first run in a [1D](../ice_dynamics/ice_dynamics.md#Define-a-mesh) setting and then quickly promoted to both [2D](../ice_dynamics/ice_dynamics.md#Define-our-mesh) and [3D](../ice_dynamics/ice_dynamics.md#2-Manifold-in-3D). This allows either running some dynamics in a more complicated setting, as just discussed, or allows for simplifying higher dimensional models by some sort of symmetry.
 
+## 8. How do I solve an ensemble problem?
+
+You can use a composition of Decapodes or a composition of meshes to manage ensemble simulations. Alternatively, our compability with the DifferentialEquations.jl interface means you can explicitly set up and solve an `EnsembleProblem`. In this demonstration, we solve the Heat equation with sine and cosine initial conditions:
+```julia
+Csin = map(p -> sin(p[1]), point(s))
+Ccos = map(p -> cos(p[1]), point(s))
+C = stack([Csin, Ccos])
+u₀ = ComponentArray(C=Csin,)
+constants_and_parameters = (D = 0.001,)
+
+sim = eval(gensim(Heat,dimension=1))
+fₘ = sim(sd, nothing)
+tₑ = 1.15
+ode_prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+ens_prob = EnsembleProblem(ode_prob,
+  prob_func = (prob, i, repeat) ->
+    remake(prob, u0=ComponentArray(C=C[:,i])))
+soln = solve(ens_prob, Tsit5(); trajectories=2)
+```
 
 # Troubleshooting
 
