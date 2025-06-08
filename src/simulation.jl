@@ -596,7 +596,7 @@ const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧�
 
 const NON_OPTIMIZABLE_CPU_OPERATORS = Set([:♯ᵖᵈ, :♯ᵖᵖ, :♯ᵈᵈ, :♭ᵈᵖ,
                                            :∧ᵖᵈ₁₁, :∧ᵖᵈ₀₁, :∧ᵈᵖ₁₁, :∧ᵈᵖ₁₀, :∧ᵈᵈ₁₁, :∧ᵈᵈ₁₀, :∧ᵈᵈ₀₁,
-                                           :ι₁₁, :ι₁₂, :ℒ₁, :Δᵈ₀ , :Δᵈ₁, :Δ₀⁻¹, :neg, :mag])
+                                           :ι₁₁, :ι₁₂, :ℒ₁, :Δᵈ₀ , :Δᵈ₁, :Δ₀⁻¹, :neg, :mag, :norm])
 const NON_OPTIMIZABLE_CUDA_OPERATORS = Set{Symbol}()
 
 const DEC_GEN_OPTIMIZABLE_OPERATORS = MATRIX_OPTIMIZABLE_DEC_OPERATORS ∪ NONMATRIX_OPTIMIZABLE_DEC_OPERATORS

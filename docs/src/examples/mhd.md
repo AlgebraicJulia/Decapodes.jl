@@ -27,19 +27,6 @@ Pkg.add(["ACSets", "CairoMakie", "CombinatorialSpaces", "ComponentArrays",
   "LinearAlgebra", "Logging", "LoggingExtras", "OrdinaryDiffEq", "SparseArrays",
   "StaticArrays", "TerminalLoggers"])
 
-Saving
-
-````@example mhd
-using JLD2
-````
-
-other dependencies
-
-````@example mhd
-using MLStyle
-using Statistics: mean
-````
-
 AlgebraicJulia
 
 ````@example mhd
@@ -53,9 +40,6 @@ Meshing
 
 ````@example mhd
 using CoordRefSystems
-using GeometryBasics: Point3
-Point3D = Point3{Float64};
-nothing #hide
 ````
 
 Visualization
@@ -132,22 +116,19 @@ s = @match sphere begin
     :ICO6 => loadmesh(Icosphere(6, RADIUS));
     :ICO7 => loadmesh(Icosphere(7, RADIUS));
     :ICO8 => loadmesh(Icosphere(8, RADIUS));
-    :flat => triangulated_grid(10, 10, 0.2, 0.2, Point3D)
+    :flat => triangulated_grid(10, 10, 0.2, 0.2, Point3d)
     :UV => begin
         s, _, _ = makeSphere(0, 180, 2.5, 0, 360, 2.5, RADIUS);
         s;
     end
 end;
-dualmesh = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s);
+dualmesh = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3d}(s);
 subdivide_duals!(dualmesh, Circumcenter());
 
 Δ0 = Δ(0,dualmesh);
 fΔ0 = factorize(Δ0);
 d0 = dec_differential(0,dualmesh);
 d1 = dec_differential(1,dualmesh);
-dd0 = dec_dual_derivative(0,dualmesh);
-dd1 = dec_dual_derivative(1,dualmesh);
-δ1 = δ(1,dualmesh);
 s0 = dec_hodge_star(0,dualmesh,GeometricHodge());
 s1 = dec_hodge_star(1,dualmesh,GeometricHodge());
 s2 = dec_hodge_star(2, dualmesh);
@@ -160,7 +141,6 @@ function generate(dualmesh, my_symbol; hodge=GeometricHodge())
       y = fΔ0 \ x
       y .- minimum(y)
     end
-    :♭♯ => x -> ♭♯_m * x
     _ => default_dec_matrix_generate(dualmesh, my_symbol, hodge)
   end
   return (args...) -> op(args...)
@@ -176,7 +156,7 @@ constants_and_parameters = (μ = 0.001,)
 """    function great_circle_dist(pnt,G,a,cntr)
 Compute the length of the shortest path along a sphere, given Cartesian coordinates.
 """
-function great_circle_dist(pnt1::Point3D, pnt2::Point3D)
+function great_circle_dist(pnt1::Point3d, pnt2::Point3d)
   RADIUS * acos(dot(pnt1,pnt2))
 end
 
@@ -192,25 +172,25 @@ struct PointVortexParams <: AbstractVortexParams
   a::Real
 end
 
-"""    function taylor_vortex(pnt::Point3D, cntr::Point3D, p::TaylorVortexParams)
+"""    function taylor_vortex(pnt::Point3d, cntr::Point3d, p::TaylorVortexParams)
 Compute the value of a Taylor vortex at the given point.
 """
-function taylor_vortex(pnt::Point3D, cntr::Point3D, p::TaylorVortexParams)
+function taylor_vortex(pnt::Point3d, cntr::Point3d, p::TaylorVortexParams)
   gcd = great_circle_dist(pnt,cntr)
   (p.G/p.a) * (2 - (gcd/p.a)^2) * exp(0.5 * (1 - (gcd/p.a)^2))
 end
 
-"""    function point_vortex(pnt::Point3D, cntr::Point3D, p::PointVortexParams)
+"""    function point_vortex(pnt::Point3d, cntr::Point3d, p::PointVortexParams)
 Compute the value of a smoothed point vortex at the given point.
 """
-function point_vortex(pnt::Point3D, cntr::Point3D, p::PointVortexParams)
+function point_vortex(pnt::Point3d, cntr::Point3d, p::PointVortexParams)
   gcd = great_circle_dist(pnt,cntr)
   p.τ / (cosh(3gcd/p.a)^2)
 end
 
-taylor_vortex(dualmesh::HasDeltaSet, cntr::Point3D, p::TaylorVortexParams) =
+taylor_vortex(dualmesh::HasDeltaSet, cntr::Point3d, p::TaylorVortexParams) =
   map(x -> taylor_vortex(x, cntr, p), point(dualmesh))
-point_vortex(dualmesh::HasDeltaSet, cntr::Point3D, p::PointVortexParams) =
+point_vortex(dualmesh::HasDeltaSet, cntr::Point3d, p::PointVortexParams) =
   map(x -> point_vortex(x, cntr, p), point(dualmesh))
 
 """    function ring_centers(lat, n)
@@ -221,7 +201,7 @@ function ring_centers(lat, n)
   map(ϕs) do ϕ
     v_sph = Spherical(RADIUS, lat, ϕ)
     v_crt = convert(Cartesian, v_sph)
-    Point3D(v_crt.x.val, v_crt.y.val, v_crt.z.val)
+    Point3d(v_crt.x.val, v_crt.y.val, v_crt.z.val)
   end
 end
 
@@ -240,7 +220,7 @@ Additionally, place a counter-balance vortex at the South Pole such that the int
 """
 function vort_ring(lat, n_vorts, p::PointVortexParams, formula)
   Xs = sum(map(x -> formula(dualmesh, x, p), ring_centers(lat, n_vorts)))
-  Xsp = point_vortex(dualmesh, Point3D(0.0, 0.0, -1.0), PointVortexParams(-1*n_vorts*p.τ, p.a))
+  Xsp = point_vortex(dualmesh, Point3d(0.0, 0.0, -1.0), PointVortexParams(-1*n_vorts*p.τ, p.a))
   Xs + Xsp
 end
 ````
@@ -285,7 +265,6 @@ u₀ = ComponentArray(dη = s0*X, β = zeros(ne(dualmesh)))
 
 constants_and_parameters = (μ = 0.0,)
 
-
 @info("Solving")
 tₑ = 1.0;
 
@@ -293,8 +272,7 @@ prob = ODEProblem(f, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob,
   Tsit5(),
   dtmax = 1e-3,
-  dense=false,
-  progress=true, progress_steps=1);
+  dense=false)
 
 function visualize_dynamics(file_name, soln)
     time = Observable(0.0)
@@ -305,7 +283,7 @@ function visualize_dynamics(file_name, soln)
       color=@lift(s0inv*soln($time).dη),
       colormap=Reverse(:redsblues))
     Colorbar(fig[1,2], msh)
-    record(fig, file_name, soln.t[1:10:end]; framerate = 10) do t
+    record(fig, file_name, soln.t[1:100:end]; framerate = 10) do t
       time[] = t
     end
 end

@@ -12,31 +12,29 @@ We'll be using a 2D version of the Halfar glacial flow model, for more explanati
 In order to set up the inverse problem, we first need our model and some reference data. So, we'll set up the 2D glacial flow model and get some data from it. In this case we'll be fitting our model parameters to data from the model itself. In general the data we want to fit to will not be from the model, but for demonstration purposes this works well. 
 
 ``` @example Calibration
+using ADTypes
+using BenchmarkTools
+using CairoMakie
 using Catlab
 using CombinatorialSpaces
-using DiagrammaticEquations
-using Decapodes
-using CairoMakie
 using ComponentArrays
-using GeometryBasics: Point2, Point3
+using Decapodes
+using DiagrammaticEquations
 using JLD2
 using LinearAlgebra
 using MLStyle
-using OrdinaryDiffEq
-using SparseArrays
-using Statistics
-using BenchmarkTools
-using SparseConnectivityTracer
-using SparseMatrixColorings
-using ADTypes
 using NaNMath
+using Optim
 using Optimization
-using SciMLSensitivity
 using Optimization
 using OptimizationOptimJL
-using Optim
-Point2D = Point2{Float64}
-Point3D = Point3{Float64}
+using OrdinaryDiffEq
+using SciMLSensitivity
+using SparseArrays
+using SparseConnectivityTracer
+using SparseMatrixColorings
+using Sparspak
+using Statistics
 
 halfar_eq2 = @decapode begin
     h::Form0
@@ -85,8 +83,8 @@ end
 Now we define the mesh and the dual mesh that the glacial flow equations will be solved on, along with initial conditions on the mesh and parameters for the model.
 
 ```@example Calibration
-s2D = triangulated_grid(10_000, 10_000, 500, 500, Point3D)
-sd2D = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s2D)
+s2D = triangulated_grid(10_000, 10_000, 500, 500, Point3d)
+sd2D = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3d}(s2D)
 subdivide_duals!(sd2D, Barycenter())
 
 h₀2D = map(point(s2D)) do (x, y)
