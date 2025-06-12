@@ -60,4 +60,4 @@ function save_dynamics(save_file_name, video_length = 30)
   end
 end
 
-save_dynamics("3d_heat.mp4", 120)
+save_dynamics("3d_heat.mp4", 60)
