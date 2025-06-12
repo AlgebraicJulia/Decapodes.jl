@@ -3,6 +3,7 @@ using ComponentArrays
 using LinearAlgebra
 using MLStyle
 using PreallocationTools
+import DiagrammaticEquations: FORM_TYPES
 
 const GENSIM_INPLACE_STUB = Symbol("GenSim-M")
 const NO_STUB_RETURN = Symbol("NOSTUB")
@@ -96,6 +97,16 @@ end
 # storing it inside an AllocVecCall.
 Base.Expr(c::AllocVecCall) = begin
   resolved_form = @match (c.form, c.dimension) begin
+    (:Form0, 3) => :V
+    (:Form1, 3) => :E
+    (:Form2, 3) => :Tri
+    (:Form3, 3) => :Tet
+    (:DualForm0, 3) => :Tet
+    (:DualForm1, 3) => :Tri
+    (:DualForm2, 3) => :E
+    (:DualForm3, 3) => :V
+
+
     (:Form0, 2) => :V
     (:Form1, 2) => :E
     (:Form2, 2) => :Tri
@@ -133,17 +144,11 @@ function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CUDABackend)
 end
 
 # TODO: This should be edited when we replace types as symbols with types as Julia types
-function is_form(d::SummationDecapode, var_id::Int)
-  type = d[var_id, :type]
-  return (type == :Form0 || type == :Form1 || type == :Form2 ||
-    type == :DualForm0 || type == :DualForm1 || type == :DualForm2)
-end
-
+is_form(d::SummationDecapode, var_id::Int) = return (d[var_id, :type] in FORM_TYPES)
 is_form(d::SummationDecapode, var_name::Symbol) = is_form(d, first(incident(d, var_name, :name)))
 
 function getgeneric_type(type::Symbol)
-  if (type == :Form0 || type == :Form1 || type == :Form2 ||
-    type == :DualForm0 || type == :DualForm1 || type == :DualForm2)
+  if (type in FORM_TYPES)
     return :Form
   end
   return type
@@ -587,8 +592,8 @@ end
 
 Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32 or Float64")
 
-const MATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
-                                              :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
+const MATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₃, :⋆₀⁻¹, :⋆₂⁻¹, :⋆₃⁻¹, #TODO: Will need to remove ⋆₂⁻¹ for 3D geo  
+                                              :d₀, :d₁, :d₂, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁, :dual_d₂, :d̃₂,
                                               :avg₀₁, :♭♯])
 
 const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
@@ -638,7 +643,7 @@ to operator mappings to return a simulator that can be used to solve the represe
 `multigrid`: Enables multigrid methods during code generation. If `true`, then the function produced by `gensim` will expect a `PrimalGeometricMapSeries`. (Defaults to `false`)
 """
 function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, multigrid::Bool = false)
-  (dimension == 1 || dimension == 2) ||
+  (dimension == 1 || dimension == 2 || dimension == 3) ||
     throw(UnsupportedDimensionException(dimension))
 
   (stateeltype == Float32 || stateeltype == Float64) ||
