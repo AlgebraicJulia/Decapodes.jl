@@ -94,7 +94,7 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     :⋆₃⁻¹ => inv_hodge_star(3, sd, hodge) |> matmul # TODO: Needs dec_ and geometric
 
     # Differentials
-    :d₀ => CombinatorialSpaces.d(0, sd) |> matmul #TODO: Revert to dec_, need for 3D
+    :d₀ => dec_differential(0, sd) |> matmul
     :d₁ => dec_differential(1, sd) |> matmul
     :d₂ => CombinatorialSpaces.d(2, sd) |> matmul # TODO: Needs dec_
 
