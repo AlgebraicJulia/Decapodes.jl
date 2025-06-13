@@ -9,9 +9,9 @@ using GLMakie
 using Distributions
 
 lx = 100
-ly = lz = 50
+ly = lz = 30
 
-s = parallelepiped(lx = lx, ly = ly, lz = lz; tetcmd = "vpVq2a2.5")
+s = parallelepiped(lx = lx, ly = ly, lz = lz; tetcmd = "vpVq2a5")
 sd = EmbeddedDeltaDualComplex3D{Bool, Float64, Point3D}(s)
 subdivide_duals!(sd, Circumcenter())
 
@@ -24,23 +24,23 @@ inv_star₃_mat = inv_hodge_star(0,sd,DiagonalHodge())
 
 codif = inv_star₃_mat * dual_d₂_mat * star₁_mat
 
-T_dist = MvNormal([30, ly/2, lz/2], [10,10,10])
-T = [pdf(T_dist, [p[1], p[2], p[3]]) for p in sd[:point]] / 1000
+T_dist = MvNormal([lx/2, ly/2, lz/2], [5,5,5])
+T = [pdf(T_dist, [p[1], p[2], p[3]]) for p in sd[:point]]
 T₀ = T
 GLMakie.mesh(s; color = T, transparency=true, shading=NoShading)
 
 c = 1
 
 #TODO: Work on this, same as 2D basically
-u = eval_constant_primal_form(sd, Point3d(1,0,0))
+U = eval_constant_primal_form(sd, Point3d(1,0,0))
 
-u₀ = ComponentArray(T=T, u=u)
+u₀ = ComponentArray(T=T, U=U)
 
 function adv(du, u, p, t)
-    du.T .-= p.c * inv_star₃_mat * dual_d₂_mat * star₁_mat * wdg_01(u.T, u.u)
+    du.T .= .-(p.c * codif * wdg_01(u.T, u.U))
 end
 
-tₑ = 10
+tₑ = 20
 prob = ODEProblem(adv, u₀, (0, tₑ), (c=c,))
 soln = solve(prob, Tsit5(), saveat = 0.1)
 
