@@ -173,7 +173,7 @@ function dec_♯_dd(sd::HasDeltaSet2D)
 end
 
 function dec_♭(sd::HasDeltaSet2D)
-  ♭_m = ♭_mat(sd)
+  ♭_m = ♭_mat(sd, DPPFlat())
   x -> ♭_m * x
 end
 
