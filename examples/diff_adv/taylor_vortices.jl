@@ -6,7 +6,6 @@ using ComponentArrays
 using LinearAlgebra
 using MLStyle
 using OrdinaryDiffEq
-using CoordRefSystems
 using SparseArrays
 
 using LoggingExtras
@@ -14,7 +13,8 @@ using Logging: global_logger
 using TerminalLoggers: TerminalLogger
 global_logger(TerminalLogger())
 
-euler_equations = @decapode begin
+# Reproduced from Mohamed et al. (2016), simulation 4.5
+incompressible_ns = @decapode begin
   du::DualForm2
   u::DualForm1
   ψ::Form0
@@ -27,11 +27,10 @@ euler_equations = @decapode begin
 
   ω == ⋆(d(u) + dᵦ(v))
 
-  ∂ₜ(du) ==  -(∘(⋆₁, d̃₁)(∧₁₀(v, ω))) + μ*d(⋆(d(ω)))
+  ∂ₜ(du) == -(d(⋆(∧(v, ω)))) + μ*d(⋆(d(ω)))
 end
 
-const RADIUS = 1.0
-s = loadmesh(Icosphere(7, RADIUS));
+s = triangulated_grid(2π,2π,0.02,0.02,Point3d,false)
 sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s);
 subdivide_duals!(sd, Circumcenter());
 
@@ -52,7 +51,7 @@ function generate(s, my_symbol; hodge=DiagonalHodge())
   return op
 end;
 
-sim = evalsim(euler_equations)
+sim = evalsim(incompressible_ns)
 fₘ = sim(sd, generate, DiagonalHodge());
 
 struct TaylorVortexParams
@@ -60,50 +59,57 @@ struct TaylorVortexParams
   a::Real
 end
 
-function great_circle_dist(pnt1::Point3D, pnt2::Point3D)
-  RADIUS * acos(dot(pnt1,pnt2))
+function taylor_vortex(pnt::Point3d, cntr::Point3d, p::TaylorVortexParams)
+  r = norm(pnt .- cntr)
+  (p.G/p.a) * (2 - (r/p.a)^2) * exp(0.5 * (1 - (r/p.a)^2))
 end
 
-function taylor_vortex(pnt::Point3D, cntr::Point3D, p::TaylorVortexParams)
-  gcd = great_circle_dist(pnt,cntr)
-  (p.G/p.a) * (2 - (gcd/p.a)^2) * exp(0.5 * (1 - (gcd/p.a)^2))
-end
-
-taylor_vortex(sd::HasDeltaSet, cntr::Point3D, p::TaylorVortexParams) =
+taylor_vortex(sd::HasDeltaSet, cntr::Point3d, p::TaylorVortexParams) =
   map(x -> taylor_vortex(x, cntr, p), point(sd))
 
-function vort_ring(lat, n_vorts, p::TaylorVortexParams, formula)
-  sum(map(x -> formula(sd, x, p), ring_centers(lat, n_vorts)))
+function vort_ring(p::TaylorVortexParams, formula)
+  sum(map(x -> formula(sd, x, p), [Point3d(π-0.4, π, 0.0), Point3d(π+0.4, π, 0.0)]))
 end
 
-function ring_centers(lat, n)
-  ϕs = range(0.0, 2π; length=n+1)[1:n]
-  map(ϕs) do ϕ
-    v_sph = Spherical(RADIUS, lat, ϕ)
-    v_crt = convert(Cartesian, v_sph)
-    Point3D(v_crt.x.val, v_crt.y.val, v_crt.z.val)
-  end
-end
-
-X = vort_ring(0.2, 2, TaylorVortexParams(0.5, 0.1), taylor_vortex)
+ω = vort_ring(TaylorVortexParams(1.0, 0.3), taylor_vortex)
 
 fig = Figure();
 ax = CairoMakie.Axis(fig[1,1])
-msh = CairoMakie.mesh!(ax, s, color=X, colormap=Reverse(:redsblues))
+msh = CairoMakie.mesh!(ax, s, color=ω, colormap=:jet)
 Colorbar(fig[1,2], msh)
-fig
+display(fig)
 
 tₑ = 10.0
 
 hdg_0 = dec_hodge_star(0,sd,DiagonalHodge())
-u₀ = ComponentArray(du = hdg_0*X)
+u₀ = ComponentArray(du = hdg_0*ω)
 
-prob = ODEProblem(fₘ, u₀, (0, tₑ), (μ=1e-3,))
-soln = solve(prob, Tsit5(), dtmax = 0.01, saveat=tₑ/10.0, dense=false, progress=true, progress_steps=1);
+μ = 1e-3
+prob = ODEProblem(fₘ, u₀, (0, tₑ), (μ=μ,))
+soln = solve(prob, Tsit5(), dtmax = 0.01, saveat=tₑ/50.0, progress=true, progress_steps=1);
 
 inv_hdg_0 = dec_inv_hodge_star(0,sd,DiagonalHodge())
 fig = Figure();
 ax = CairoMakie.Axis(fig[1,1])
-msh = CairoMakie.mesh!(ax, s, color=inv_hdg_0 * soln.u[7].du, colormap=Reverse(:redsblues))
+msh = CairoMakie.mesh!(ax, s, color=inv_hdg_0 * soln.u[end-8].du, colormap=:jet)
 Colorbar(fig[1,2], msh)
-fig
+display(fig)
+
+function save_dynamics(save_file_name, video_length = 30)
+  time = Observable(0.0)
+
+  w = @lift(inv_hdg_0 * soln($time).du)
+
+  f = Figure()
+
+  ax_w = CairoMakie.Axis(f[1,1], title = @lift("Vorticity at Time $(round($time, digits=2)) with μ=$(μ)"))
+  msh_w = mesh!(ax_w, s; color=w, colormap=:jet, colorrange=extrema(ω))
+  Colorbar(f[1,2], msh_w)
+
+  timestamps = range(0, soln.t[end], length=video_length)
+  record(f, save_file_name, timestamps; framerate = 15) do t
+    time[] = t
+  end
+end
+
+save_dynamics("Taylor_Vortices_mu=$(μ).mp4", 120)
