@@ -174,7 +174,7 @@ end
 
 function dec_♭(sd::HasDeltaSet2D)
   ♭_m = ♭_mat(sd, DPPFlat())
-  x -> ♭_m * x
+  x -> only.(♭_m * x)
 end
 
 function dec_inv_lap_solver(::Type{Val{0}}, sd::HasDeltaSet)
