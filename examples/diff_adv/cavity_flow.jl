@@ -7,6 +7,7 @@ using LinearAlgebra
 using MLStyle
 using OrdinaryDiffEq
 using SparseArrays
+using ACSets
 
 using LoggingExtras
 using Logging: global_logger
@@ -23,8 +24,7 @@ incompressible_ns = @decapode begin
 
   ψ == Δ⁻¹(⋆(du))
   u == no_flux(⋆(d(ψ)))
-  # u == ⋆(d(ψ))
-  v == ♭(no_flow(unit_flow(♯(u))))
+  v == flow_bc(♭♯(u))
 
   ω == ⋆(d(u) + dᵦ(v))
 
@@ -59,63 +59,49 @@ dual_d0 = dec_dual_derivative(0,sd);
 dual_d1 = dec_dual_derivative(1,sd);
 dᵦ = 0.5 * abs.(dual_d1) * spdiagm(dual_d0 * ones(ntriangles(sd)));
 
-off_boundary_edges = findall(x -> x != 0, dual_d0 * ones(ntriangles(sd)))
+boundary_edges = findall(x -> x != 0, dual_d0 * ones(ntriangles(sd)))
 
-no_flux_bc(x) = begin x[off_boundary_edges] .= 0; return x; end
-
-function unit_flow_bc(x)
-  nx = length(0:dx:lx)
-  nt = ntriangles(sd)
-  nlast_row = 2*(nx-1)
-  for i in nt-(nlast_row)+1:nt
-    x[i] = Point3d(1,0,0)
-  end
-  return x
+function bound_edges(s, ∂₀)
+  te = vcat(incident(s, ∂₀, :∂v1)...)
+  se = vcat(incident(s, ∂₀, :∂v0)...)
+  intersect(te, se)
 end
 
-function no_flow_bc(x)
-  nx = length(0:dx:lx)
-  ny = length(0:dy:ly)
-
-  velocity = Point3d(0,0,0)
-
-  trow = 2*(nx-1)
-  for i in 1:trow
-    x[i] = velocity
-  end
-  for y in 1:ny-1
-    base_idx = (y-1)*trow
-    x[base_idx + 1] = velocity
-    x[base_idx + trow] = velocity
-  end
-  return x
+function adj_edges(s, ∂₀)
+  te = vcat(incident(s, ∂₀, :∂v1)...)
+  se = vcat(incident(s, ∂₀, :∂v0)...)
+  unique(vcat(te, se))
 end
 
-X♯ = zeros(Point3d, ntriangles(sd))
-unit_flow_bc(X♯)
-flat_pd = ♭_mat(sd, DPPFlat())
-sharp_pp = ♯_mat(sd, PPSharp())
+boundary_points = unique(vcat(s[boundary_edges, :∂v0], s[boundary_edges, :∂v1]))
 
-Y♯ = sharp_pp * flat_pd * X♯
+boundary = zeros(nv(sd))
+boundary[boundary_points] .= 2
 
-# no_flow_bc(X♯)
+fig = Figure();
+ax = CairoMakie.Axis(fig[1,1])
+CairoMakie.mesh!(ax, s; color = boundary)
+fig
 
-# function plot_vf(sd, X♯; ls=1f0, title="Dual Vector Field")
-#   # Makie will throw an error if the colorrange end points are not unique:
-#   f = Figure()
-#   ax = CairoMakie.Axis(f[1, 1], title=title)
-#   wireframe!(ax, sd, color=:gray95)
-#   extX = extrema(norm.(X♯))
-#   if (abs(extX[1] - extX[2]) > 1e-4)
-#     range = extX
-#     scatter!(ax, getindex.(sd[sd[:tri_center], :dual_point],1), getindex.(sd[sd[:tri_center], :dual_point],2), color = norm.(X♯), colorrange=range)
-#     Colorbar(f[1,2], limits=range)
-#   end
-#   arrows!(ax, getindex.(sd[sd[:tri_center], :dual_point],1), getindex.(sd[sd[:tri_center], :dual_point],2), getindex.(X♯,1), getindex.(X♯,2), lengthscale=ls)
-#   hidedecorations!(ax)
-#   f
-# end
-# plot_vf(sd, X♯; ls=0.1)
+boundary_buffer_edges = adj_edges(sd, boundary_points)
+
+# Dual boundary condition, boundary duals share same index as boundary primal
+no_flux_bc(x) = begin x[boundary_edges] .= 0; return x; end
+
+unit_edges = Int64[]
+for e in edges(sd)
+  if sd[sd[e, :∂v0], :point][2] == ly
+    push!(unit_edges, e)
+  end
+end
+
+lengths = sd[unit_edges, :length]
+
+function flow_bc(x)
+  x[boundary_edges] .= 0
+  x[unit_edges] .= lengths
+  return x
+end
 
 solve_poisson(x) = begin y = fΔ0 \ x; return y .- minimum(y); end
 
@@ -124,8 +110,7 @@ function generate(s, my_symbol; hodge=GeometricHodge())
     :Δ⁻¹ => solve_poisson
     :dᵦ => x -> dᵦ * x
     :no_flux => no_flux_bc
-    :no_flow => no_flow_bc
-    :unit_flow => unit_flow_bc
+    :flow_bc => flow_bc
   _ => error("Unmatched operator $my_symbol")
   end
   return op
@@ -134,54 +119,79 @@ end;
 sim = evalsim(incompressible_ns)
 fₘ = sim(sd, generate, GeometricHodge());
 
-tₑ = 3
+tₑ = 10.0
 
 u₀ = ComponentArray(du = zeros(nv(sd)))
 
 Re = 100
 μ = 1/Re
 prob = ODEProblem(fₘ, u₀, (0, tₑ), (μ=μ,))
-soln = solve(prob, Tsit5(), dtmax = 0.01, saveat = 0.01, progress=true, progress_steps=1);
+soln = solve(prob, Tsit5(), dtmax = 0.01, progress=true, progress_steps=1);
+soln.retcode
 
 inv_hdg_0 = dec_inv_hodge_star(0,sd,GeometricHodge())
 d0 = dec_differential(0, sd)
 hdg_1 = dec_hodge_star(1, sd, GeometricHodge())
 sharp_dd = ♯_mat(sd, LLSDDSharp())
-function velocity_vector(du)
+flat_pd = ♭_mat(sd, DPPFlat())
+sharp_pp = ♯_mat(sd, PPSharp())
+
+function u_velocity_vector(du)
   ψ = solve_poisson(inv_hdg_0 * du)
   u = no_flux_bc(hdg_1 * (d0 * ψ))
-  return no_flow_bc(unit_flow_bc(sharp_dd * u))
+  return sharp_dd * u
 end
 
-velocity = map(v -> Point2d(v[1], v[2]), velocity_vector(soln.u[end].du))
-tricenter_points = sd[sd[:tri_center], :dual_point]
+function v_velocity_vector(du)
+  return sharp_pp * flow_bc(only.(flat_pd * u_velocity_vector(du)))
+end
 
-iter = 1:10:ntriangles(sd)
-
-x = map(p -> p[1], tricenter_points[iter])
-y = map(p -> p[2], tricenter_points[iter])
-
-u = map(p -> p[1], velocity[iter])
-v = map(p -> p[2], velocity[iter])
 
 interp = d0_p0_interpolation(sd, hodge = GeometricHodge())
+tricenter_points = sd[sd[:tri_center], :dual_point]
+primal_points = sd[:point]
+
+dual_iter = 1:20:ntriangles(sd)
+primal_iter = 1:10:nv(sd)
+
+sol = soln(3).du
+
+u_velocity = u_velocity_vector(sol)
+
+x = map(p -> p[1], tricenter_points[dual_iter])
+y = map(p -> p[2], tricenter_points[dual_iter])
+u = map(p -> p[1], u_velocity[dual_iter])
+v = map(p -> p[2], u_velocity[dual_iter])
 
 fig = Figure();
-ax = CairoMakie.Axis(fig[1,1])
-msh = CairoMakie.mesh!(ax, s, color=interp * norm.(velocity_vector(soln.u[end].du)), colormap=:jet)
-CairoMakie.arrows!(ax, x, y, u, v; lengthscale = 0.02)
-Colorbar(fig[1,2], msh)
-display(fig)
+ax1 = CairoMakie.Axis(fig[1,1])
+CairoMakie.arrows!(ax1, x, y, u, v; lengthscale = 0.2)
+
+v_velocity = u_velocity_vector(sol)
+
+x = map(p -> p[1], primal_points[primal_iter])
+y = map(p -> p[2], primal_points[primal_iter])
+u = map(p -> p[1], v_velocity[primal_iter])
+v = map(p -> p[2], v_velocity[primal_iter])
+
+ax2 = CairoMakie.Axis(fig[1,2])
+CairoMakie.arrows!(ax2, x, y, u, v; lengthscale = 0.2)
+fig
+
 
 function save_dynamics(save_file_name, video_length = 30)
   time = Observable(0.0)
 
-  psi = @lift(interp * norm.(velocity_vector(soln($time).du)))
+  psi = @lift(norm.(velocity_vector(soln($time).du)))
+  velocity = @lift(map(v -> Point2d(v[1], v[2]), velocity_vector(soln($time).du)))
+  u = @lift(map(p -> p[1], $velocity[iter]))
+  v = @lift(map(p -> p[2], $velocity[iter]))
 
   f = Figure()
 
   ax_psi = CairoMakie.Axis(f[1,1], title = @lift("Velocity magnitude at Time $(round($time, digits=2)) with μ=$(μ)"))
   msh_psi = mesh!(ax_psi, s; color=psi, colormap=:jet)
+  # CairoMakie.arrows!(ax_psi, x, y, u, v; lengthscale = 0.02)
   Colorbar(f[1,2], msh_psi)
 
   timestamps = range(0, soln.t[end], length=video_length)
@@ -189,4 +199,22 @@ function save_dynamics(save_file_name, video_length = 30)
     time[] = t
   end
 end
-save_dynamics("Driven_Cavity.mp4", 30)
+save_dynamics("Driven_Cavity_VelMag.mp4", 30)
+
+function save_dynamics_2(save_file_name, video_length = 30)
+  time = Observable(0.0)
+
+  curl = @lift(inv_hdg_0 * soln($time).du)
+
+  f = Figure()
+
+  ax_curl = CairoMakie.Axis(f[1,1], title = @lift("Vorticity at Time $(round($time, digits=2)) with μ=$(μ)"))
+  msh_curl = mesh!(ax_curl, s; color=curl, colormap=:jet)
+  Colorbar(f[1,2], msh_curl)
+
+  timestamps = range(0, soln.t[end], length=video_length)
+  record(f, save_file_name, timestamps; framerate = 15) do t
+    time[] = t
+  end
+end
+save_dynamics_2("Driven_Cavity_Vort.mp4", 30)
