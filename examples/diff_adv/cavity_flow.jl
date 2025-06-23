@@ -23,8 +23,8 @@ incompressible_ns = @decapode begin
   μ::Constant
 
   ψ == Δ⁻¹(⋆(du))
-  u == no_flux(⋆(d(ψ)))
-  v == flow_bc(♭♯(u))
+  u == ⋆(bc(d(ψ)))
+  v == ♭♯(u)
 
   ω == ⋆(d(u) + dᵦ(v))
 
@@ -74,6 +74,7 @@ function adj_edges(s, ∂₀)
 end
 
 boundary_points = unique(vcat(s[boundary_edges, :∂v0], s[boundary_edges, :∂v1]))
+all_boundary_edges = adj_edges(sd, boundary_points)
 
 boundary = zeros(nv(sd))
 boundary[boundary_points] .= 2
@@ -83,24 +84,14 @@ ax = CairoMakie.Axis(fig[1,1])
 CairoMakie.mesh!(ax, s; color = boundary)
 fig
 
-boundary_buffer_edges = adj_edges(sd, boundary_points)
+ntriangle_row = 2 * (length(0:dx:lx) - 1)
 
-# Dual boundary condition, boundary duals share same index as boundary primal
-no_flux_bc(x) = begin x[boundary_edges] .= 0; return x; end
+diagonal_top_boundary_edges = collect(ne(sd)-ntriangle_row+1:ne(sd)-1)
 
-unit_edges = Int64[]
-for e in edges(sd)
-  if sd[sd[e, :∂v0], :point][2] == ly
-    push!(unit_edges, e)
-  end
-end
-
-lengths = sd[unit_edges, :length]
-
-function flow_bc(x)
-  x[boundary_edges] .= 0
-  x[unit_edges] .= lengths
-  return x
+function bc(x)
+  x[all_boundary_edges] .= 0;
+  x[diagonal_top_boundary_edges] .= dy;
+  return x;
 end
 
 solve_poisson(x) = begin y = fΔ0 \ x; return y .- minimum(y); end
@@ -109,8 +100,7 @@ function generate(s, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :Δ⁻¹ => solve_poisson
     :dᵦ => x -> dᵦ * x
-    :no_flux => no_flux_bc
-    :flow_bc => flow_bc
+    :bc => bc
   _ => error("Unmatched operator $my_symbol")
   end
   return op
@@ -146,7 +136,6 @@ function v_velocity_vector(du)
   return sharp_pp * flow_bc(only.(flat_pd * u_velocity_vector(du)))
 end
 
-
 interp = d0_p0_interpolation(sd, hodge = GeometricHodge())
 tricenter_points = sd[sd[:tri_center], :dual_point]
 primal_points = sd[:point]
@@ -163,35 +152,33 @@ y = map(p -> p[2], tricenter_points[dual_iter])
 u = map(p -> p[1], u_velocity[dual_iter])
 v = map(p -> p[2], u_velocity[dual_iter])
 
-fig = Figure();
-ax1 = CairoMakie.Axis(fig[1,1])
-CairoMakie.arrows!(ax1, x, y, u, v; lengthscale = 0.2)
+# fig = Figure();
+# ax1 = CairoMakie.Axis(fig[1,1])
+# CairoMakie.arrows!(ax1, x, y, u, v; lengthscale = 0.2)
 
-v_velocity = u_velocity_vector(sol)
+# v_velocity = v_velocity_vector(sol)
 
-x = map(p -> p[1], primal_points[primal_iter])
-y = map(p -> p[2], primal_points[primal_iter])
-u = map(p -> p[1], v_velocity[primal_iter])
-v = map(p -> p[2], v_velocity[primal_iter])
+# x = map(p -> p[1], primal_points[primal_iter])
+# y = map(p -> p[2], primal_points[primal_iter])
+# u = map(p -> p[1], v_velocity[primal_iter])
+# v = map(p -> p[2], v_velocity[primal_iter])
 
-ax2 = CairoMakie.Axis(fig[1,2])
-CairoMakie.arrows!(ax2, x, y, u, v; lengthscale = 0.2)
-fig
-
-
+# ax2 = CairoMakie.Axis(fig[1,2])
+# CairoMakie.arrows!(ax2, x, y, u, v; lengthscale = 0.2)
+# fig
 function save_dynamics(save_file_name, video_length = 30)
   time = Observable(0.0)
 
-  psi = @lift(norm.(velocity_vector(soln($time).du)))
-  velocity = @lift(map(v -> Point2d(v[1], v[2]), velocity_vector(soln($time).du)))
-  u = @lift(map(p -> p[1], $velocity[iter]))
-  v = @lift(map(p -> p[2], $velocity[iter]))
+  psi = @lift(interp * norm.(u_velocity_vector(soln($time).du)))
+  velocity = @lift(map(v -> Point2d(v[1], v[2]), u_velocity_vector(soln($time).du)))
+  u = @lift(map(p -> p[1], $velocity[dual_iter]))
+  v = @lift(map(p -> p[2], $velocity[dual_iter]))
 
   f = Figure()
 
   ax_psi = CairoMakie.Axis(f[1,1], title = @lift("Velocity magnitude at Time $(round($time, digits=2)) with μ=$(μ)"))
   msh_psi = mesh!(ax_psi, s; color=psi, colormap=:jet)
-  # CairoMakie.arrows!(ax_psi, x, y, u, v; lengthscale = 0.02)
+  CairoMakie.arrows!(ax_psi, x, y, u, v; lengthscale = 0.02)
   Colorbar(f[1,2], msh_psi)
 
   timestamps = range(0, soln.t[end], length=video_length)
@@ -201,20 +188,20 @@ function save_dynamics(save_file_name, video_length = 30)
 end
 save_dynamics("Driven_Cavity_VelMag.mp4", 30)
 
-function save_dynamics_2(save_file_name, video_length = 30)
-  time = Observable(0.0)
+# function save_dynamics_2(save_file_name, video_length = 30)
+#   time = Observable(0.0)
 
-  curl = @lift(inv_hdg_0 * soln($time).du)
+#   curl = @lift(inv_hdg_0 * soln($time).du)
 
-  f = Figure()
+#   f = Figure()
 
-  ax_curl = CairoMakie.Axis(f[1,1], title = @lift("Vorticity at Time $(round($time, digits=2)) with μ=$(μ)"))
-  msh_curl = mesh!(ax_curl, s; color=curl, colormap=:jet)
-  Colorbar(f[1,2], msh_curl)
+#   ax_curl = CairoMakie.Axis(f[1,1], title = @lift("Vorticity at Time $(round($time, digits=2)) with μ=$(μ)"))
+#   msh_curl = mesh!(ax_curl, s; color=curl, colormap=:jet)
+#   Colorbar(f[1,2], msh_curl)
 
-  timestamps = range(0, soln.t[end], length=video_length)
-  record(f, save_file_name, timestamps; framerate = 15) do t
-    time[] = t
-  end
-end
-save_dynamics_2("Driven_Cavity_Vort.mp4", 30)
+#   timestamps = range(0, soln.t[end], length=video_length)
+#   record(f, save_file_name, timestamps; framerate = 15) do t
+#     time[] = t
+#   end
+# end
+# save_dynamics_2("Driven_Cavity_Vort.mp4", 30)
