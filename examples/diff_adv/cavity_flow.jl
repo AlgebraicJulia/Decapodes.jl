@@ -16,19 +16,18 @@ global_logger(TerminalLogger())
 
 # Reproduced from Mohamed et al. (2016), simulation 4.5
 incompressible_ns = @decapode begin
-  du::DualForm2
-  u::DualForm1
   ψ::Form0
+  u::DualForm1
+  v::Form1
   ω::Form0
   μ::Constant
 
-  ψ == Δ⁻¹(⋆(du))
-  u == ⋆(bc(d(ψ)))
+  u == ⋆(d(flow_bc(ψ)))
   v == ♭♯(u)
 
   ω == ⋆(d(u) + dᵦ(v))
 
-  ∂ₜ(du) == -(d(⋆(∧(v, ω)))) + μ*d(⋆(d(ω)))
+  ∂ₜ(ψ) == no_change_bc(dsdinv(-(d(⋆(∧(v, ω)))) + μ*d(⋆(d(ω)))))
 end
 
 lx = ly = 1
@@ -53,54 +52,70 @@ ax = CairoMakie.Axis(fig[1,1])
 wireframe!(ax, s)
 fig
 
-Δ0 = Δ(0,sd);
-fΔ0 = factorize(Δ0);
 dual_d0 = dec_dual_derivative(0,sd);
 dual_d1 = dec_dual_derivative(1,sd);
 dᵦ = 0.5 * abs.(dual_d1) * spdiagm(dual_d0 * ones(ntriangles(sd)));
 
+hdg_1 = dec_hodge_star(1, sd, DiagonalHodge())
+d0 = dec_differential(0, sd)
+dsd = dual_d1 * hdg_1 * d0
+dsdinv = factorize(dsd)
+
 boundary_edges = findall(x -> x != 0, dual_d0 * ones(ntriangles(sd)))
-
-function bound_edges(s, ∂₀)
-  te = vcat(incident(s, ∂₀, :∂v1)...)
-  se = vcat(incident(s, ∂₀, :∂v0)...)
-  intersect(te, se)
-end
-
-function adj_edges(s, ∂₀)
-  te = vcat(incident(s, ∂₀, :∂v1)...)
-  se = vcat(incident(s, ∂₀, :∂v0)...)
-  unique(vcat(te, se))
-end
-
 boundary_points = unique(vcat(s[boundary_edges, :∂v0], s[boundary_edges, :∂v1]))
-all_boundary_edges = adj_edges(sd, boundary_points)
 
-boundary = zeros(nv(sd))
-boundary[boundary_points] .= 2
+boundary_buffer_points = deepcopy(boundary_points)
 
-fig = Figure();
-ax = CairoMakie.Axis(fig[1,1])
-CairoMakie.mesh!(ax, s; color = boundary)
-fig
+for e in edges(sd)
+  if sd[e, :∂v0] in boundary_points
+    push!(boundary_buffer_points, sd[e, :∂v1])
+  elseif sd[e, :∂v1] in boundary_points
+    push!(boundary_buffer_points, sd[e, :∂v0])
+  end
+end
 
-ntriangle_row = 2 * (length(0:dx:lx) - 1)
+boundary_buffer_points = unique(boundary_buffer_points)
 
-diagonal_top_boundary_edges = collect(ne(sd)-ntriangle_row+1:ne(sd)-1)
+nx = length(0:dx:lx)
+top_stream_points = collect(nv(sd)-2*nx+2:nv(sd)-nx-1)
 
-function bc(x)
-  x[all_boundary_edges] .= 0;
-  x[diagonal_top_boundary_edges] .= dy;
+# boundary = zeros(nv(sd))
+# boundary[boundary_buffer_points] .= 1
+# boundary[boundary_points] .= 2
+# boundary[top_stream_points] .= 3
+
+# fig = Figure();
+# ax = CairoMakie.Axis(fig[1,1])
+# CairoMakie.mesh!(ax, s; color = boundary)
+# fig
+
+function flow_bc(x)
+  x[boundary_buffer_points] .= 0;
+  x[top_stream_points] .= dy;
   return x;
 end
 
-solve_poisson(x) = begin y = fΔ0 \ x; return y .- minimum(y); end
+function no_change_bc(x)
+  x[boundary_buffer_points] .= 0;
+  return x;
+end
+
+# boundary = flow_bc(zeros(nv(sd)))
+# fig = Figure();
+# ax = CairoMakie.Axis(fig[1,1])
+# CairoMakie.mesh!(ax, s; color = boundary)
+# fig
+
+# solve_poisson(x) = begin y = fΔ0 \ x; return y .- minimum(y); end
+solve_dsdinv(x) = begin x -> dsdinv \ x; x .= x .- x[1]; return x; end
 
 function generate(s, my_symbol; hodge=GeometricHodge())
   op = @match my_symbol begin
     :Δ⁻¹ => solve_poisson
     :dᵦ => x -> dᵦ * x
-    :bc => bc
+    :dsdinv => solve_dsdinv
+    :flow_bc => flow_bc
+    :no_change_bc => no_change_bc
   _ => error("Unmatched operator $my_symbol")
   end
   return op
@@ -111,7 +126,7 @@ fₘ = sim(sd, generate, GeometricHodge());
 
 tₑ = 10.0
 
-u₀ = ComponentArray(du = zeros(nv(sd)))
+u₀ = ComponentArray(ψ = zeros(nv(sd)))
 
 Re = 100
 μ = 1/Re
@@ -119,16 +134,20 @@ prob = ODEProblem(fₘ, u₀, (0, tₑ), (μ=μ,))
 soln = solve(prob, Tsit5(), dtmax = 0.01, progress=true, progress_steps=1);
 soln.retcode
 
-inv_hdg_0 = dec_inv_hodge_star(0,sd,GeometricHodge())
-d0 = dec_differential(0, sd)
+fig = Figure();
+ax_psi = CairoMakie.Axis(fig[1,1])
+msh_psi = mesh!(ax_psi, s; color=soln.u[1].ψ, colormap=:jet)
+Colorbar(fig[1,2], msh_psi)
+fig
+
+
 hdg_1 = dec_hodge_star(1, sd, GeometricHodge())
 sharp_dd = ♯_mat(sd, LLSDDSharp())
-flat_pd = ♭_mat(sd, DPPFlat())
-sharp_pp = ♯_mat(sd, PPSharp())
+# flat_pd = ♭_mat(sd, DPPFlat())
+# sharp_pp = ♯_mat(sd, PPSharp())
 
-function u_velocity_vector(du)
-  ψ = solve_poisson(inv_hdg_0 * du)
-  u = no_flux_bc(hdg_1 * (d0 * ψ))
+function u_velocity_vector(psi)
+  u = hdg_1 * (d0 * psi)
   return sharp_dd * u
 end
 
@@ -138,47 +157,25 @@ end
 
 interp = d0_p0_interpolation(sd, hodge = GeometricHodge())
 tricenter_points = sd[sd[:tri_center], :dual_point]
-primal_points = sd[:point]
 
 dual_iter = 1:20:ntriangles(sd)
-primal_iter = 1:10:nv(sd)
-
-sol = soln(3).du
-
-u_velocity = u_velocity_vector(sol)
 
 x = map(p -> p[1], tricenter_points[dual_iter])
 y = map(p -> p[2], tricenter_points[dual_iter])
-u = map(p -> p[1], u_velocity[dual_iter])
-v = map(p -> p[2], u_velocity[dual_iter])
 
-# fig = Figure();
-# ax1 = CairoMakie.Axis(fig[1,1])
-# CairoMakie.arrows!(ax1, x, y, u, v; lengthscale = 0.2)
-
-# v_velocity = v_velocity_vector(sol)
-
-# x = map(p -> p[1], primal_points[primal_iter])
-# y = map(p -> p[2], primal_points[primal_iter])
-# u = map(p -> p[1], v_velocity[primal_iter])
-# v = map(p -> p[2], v_velocity[primal_iter])
-
-# ax2 = CairoMakie.Axis(fig[1,2])
-# CairoMakie.arrows!(ax2, x, y, u, v; lengthscale = 0.2)
-# fig
 function save_dynamics(save_file_name, video_length = 30)
   time = Observable(0.0)
 
-  psi = @lift(interp * norm.(u_velocity_vector(soln($time).du)))
-  velocity = @lift(map(v -> Point2d(v[1], v[2]), u_velocity_vector(soln($time).du)))
-  u = @lift(map(p -> p[1], $velocity[dual_iter]))
-  v = @lift(map(p -> p[2], $velocity[dual_iter]))
+  psi = @lift(soln($time).ψ)
+  # velocity = @lift(map(v -> Point2d(v[1], v[2]), u_velocity_vector($psi)))
+  # u = @lift(map(p -> p[1], $velocity[dual_iter]))
+  # v = @lift(map(p -> p[2], $velocity[dual_iter]))
 
   f = Figure()
 
-  ax_psi = CairoMakie.Axis(f[1,1], title = @lift("Velocity magnitude at Time $(round($time, digits=2)) with μ=$(μ)"))
+  ax_psi = CairoMakie.Axis(f[1,1], title = @lift("Streamfunction at Time $(round($time, digits=2)) with μ=$(μ)"))
   msh_psi = mesh!(ax_psi, s; color=psi, colormap=:jet)
-  CairoMakie.arrows!(ax_psi, x, y, u, v; lengthscale = 0.02)
+  # CairoMakie.arrows!(ax_psi, x, y, u, v; lengthscale = 0.02)
   Colorbar(f[1,2], msh_psi)
 
   timestamps = range(0, soln.t[end], length=video_length)
@@ -186,7 +183,7 @@ function save_dynamics(save_file_name, video_length = 30)
     time[] = t
   end
 end
-save_dynamics("Driven_Cavity_VelMag.mp4", 30)
+save_dynamics("Driven_Cavity_Streamfunction.mp4", 30)
 
 # function save_dynamics_2(save_file_name, video_length = 30)
 #   time = Observable(0.0)
