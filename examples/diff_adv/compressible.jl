@@ -1,22 +1,16 @@
-using CombinatorialSpaces
-using Decapodes
-using DiagrammaticEquations
 using CairoMakie
+using CombinatorialSpaces
 using ComponentArrays
 using LinearAlgebra
 using MLStyle
-using OrdinaryDiffEq
 using SparseArrays
 using StaticArrays
-using Distributions
 
-using LoggingExtras
-using Logging: global_logger
-using TerminalLoggers: TerminalLogger
-global_logger(TerminalLogger())
+using CUDA
+using CUDA.CUSPARSE
 
 lx = ly = 2π
-dx = dy = 0.04 # 0.02
+dx = dy = 0.02
 s = triangulated_grid(lx, ly, dx, dy, Point3d, false)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s);
 subdivide_duals!(sd, Circumcenter());
@@ -36,13 +30,13 @@ inv_hdg_0 = dec_inv_hodge_star(0, sd, DiagonalHodge())
 inv_hdg_1 = dec_inv_hodge_star(1, sd, DiagonalHodge())
 inv_hdg_2 = dec_inv_hodge_star(2, sd, DiagonalHodge())
 
-wdg_10 = dec_wedge_product(Tuple{1,0}, sd)
-wdg_11 = dec_wedge_product(Tuple{1,1}, sd)
+wdg_10 = dec_wedge_product(Tuple{1,0}, sd, Val{:CUDA}, CuArray, Float64)
+wdg_11 = dec_wedge_product(Tuple{1,1}, sd, Val{:CUDA}, CuArray, Float64)
 
-interp = d0_p0_interpolation(sd; hodge=DiagonalHodge())
+# TODO: Running d0_p0 directly is causing OutOfMemory errors
+# interp = d0_p0_interpolation(sd; hodge=DiagonalHodge())
+interp = SparseMatrixCSC{Float64}(inv_hdg_0) * p2_d2_interpolation(sd) * SparseMatrixCSC{Float64}(inv_hdg_2)
 ♭♯ = ♭♯_mat(sd)
-
-codif_1 = inv_hdg_0 * dual_d1 * hdg_1
 
 struct TaylorVortexParams
   G::Real
@@ -58,7 +52,7 @@ taylor_vortex(sd::HasDeltaSet, cntr::Point3d, p::TaylorVortexParams) =
   map(x -> taylor_vortex(x, cntr, p), sd[:point])
 
 function vort_ring(p::TaylorVortexParams, formula)
-  sum(map(x -> formula(sd, x, p), [Point3d(lx / 2, ly / 2 - 0.4, 0.0), Point3d(lx / 2, ly / 2 + 0.4, 0.0)]))
+  sum(map(x -> formula(sd, x, p), [Point3d(lx / 2 - 0.4, ly / 2, 0.0), Point3d(lx / 2 + 0.4, ly / 2, 0.0)]))
 end
 
 pp♯ = ♯_mat(sd, AltPPSharp())
@@ -226,14 +220,14 @@ function p0_d0_interpolation(sd::HasDeltaSet2D)
   m
 end
 
-dual_interp = p0_d0_interpolation(sd)
+# dual_interp = p0_d0_interpolation(sd)
 
-dual_ψ = dual_interp * ψ
-plot_zeroform(s, dual_ψ)
+# dual_ψ = dual_interp * ψ
+# plot_zeroform(s, dual_ψ)
 
-plot_zeroform(s, interp * dual_ψ .- ψ)
+# plot_zeroform(s, interp * dual_ψ .- ψ)
 
-boundary_edges = findall(x -> x != 0, dual_d0 * ones(ntriangles(sd)))
+# boundary_edges = findall(x -> x != 0, dual_d0 * ones(ntriangles(sd)))
 
 dual_u = hdg_1 * d0 * ψ
 
@@ -243,19 +237,18 @@ dual_u = hdg_1 * d0 * ψ
 
 u = ♭♯ * dual_u
 
-plot_primal_vector_field(s, u)
-plot_dual_vector_field(s, dual_u)
-plot_velocity_diff(sd, dual_u, u)
+# plot_primal_vector_field(s, u)
+# plot_dual_vector_field(s, dual_u)
+# plot_velocity_diff(sd, dual_u, u)
 
-# TODO: Primal is incorrect while the dual is right
 plot_primal_vorticity(sd, u)
-plot_dual_vorticity(sd, dual_u)
+# plot_dual_vorticity(sd, dual_u)
 
 plot_zeroform(s, abs.(hdg_2) * d1 * u)
 
 κ = 280 * 300 # R (dry gas constant) * T = 300K, P=ρRVT
-ρ₀ = ones(nv(sd))
-U₀ = wdg_10(u, ρ₀)
+ρ₀ = CUDA.ones(Float64, nv(sd))
+U₀ = wdg_10(CuArray{Float64}(u), ρ₀)
 
 #                  d0                   d1
 #       P0         ->     P1           ->     P2
@@ -266,12 +259,17 @@ U₀ = wdg_10(u, ρ₀)
 # (U,u)::Form1
 # (ρ, P)::Form0
 
-form_one_interp = ♭♯ * hdg_1
-form_zero_interp = interp * abs.(hdg_2) * d1
-form_two_interp = ♭♯ * dual_d0 * abs.(hdg_2)
+m₀ = CUDA.sum(ρ₀)
 
-lap_first_term = inv_hdg_1 * dual_d0 * abs.(hdg_2) * d1
-lap_second_term = d0 * inv_hdg_0 * dual_d1 * hdg_1
+form_one_interp = CuSparseMatrixCSC{Float64}(♭♯ * hdg_1)
+form_zero_interp = CuSparseMatrixCSC{Float64}(interp * abs.(hdg_2) * d1)
+form_two_interp = CuSparseMatrixCSC{Float64}(♭♯ * dual_d0 * hdg_2)
+cu_d0 = CuSparseMatrixCSC{Float64}(d0)
+
+codif_1 = CuSparseMatrixCSC{Float64}(SparseMatrixCSC(inv_hdg_0) * dual_d1 * SparseMatrixCSC(hdg_1))
+
+lap_first_term = CuSparseMatrixCSC{Float64}(inv_hdg_1 * dual_d0 * abs.(hdg_2) * d1)
+lap_second_term = CuSparseMatrixCSC{Float64}(d0 * inv_hdg_0 * dual_d1 * hdg_1)
 
 function momentum_continuity(U, ρ)
   u = wdg_10(U, 1 ./ ρ)
@@ -280,20 +278,20 @@ function momentum_continuity(U, ρ)
          form_two_interp * wdg_11(u, form_one_interp * U) - # L(u, U)
          form_one_interp * wdg_10(u, form_zero_interp * U) +
          0.5 * wdg_10(form_two_interp * wdg_11(u, form_one_interp * u), ρ) + # 1/2 * ρ * d||u||^2
-         d0 * (κ * ρ) + # dP, P = κρ
+         cu_d0 * (κ * ρ) + # dP, P = κρ
          μ * (lap_first_term * u + lap_second_term * u)# μΔu
 
 end
 
-function run_compressible_ns(U₀, ρ₀, tₑ, Δt)
+function run_compressible_ns(U₀, ρ₀, tₑ, Δt; saveat=500)
 
   U = deepcopy(U₀)
   ρ = deepcopy(ρ₀)
 
-  U_half = zeros(ne(sd))
+  U_half = CUDA.zeros(Float64, ne(sd))
 
-  ρ_half = zeros(nv(sd))
-  ρ_full = zeros(nv(sd))
+  ρ_half = CUDA.zeros(Float64, nv(sd))
+  ρ_full = CUDA.zeros(Float64, nv(sd))
 
 
   steps = ceil(Int64, tₑ / Δt)
@@ -302,81 +300,85 @@ function run_compressible_ns(U₀, ρ₀, tₑ, Δt)
   rhos = [deepcopy(ρ₀)]
 
   for step in 1:steps
-    U_half .= U .+ Δt / 2 * momentum_continuity(U, ρ)
+    U_half .= U .+ 0.5 * Δt * momentum_continuity(U, ρ)
     ρ_full .= ρ + Δt * codif_1 * U_half
-    ρ_half .= 0.5 * (ρ + ρ_full)
+    ρ_half .= 0.5 .* (ρ .+ ρ_full)
 
     U .= U .+ Δt * momentum_continuity(U_half, ρ_half)
     ρ .= ρ_full
 
-    if any(isnan.(U))
+    if any(CUDA.isnan.(U))
       println("Warning, NAN result in U at step: $(step)")
       break
-    elseif any(isinf.(U))
+    elseif any(CUDA.isinf.(U))
       println("Warning, INF result in U at step: $(step)")
       break
-    elseif any(isnan.(ρ))
+    elseif any(CUDA.isnan.(ρ))
       println("Warning, NAN result in ρ at step: $(step)")
       break
-    elseif any(isinf.(ρ))
+    elseif any(CUDA.isinf.(ρ))
       println("Warning, INF result in ρ at step: $(step)")
       break
     end
 
-    push!(Us, deepcopy(U))
-    push!(rhos, deepcopy(ρ))
-
-    if step % 1000 == 0
-      println("Loading simulation results: $(step / steps * 100)%")
+    if step % saveat == 0
+      push!(Us, deepcopy(U))
+      push!(rhos, deepcopy(ρ))
+      println("Loading simulation results: $((step / steps) * 100)%")
+      println("Relative mass is : $((CUDA.sum(ρ) / m₀) * 100)%")
+      println("-----")
     end
   end
 
   return Us, rhos
 end
 
-μ = 0 # \Re
+μ = 1e-4 # \Re
 
-tₑ = 0.5
-Δt = dx / 360
+tₑ = 10.0
+Δt = 1e-6 # dx / 360
 Us, rhos = run_compressible_ns(U₀, ρ₀, tₑ, Δt);
 
-ω_end = abs.(hdg_2) * d1 * wdg_10(Us[end], 1 ./ rhos[end])
-
-dp = sd[triangle_center(sd), :dual_point]
-x = map(p -> p[1], dp)
-y = map(p -> p[2], dp)
-
-scatter(x, y; color=ω_end)
+u_end = Array(wdg_10(Us[280], 1 ./ rhos[280]))
+ω_end = abs.(hdg_2) * d1 * u_end
 
 fig = Figure();
 ax = CairoMakie.Axis(fig[1, 1])
-msh = CairoMakie.mesh!(ax, s, color=ω_end, colormap=:jet)
+msh = CairoMakie.mesh!(ax, s, color=interp * ω_end, colormap=:jet)
 Colorbar(fig[1, 2], msh)
 display(fig)
 
-u₀ = wdg_10(Us[end], 1 ./ rhos[end])
-
-plot_primal_vorticity(sd, u₀)
-
-ω_init = hdg_2 * d1 * wdg_10(U₀, 1 ./ ρ₀)
-
-dp = sd[triangle_center(sd), :dual_point]
-x = map(p -> p[1], dp)
-y = map(p -> p[2], dp)
-
-scatter(x, y; color=ω_init, colormap=:jet)
-
-ω_init = interp * hdg_2 * d1 * wdg_10(U₀, 1 ./ ρ₀)
+# plot_primal_vorticity(sd, u_end)
 
 fig = Figure();
 ax = CairoMakie.Axis(fig[1, 1])
-msh = CairoMakie.mesh!(ax, s, color=ω_init, colormap=:jet)
+msh = CairoMakie.mesh!(ax, s, color=Array(rhos[280]), colormap=:jet)
 Colorbar(fig[1, 2], msh)
 display(fig)
 
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1])
-msh = CairoMakie.mesh!(ax, s, color=rhos[end], colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
+function save_dynamics(save_file_name)
+  time = Observable(1)
 
+  w = @lift(interp * abs.(hdg_2) * d1 * Array(wdg_10(Us[$time], 1 ./ rhos[$time])))
+  ρ = @lift(Array(rhos[$time]))
+
+  f = Figure(size=(1000, 1000))
+
+  ax_w = CairoMakie.Axis(f[1, 1], title="Vorticity with μ=$(μ)")
+  msh_w = mesh!(ax_w, s; color=w, colormap=:jet, colorrange=extrema(ω))
+  Colorbar(f[1, 2], msh_w)
+
+  ax_ρ = CairoMakie.Axis(f[2, 1], title="Density with μ=$(μ)")
+  msh_ρ = mesh!(ax_ρ, s; color=ρ, colormap=:jet)
+  Colorbar(f[2, 2], msh_ρ)
+
+  colsize!(fig.layout, 1, Aspect(1, 1.0))
+  resize_to_layout!(fig)
+
+  timestamps = 1:280
+  CairoMakie.record(f, save_file_name, timestamps; framerate=15) do t
+    time[] = t
+  end
+end
+
+save_dynamics("Compressible_Taylor_Vortices.mp4")
