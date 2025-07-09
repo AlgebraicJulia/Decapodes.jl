@@ -37,7 +37,7 @@ wdg_11 = dec_wedge_product(Tuple{1,1}, sd, Val{:CUDA}, CuArray, Float64)
 # TODO: Running d0_p0 directly is causing OutOfMemory errors
 # interp = d0_p0_interpolation(sd; hodge=DiagonalHodge())
 interp = SparseMatrixCSC{Float64}(inv_hdg_0) * p2_d2_interpolation(sd) * SparseMatrixCSC{Float64}(inv_hdg_2)
-♭♯ = ♭♯_mat(sd)
+flatsharp = ♭♯_mat(sd)
 
 function p0_d0_interpolation(sd::HasDeltaSet2D)
   m = spzeros(ntriangles(sd), nv(sd))
@@ -54,23 +54,6 @@ function p0_d0_interpolation(sd::HasDeltaSet2D)
 end
 
 dual_interp = p0_d0_interpolation(sd)
-
-# struct TaylorVortexParams
-#   G::Real
-#   a::Real
-# end
-
-# function taylor_vortex(pnt::Point3d, cntr::Point3d, p::TaylorVortexParams)
-#   r = norm(pnt .- cntr)
-#   (p.G / p.a) * (2 - (r / p.a)^2) * exp(0.5 * (1 - (r / p.a)^2))
-# end
-
-# taylor_vortex(sd::HasDeltaSet, cntr::Point3d, p::TaylorVortexParams) =
-#   map(x -> taylor_vortex(x, cntr, p), sd[:point])
-
-# function vort_ring(p::TaylorVortexParams, formula)
-#   sum(map(x -> formula(sd, x, p), [Point3d(lx / 2 - 0.4, ly / 2, 0.0), Point3d(lx / 2 + 0.4, ly / 2, 0.0)]))
-# end
 
 pp♯ = ♯_mat(sd, AltPPSharp())
 dd♯ = ♯_mat(sd, LLSDDSharp())
@@ -191,7 +174,7 @@ end
 
 # TODO: This interpolates the dual velocity field
 function plot_velocity_diff(sd, dual_u, u)
-  dual_u♯ = pp♯ * ♭♯ * dual_u
+  dual_u♯ = pp♯ * flatsharp * dual_u
   primal_u♯ = pp♯ * u
 
   u♯ = primal_u♯ .- dual_u♯
@@ -214,42 +197,73 @@ function plot_velocity_diff(sd, dual_u, u)
   display(fig)
 end
 
-# ω = vort_ring(TaylorVortexParams(1.0, 0.3), taylor_vortex)
-# plot_zeroform(s, ω)
-
-# Δ0 = Δ(0, sd)
-# ψ = Δ0 \ ω
-# ψ .= ψ .- minimum(ψ)
-
-# plot_zeroform(s, ψ)
-
-# dual_u = hdg_1 * d0 * ψ
-# u = CuVector{Float64}(♭♯ * dual_u)
-
 ##############################
 ##### INITIAL CONDITIONS #####
 ##############################
 
-u = CuVector{Float64}(eval_constant_primal_form(sd, Point3d(1, 0, 0)))
+# u = CuVector{Float64}(eval_constant_primal_form(sd, Point3d(10, 0, 0)))
 
-ρ₀ = CUDA.ones(Float64, nv(sd)) # .+ (2 * CUDA.rand(Float64, nv(sd)) .- 1) * 1e-10 #
-U₀ = u .+ (2 * CUDA.rand(Float64, ne(sd)) .- 1) * 1e-4# wdg_10(CuArray{Float64}(u), ρ₀) # 
+ρ₀ = CUDA.ones(Float64, nv(sd)) #.+ (2 * CUDA.rand(Float64, nv(sd)) .- 1) * 1e-8 #
+U₀ = CUDA.zeros(Float64, ne(sd)) # .+ (2 * CUDA.rand(Float64, ne(sd)) .- 1) * 1e-4# wdg_10(CuArray{Float64}(u), ρ₀) # 
 theta_dist = MvNormal([lx / 2, ly / 2], 0.5)
-theta₀ = 300 .+ CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]]) # Average temperature of around 300K
-theta₀ .= 300 .+ (2 * CUDA.rand(Float64, nv(sd)) .- 1) * 1e-4
+# theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
+# theta₀ = 300 .- 0.05 * CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]]) # Average temperature of around 300K
+# theta₀ = 300.0 .- 0.05 * CuVector{Float64}(map(p -> sqrt((p[1] - lx / 2)^2 + (p[2] - ly / 2)^2), sd[:point])) # Average temperature of around 300K
+
+# inner_points = findall(p -> (p[1] - lx / 2)^2 + (p[2] - ly / 2)^2 <= 1, sd[:point])
+# theta₀[setdiff(collect(vertices(sd)), inner_points)] .= CUDA.minimum(theta₀[inner_points])
+theta₀ = CUDA.zeros(Float64, nv(sd)) #.+ (2 * CUDA.rand(Float64, nv(sd)) .- 1) * 1e-3
+
+upper_points = findall(p -> p[2] >= lx * 0.75, sd[:point])
+lower_points = findall(p -> p[2] < lx * 0.75, sd[:point])
+
+theta₀[upper_points] .= 302
+theta₀[lower_points] .= 300
+theta₀ .+= 1e-6 * ((2 * CUDA.rand(Float64, nv(sd))) .- 1)
 Theta₀ = ρ₀ .* theta₀
 
-boundary_edges = findall(x -> x != 0, dual_d0 * ones(ntriangles(sd)))
-boundary_vertices = unique(vcat(sd[boundary_edges, :∂v0], sd[boundary_edges, :∂v1]))
+# boundary_edges = findall(x -> x != 0, dual_d0 * ones(ntriangles(sd)))
+# boundary_vertices = unique(vcat(sd[boundary_edges, :∂v0], sd[boundary_edges, :∂v1]))
 
 plot_zeroform(s, Array(ρ₀))
 plot_zeroform(s, Array(Theta₀))
 
 m₀ = CUDA.sum(ρ₀)
+E₀ = CUDA.sum(Theta₀)
 
-momentum_flatsharp_hdg_1 = CuSparseMatrixCSC{Float64}(♭♯ * hdg_1)
+function smoothing(sd, c_smooth)
+  mat = spzeros(nv(sd), nv(sd))
+  for e in edges(sd)
+    v1 = sd[e, :∂v0]
+    v2 = sd[e, :∂v1]
+    w = 1 / sd[e, :length]
+    mat[v1, v2] = w
+    mat[v2, v1] = w
+  end
+
+  c = c_smooth ./ 2
+
+  for v in vertices(sd)
+    row = mat[v, :]
+    tot_w = sum(row)
+    for i in row.nzind
+      mat[v, i] = c .* row[i] ./ tot_w
+    end
+
+    mat[v, v] = (1 - c)
+  end
+  return mat
+end
+
+c_smooth = 0.2
+forward_smooth = smoothing(sd, c_smooth)
+backward_smooth = smoothing(sd, -c_smooth)
+
+smoothing_mat = CuSparseMatrixCSC{Float64}(backward_smooth * forward_smooth)
+
+momentum_flatsharp_hdg_1 = CuSparseMatrixCSC{Float64}(flatsharp * hdg_1)
 momentum_interp_hdg2_d1 = CuSparseMatrixCSC{Float64}(interp * abs.(hdg_2) * d1)
-momentum_flatsharp_dd0_hdg2 = CuSparseMatrixCSC{Float64}(♭♯ * dual_d0 * hdg_2)
+momentum_flatsharp_dd0_hdg2 = CuSparseMatrixCSC{Float64}(flatsharp * dual_d0 * hdg_2)
 cu_d0 = CuSparseMatrixCSC{Float64}(d0)
 
 codif_1 = CuSparseMatrixCSC{Float64}(SparseMatrixCSC(inv_hdg_0) * dual_d1 * SparseMatrixCSC(hdg_1))
@@ -264,33 +278,61 @@ function pressure(Theta)
   return (Theta .* R .* (P₀ .^ -R_Cₚ)) .^ (1 / (1 - R_Cₚ))
 end
 
-function momentum_continuity(Theta, U, ρ)
+g = CuVector{Float64}(eval_constant_primal_form(sd, Point3d(0, -9.8, 0)))
+
+function momentum_continuity(Theta, U, ρ, step, debugat, debug)
   u = wdg_10(U, 1 ./ ρ)
 
-  return -wdg_10(U, codif_1 * u) - # U ∧ δu
-         momentum_flatsharp_dd0_hdg2 * wdg_11(u, momentum_flatsharp_hdg_1 * U) - # L(u, U)
-         momentum_flatsharp_hdg_1 * wdg_10(u, momentum_interp_hdg2_d1 * U) +
-         0.5 * wdg_10(momentum_flatsharp_dd0_hdg2 * wdg_11(u, momentum_flatsharp_hdg_1 * u), ρ) - # 1/2 * ρ * d||u||^2
-         cu_d0 * pressure(Theta) + # dP
-         μ * momentum_one_laplacian * u # μΔu
+  flow_creation = -wdg_10(U, codif_1 * u) # U ∧ δu
+  momentum_advection = -momentum_flatsharp_dd0_hdg2 * wdg_11(u, momentum_flatsharp_hdg_1 * U) - # L(u, U)
+                       momentum_flatsharp_hdg_1 * wdg_10(u, momentum_interp_hdg2_d1 * U)
+  energy = 0.5 * wdg_10(momentum_flatsharp_dd0_hdg2 * wdg_11(u, momentum_flatsharp_hdg_1 * u), ρ) # 1/2 * ρ * d||u||^2
+  pressure_diff = -cu_d0 * pressure(Theta) # dP
+  momentum_diff = μ * momentum_one_laplacian * u # μΔu
+  body_forces = wdg_10(g, ρ) # ρg
+
+  if debug && step % debugat == 0
+    println("##### MOMENTUM DEBUG AT STEP $(step) #####")
+    println("Flow Creation: $(CUDA.extrema(flow_creation))")
+    println("Momentum Advection: $(CUDA.extrema(momentum_advection))")
+    println("Energy: $(CUDA.extrema(energy))")
+    println("Pressure Difference: $(CUDA.extrema(pressure_diff))")
+    println("Momentum Diffusion: $(CUDA.extrema(momentum_diff))")
+    println("Body Forces: $(CUDA.extrema(body_forces))")
+    println("##### MOMENTUM DEBUG END #####")
+  end
+
+  return flow_creation + momentum_advection + energy + pressure_diff + momentum_diff + body_forces
 
 end
 
 # TODO: Below might have better interpolation but dual_d0 has problems at the boundary
 # ptemp_flatsharp_hdg1_d0 = CuSparseMatrixCSC{Float64}(inv_hdg_1 * dual_d0 * dual_interp)
-ptemp_flatsharp_hdg1_d0 = CuSparseMatrixCSC{Float64}(♭♯ * hdg_1 * d0)
+ptemp_flatsharp_hdg1_d0 = CuSparseMatrixCSC{Float64}(flatsharp * hdg_1 * d0)
 ptemp_interp_hdg2 = CuSparseMatrixCSC{Float64}(interp * hdg_2)
 ptemp_zero_laplacian = CuSparseMatrixCSC{Float64}(inv_hdg_0 * dual_d1 * hdg_1 * d0)
 
-function potential_temperature_continuity(Theta, U, ρ)
+function potential_temperature_continuity(Theta, U, ρ, step, debugat, debug)
   u = wdg_10(U, 1 ./ ρ)
   theta = Theta ./ ρ
 
-  return -ptemp_interp_hdg2 * wdg_11(u, ptemp_flatsharp_hdg1_d0 * Theta) + # L(u, Theta)
-         κ * ptemp_zero_laplacian * theta # κΔtheta
+  temperature_creation = -Theta .* (codif_1 * u)
+  temperature_advection = -ptemp_interp_hdg2 * wdg_11(u, ptemp_flatsharp_hdg1_d0 * Theta) # L(u, Theta)
+  temperature_diffusion = κ * ptemp_zero_laplacian * theta # κΔtheta
+
+  if debug && step % debugat == 0
+    println("##### POTENTIAL TEMPERATURE DEBUG AT STEP $(step) #####")
+    println("Temperature Creation: $(CUDA.extrema(temperature_creation))")
+    println("Temperature Advection: $(CUDA.extrema(temperature_advection))")
+    println("Temperature Diffusion: $(CUDA.extrema(temperature_diffusion))")
+    println("##### POTENTIAL TEMPERATURE DEBUG END #####")
+  end
+
+  return temperature_creation + temperature_advection + temperature_diffusion
+
 end
 
-function run_compressible_ns(Theta₀, U₀, ρ₀, tₑ, Δt; saveat=500)
+function run_compressible_ns(Theta₀, U₀, ρ₀, tₑ, Δt; saveat=500, debug=false)
 
   Theta = deepcopy(Theta₀)
   U = deepcopy(U₀)
@@ -311,30 +353,22 @@ function run_compressible_ns(Theta₀, U₀, ρ₀, tₑ, Δt; saveat=500)
 
   for step in 1:steps
 
-    U[left_boundary_zone_U] .= U[copy_to_left_zone_U]
-    U[right_boundary_zone_U] .= U[copy_to_right_zone_U]
-    ρ[left_boundary_zone_ρ] .= ρ[copy_to_left_zone_ρ]
-    ρ[right_boundary_zone_ρ] .= ρ[copy_to_right_zone_ρ]
-    Theta[left_boundary_zone_ρ] .= Theta[copy_to_left_zone_ρ]
-    Theta[right_boundary_zone_ρ] .= Theta[copy_to_right_zone_ρ]
+    # apply_periodic!(U, elr_bounds)
+    # apply_periodic!(ρ, vlr_bounds)
+    # apply_periodic!(Theta, vlr_bounds)
 
-    U_half .= U .+ 0.5 .* Δt * momentum_continuity(Theta, U, ρ)
-    Theta_half .= Theta .+ 0.5 .* Δt * potential_temperature_continuity(Theta, U, ρ)
+    # apply_periodic!(U, etb_bounds)
+    # apply_periodic!(ρ, vtb_bounds)
+    # apply_periodic!(Theta, vtb_bounds)
 
-    U_half[left_boundary_zone_U] .= U_half[copy_to_left_zone_U]
-    U_half[right_boundary_zone_U] .= U_half[copy_to_right_zone_U]
+    U_half .= U .+ 0.5 .* Δt * momentum_continuity(Theta, U, ρ, step, saveat, debug)
+    Theta_half .= Theta .+ 0.5 .* Δt * potential_temperature_continuity(Theta, U, ρ, step, saveat, debug)
 
-    Theta_half[left_boundary_zone_ρ] .= Theta_half[copy_to_left_zone_ρ]
-    Theta_half[right_boundary_zone_ρ] .= Theta_half[copy_to_right_zone_ρ]
-
-    ρ_full .= ρ .- Δt * codif_1 * U_half
+    ρ_full .= smoothing_mat * (ρ .- Δt * codif_1 * U_half)
     ρ_half .= 0.5 .* (ρ .+ ρ_full)
 
-    ρ_half[left_boundary_zone_ρ] .= ρ_half[copy_to_left_zone_ρ]
-    ρ_half[right_boundary_zone_ρ] .= ρ_half[copy_to_right_zone_ρ]
-
-    U .= U .+ Δt * momentum_continuity(Theta_half, U_half, ρ_half)
-    Theta .= Theta .+ Δt * potential_temperature_continuity(Theta_half, U_half, ρ_half)
+    U .= U .+ Δt * momentum_continuity(Theta_half, U_half, ρ_half, step, saveat, debug)
+    Theta .= Theta .+ Δt * potential_temperature_continuity(Theta_half, U_half, ρ_half, step, saveat, debug)
     ρ .= ρ_full
 
     if any(CUDA.isnan.(U))
@@ -363,6 +397,7 @@ function run_compressible_ns(Theta₀, U₀, ρ₀, tₑ, Δt; saveat=500)
       push!(rhos, deepcopy(ρ))
       println("Loading simulation results: $((step / steps) * 100)%")
       println("Relative mass is : $((CUDA.sum(ρ) / m₀) * 100)%")
+      println("Relative energy is : $((CUDA.sum(Theta) / E₀) * 100)%")
       println("-----")
     end
   end
@@ -372,15 +407,15 @@ end
 
 # For dry air
 Pr = 0.7
-μ = 0 # Momentum diffusivity, 1/Re
+μ = 1e-3 # Momentum diffusivity, 1/Re
 κ = μ / Pr # Heat diffusivity
 P₀ = 1e5 # Reference pressure
 Cₚ = 1006 # Specific heat
 R = 287 # Specific gas constant
 
-tₑ = 0.05
-Δt = dx / 360
-Thetas, Us, rhos = run_compressible_ns(Theta₀, U₀, ρ₀, tₑ, Δt; saveat=10);
+tₑ = 0.025
+Δt = 1e-5 # dx / 360
+Thetas, Us, rhos = run_compressible_ns(Theta₀, U₀, ρ₀, tₑ, Δt; saveat=100, debug=false);
 
 timestep = length(Us)
 u_end = wdg_10(Us[timestep], 1 ./ rhos[timestep])
@@ -459,20 +494,18 @@ msh = CairoMakie.mesh!(ax, s, color=Array(ptemp_zero_laplacian * theta_end), col
 Colorbar(fig[1, 2], msh)
 display(fig)
 
-function save_dynamics(save_file_name, endstep)
+function save_dynamics(save_file_name, endstep, step=1)
   time = Observable(1)
 
-  U_div = @lift(Array(codif_1 * Us[$time]))
+  U_mag = @lift(norm.(pp♯ * Array(Us[$time])))
   ρ = @lift(Array(rhos[$time]))
   theta = @lift(Array(Thetas[$time]))
   P = @lift(Array(pressure(Thetas[$time])))
 
-  P₀ = pressure(Thetas[begin])
-
   f = Figure()
 
-  ax_U_div = CairoMakie.Axis(f[1, 1], title="Momentum Divergence")
-  msh_U_div = mesh!(ax_U_div, s; color=U_div, colormap=:viridis)
+  ax_U_div = CairoMakie.Axis(f[1, 1], title="Momentum Magnitude")
+  msh_U_div = mesh!(ax_U_div, s; color=U_mag, colormap=:viridis)
   Colorbar(f[1, 2], msh_U_div)
 
   ax_ρ = CairoMakie.Axis(f[2, 1], title="Density")
@@ -487,10 +520,10 @@ function save_dynamics(save_file_name, endstep)
   msh_P = mesh!(ax_P, s; color=P, colormap=Reverse(:acton))
   Colorbar(f[2, 4], msh_P)
 
-  timestamps = 1:endstep
+  timestamps = 1:step:endstep
   CairoMakie.record(f, save_file_name, timestamps; framerate=15) do t
     time[] = t
   end
 end
 
-save_dynamics("Temperature_Warm_Wind_mu=$(μ).mp4", length(Us))
+save_dynamics("RTI_mu=$(μ).mp4", length(Us), 1)

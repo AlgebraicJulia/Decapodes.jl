@@ -233,7 +233,7 @@ plot_zeroform(s, inv_hdg_0 * dual_d1 * u)
 
 wdg_10_dd_mat = CuSparseMatrixCSC{Float64}(wedge_dd_01_mat(sd))
 
-wdg_10dd(α, f) = α .* (wdg_10_dd_mat * f) 
+wdg_10dd(α, f) = α .* (wdg_10_dd_mat * f)
 
 κ = 280 * 300 # R (dry gas constant) * T = 300K, P=ρRVT
 ρ₀ = CUDA.ones(Float64, ntriangles(sd))
@@ -271,7 +271,7 @@ function momentum_continuity(U, ρ)
 
   return -wdg_10dd(U, codif_1 * u) - # U ∧ δu
          form_two_interp * wdg_11(u, form_one_interp_1 * U) - # L(u, U)
-         form_one_interp_2 * wdg_10(u, form_zero_interp * U) +
+         form_one_interp_2 * wdg_10(u, form_zero_interp * U) -
          0.5 * wdg_10dd(form_two_interp * wdg_11(u, form_one_interp_1 * u), ρ) + # 1/2 * ρ * d||u||^2
          cu_dual_d0 * (κ * ρ) + # dP, P = κρ
          μ * lap_term * u # μΔu
@@ -296,7 +296,7 @@ function run_compressible_ns(U₀, ρ₀, tₑ, Δt; saveat=500)
 
   for step in 1:steps
     U_half .= U .+ 0.5 * Δt * momentum_continuity(U, ρ)
-    ρ_full .= ρ + Δt * codif_1 * U_half
+    ρ_full .= ρ - Δt * codif_1 * U_half
     ρ_half .= 0.5 .* (ρ .+ ρ_full)
 
     U .= U .+ Δt * momentum_continuity(U_half, ρ_half)
@@ -348,7 +348,7 @@ display(fig)
 
 fig = Figure();
 ax = CairoMakie.Axis(fig[1, 1])
-msh = CairoMakie.mesh!(ax, s, color=interp*Array(rhos[timestep]), colormap=:jet)
+msh = CairoMakie.mesh!(ax, s, color=interp * Array(rhos[timestep]), colormap=:jet)
 Colorbar(fig[1, 2], msh)
 display(fig)
 
@@ -356,7 +356,7 @@ function save_dynamics(save_file_name)
   time = Observable(1)
 
   w = @lift(inv_hdg_0 * dual_d1 * Array(wdg_10dd(Us[$time], 1 ./ rhos[$time])))
-  ρ = @lift(interp*Array(rhos[$time]))
+  ρ = @lift(interp * Array(rhos[$time]))
 
   f = Figure(size=(1000, 1000))
 
@@ -365,7 +365,7 @@ function save_dynamics(save_file_name)
   Colorbar(f[1, 2], msh_w)
 
   ax_ρ = CairoMakie.Axis(f[2, 1], title="Density with μ=$(μ)")
-  msh_ρ = mesh!(ax_ρ, s; color=ρ, colormap=:jet, colorrange=(-1e-6,1e-6).+1)
+  msh_ρ = mesh!(ax_ρ, s; color=ρ, colormap=:jet, colorrange=(-1e-6, 1e-6) .+ 1)
   Colorbar(f[2, 2], msh_ρ)
 
   colsize!(fig.layout, 1, Aspect(1, 1.0))
