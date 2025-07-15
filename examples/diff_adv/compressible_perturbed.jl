@@ -6,43 +6,40 @@ using LinearAlgebra
 using MLStyle
 using SparseArrays
 using StaticArrays
+using Printf
+using JLD2
 
 using CUDA
 using CUDA.CUSPARSE
 
-lx = ly = 6
-dx = dy = 0.04
+lx = ly = 8
+dx = dy = 0.08
 s = triangulated_grid(lx, ly, dx, dy, Point3d, false)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s);
 subdivide_duals!(sd, Circumcenter());
 
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1])
-wireframe!(ax, s)
-fig
-
-d0 = dec_differential(0, sd)
-d1 = dec_differential(1, sd)
+d0 = dec_differential(0, sd);
+d1 = dec_differential(1, sd);
 
 dual_d0 = dec_dual_derivative(0, sd);
 dual_d1 = dec_dual_derivative(1, sd);
 
-dᵦ = 0.5 * abs.(dual_d1) * spdiagm(dual_d0 * ones(ntriangles(sd)));
+hdg_1 = dec_hodge_star(1, sd, DiagonalHodge());
+hdg_2 = dec_hodge_star(2, sd, DiagonalHodge());
 
-hdg_1 = dec_hodge_star(1, sd, DiagonalHodge())
-hdg_2 = dec_hodge_star(2, sd, DiagonalHodge())
+inv_hdg_0 = dec_inv_hodge_star(0, sd, DiagonalHodge());
+inv_hdg_1 = dec_inv_hodge_star(1, sd, DiagonalHodge());
+inv_hdg_2 = dec_inv_hodge_star(2, sd, DiagonalHodge());
 
-inv_hdg_0 = dec_inv_hodge_star(0, sd, DiagonalHodge())
-inv_hdg_1 = dec_inv_hodge_star(1, sd, DiagonalHodge())
-inv_hdg_2 = dec_inv_hodge_star(2, sd, DiagonalHodge())
+codif_1 = inv_hdg_0 * dual_d1 * hdg_1;
 
-wdg_10 = dec_wedge_product(Tuple{1,0}, sd, Val{:CUDA}, CuArray, Float64)
-wdg_11 = dec_wedge_product(Tuple{1,1}, sd, Val{:CUDA}, CuArray, Float64)
+wdg_10 = dec_wedge_product(Tuple{1,0}, sd, Val{:CUDA}, CuArray, Float64);
+wdg_11 = dec_wedge_product(Tuple{1,1}, sd, Val{:CUDA}, CuArray, Float64);
 
 # TODO: Running d0_p0 directly is causing OutOfMemory errors
 # interp = d0_p0_interpolation(sd; hodge=DiagonalHodge())
-interp = SparseMatrixCSC{Float64}(inv_hdg_0) * p2_d2_interpolation(sd) * SparseMatrixCSC{Float64}(inv_hdg_2)
-flatsharp = ♭♯_mat(sd)
+interp = SparseMatrixCSC{Float64}(inv_hdg_0) * p2_d2_interpolation(sd) * SparseMatrixCSC{Float64}(inv_hdg_2);
+flatsharp = ♭♯_mat(sd);
 
 function p0_d0_interpolation(sd::HasDeltaSet2D)
   m = spzeros(ntriangles(sd), nv(sd))
@@ -58,10 +55,10 @@ function p0_d0_interpolation(sd::HasDeltaSet2D)
   m
 end
 
-dual_interp = p0_d0_interpolation(sd)
+# dual_interp = p0_d0_interpolation(sd)
 
-pp♯ = ♯_mat(sd, AltPPSharp())
-dd♯ = ♯_mat(sd, LLSDDSharp())
+pp♯ = ♯_mat(sd, AltPPSharp());
+dd♯ = ♯_mat(sd, LLSDDSharp());
 
 function plot_primal_vector_field(s, α)
   α♯ = pp♯ * α
@@ -167,11 +164,11 @@ function plot_dual_vorticity(sd, α)
   display(fig)
 end
 
-function plot_zeroform(s, f)
+function plot_zeroform(s, f; title=nothing)
   isdual = length(f) .== ntriangles(s)
 
   fig = Figure()
-  ax = CairoMakie.Axis(fig[1, 1])
+  ax = isnothing(title) ? CairoMakie.Axis(fig[1, 1]) : CairoMakie.Axis(fig[1, 1]; title=title)
   msh = CairoMakie.mesh!(ax, s, color=isdual ? interp * f : f, colormap=:jet)
   Colorbar(fig[1, 2], msh)
   display(fig)
@@ -286,11 +283,11 @@ function collect_right_boundary_triangles(dx, lx, dy, ly, depth)
 end
 
 depth = 5
-topb = collect_top_boundary_triangles(dx, lx, dy, ly, depth)
-botb = collect_bottom_boundary_triangles(dx, lx, dy, ly, depth)
+topb = collect_top_boundary_triangles(dx, lx, dy, ly, depth);
+botb = collect_bottom_boundary_triangles(dx, lx, dy, ly, depth);
 
-leftb = collect_left_boundary_triangles(dx, lx, dy, ly, depth)
-rightb = collect_right_boundary_triangles(dx, lx, dy, ly, depth)
+leftb = collect_left_boundary_triangles(dx, lx, dy, ly, depth);
+rightb = collect_right_boundary_triangles(dx, lx, dy, ly, depth);
 
 import Base.vcat
 vcat(b1::AbstractBoundaryMapping, b2::AbstractBoundaryMapping) = TriangleMapping(vcat(b1.boundary_zone, b2.boundary_zone),
@@ -301,29 +298,29 @@ function apply_periodic!(x, m::AbstractBoundaryMapping)
   return x
 end
 
-tb_bounds = vcat(topb, botb)
-lr_bounds = vcat(leftb, rightb)
-vtb_bounds = VertexMapping(sd, tb_bounds)
-vlr_bounds = VertexMapping(sd, lr_bounds)
-etb_bounds = EdgeMapping(sd, tb_bounds)
-elr_bounds = EdgeMapping(sd, lr_bounds)
+tb_bounds = vcat(topb, botb);
+lr_bounds = vcat(leftb, rightb);
+vtb_bounds = VertexMapping(sd, tb_bounds);
+vlr_bounds = VertexMapping(sd, lr_bounds);
+etb_bounds = EdgeMapping(sd, tb_bounds);
+elr_bounds = EdgeMapping(sd, lr_bounds);
 
 ##############################
 ##### INITIAL CONDITIONS #####
 ##############################
 
-P₀ = 1e5 # Reference pressure for potential temperature
-Cₚ = 1006 # Specific heat
-R = 287 # Specific gas constant
-ρᵣ = 1 # Reference density
-θᵣ = 300 # Reference potential temperature, temperature at P₀
-Pᵣ = ρᵣ * R * θᵣ
-gₐ = -20_000 # -9.81 # Acceleration due to gravity
+const P₀ = 1e5 # Reference pressure for potential temperature
+const Cₚ = 1006 # Specific heat
+const R = 287 # Specific gas constant
+const ρᵣ = 1 # Reference density
+const θᵣ = 300 # Reference potential temperature, temperature at P₀
+const Pᵣ = ρᵣ * R * θᵣ
+const gₐ = -9.81 # Acceleration due to gravity
 g = CuVector{Float64}(eval_constant_primal_form(sd, Point3d(0, gₐ, 0)))
 
 # TODO: This assumes theta is constant in z
 function hydrostatic_pressure(theta, h)
-  return (1 / (Cₚ * theta) * (P₀)^(R / Cₚ) * gₐ * h + Pᵣ^(R / Cₚ))^(Cₚ / R)
+  return (1 ./ (Cₚ .* theta) .* (P₀)^(R / Cₚ) .* gₐ .* h .+ Pᵣ^(R / Cₚ)) .^ (Cₚ / R)
 end
 
 function hydrostatic_density(theta, h)
@@ -335,86 +332,93 @@ end
 hydrostatic_pressure(300, 0) ≈ Pᵣ
 hydrostatic_density(300, 0)
 
-# # CONSTANT
-# simname = "Perturbed_Constant_Test"
-# ρ₀ = CUDA.ones(Float64, nv(sd))
-# U₀ = CUDA.zeros(Float64, ne(sd))
-# theta₀ = 300 * CUDA.ones(Float64, nv(sd))
-# Theta₀ = ρ₀ .* theta₀
+function generate_hydrostatic_vars(sd, theta=300)
+  thetaₕ = theta * CUDA.ones(Float64, nv(sd))
+  ρₕ = CuVector{Float64}(map(p -> hydrostatic_density(theta, p[2]), sd[:point]))
+  return ρₕ .* thetaₕ, ρₕ
+end
 
 # HYDROSTATIC
 simname = "Perturbed_Hydrostatic"
-thetaₕ = 300 * CUDA.ones(Float64, nv(sd))
-ρₕ = CuVector{Float64}(map(p -> hydrostatic_density(300, p[2]), sd[:point]))
-Thetaₕ = ρₕ .* thetaₕ
+Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
 U₀ = CUDA.zeros(Float64, ne(sd))
 ρ′ = CUDA.zeros(Float64, nv(sd))
 Theta′ = CUDA.zeros(Float64, nv(sd))
 
-# # WARM BUBBLE 
-# simname = "Perturbed_Warm_Bubble"
-# ρ₀ = CUDA.ones(Float64, nv(sd))
-# U₀ = CUDA.zeros(Float64, ne(sd))
-# theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
-# theta₀ = 300 .+ 0.5 * CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
-# Theta₀ = ρ₀ .* theta₀
-
-# WARM BUBBLE IN DENSITY GRADIENT
-simname = "Perturbed_Warm_Bubble_Gradient"
-thetaₕ = 300
-ρ₀ = CuVector{Float64}(map(p -> hydrostatic_density(thetaₕ, p[2]), sd[:point]))
+# WARM BUBBLE
+simname = "Perturbed_Warm_Bubble"
+Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
 U₀ = CUDA.zeros(Float64, ne(sd))
+
+ρ′ = CUDA.zeros(Float64, nv(sd))
 theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
-theta₀ = thetaₕ * CUDA.ones(Float64, nv(sd)) .+ 5 * CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
-Theta₀ = ρ₀ .* theta₀
+Theta′ = ρₕ .* CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
 
-# # COLD BUBBLE
-# simname = "Perturbed_Cold_Bubble"
-# ρ₀ = CUDA.ones(Float64, nv(sd))
-# U₀ = CUDA.zeros(Float64, ne(sd))
-# theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
-# theta₀ = 300 .- 0.05 * CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
-# Theta₀ = ρ₀ .* theta₀
+# WARM BUBBLE
+simname = "Perturbed_Warm_Bubble_Gradient"
+thetaₕ = 300 * CUDA.ones(Float64, nv(sd))
+Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
+Pₕ = exact_pressure(Thetaₕ)
 
-# # COLD BUBBLE WITH WIND
-# simname = "Perturbed_Cold_Bubble_Wind"
-# ρ₀ = CUDA.ones(Float64, nv(sd))
-# U₀ = CuVector{Float64}(eval_constant_primal_form(sd, Point3d(100, 0, 0))) # Techincally velocity but we have unit mass
-# theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
-# theta₀ = 300 .- 0.05 * CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
-# Theta₀ = ρ₀ .* theta₀
+perturb = true
+peturbation_size = 1e-4
 
-# LIGHT BUBBLE IN DENSITY GRADIENT
+U₀ = CUDA.zeros(Float64, ne(sd))
+theta_dist = MvNormal([lx / 2, ly / 4], 0.25)
+theta′ = 10 * CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]]) .+ perturb .* peturbation_size .* (2 * CUDA.rand(Float64, nv(sd)) .- 1)
+plot_zeroform(s, Array(theta′))
+
+ρ′ = (Pₕ .^ (1 - R / Cₚ) * P₀^(R / Cₚ)) ./ (R .* (thetaₕ .+ theta′)) .- ρₕ .+ perturb .* peturbation_size .* (2 * CUDA.rand(Float64, nv(sd)) .- 1)
+plot_zeroform(s, Array(ρ′))
+Theta′ = ρ′ .* thetaₕ .+ ρₕ .* theta′ .+ ρ′ .* theta′
+plot_zeroform(s, Array(Theta′))
+
+# WARM BUBBLE WITH WIND
+simname = "Perturbed_Warm_Bubble_Wind"
+Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
+
+ρ′ = CUDA.zeros(Float64, nv(sd))
+theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
+Theta′ = ρₕ .* CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
+
+U₀ = (ρₕ .+ ρ′) * CuVector{Float64}(eval_constant_primal_form(sd, Point3d(1, 0, 0)))
+
+# COLD BUBBLE
+simname = "Perturbed_Cold_Bubble"
+Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
+U₀ = CUDA.zeros(Float64, ne(sd))
+
+ρ′ = CUDA.zeros(Float64, nv(sd))
+theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
+Theta′ = ρₕ .* -CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
+
+# LIGHT BUBBLE
 simname = "Perturbed_Light_Bubble_Gradient"
 thetaₕ = 300 * CUDA.ones(Float64, nv(sd))
-ρₕ = CuVector{Float64}(map(p -> hydrostatic_density(300, p[2]), sd[:point]))
-Thetaₕ = ρₕ .* thetaₕ
+Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
+Pₕ = exact_pressure(Thetaₕ)
 
 U₀ = CUDA.zeros(Float64, ne(sd))
-rho_dist = MvNormal([lx / 2, ly / 4], 0.1)
+rho_dist = MvNormal([lx / 2, ly / 4], 0.5)
 ρ′ = -0.01 * CuArray{Float64}([pdf(rho_dist, [p[1], p[2]]) for p in sd[:point]])
-Theta′ = CUDA.zeros(Float64, nv(sd))
 
-# # RAYLEIGH-TAYLOR INSTABILITY
-# simname = "Perturbed_RTI"
-# ρ₀ = CUDA.ones(Float64, nv(sd))
-# U₀ = CUDA.zeros(Float64, ne(sd))
-# theta₀ = CUDA.zeros(Float64, nv(sd))
+theta′ = (Pₕ .^ (1 - R / Cₚ) * P₀^(R / Cₚ)) ./ (R .* (ρₕ .+ ρ′)) .- 300
+plot_zeroform(s, Array(theta′))
+Theta′ = ρ′ .* thetaₕ .+ ρₕ .* theta′ .+ ρ′ .* theta′
+plot_zeroform(s, Array(Theta′))
 
-# upper_points = findall(p -> p[2] >= lx * 0.75, sd[:point])
-# lower_points = findall(p -> p[2] < lx * 0.75, sd[:point])
+# RAYLEIGH-TAYLOR INSTABILITY
+simname = "Perturbed_RTI"
+Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
+U₀ = CUDA.zeros(Float64, ne(sd))
 
-# theta₀[upper_points] .= 302
-# theta₀[lower_points] .= 300
-# theta₀ .+= 1e-6 * ((2 * CUDA.rand(Float64, nv(sd))) .- 1)
-# Theta₀ = ρ₀ .* theta₀
+ρ′ = CUDA.zeros(Float64, nv(sd))
+theta′ = CuArray{Float64}(map(p -> tanh(p[2]), sd[:point]))
+Theta′ = ρₕ .* theta′
 
 ##################################
 ##### END INITIAL CONDITIONS #####
 ##################################
-
-boundary_edges = findall(x -> x != 0, dual_d0 * ones(ntriangles(sd)))
-boundary_vertices = unique(vcat(sd[boundary_edges, :∂v0], sd[boundary_edges, :∂v1]))
 
 # From the ideal gas law
 function exact_pressure(Theta)
@@ -461,28 +465,28 @@ function smoothing(sd, c_smooth)
   return mat
 end
 
-c_smooth = 0.2
-forward_smooth = smoothing(sd, c_smooth)
-backward_smooth = smoothing(sd, -c_smooth)
+Theta_smooth = 0.2
+Theta_smoothing_mat = CuSparseMatrixCSC{Float64}(smoothing(sd, -Theta_smooth) * smoothing(sd, Theta_smooth));
 
-smoothing_mat = CuSparseMatrixCSC{Float64}(backward_smooth * forward_smooth)
+rho_smooth = 0.05
+rho_smoothing_mat = CuSparseMatrixCSC{Float64}(smoothing(sd, -rho_smooth) * smoothing(sd, rho_smooth));
 
-momentum_flatsharp_hdg_1 = CuSparseMatrixCSC{Float64}(flatsharp * hdg_1)
-momentum_interp_hdg2_d1 = CuSparseMatrixCSC{Float64}(interp * abs.(hdg_2) * d1)
-momentum_flatsharp_dd0_hdg2 = CuSparseMatrixCSC{Float64}(flatsharp * dual_d0 * hdg_2)
-cu_d0 = CuSparseMatrixCSC{Float64}(d0)
+momentum_flatsharp_hdg_1 = CuSparseMatrixCSC{Float64}(flatsharp * hdg_1);
+momentum_interp_hdg2_d1 = CuSparseMatrixCSC{Float64}(interp * abs.(hdg_2) * d1);
+momentum_flatsharp_dd0_hdg2 = CuSparseMatrixCSC{Float64}(flatsharp * dual_d0 * hdg_2);
+cu_d0 = CuSparseMatrixCSC{Float64}(d0);
 
-codif_1 = CuSparseMatrixCSC{Float64}(SparseMatrixCSC(inv_hdg_0) * dual_d1 * SparseMatrixCSC(hdg_1))
+cu_codif_1 = CuSparseMatrixCSC{Float64}(codif_1);
 
-lap_first_term = CuSparseMatrixCSC{Float64}(inv_hdg_1 * dual_d0 * abs.(hdg_2) * d1)
-lap_second_term = CuSparseMatrixCSC{Float64}(d0 * inv_hdg_0 * dual_d1 * hdg_1)
-momentum_one_laplacian = lap_first_term + lap_second_term
+lap_first_term = CuSparseMatrixCSC{Float64}(inv_hdg_1 * dual_d0 * abs.(hdg_2) * d1);
+lap_second_term = CuSparseMatrixCSC{Float64}(d0 * inv_hdg_0 * dual_d1 * hdg_1);
+momentum_one_laplacian = lap_first_term + lap_second_term;
 
 function momentum_continuity(Thetaₕ, Theta′, U, ρₕ, ρ′, step, debugat, debug)
   ρ = ρₕ .+ ρ′
   u = wdg_10(U, 1 ./ ρ)
 
-  flow_creation = -wdg_10(U, codif_1 * u) # U ∧ δu
+  flow_creation = -wdg_10(U, cu_codif_1 * u) # U ∧ δu
   momentum_advection = -momentum_flatsharp_dd0_hdg2 * wdg_11(u, momentum_flatsharp_hdg_1 * U) - # L(u, U)
                        momentum_flatsharp_hdg_1 * wdg_10(u, momentum_interp_hdg2_d1 * U)
   energy = 0.5 * wdg_10(momentum_flatsharp_dd0_hdg2 * wdg_11(u, momentum_flatsharp_hdg_1 * u), ρ) # 1/2 * ρ * d||u||^2
@@ -501,15 +505,17 @@ function momentum_continuity(Thetaₕ, Theta′, U, ρₕ, ρ′, step, debugat,
     println("##### MOMENTUM DEBUG END #####")
   end
 
-  return flow_creation + momentum_advection + energy + pressure_diff + momentum_diff + body_forces
+  res = CUDA.zeros(Float64, ne(sd))
+  res .= flow_creation .+ momentum_advection .+ energy .+ pressure_diff .+ momentum_diff .+ body_forces
 
+  return res
 end
 
 # TODO: Below might have better interpolation but dual_d0 has problems at the boundary
 # ptemp_flatsharp_hdg1_d0 = CuSparseMatrixCSC{Float64}(inv_hdg_1 * dual_d0 * dual_interp)
-ptemp_flatsharp_hdg1_d0 = CuSparseMatrixCSC{Float64}(flatsharp * hdg_1 * d0)
-ptemp_interp_hdg2 = CuSparseMatrixCSC{Float64}(interp * hdg_2)
-ptemp_zero_laplacian = CuSparseMatrixCSC{Float64}(inv_hdg_0 * dual_d1 * hdg_1 * d0)
+ptemp_flatsharp_hdg1_d0 = CuSparseMatrixCSC{Float64}(flatsharp * hdg_1 * d0);
+ptemp_interp_hdg2 = CuSparseMatrixCSC{Float64}(interp * hdg_2);
+ptemp_zero_laplacian = CuSparseMatrixCSC{Float64}(inv_hdg_0 * dual_d1 * hdg_1 * d0);
 
 function potential_temperature_continuity(Thetaₕ, Theta′, U, ρₕ, ρ′, step, debugat, debug)
   ρ = ρₕ .+ ρ′
@@ -518,7 +524,7 @@ function potential_temperature_continuity(Thetaₕ, Theta′, U, ρₕ, ρ′, s
   u = wdg_10(U, 1 ./ ρ)
   theta = Theta ./ ρ
 
-  temperature_creation = -Theta .* (codif_1 * u) # Theta ∧ δu
+  temperature_creation = -Theta .* (cu_codif_1 * u) # Theta ∧ δu
   temperature_advection = -ptemp_interp_hdg2 * wdg_11(u, ptemp_flatsharp_hdg1_d0 * Theta) # L(u, Theta)
   temperature_diffusion = κ * ptemp_zero_laplacian * theta # κΔtheta
 
@@ -530,8 +536,10 @@ function potential_temperature_continuity(Thetaₕ, Theta′, U, ρₕ, ρ′, s
     println("##### POTENTIAL TEMPERATURE DEBUG END #####")
   end
 
-  return temperature_creation + temperature_advection + temperature_diffusion
+  res = CUDA.zeros(Float64, nv(sd))
+  res .= temperature_creation .+ temperature_advection .+ temperature_diffusion
 
+  return res
 end
 
 function run_compressible_ns(Thetaₕ, Theta′₀, U₀, ρₕ, ρ′₀, tₑ, Δt; saveat=500, debug=false)
@@ -569,11 +577,11 @@ function run_compressible_ns(Thetaₕ, Theta′₀, U₀, ρₕ, ρ′₀, tₑ,
     U_half .= U .+ 0.5 .* Δt * momentum_continuity(Thetaₕ, Theta′, U, ρₕ, ρ′, step, saveat, debug)
     Theta′_half .= Theta′ .+ 0.5 .* Δt * potential_temperature_continuity(Thetaₕ, Theta′, U, ρₕ, ρ′, step, saveat, debug)
 
-    ρ′_full .= smoothing_mat * (ρ′ .- Δt * codif_1 * U_half)
+    ρ′_full .= rho_smoothing_mat * (ρ′ .- Δt * cu_codif_1 * U_half)
     ρ′_half .= 0.5 .* (ρ′ .+ ρ′_full)
 
     U .= U .+ Δt * momentum_continuity(Thetaₕ, Theta′_half, U_half, ρₕ, ρ′_half, step, saveat, debug)
-    Theta′ .= Theta′ .+ Δt * potential_temperature_continuity(Thetaₕ, Theta′_half, U_half, ρₕ, ρ′_half, step, saveat, debug)
+    Theta′ .= Theta_smoothing_mat * (Theta′ .+ Δt * potential_temperature_continuity(Thetaₕ, Theta′_half, U_half, ρₕ, ρ′_half, step, saveat, debug))
     ρ′ .= ρ′_full
 
     if any(CUDA.isnan.(U))
@@ -604,115 +612,96 @@ function run_compressible_ns(Thetaₕ, Theta′₀, U₀, ρₕ, ρ′₀, tₑ,
       println("Relative mass is : $((CUDA.sum(ρₕ .+ ρ′) / m₀) * 100)%")
       println("Relative energy is : $((CUDA.sum(Thetaₕ .+ Theta′) / E₀) * 100)%")
       println("-----")
+
+      if step % (5 * saveat) == 0
+        fig = Figure()
+        ax = CairoMakie.Axis(fig[1, 1]; title="Density Perturbation at Time $(step * Δt)")
+        msh = CairoMakie.mesh!(ax, s, color=Array(ρ′), colormap=Reverse(:oslo))
+        Colorbar(fig[1, 2], msh)
+        display(fig)
+
+        # fig = Figure()
+        # ax = CairoMakie.Axis(fig[1, 1]; title="Theta Perturbation at Time $(step * Δt)")
+        # msh = CairoMakie.mesh!(ax, s, color=Array(Theta′), colormap=:jet)
+        # Colorbar(fig[1, 2], msh)
+        # display(fig)
+
+      end
+
     end
   end
 
-  return Thetas, Us, rhos
+  return Array.(Thetas), Array.(Us), Array.(rhos)
 end
 
 # For dry air
-Pr = 0.7
-μ = 1e-3 # Momentum diffusivity, 1/Re
+const Pr = 0.7
+Re = 10_000
+μ = 1 / Re # Momentum diffusivity, 1/Re
 κ = μ / Pr # Heat diffusivity
 
-tₑ = 0.5
-Δt = 1e-5 # dx / 360
-Thetas, Us, rhos = run_compressible_ns(Thetaₕ, Theta′, U₀, ρₕ, ρ′, tₑ, Δt; saveat=100, debug=false);
+tₑ = 20 # 0.015
+Δt = 5e-5 # 2e-5 - 0.04 | 5e-5 - 0.08 | 1e-4 - 0.16 # dx / 360
+Thetas, Us, rhos = run_compressible_ns(Thetaₕ, Theta′, U₀, ρₕ, ρ′, tₑ, Δt; saveat=250, debug=false);
+
+filename = "$(simname)_Re=$(Re)_tend=$(tₑ)_dx=$(dx)_rho_$(rho_smooth)_smoothing"
+save("$(filename).jld2", Dict("Thetas" => Array.(Thetas), "Us" => Array.(Us), "rhos" => Array.(rhos)))
+
+function load_savestate(filename)
+  file = load("$(joinpath(pwd(), filename)).jld2")
+  return file["Thetas"], file["Us"], file["rhos"]
+end
+
+Thetas, Us, rhos = load_savestate(filename)
+
+function reload_initial(Thetas, Us, rhos)
+  Theta′ .= CuVector(Thetas[end])
+  U₀ .= CuVector(Us[end])
+  ρ′ .= CuVector(rhos[end])
+end
+
+# reload_initial(Thetas, Us, rhos)
+
+cpu_wdg_10 = dec_wedge_product(Tuple{1,0}, sd);
+cpu_wdg_11 = dec_wedge_product(Tuple{1,1}, sd);
+
+cpu_ρₕ = Array(ρₕ)
+cpu_Thetaₕ = Array(Thetaₕ)
 
 timestep = length(Us)
-u_end = wdg_10(Us[timestep], 1 ./ (rhos[timestep] .+ ρₕ))
-ω_end = abs.(hdg_2) * d1 * Array(u_end)
+u_end = cpu_wdg_10(Us[timestep], 1 ./ (rhos[timestep] .+ cpu_ρₕ))
+ω_end = abs.(hdg_2) * d1 * u_end
 
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Vorticity")
-msh = CairoMakie.mesh!(ax, s, color=interp * ω_end, colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
+# Velocity Plots
+plot_zeroform(s, ω_end; title="Vorticity")
+plot_zeroform(s, codif_1 * u_end; title="Velocity Divergence")
+plot_zeroform(s, norm.(pp♯ * u_end); title="Velocity Magnitude")
+plot_primal_vector_field(s, u_end)
 
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Velocity Divergence")
-msh = CairoMakie.mesh!(ax, s, color=Array(codif_1 * u_end), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
+# Momentum Plots
+plot_zeroform(s, abs.(hdg_2) * d1 * Us[timestep]; title="Density-Coupled Vorticity")
+plot_zeroform(s, codif_1 * Us[timestep]; title="Momentum Divergence")
+plot_zeroform(s, norm.(pp♯ * Us[timestep]); title="Momentum Magnitude")
 
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Velocity Magnitude")
-msh = CairoMakie.mesh!(ax, s, color=norm.(pp♯ * Array(u_end)), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
+# Density Plots
+plot_zeroform(s, rhos[timestep] .+ cpu_ρₕ; title="Density")
+plot_zeroform(s, rhos[timestep]; title="Density Perturbation")
 
-# Velocity components
-plot_primal_vector_field(s, Array(u_end))
+# Density-Coupled Potential Temperature Plots
 
-ρω_end = abs.(hdg_2) * d1 * Array(Us[timestep])
+plot_zeroform(s, Thetas[timestep] .+ cpu_Thetaₕ; title="Density-Coupled Potential Temperature")
+plot_zeroform(s, Thetas[timestep]; title="Density-Coupled Potential Temperature Perturbation")
 
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Density-Coupled Vorticity")
-msh = CairoMakie.mesh!(ax, s, color=interp * ρω_end, colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
+# Potential Temperature Plots
+theta_end = (Thetas[timestep] .+ cpu_Thetaₕ) ./ (rhos[timestep] .+ cpu_ρₕ)
+plot_zeroform(s, theta_end; title="Potential Temperature")
+plot_zeroform(s, κ * Array(ptemp_zero_laplacian) * theta_end; title="Thermal Diffusion")
 
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Momentum Divergence")
-msh = CairoMakie.mesh!(ax, s, color=Array(codif_1 * Us[timestep]), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
+# Pressure Plots
+plot_zeroform(s, exact_pressure(Thetas[timestep] .+ cpu_Thetaₕ); title="Pressure Field")
+plot_zeroform(s, perturbed_pressure(cpu_Thetaₕ, Thetas[timestep]); title="Pressure Field Perturbation")
 
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Momentum Magnitude")
-msh = CairoMakie.mesh!(ax, s, color=norm.(pp♯ * Array(Us[timestep])), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
-
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Density")
-msh = CairoMakie.mesh!(ax, s, color=Array(rhos[timestep] .+ ρₕ), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
-
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Density Perturbation")
-msh = CairoMakie.mesh!(ax, s, color=Array(rhos[timestep]), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
-
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Density-Coupled Potential Temperature")
-msh = CairoMakie.mesh!(ax, s, color=Array(Thetas[timestep] .+ Thetaₕ), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
-
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Density-Coupled Potential Temperature Perturbation")
-msh = CairoMakie.mesh!(ax, s, color=Array(Thetas[timestep]), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
-
-theta_end = (Thetas[timestep] .+ Thetaₕ) ./ (rhos[timestep] .+ ρₕ)
-
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Potential Temperature")
-msh = CairoMakie.mesh!(ax, s, color=Array(theta_end), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
-
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Pressure Field")
-msh = CairoMakie.mesh!(ax, s, color=Array(exact_pressure(Thetas[timestep] .+ Thetaₕ)), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
-
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Pressure Field Perturbation")
-msh = CairoMakie.mesh!(ax, s, color=Array(perturbed_pressure(Thetaₕ, Thetas[timestep])), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
-
-fig = Figure();
-ax = CairoMakie.Axis(fig[1, 1]; title="Thermal Diffusion")
-msh = CairoMakie.mesh!(ax, s, color=Array(ptemp_zero_laplacian * theta_end), colormap=:jet)
-Colorbar(fig[1, 2], msh)
-display(fig)
+save("Density_HotBubble_Init.png", fig)
 
 function view_periodic(x, val; tb=true, lr=true)
   y = deepcopy(x)
@@ -728,17 +717,22 @@ end
 function save_dynamics(save_file_name, endstep, step=1; tb=false, lr=false)
   time = Observable(1)
 
-  U_mag = @lift(norm.(pp♯ * Array(Us[$time])))
-  ρ = @lift(Array(view_periodic(rhos[$time], mean(rhos[$time]); tb=tb, lr=lr)))
-  theta = @lift(Array(view_periodic(Thetas[$time], mean(Thetas[$time]); tb=tb, lr=lr)))
-  P = @lift(Array(exact_pressure(view_periodic(Thetas[$time], mean(Thetas[$time]); tb=tb, lr=lr))))
+  # U_mag = @lift(norm.(pp♯ * Array(Us[$time])))
+  U_vort = @lift(interp * abs.(hdg_2) * d1 * cpu_wdg_10(Us[$time], 1 ./ (rhos[$time] .+ cpu_ρₕ)))
+  ρ = @lift(view_periodic(rhos[$time], mean(rhos[$time]); tb=tb, lr=lr))
+  theta = @lift(view_periodic(Thetas[$time], mean(Thetas[$time]); tb=tb, lr=lr))
+  P = @lift(perturbed_pressure(cpu_Thetaₕ, view_periodic(Thetas[$time], mean(Thetas[$time]); tb=tb, lr=lr)))
   # U_div = @lift(Array(codif_1 * Us[$time]))
 
   f = Figure()
 
-  ax_U_div = CairoMakie.Axis(f[1, 1], title="Momentum Magnitude")
-  msh_U_div = mesh!(ax_U_div, s; color=U_mag, colormap=:viridis)
-  Colorbar(f[1, 2], msh_U_div)
+  # ax_U_div = CairoMakie.Axis(f[1, 1], title="Momentum Magnitude")
+  # msh_U_div = mesh!(ax_U_div, s; color=U_mag, colormap=:viridis)
+  # Colorbar(f[1, 2], msh_U_div)
+
+  ax_U_vort = CairoMakie.Axis(f[1, 1], title="Vorticity")
+  msh_U_vort = mesh!(ax_U_vort, s; color=U_vort, colormap=:viridis)
+  Colorbar(f[1, 2], msh_U_vort)
 
   ax_ρ = CairoMakie.Axis(f[2, 1], title="Density Perturbation")
   msh_ρ = mesh!(ax_ρ, s; color=ρ, colormap=Reverse(:oslo))
@@ -762,7 +756,7 @@ function save_dynamics(save_file_name, endstep, step=1; tb=false, lr=false)
   end
 end
 
-save_dynamics("$(simname)_mu=$(μ).mp4", length(Us), 10; lr=true)
+save_dynamics("$(filename).mp4", length(Us), 40; lr=true)
 
 # m₀ = CUDA.sum(ρ₀)
 # E₀ = CUDA.sum(Theta₀)
