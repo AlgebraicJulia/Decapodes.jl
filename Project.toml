@@ -12,6 +12,9 @@ Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
 Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
+NaNMath = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+OrdinaryDiffEqTsit5 = "b1df2697-797e-41e3-8120-5422d3b24e4a"
 PreallocationTools = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
@@ -36,7 +39,13 @@ Krylov = "0.9.6"
 LinearAlgebra = "1.9"
 MLStyle = "0.4.17"
 Markdown = "1.9"
+<<<<<<< Updated upstream
 OrdinaryDiffEq = "6.47"
+=======
+NaNMath = "1.1.3"
+OrdinaryDiffEq = "6.97.0"
+OrdinaryDiffEqTsit5 = "1.1.0"
+>>>>>>> Stashed changes
 PreallocationTools = "0.4"
 Random = "1.9"
 SparseArrays = "1.9"

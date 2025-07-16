@@ -132,9 +132,13 @@ lap_mat = dec_hodge_star(1,dualmesh) * dec_differential(0,dualmesh) * dec_inv_ho
 
 function generate(sd, my_symbol; hodge=DiagonalHodge())
   op = @match my_symbol begin
+<<<<<<< Updated upstream
     :Δ => x -> begin
       lap_mat * x
     end
+=======
+    :Δᵈ => x -> lap_mat * x
+>>>>>>> Stashed changes
   end
   return (args...) -> op(args...)
 end
