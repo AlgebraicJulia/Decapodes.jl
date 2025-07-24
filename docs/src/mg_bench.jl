@@ -96,5 +96,5 @@ for i in 1:REMOVE_LAYERS+1
   kr_mg_u, kr_mg_stats = cg(lap, f, M = md, ldiv = true);
   @show rel_err(lap, kr_mg_u, f)
 
-  md = cdr2(md)
+  global md = cdr2(md)
 end
