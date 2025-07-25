@@ -39,13 +39,7 @@ Krylov = "0.9.6"
 LinearAlgebra = "1.9"
 MLStyle = "0.4.17"
 Markdown = "1.9"
-<<<<<<< Updated upstream
 OrdinaryDiffEq = "6.47"
-=======
-NaNMath = "1.1.3"
-OrdinaryDiffEq = "6.97.0"
-OrdinaryDiffEqTsit5 = "1.1.0"
->>>>>>> Stashed changes
 PreallocationTools = "0.4"
 Random = "1.9"
 SparseArrays = "1.9"
