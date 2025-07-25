@@ -1,3 +1,27 @@
+#using Pkg
+#Pkg.add(["AlgebraicMultigrid",
+#"CairoMakie",
+#"Catlab",
+#"CombinatorialSpaces",
+#"ComponentArrays",
+#"CSV",
+#"DataFrames",
+#"DiagrammaticEquations",
+#"Distributions",
+#"GeometryBasics",
+#"IterativeSolvers",
+#"Krylov",
+#"KrylovPreconditioners",
+#"LinearAlgebra",
+#"MLStyle",
+#"OrdinaryDiffEq",
+#"SparseArrays",
+#"StaticArrays",
+#"StatsBase",
+#"LoggingExtras",
+#"Logging",
+#"TerminalLoggers"])
+
 using AlgebraicMultigrid
 using CairoMakie
 using Catlab
@@ -72,7 +96,7 @@ i = 1
 for y in ys
   for x in xs
     s[i, :point] = Point3([x, y, 0.0])
-    i += 1
+    global i += 1
   end
 end
 glue_sorted_triangle!(s, 1, 2, 4)
@@ -86,9 +110,6 @@ glue_sorted_triangle!(s, 5, 6, 9)
 
 end
 
-# GMRES, Direct_LU, MG, GMRES_MG, AMG
-solvername = "MG"
-
 subs = 6
 series = PrimalGeometricMapSeries(s, BinarySubdivision(), subs, Barycenter());
 s = repeated_subdivision(s, binary_subdivision, subs);
@@ -96,11 +117,59 @@ s = repeated_subdivision(s, binary_subdivision, subs);
 md = MGData(series, sd -> Δ(0,sd), 3, BinarySubdivision());
 sd = finest_mesh(series);
 
+#fig = Figure();
+#ax = CairoMakie.Axis(fig[1,1],
+#                     title="Coarse Porous Convection Domain",
+#                     aspect = AxisAspect(2));
+#wireframe!(ax, s);
+#fig
+#save("coarse_pc_domain.svg", fig)
+#save("coarse_pc_domain.png", fig)
+#
+#fig = Figure();
+#ax = CairoMakie.Axis(fig[1,1],
+#                     title="Porous Convection Domain Subdivided Once",
+#                     aspect = AxisAspect(2));
+#wireframe!(ax, binary_subdivision(s));
+#fig
+#save("fine_pc_domain.svg", fig)
+#save("fine_pc_domain.png", fig)
+
+
+# GMRES, Direct_LU, MG, GMRES_MG, AMG
+solvername = "MG"
+#solvername = "Direct_LU"
+#solvername = "GMRES"
+
 Δ0 = first(md.operators)
+Δn = md.operators[begin+1]
+
+fig = Figure();
+ax = CairoMakie.Axis(fig[1,1],
+                     title="Sparsity Pattern of Finest Discrete Laplacian",
+                     xlabel="nz = $(length(Δ0.nzval))",
+                     aspect=AxisAspect(1));
+spy_plt = spy!(ax, Δ0, markersize=10, marker=FastPixel());
+hidedecorations!(ax, label=false)
+fig
+save("finest_sparsity.svg", fig)
+save("finest_sparsity.png", fig)
+
+fig = Figure();
+ax = CairoMakie.Axis(fig[1,1],
+                     title="Sparsity Pattern of Second-Finest Discrete Laplacian",
+                     xlabel="nz = $(length(Δn.nzval))",
+                     aspect=AxisAspect(1));
+spy_plt = spy!(ax, Δn, markersize=10, marker=FastPixel(), colormap=:jet);
+hidedecorations!(ax, label=false)
+fig
+save("secondfinest_sparsity.svg", fig)
+save("secondfinest_sparsity.png", fig)
 
 function _multigrid_μ_cycle(u, b, md::MultigridData, alg=cg, μ=1)
   A,r,p,s = CombinatorialSpaces.Multigrid.car(md)
-  u = alg(u,A,b,maxiter=s)
+  # Conform to CombinatorialSpaces issue #167.
+  u = s == 0 ? u : alg(u,A,b,maxiter=s)
   length(md) == 1 && return u
   r_f = b - A*u
   r_c = r * r_f
@@ -109,7 +178,8 @@ function _multigrid_μ_cycle(u, b, md::MultigridData, alg=cg, μ=1)
     z = _multigrid_μ_cycle(z, r_c, cdr(md), alg, μ-1)
   end
   u += p * z
-  u = alg(u,A,b,maxiter=s)
+  # Conform to CombinatorialSpaces issue #167.
+  u = s == 0 ? u : alg(u,A,b,maxiter=s)
 end
 
 function multi_solve(x; atol = √eps(Float64), rtol = √eps(Float64))
@@ -173,7 +243,9 @@ f = sim(sd, generate, GeometricHodge())
 
 # Initial heat distribution
 # Gaussian heat disturbance along with top and bottom elements
+# XXX: This constructor (with a vector as the second argument) is deprecated.
 T_dist = MvNormal([lx/2.0, ly/2.0], [1/sqrt(2), 1/sqrt(2)])
+# XXX: Scaling by 2 * ΔT = 400 results in a maximum temperature of ~127. It would be simpler to present were this 100.
 T = [2 * ΔT * pdf(T_dist, [p[1], p[2]]) for p in sd[:point]]
 T[top_wall_idxs] .= -ΔT/2
 T[bottom_wall_idxs] .= ΔT/2
@@ -260,3 +332,163 @@ save("$(solvername)_iterations_lines.png", plot(iterations))
 # Can use to read out rows
 # out_df = CSV.read("$(filename).csv", DataFrame)
 # outT = Array(out_df[2, 2:end])
+#
+
+function dynamics_ICS(soln)
+  f = Figure()
+
+  ax_T = CairoMakie.Axis(f[1,1],
+                         title = "Temperature at Time 0",
+                         aspect = AxisAspect(2))
+
+  timestamps = range(0, soln.t[end], length=video_length)
+  record(f, save_file_name, timestamps; framerate = 15) do t
+    time[] = t
+  end
+end
+
+filename = "Porous_Convection_$(solvername)_subs=$(subs)_Ra=$(Ra)"
+save_dynamics("$(filename).mp4", length(soln.t))
+
+function save_error(save_file_name, soln1, soln2, solvers::String, video_length = 30)
+  time = Observable(0.0)
+
+  T = @lift(soln1($time).T - soln2($time).T)
+  f = Figure()
+
+  ax_T = CairoMakie.Axis(f[1,1], title = @lift("Difference in Temp ($(solvers)) at Time $(round($time, digits=3))"))
+  msh_T = mesh!(ax_T, s; color=T, colormap=:jet, colorrange = (-0.01, 0.01))
+  Colorbar(f[1,2], msh_T)
+
+  timestamps = range(0, soln.t[end], length=video_length)
+  record(f, save_file_name, timestamps; framerate = 15) do t
+    time[] = t
+  end
+end
+
+comp1 = "LU MG"
+comp2 = "LU GMRES"
+comp3 = "GMRES MG"
+
+save_error("Porous_Convection_$(comp1)_subs=$(subs)_Ra=$(Ra).mp4", soln_lu, soln_mg, comp1, length(soln.t))
+save_error("Porous_Convection_$(comp2)_subs=$(subs)_Ra=$(Ra).mp4", soln_lu, soln_gmres, comp2, length(soln.t))
+save_error("Porous_Convection_$(comp3)_subs=$(subs)_Ra=$(Ra).mp4", soln_gmres, soln_mg, comp3, length(soln.t))
+
+iterations = Int64[]
+for t in soln.t
+  rho = codif_1 * wdg10(g, constants.αρ₀ * soln(t).T)
+  _, stats = Krylov.gmres(Δ0, rho; M = pΔ0, ldiv = true, rtol = 1e-12, atol = 1e-10)
+  # _, stats = multi_solve(rho; rtol = 1e-12, atol = 1e-10)
+  push!(iterations, stats.niter)
+end
+
+save("$(solvername)_iterations_histo.png", hist(iterations))
+save("$(solvername)_iterations_lines.png", plot(iterations))
+
+# df = DataFrame(soln);
+# CSV.write("$(filename).csv", df)
+
+# Can use to read out rows
+# out_df = CSV.read("$(filename).csv", DataFrame)
+# outT = Array(out_df[2, 2:end])
+
+# SVGs of such plots will exhibit fuzzy text.
+save("temperature_ics.png", dynamics_ICS(soln_decgmg))
+
+function dynamics_FCS(soln, titleextra)
+  f = Figure()
+
+  ax_T = CairoMakie.Axis(f[1,1],
+                         title = "Temperature at Time 0.5 ; $titleextra",
+                         aspect = AxisAspect(2))
+  msh_T = mesh!(ax_T, s;
+                color=soln(0.5).T,
+                colormap=:jet,
+                colorrange=(-ΔT/2, ΔT/2))
+
+  # https://discourse.julialang.org/t/makie-jl-limiting-height-of-colorbar-to-that-of-a-nearby-equal-aspect-axis/55876/4
+  # Pixel-accurate value is .6351:
+  Colorbar(f[1,2], msh_T, height=Relative(0.6351))
+
+  f
+end
+dynamics_FCS(soln_decgmg, "DEC GMG")
+
+# SVGs of such plots will exhibit fuzzy text.
+save("temperature_fcs_decgmg.png", dynamics_FCS(soln_decgmg, "DEC GMG"))
+
+function diffs_FCS(soln, titleextra)
+  f = Figure()
+
+  ax_T = CairoMakie.Axis(f[1,1],
+                         title = "Temperature Difference at Time 0.5 ; Direct LU - $titleextra",
+                         aspect = AxisAspect(2))
+
+  msh_T = mesh!(ax_T, s;
+                color=soln_directlu[:,end] - soln[:,end],
+                colormap=:jet)
+
+  # https://discourse.julialang.org/t/makie-jl-limiting-height-of-colorbar-to-that-of-a-nearby-equal-aspect-axis/55876/4
+  # Pixel-accurate value is .605:
+  Colorbar(f[1,2], msh_T, height=Relative(0.605))
+
+  f
+end
+diffs_FCS(soln_gmres, "GMRES")
+
+# SVGs of such plots will exhibit fuzzy text.
+save("temperature_diff_decgmg.png", diffs_FCS(soln_decgmg, "DEC GMG"))
+save("temperature_diff_gmres.png", diffs_FCS(soln_gmres, "GMRES"))
+
+sqrt(mean((soln_directlu(0.5).T - soln_gmres(0.5).T) .^ 2))
+
+rmse(ana_sol, num_sol) = sqrt(mean((ana_sol .- num_sol) .^ 2))
+
+function plot_rmse_over_time(num_sol, titleextra)
+  fig = Figure();
+  ax = CairoMakie.Axis(fig[1,1],
+                       title="RMSE of $titleextra over Time",
+                       xlabel="time [s]",
+                       ylabel="RMSE [°C]")
+  rmse_over_time = map(soln_directlu.t) do t
+    rmse(soln_directlu(t).T, num_sol(t).T)
+  end
+  lines!(ax, soln_directlu.t, rmse_over_time);
+  fig
+end
+
+plot_rmse_over_time(soln_decgmg, "DEC GMG")
+plot_rmse_over_time(soln_gmres, "GMRES")
+
+function plot_comparison_rmse_over_time()
+  fig = Figure();
+  ax = CairoMakie.Axis(fig[1,1],
+                       title="RMSE over Time",
+                       xlabel="time [s]",
+                       ylabel="RMSE [°C]")
+  rmse_over_time_decgmg = map(soln_directlu.t) do t
+    rmse(soln_directlu(t).T, soln_decgmg(t).T)
+  end
+  rmse_over_time_gmres = map(soln_directlu.t) do t
+    rmse(soln_directlu(t).T, soln_gmres(t).T)
+  end
+  lines!(ax, soln_directlu.t, rmse_over_time_gmres, label="GMRES");
+  lines!(ax, soln_directlu.t, rmse_over_time_decgmg, label="DEC GMG");
+  Legend(fig[1,2], ax);
+  fig
+end
+save("rmse_comparison.svg", plot_comparison_rmse_over_time())
+
+rmse_ratios = rmse_over_time_decgmg ./ rmse_over_time_gmres * 100
+
+function temperature_matrix(x)
+  reduce(hcat, map(x) do v
+    v.T
+  end)
+end
+matwrite("all_solns.mat",
+         Dict("directlu" => temperature_matrix(soln_directlu),
+              "decgmg" => temperature_matrix(soln_decgmg),
+              "gmres" => temperature_matrix(soln_gmres),
+              "time" => soln_directlu.t))
+
