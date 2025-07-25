@@ -290,7 +290,7 @@ constants = ComponentArray(diffusion_k=0.05)
 
 tₑ = 50
 prob = ODEProblem(fₘ, u₀, (0.0, tₑ), constants)
-sol = solve(prob, Tsit5())
+soln = solve(prob, Tsit5())
 
 fig = Figure()
 ax = CairoMakie.Axis(fig[1,1], aspect = AxisAspect(3.0))
