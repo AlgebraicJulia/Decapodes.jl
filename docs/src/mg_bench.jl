@@ -29,8 +29,7 @@ end
 multigrid_wcycles(u, b, md, cycles, alg=gauss_seidel!) = multigrid_μ_cycles(u, b, md, cycles, alg, 2)
 
 # Edit these constants for benchmarking!
-# TODO: Set levels to 7 and remove 3
-LEVELS = 5
+LEVELS = 7
 REMOVE_LAYERS = 3
 
 println("Generating Mesh")
@@ -49,6 +48,9 @@ println(" Dual triangles: $(nparts(sd, :DualTri))")
 
 lap = ∇²(0, sd)
 f = lap * rand(nv(sd));
+#using MAT
+#matwrite("lap_times_random.mat", Dict("f" => f))
+#f = matread("lap_times_random.mat")["f"]
 
 # Steady state Δu + f = 0 => Δu = -f => u = -∇⁻¹(f)
 
@@ -96,5 +98,94 @@ for i in 1:REMOVE_LAYERS+1
   kr_mg_u, kr_mg_stats = cg(lap, f, M = md, ldiv = true);
   @show rel_err(lap, kr_mg_u, f)
 
-  md = cdr2(md)
+  global md = cdr2(md)
 end
+
+sp3 = triangulated_grid(240, 240, 10, 10, Point3D);
+sp3 = binary_subdivision(binary_subdivision(binary_subdivision(binary_subdivision(binary_subdivision(binary_subdivision(sp3))))))
+
+using CairoMakie
+function plot_ics()
+  fig = Figure();
+  ax = CairoMakie.Axis(fig[1,1],
+                       title="L r",
+                       aspect = AxisAspect(1));
+  msh = mesh!(ax, sp3;
+              color=f,
+              colormap=:jet)
+  Colorbar(fig[1,2], msh)
+  fig
+end
+plot_ics()
+save("laplacian_times_random.png", plot_ics())
+
+function plot_directlu_solve()
+  fig = Figure();
+  ax = CairoMakie.Axis(fig[1,1],
+                       title="L \\ b via Direct LU solve",
+                       aspect = AxisAspect(1));
+  msh = mesh!(ax, sp3;
+              color=ds_u,
+              colormap=:jet)
+  Colorbar(fig[1,2], msh)
+  fig
+end
+plot_directlu_solve()
+save("poisson_solve_directlu.png", plot_directlu_solve())
+
+function plot_mg_solve()
+  fig = Figure();
+  ax = CairoMakie.Axis(fig[1,1],
+                       title="L \\ b via DEC GMG solve",
+                       aspect = AxisAspect(1));
+  msh = mesh!(ax, sp3;
+              color=mg_u,
+              colormap=:jet)
+  Colorbar(fig[1,2], msh)
+  fig
+end
+plot_mg_solve()
+save("poisson_solve_mg.png", plot_mg_solve())
+
+function plot_direct_minus_mg()
+  fig = Figure();
+  ax = CairoMakie.Axis(fig[1,1],
+                       title="Direct LU - DEC GMG",
+                       aspect = AxisAspect(1));
+  msh = mesh!(ax, sp3;
+              color=ds_u .- mg_u,
+              colormap=:jet)
+  Colorbar(fig[1,2], msh)
+  fig
+end
+plot_direct_minus_mg()
+save("poisson_directlu_minus_mg.png", plot_direct_minus_mg())
+
+function plot_direct_minus_ilu0cg()
+  fig = Figure();
+  ax = CairoMakie.Axis(fig[1,1],
+                       title="Direct LU - ILU0 CG",
+                       aspect = AxisAspect(1));
+  msh = mesh!(ax, sp3;
+              color=ds_u .- kry_u,
+              colormap=:jet)
+  Colorbar(fig[1,2], msh)
+  fig
+end
+plot_direct_minus_ilu0cg()
+save("poisson_directlu_minus_ilu0cg.png", plot_direct_minus_ilu0cg())
+
+function plot_direct_minus_gmgcg()
+  fig = Figure();
+  ax = CairoMakie.Axis(fig[1,1],
+                       title="Direct LU - GMG CG",
+                       aspect = AxisAspect(1));
+  msh = mesh!(ax, sp3;
+              color=ds_u .- kr_mg_u,
+              colormap=:jet)
+  Colorbar(fig[1,2], msh)
+  fig
+end
+plot_direct_minus_gmgcg()
+save("poisson_directlu_minus_gmgcg.png", plot_direct_minus_gmgcg())
+
