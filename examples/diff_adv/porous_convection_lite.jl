@@ -211,6 +211,8 @@ prob = ODEProblem(f, u₀, (0, tₑ), constants)
 soln = solve(prob, Tsit5();
              saveat = 0.005, progress=true, progress_steps=1);
 
+@show (soln.retcode, soln.stats.nf, soln.stats.naccept, soln.stats.nreject)
+
 function temperature_matrix(x)
   reduce(hcat, map(x) do v
     v.T
@@ -218,8 +220,11 @@ function temperature_matrix(x)
 end
 
 matwrite("soln.mat",
-  Dict("soln" => temperature_matrix(soln),
-       "time" => soln.t))
+  Dict(["soln"    => temperature_matrix(soln),
+        "time"    => soln.t,
+        "nf"      => soln.stats.nf,
+        "naccept" => soln.stats.naccept,
+        "nreject" => soln.stats.nreject])
 soln = matread("soln.mat")["soln"]
 
 all_solns_mat = matread("all_solns.mat")
