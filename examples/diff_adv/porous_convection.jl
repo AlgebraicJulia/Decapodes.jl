@@ -1,26 +1,26 @@
-#using Pkg
-#Pkg.add(["AlgebraicMultigrid",
-#"CairoMakie",
-#"Catlab",
-#"CombinatorialSpaces",
-#"ComponentArrays",
-#"CSV",
-#"DataFrames",
-#"DiagrammaticEquations",
-#"Distributions",
-#"GeometryBasics",
-#"IterativeSolvers",
-#"Krylov",
-#"KrylovPreconditioners",
-#"LinearAlgebra",
-#"MLStyle",
-#"OrdinaryDiffEq",
-#"SparseArrays",
-#"StaticArrays",
-#"StatsBase",
-#"LoggingExtras",
-#"Logging",
-#"TerminalLoggers"])
+using Pkg
+Pkg.add(["AlgebraicMultigrid",
+"CairoMakie",
+"Catlab",
+"ComponentArrays",
+"CSV",
+"DataFrames",
+"DiagrammaticEquations",
+"Distributions",
+"GeometryBasics",
+"IterativeSolvers",
+"Krylov",
+"KrylovPreconditioners",
+"LinearAlgebra",
+"MAT",
+"MLStyle",
+"OrdinaryDiffEq",
+"SparseArrays",
+"StaticArrays",
+"StatsBase",
+"LoggingExtras",
+"Logging",
+"TerminalLoggers"])
 
 using AlgebraicMultigrid
 using CairoMakie
@@ -37,6 +37,7 @@ using IterativeSolvers
 using Krylov
 using KrylovPreconditioners
 using LinearAlgebra
+using MAT
 using MLStyle
 using OrdinaryDiffEq
 using SparseArrays
@@ -268,6 +269,18 @@ tₑ = 0.5
 prob = ODEProblem(f, u₀, (0, tₑ), constants)
 soln = solve(prob, Tsit5(); saveat = 0.005, progress=true, progress_steps=1);
 
+matwrite("all_solns.mat",
+         Dict("directlu" => temperature_matrix(soln_directlu),
+              "decgmg" => temperature_matrix(soln_decgmg),
+              "gmres" => temperature_matrix(soln_gmres),
+              "time" => soln_directlu.t))
+
+all_solns_mat = matread("all_solns.mat")
+directlu = all_solns_mat["directlu"]
+decgmg = all_solns_mat["decgmg"]
+gmres = all_solns_mat["gmres"]
+sol_time = all_solns_mat["time"]
+
 # For plotting Temperature, Pressure, Advection, and Diffusion
 wdg10 = dec_wedge_product(Tuple{1, 0}, sd)
 codif_1 = δ(1, sd)
@@ -276,7 +289,9 @@ function save_dynamics(save_file_name, video_length = 30)
   time = Observable(0.0)
 
   T = @lift(soln($time).T)
-  f = Figure()
+  f = Figure(size = (1600, 1200),
+             fontsize = 30,
+             fonts = (; regular = "CMU Serif Roman", bold = "CMU Serif Bold"));
 
   ax_T = CairoMakie.Axis(f[1,1], title = @lift("Temperature at Time $(round($time, digits=3))"))
   msh_T = mesh!(ax_T, s; color=T, colormap=:jet, colorrange=(-ΔT/2, ΔT/2))
@@ -334,18 +349,55 @@ save("$(solvername)_iterations_lines.png", plot(iterations))
 # outT = Array(out_df[2, 2:end])
 #
 
-function dynamics_ICS(soln)
-  f = Figure()
-
-  ax_T = CairoMakie.Axis(f[1,1],
+function dynamics_composite()
+  f = Figure(size = (1200, 1800),
+             fontsize = 40,
+             fonts = (; regular = "CMU Serif Roman", bold = "CMU Serif Bold"));
+  ax_T0 = CairoMakie.Axis(f[1,1],
                          title = "Temperature at Time 0",
-                         aspect = AxisAspect(2))
+                         aspect = AxisAspect(2),
+                         xticklabelsvisible = false);
+  ax_T5 = CairoMakie.Axis(f[2,1],
+                         title = "Temperature at Time 0.5",
+                         aspect = AxisAspect(2),
+                         xticklabelsvisible = false);
+  ax_decgmg_diff = CairoMakie.Axis(f[3,1],
+                         title = "Direct LU - DEC GMG",
+                         aspect = AxisAspect(2),
+                         xticklabelsvisible = false);
+  ax_gmres_diff = CairoMakie.Axis(f[4,1],
+                         title = "Direct LU - GMRES",
+                         aspect = AxisAspect(2));
 
-  timestamps = range(0, soln.t[end], length=video_length)
-  record(f, save_file_name, timestamps; framerate = 15) do t
-    time[] = t
-  end
+  msh_T0 = mesh!(ax_T0, s;
+                 color=directlu[:,1],
+                 colormap=:jet,
+                 colorrange=(-ΔT/2, ΔT/2))
+  msh_T5 = mesh!(ax_T5, s;
+                 color=directlu[:,end],
+                 colormap=:jet,
+                 colorrange=(-ΔT/2, ΔT/2))
+
+  decgmg_diff = directlu[:,end] .- decgmg[:,end]
+  gmres_diff = directlu[:,end] .- gmres[:,end]
+  crange_shared =
+    (min(minimum(decgmg_diff), minimum(gmres_diff)),
+     max(maximum(decgmg_diff), maximum(gmres_diff)))
+
+  msh_decgmg_diff = mesh!(ax_decgmg_diff, s;
+                          color=decgmg_diff,
+                          colormap=:jet,
+                          colorrange=crange_shared)
+  msh_gmres_diff = mesh!(ax_gmres_diff, s;
+                         color=gmres_diff,
+                         colormap=:jet,
+                         colorrange=crange_shared)
+
+  Colorbar(f[1:2,2], msh_T0, height=Relative(1.0))
+  Colorbar(f[3:4,2], msh_decgmg_diff, height=Relative(1.0))
+  f
 end
+dynamics_composite()
 
 filename = "Porous_Convection_$(solvername)_subs=$(subs)_Ra=$(Ra)"
 save_dynamics("$(filename).mp4", length(soln.t))
@@ -393,6 +445,24 @@ save("$(solvername)_iterations_lines.png", plot(iterations))
 # outT = Array(out_df[2, 2:end])
 
 # SVGs of such plots will exhibit fuzzy text.
+
+function dynamics_FCS(soln, titleextra)
+  f = Figure()
+
+  ax_T = CairoMakie.Axis(f[1,1],
+                         title = "Temperature at Time 0.5 ; $titleextra",
+                         aspect = AxisAspect(2))
+  msh_T = mesh!(ax_T, s;
+                color=soln(0.5).T,
+                colormap=:jet,
+                colorrange=(-ΔT/2, ΔT/2))
+
+  # https://discourse.julialang.org/t/makie-jl-limiting-height-of-colorbar-to-that-of-a-nearby-equal-aspect-axis/55876/4
+  # Pixel-accurate value is .6351:
+  Colorbar(f[1,2], msh_T, height=Relative(0.6351))
+
+  f
+end
 save("temperature_ics.png", dynamics_ICS(soln_decgmg))
 
 function dynamics_FCS(soln, titleextra)
@@ -486,9 +556,3 @@ function temperature_matrix(x)
     v.T
   end)
 end
-matwrite("all_solns.mat",
-         Dict("directlu" => temperature_matrix(soln_directlu),
-              "decgmg" => temperature_matrix(soln_decgmg),
-              "gmres" => temperature_matrix(soln_gmres),
-              "time" => soln_directlu.t))
-
