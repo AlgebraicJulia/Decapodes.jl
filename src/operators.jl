@@ -223,11 +223,31 @@ function open_operators!(d::SummationDecapode; dimension::Int=2)
         add_De_Rham_2D!(Val{2}, d, op1_src, op1_tgt)
         true
       end
+      (:Δ₀, 3) => begin
+        add_De_Rham_3D!(Val{0}, d, op1_src, op1_tgt)
+        true
+      end
+      (:Δ₁, 3) => begin
+        add_De_Rham_3D!(Val{1}, d, op1_src, op1_tgt)
+        true
+      end
+      (:Δ₂, 3) => begin
+        add_De_Rham_3D!(Val{2}, d, op1_src, op1_tgt)
+        true
+      end
+      (:Δ₃, 3) => begin
+        add_De_Rham_3D!(Val{3}, d, op1_src, op1_tgt)
+        true
+      end
       (:δ₁, _) => begin
         add_Codiff!(d, op1_src, op1_tgt)
         true
       end
       (:δ₂, _) => begin
+        add_Codiff!(d, op1_src, op1_tgt)
+        true
+      end
+      (:δ₃, _) => begin
         add_Codiff!(d, op1_src, op1_tgt)
         true
       end
@@ -259,6 +279,18 @@ function open_operators!(d::SummationDecapode; dimension::Int=2)
         add_Inter_Prod_2D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
         true
       end
+      (:i₁, 3) => begin
+        add_Inter_Prod_3D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        true
+      end
+      (:i₂, 3) => begin
+        add_Inter_Prod_3D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        true
+      end
+      (:i₃, 3) => begin
+        add_Inter_Prod_3D!(Val{3}, d, op2_proj1, op2_proj2, op2_res)
+        true
+      end
       (:L₀, 1) => begin
         add_Lie_1D!(Val{0}, d, op2_proj1, op2_proj2, op2_res)
         true
@@ -277,6 +309,22 @@ function open_operators!(d::SummationDecapode; dimension::Int=2)
       end
       (:L₂, 2) => begin
         add_Lie_2D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        true
+      end
+      (:L₀, 3) => begin
+        add_Lie_3D!(Val{0}, d, op2_proj1, op2_proj2, op2_res)
+        true
+      end
+      (:L₁, 3) => begin
+        add_Lie_3D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        true
+      end
+      (:L₂, 3) => begin
+        add_Lie_3D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        true
+      end
+      (:L₂, 3) => begin
+        add_Lie_3D!(Val{3}, d, op2_proj1, op2_proj2, op2_res)
         true
       end
       _ => false
@@ -321,6 +369,23 @@ function add_Inter_Prod_2D!(::Type{Val{1}}, d::SummationDecapode, proj1_Inter::I
 end
 
 function add_Inter_Prod_2D!(::Type{Val{2}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+  add_Inter_Prod!(d, proj1_Inter, proj2_Inter, res_Inter)
+end
+
+function add_Inter_Prod_3D!!(::Type{Val{1}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+  add_Inter_Prod!(d, proj1_Inter, proj2_Inter, res_Inter)
+end
+
+function add_Inter_Prod_3D!!(::Type{Val{2}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+  ## Takes generic interior product
+  pos_inter_prod = add_part!(d, :Var, type=:infer, name=nothing)
+  add_Inter_Prod!(d, proj1_Inter, proj2_Inter, pos_inter_prod)
+
+  ## Outputs negated value
+  add_part!(d, :Op1, src=pos_inter_prod, tgt=res_Inter, op1=:neg)
+end
+
+function add_Inter_Prod_3D!!(::Type{Val{3}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
   add_Inter_Prod!(d, proj1_Inter, proj2_Inter, res_Inter)
 end
 
@@ -389,6 +454,77 @@ function add_Lie_2D!(::Type{Val{2}}, d::SummationDecapode, proj1_Lie::Int, proj2
   add_part!(d, :Op1, src=inter_product_2_tgt, tgt=res_Lie, op1=:d)
 end
 
+function add_Lie_3D!(::Type{Val{0}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
+
+  ## Outputs result of dual derivative Dual0 to Dual1
+  dual_d_tgt = add_part!(d, :Var, type=:infer, name=nothing)
+  add_part!(d, :Op1, src=proj2_Lie, tgt=dual_d_tgt, op1=:d)
+
+  ## Takes interior product of Primal1 and Dual1 to Dual0
+  add_Inter_Prod_1D!(Val{1}, d, dual_d_tgt, proj1_Lie, res_Lie)
+end
+
+function add_Lie_3D!(::Type{Val{1}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
+
+  ## Outputs result of dual derivative Dual1 to Dual2
+  dual_d_1_tgt = add_part!(d, :Var, type=:infer, name=nothing)
+  add_part!(d, :Op1, src=proj2_Lie, tgt=dual_d_1_tgt, op1=:d)
+
+  ## Takes interior product of Primal1 and Dual2 to Dual1
+  inter_product_3_res! = add_part!(d, :Var, type=:infer, name=nothing)
+  add_Inter_Prod_3D!(Val{3}, d, dual_d_1_tgt, proj1_Lie, inter_product_3_res!)
+
+  ## Takes interior product of Primal1 and Dual1 to Dual0
+  inter_product_2_res = add_part!(d, :Var, type=:infer, name=nothing)
+  add_Inter_Prod_3D!(Val{2}, d, proj2_Lie, proj1_Lie, inter_product_2_res)
+
+  ## Outputs result of dual derivative Dual0 to Dual1
+  dual_d_0_tgt = add_part!(d, :Var, type=:infer, name=nothing)
+  add_part!(d, :Op1, src=inter_product_2_res, tgt=dual_d_0_tgt, op1=:d)
+
+  ## Outputs sum of both dual_d_0 and inter_product_2
+  summation_tgt = add_part!(d, :Σ, sum=res_Lie)
+
+  add_part!(d, :Summand, summand=inter_product_3_res!, summation=summation_tgt)
+  add_part!(d, :Summand, summand=dual_d_0_tgt, summation=summation_tgt)
+end
+
+function add_Lie_3D!(::Type{Val{2}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
+
+  ## Outputs result of dual derivative Dual1 to Dual2
+  dual_d_1_tgt = add_part!(d, :Var, type=:infer, name=nothing)
+  add_part!(d, :Op1, src=proj2_Lie, tgt=dual_d_1_tgt, op1=:d)
+
+  ## Takes interior product of Primal1 and Dual2 to Dual1
+  inter_product_2_res! = add_part!(d, :Var, type=:infer, name=nothing)
+  add_Inter_Prod_3D!(Val{2}, d, dual_d_1_tgt, proj1_Lie, inter_product_2_res!)
+
+  ## Takes interior product of Primal1 and Dual1 to Dual0
+  inter_product_3_res = add_part!(d, :Var, type=:infer, name=nothing)
+  add_Inter_Prod_3D!(Val{3}, d, proj2_Lie, proj1_Lie, inter_product_3_res)
+
+  ## Outputs result of dual derivative Dual0 to Dual1
+  dual_d_0_tgt = add_part!(d, :Var, type=:infer, name=nothing)
+  add_part!(d, :Op1, src=inter_product_3_res, tgt=dual_d_0_tgt, op1=:d)
+
+  ## Outputs sum of both dual_d_0 and inter_product_2
+  summation_tgt = add_part!(d, :Σ, sum=res_Lie)
+
+  add_part!(d, :Summand, summand=inter_product_2_res!, summation=summation_tgt)
+  add_part!(d, :Summand, summand=dual_d_0_tgt, summation=summation_tgt)
+end
+
+function add_Lie_3D!(::Type{Val{3}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
+
+  ## Takes interior product of Primal1 and Dual2 to Dual1
+  inter_product_3_tgt = add_part!(d, :Var, type=:infer, name=nothing)
+  add_Inter_Prod_3D!(Val{3}, d, proj2_Lie, proj1_Lie, inter_product_3_tgt)
+
+  ## Outputs result of dual derivative Dual1 to Dual2
+  add_part!(d, :Op1, src=inter_product_3_tgt, tgt=res_Lie, op1=:d)
+end
+
+
 function add_Codiff!(d::SummationDecapode, src_Codiff::Int, tgt_Codiff::Int)
   hodge_star_first = add_part!(d, :Var, type=:infer, name=nothing)
   add_part!(d, :Op1, src=src_Codiff, tgt=hodge_star_first, op1=:⋆)
@@ -430,6 +566,33 @@ function add_De_Rham_2D!(::Type{Val{1}}, d::SummationDecapode, src_De_Rham::Int,
   add_part!(d, :Summand, summand=sum_part_2, summation=summation_tgt)
 end
 
+#TODO: Check these are added correctly
 function add_De_Rham_2D!(::Type{Val{2}}, d::SummationDecapode, src_De_Rham::Int, tgt_De_Rham::Int)
   add_De_Rham_1D!(Val{1}, d, src_De_Rham, tgt_De_Rham)
 end
+
+function add_De_Rham_3D!(::Type{Val{0}}, d::SummationDecapode, src_De_Rham::Int, tgt_De_Rham::Int)
+  add_De_Rham_1D!(Val{0}, d, src_De_Rham, tgt_De_Rham)
+end
+
+function add_De_Rham_3D!(::Type{Val{1}}, d::SummationDecapode, src_De_Rham::Int, tgt_De_Rham::Int)
+  sum_part_1 = add_part!(d, :Var, type=:infer, name=nothing)
+  add_De_Rham_3D!(Val{0}, d, src_De_Rham, sum_part_1)
+
+  sum_part_2 = add_part!(d, :Var, type=:infer, name=nothing)
+  add_De_Rham_3D!(Val{3}, d, src_De_Rham, sum_part_2)
+
+  summation_tgt = add_part!(d, :Σ, sum=tgt_De_Rham)
+
+  add_part!(d, :Summand, summand=sum_part_1, summation=summation_tgt)
+  add_part!(d, :Summand, summand=sum_part_2, summation=summation_tgt)
+end
+
+function add_De_Rham_3D!(::Type{Val{2}}, d::SummationDecapode, src_De_Rham::Int, tgt_De_Rham::Int)
+  add_De_Rham_3D!(Val{1}, d, src_De_Rham, tgt_De_Rham)
+end
+
+function add_De_Rham_3D!(::Type{Val{3}}, d::SummationDecapode, src_De_Rham::Int, tgt_De_Rham::Int)
+  add_De_Rham_1D!(Val{1}, d, src_De_Rham, tgt_De_Rham)
+end
+
