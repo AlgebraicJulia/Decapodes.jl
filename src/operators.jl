@@ -83,25 +83,25 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
 
     # Regular Hodge Stars
     :⋆₀ => dec_hodge_star(0, sd, hodge=hodge) |> matmul
-    :⋆₁ => hodge_star(1, sd, hodge=hodge) |> matmul #TODO: Revert to dec_, need for 3D
+    :⋆₁ => dec_hodge_star(1, sd, hodge=hodge) |> matmul
     :⋆₂ => dec_hodge_star(2, sd, hodge=hodge) |> matmul
-    :⋆₃ => hodge_star(3, sd, hodge=hodge) |> matmul # TODO: Needs dec_ and geometric
+    :⋆₃ => dec_hodge_star(3, sd, hodge=hodge) |> matmul
 
     # Inverse Hodge Stars
-    :⋆₀⁻¹ => inv_hodge_star(0, sd, hodge) |> matmul #TODO: Revert to dec_, need for 3D
+    :⋆₀⁻¹ => dec_inv_hodge_star(0, sd, hodge) |> matmul
     :⋆₁⁻¹ => dec_pair_inv_hodge(Val{1}, sd, hodge) # Special since Geo is a solver
     :⋆₂⁻¹ => dec_inv_hodge_star(2, sd, hodge) |> matmul # TODO: Needs pair for 3D Geo
-    :⋆₃⁻¹ => inv_hodge_star(3, sd, hodge) |> matmul # TODO: Needs dec_ and geometric
+    :⋆₃⁻¹ => dec_inv_hodge_star(3, sd, hodge) |> matmul
 
     # Differentials
     :d₀ => dec_differential(0, sd) |> matmul
     :d₁ => dec_differential(1, sd) |> matmul
-    :d₂ => CombinatorialSpaces.d(2, sd) |> matmul # TODO: Needs dec_
+    :d₂ => dec_differential(2, sd) |> matmul
 
     # Dual Differentials
     :dual_d₀ || :d̃₀ => dec_dual_derivative(0, sd) |> matmul
     :dual_d₁ || :d̃₁ => dec_dual_derivative(1, sd) |> matmul
-    :dual_d₂ || :d̃₂ => dual_derivative(2,sd) |> matmul # TODO: Needs dec_
+    :dual_d₂ || :d̃₂ => dec_dual_derivative(2,sd) |> matmul
 
     # Wedge Products
     :∧₀₁ => dec_pair_wedge_product(Tuple{0,1}, sd)
@@ -112,7 +112,7 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
 
     #TODO: Need 2-1 and 1-2 wedges
 
-    :♭♯ => ♭♯_mat(sd) |> matmul
+    :♭♯ => ♭♯_mat(sd) |> matmul # TODO: Needs 3D version 
 
     # Averaging Operator
     :avg₀₁ => avg₀₁_mat(sd) |> matmul

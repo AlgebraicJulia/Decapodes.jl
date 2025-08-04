@@ -17,31 +17,33 @@ subdivide_duals!(sd, Circumcenter())
 
 # GLMakie.wireframe(s)
 
-wdg_01 = dec_wedge_product(Tuple{0,1}, sd)
-star₁_mat = hodge_star(1,sd,DiagonalHodge())
-dual_d₂_mat = dual_derivative(2,sd)
-inv_star₃_mat = inv_hodge_star(0,sd,DiagonalHodge())
+Adv = @decapode begin
+    T::Form0
+    U::Form1
+    c::Constant
+    ∂ₜ(T) == -c*(⋆(d(⋆(T ∧ U))))
+end
 
-codif = inv_star₃_mat * dual_d₂_mat * star₁_mat
+infer_types!(Adv, dim=3)
+resolve_overloads!(Adv, dim=3)
+
+sim = evalsim(Adv, dimension=3)
+
+f = sim(sd, nothing, DiagonalHodge())
 
 T_dist = MvNormal([lx/2, ly/2, lz/2], [5,5,5])
 T = [pdf(T_dist, [p[1], p[2], p[3]]) for p in sd[:point]]
 T₀ = T
 GLMakie.mesh(s; color = T, transparency=true, shading=NoShading)
 
-c = 1
-
-#TODO: Work on this, same as 2D basically
 U = eval_constant_primal_form(sd, Point3d(1,0,0))
 
 u₀ = ComponentArray(T=T, U=U)
 
-function adv(du, u, p, t)
-    du.T .= .-(p.c * codif * wdg_01(u.T, u.U))
-end
+c = 1
 
 tₑ = 20
-prob = ODEProblem(adv, u₀, (0, tₑ), (c=c,))
+prob = ODEProblem(f, u₀, (0, tₑ), (c=c,))
 soln = solve(prob, Tsit5(), saveat = 0.1)
 
 GLMakie.mesh(s; color = soln.u[end].T, transparency=true, shading=NoShading, colorrange = extrema(T₀))
