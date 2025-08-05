@@ -596,7 +596,7 @@ const MATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₃
                                               :d₀, :d₁, :d₂, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁, :dual_d₂, :d̃₂,
                                               :avg₀₁, :♭♯])
 
-const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
+const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀, :∧₀₃, :∧₃₀, :∧₁₂, :∧₂₁])
 
 
 const NON_OPTIMIZABLE_CPU_OPERATORS = Set([:♯ᵖᵈ, :♯ᵖᵖ, :♯ᵈᵈ, :♭ᵈᵖ,

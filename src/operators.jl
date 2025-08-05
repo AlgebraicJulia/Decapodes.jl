@@ -101,7 +101,7 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     # Dual Differentials
     :dual_d₀ || :d̃₀ => dec_dual_derivative(0, sd) |> matmul
     :dual_d₁ || :d̃₁ => dec_dual_derivative(1, sd) |> matmul
-    :dual_d₂ || :d̃₂ => dec_dual_derivative(2,sd) |> matmul
+    :dual_d₂ || :d̃₂ => dec_dual_derivative(2, sd) |> matmul
 
     # Wedge Products
     :∧₀₁ => dec_pair_wedge_product(Tuple{0,1}, sd)
@@ -109,8 +109,10 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     :∧₀₂ => dec_pair_wedge_product(Tuple{0,2}, sd)
     :∧₂₀ => dec_pair_wedge_product(Tuple{2,0}, sd)
     :∧₁₁ => dec_pair_wedge_product(Tuple{1,1}, sd)
-
-    #TODO: Need 2-1 and 1-2 wedges
+    :∧₀₃ => dec_pair_wedge_product(Tuple{0,3}, sd)
+    :∧₃₀ => dec_pair_wedge_product(Tuple{3,0}, sd)
+    :∧₁₂ => dec_pair_wedge_product(Tuple{1,2}, sd)
+    :∧₂₁ => dec_pair_wedge_product(Tuple{2,1}, sd)
 
     :♭♯ => ♭♯_mat(sd) |> matmul # TODO: Needs 3D version 
 
@@ -151,6 +153,19 @@ function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
   ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack[1], val_pack[2]),
     (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack))
 end
+
+function dec_pair_wedge_product(::Type{Tuple{1,2}}, sd::HasDeltaSet)
+  val_pack = cache_wedge(Tuple{2,1}, sd, Val{:CPU})
+  ((y, α, g) -> dec_c_wedge_product!(Tuple{2,1}, y, g, α, val_pack[1], val_pack[2]),
+    (α, g) -> dec_c_wedge_product(Tuple{2,1}, g, α, val_pack))
+end
+
+function dec_pair_wedge_product(::Type{Tuple{2,1}}, sd::HasDeltaSet)
+  val_pack = cache_wedge(Tuple{2,1}, sd, Val{:CPU})
+  ((y, α, β) -> dec_c_wedge_product!(Tuple{2,1}, y, α, β, val_pack[1], val_pack[2]),
+    (α, β) -> dec_c_wedge_product(Tuple{2,1}, α, β, val_pack))
+end
+
 
 function dec_pair_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
   error("Replace me in compiled code with element-wise multiplication (.*)")
@@ -280,15 +295,15 @@ function open_operators!(d::SummationDecapode; dimension::Int=2)
         true
       end
       (:i₁, 3) => begin
-        add_Inter_Prod_3D!(Val{1}, d, op2_proj1, op2_proj2, op2_res)
+        add_Inter_Prod_3D!(d, op2_proj1, op2_proj2, op2_res)
         true
       end
       (:i₂, 3) => begin
-        add_Inter_Prod_3D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
+        add_Inter_Prod_3D!(d, op2_proj1, op2_proj2, op2_res)
         true
       end
       (:i₃, 3) => begin
-        add_Inter_Prod_3D!(Val{3}, d, op2_proj1, op2_proj2, op2_res)
+        add_Inter_Prod_3D!(d, op2_proj1, op2_proj2, op2_res)
         true
       end
       (:L₀, 1) => begin
@@ -372,20 +387,7 @@ function add_Inter_Prod_2D!(::Type{Val{2}}, d::SummationDecapode, proj1_Inter::I
   add_Inter_Prod!(d, proj1_Inter, proj2_Inter, res_Inter)
 end
 
-function add_Inter_Prod_3D!(::Type{Val{1}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
-  add_Inter_Prod!(d, proj1_Inter, proj2_Inter, res_Inter)
-end
-
-function add_Inter_Prod_3D!(::Type{Val{2}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
-  ## Takes generic interior product
-  pos_inter_prod = add_part!(d, :Var, type=:infer, name=nothing)
-  add_Inter_Prod!(d, proj1_Inter, proj2_Inter, pos_inter_prod)
-
-  ## Outputs negated value
-  add_part!(d, :Op1, src=pos_inter_prod, tgt=res_Inter, op1=:neg)
-end
-
-function add_Inter_Prod_3D!(::Type{Val{3}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+function add_Inter_Prod_3D!(d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
   add_Inter_Prod!(d, proj1_Inter, proj2_Inter, res_Inter)
 end
 
@@ -461,7 +463,7 @@ function add_Lie_3D!(::Type{Val{0}}, d::SummationDecapode, proj1_Lie::Int, proj2
   add_part!(d, :Op1, src=proj2_Lie, tgt=dual_d_tgt, op1=:d)
 
   ## Takes interior product of Primal1 and Dual1 to Dual0
-  add_Inter_Prod_1D!(Val{1}, d, dual_d_tgt, proj1_Lie, res_Lie)
+  add_Inter_Prod_3D!(d, dual_d_tgt, proj1_Lie, res_Lie)
 end
 
 function add_Lie_3D!(::Type{Val{1}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
@@ -472,11 +474,11 @@ function add_Lie_3D!(::Type{Val{1}}, d::SummationDecapode, proj1_Lie::Int, proj2
 
   ## Takes interior product of Primal1 and Dual2 to Dual1
   inter_product_3_res! = add_part!(d, :Var, type=:infer, name=nothing)
-  add_Inter_Prod_3D!(Val{3}, d, dual_d_1_tgt, proj1_Lie, inter_product_3_res!)
+  add_Inter_Prod_3D!(d, dual_d_1_tgt, proj1_Lie, inter_product_3_res!)
 
   ## Takes interior product of Primal1 and Dual1 to Dual0
   inter_product_2_res = add_part!(d, :Var, type=:infer, name=nothing)
-  add_Inter_Prod_3D!(Val{2}, d, proj2_Lie, proj1_Lie, inter_product_2_res)
+  add_Inter_Prod_3D!(d, proj2_Lie, proj1_Lie, inter_product_2_res)
 
   ## Outputs result of dual derivative Dual0 to Dual1
   dual_d_0_tgt = add_part!(d, :Var, type=:infer, name=nothing)
@@ -490,40 +492,18 @@ function add_Lie_3D!(::Type{Val{1}}, d::SummationDecapode, proj1_Lie::Int, proj2
 end
 
 function add_Lie_3D!(::Type{Val{2}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
-
-  ## Outputs result of dual derivative Dual1 to Dual2
-  dual_d_1_tgt = add_part!(d, :Var, type=:infer, name=nothing)
-  add_part!(d, :Op1, src=proj2_Lie, tgt=dual_d_1_tgt, op1=:d)
-
-  ## Takes interior product of Primal1 and Dual2 to Dual1
-  inter_product_2_res! = add_part!(d, :Var, type=:infer, name=nothing)
-  add_Inter_Prod_3D!(Val{2}, d, dual_d_1_tgt, proj1_Lie, inter_product_2_res!)
-
-  ## Takes interior product of Primal1 and Dual1 to Dual0
-  inter_product_3_res = add_part!(d, :Var, type=:infer, name=nothing)
-  add_Inter_Prod_3D!(Val{3}, d, proj2_Lie, proj1_Lie, inter_product_3_res)
-
-  ## Outputs result of dual derivative Dual0 to Dual1
-  dual_d_0_tgt = add_part!(d, :Var, type=:infer, name=nothing)
-  add_part!(d, :Op1, src=inter_product_3_res, tgt=dual_d_0_tgt, op1=:d)
-
-  ## Outputs sum of both dual_d_0 and inter_product_2
-  summation_tgt = add_part!(d, :Σ, sum=res_Lie)
-
-  add_part!(d, :Summand, summand=inter_product_2_res!, summation=summation_tgt)
-  add_part!(d, :Summand, summand=dual_d_0_tgt, summation=summation_tgt)
+  add_Lie_3D!(Val{1}, d, proj1_Lie, proj2_Lie, res_Lie)
 end
 
 function add_Lie_3D!(::Type{Val{3}}, d::SummationDecapode, proj1_Lie::Int, proj2_Lie::Int, res_Lie::Int)
 
   ## Takes interior product of Primal1 and Dual2 to Dual1
   inter_product_3_tgt = add_part!(d, :Var, type=:infer, name=nothing)
-  add_Inter_Prod_3D!(Val{3}, d, proj2_Lie, proj1_Lie, inter_product_3_tgt)
+  add_Inter_Prod_3D!(d, proj2_Lie, proj1_Lie, inter_product_3_tgt)
 
   ## Outputs result of dual derivative Dual1 to Dual2
   add_part!(d, :Op1, src=inter_product_3_tgt, tgt=res_Lie, op1=:d)
 end
-
 
 function add_Codiff!(d::SummationDecapode, src_Codiff::Int, tgt_Codiff::Int)
   hodge_star_first = add_part!(d, :Var, type=:infer, name=nothing)

@@ -1,8 +1,6 @@
 using Decapodes
 using DiagrammaticEquations
 using CombinatorialSpaces
-using GeometryBasics
-using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
 using GLMakie
@@ -21,11 +19,20 @@ Adv = @decapode begin
     T::Form0
     U::Form1
     c::Constant
-    ∂ₜ(T) == -c*(⋆(d(⋆(T ∧ U))))
+    ∂ₜ(T) == -c*(δ(T ∧ U))
 end
+
+# Adv = @decapode begin
+#     T::DualForm0
+#     U::Form1
+#     c::Constant
+#     ∂ₜ(T) == -c*L(U, T)
+# end
 
 infer_types!(Adv, dim=3)
 resolve_overloads!(Adv, dim=3)
+
+gensim(Adv, dimension=3)
 
 sim = evalsim(Adv, dimension=3)
 
@@ -33,6 +40,8 @@ f = sim(sd, nothing, DiagonalHodge())
 
 T_dist = MvNormal([lx/2, ly/2, lz/2], [5,5,5])
 T = [pdf(T_dist, [p[1], p[2], p[3]]) for p in sd[:point]]
+# T = [pdf(T_dist, [p[1], p[2], p[3]]) for p in sd[tetrahedron_center(sd), :dual_point]]
+
 T₀ = T
 GLMakie.mesh(s; color = T, transparency=true, shading=NoShading)
 
