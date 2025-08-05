@@ -537,3 +537,274 @@ end
   @test laplace_de_rham_2 == test_laplace_de_rham_2
 end
 
+@testset "Opening 3D Operators" begin
+  lie_derivative_0 = @decapode begin
+    A::DualForm0
+    B::Form1
+    C::DualForm0
+
+    C == L₀(B, A)
+  end
+  Decapodes.open_operators!(lie_derivative_0, dimension = 3)
+  infer_types!(lie_derivative_0, dim = 3)
+  resolve_overloads!(lie_derivative_0, dim = 3)
+
+  @test lie_derivative_0 == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 6
+    name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]
+    type = [:DualForm0, :Form1, :DualForm0, :DualForm1, :Form2, :Form3]
+    Op1 = 3
+    src = [1, 4, 6]
+    tgt = [4, 5, 3]
+    op1 = [:dual_d₀, :⋆₂⁻¹, :⋆₃]
+    Op2 = 1
+    proj1 = [5]
+    proj2 = [2]
+    res = [6]
+    op2 = [:∧₂₁]
+    Σ = 0
+    sum = Int64[]
+    Summand = 0
+    summand = Int64[]
+    summation = Int64[]
+  end
+
+  lie_derivative_1 = @decapode begin
+    A::DualForm1
+    B::Form1
+    C::DualForm1
+
+    C == L₁(B, A)
+  end
+  Decapodes.open_operators!(lie_derivative_1, dimension = 3)
+  infer_types!(lie_derivative_1, dim = 3)
+  resolve_overloads!(lie_derivative_1, dim = 3)
+
+  @test lie_derivative_1 == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 11
+    name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3, :Gensim_Var_4, :Gensim_Var_5, :Gensim_Var_6, :Gensim_Var_7, :Gensim_Var_8]
+    type = [:DualForm1, :Form1, :DualForm1, :DualForm2, :DualForm1, :Form1, :Form2, :DualForm0, :Form2, :Form3, :DualForm1]     
+    Op1 = 6
+    src = [1, 4, 7, 1, 10, 8]
+    tgt = [4, 6, 5, 9, 8, 11]
+    op1 = [:dual_d₁, :⋆₁⁻¹, :⋆₂, :⋆₂⁻¹, :⋆₃, :dual_d₀]
+    Op2 = 2
+    proj1 = [9, 6]
+    proj2 = [2, 2]
+    res = [10, 7]
+    op2 = [:∧₂₁, :∧₁₁]
+    Σ = 1
+    sum = [3]
+    Summand = 2
+    summand = [5, 11]
+    summation = [1, 1]
+  end
+
+  lie_derivative_2 = @decapode begin
+    A::DualForm2
+    B::Form1
+    C::DualForm2
+
+    C == L₂(B, A)
+  end
+  Decapodes.open_operators!(lie_derivative_2, dimension = 3)
+  infer_types!(lie_derivative_2, dim = 3)
+  resolve_overloads!(lie_derivative_2, dim = 3)
+
+  @test lie_derivative_2 == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 11
+    name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3, :Gensim_Var_4, :Gensim_Var_5, :Gensim_Var_6, :Gensim_Var_7, :Gensim_Var_8]
+    type = [:DualForm2, :Form1, :DualForm2, :DualForm3, :DualForm2, :Form0, :Form1, :DualForm1, :Form1, :Form2, :DualForm2]     
+    Op1 = 6
+    src = [1, 4, 7, 1, 10, 8]
+    tgt = [4, 6, 5, 9, 8, 11]
+    op1 = [:dual_d₂, :⋆₀⁻¹, :⋆₁, :⋆₁⁻¹, :⋆₂, :dual_d₁]
+    Op2 = 2
+    proj1 = [9, 6]
+    proj2 = [2, 2]
+    res = [10, 7]
+    op2 = [:∧₁₁, :∧₀₁]
+    Σ = 1
+    sum = [3]
+    Summand = 2
+    summand = [5, 11]
+    summation = [1, 1]
+  end
+
+  lie_derivative_3 = @decapode begin
+    A::DualForm3
+    B::Form1
+    C::DualForm3
+
+    C == L₃(B, A)
+  end
+  Decapodes.open_operators!(lie_derivative_3, dimension = 3)
+  infer_types!(lie_derivative_3, dim = 3)
+  resolve_overloads!(lie_derivative_3, dim = 3)
+
+  @test lie_derivative_3 == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 6
+    name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]
+    type = [:DualForm3, :Form1, :DualForm3, :DualForm2, :Form0, :Form1]
+    Op1 = 3
+    src = [1, 6, 4]
+    tgt = [5, 4, 3]
+    op1 = [:⋆₀⁻¹, :⋆₁, :dual_d₂]
+    Op2 = 1
+    proj1 = [5]
+    proj2 = [2]
+    res = [6]
+    op2 = [:∧₀₁]
+    Σ = 0
+    sum = Int64[]
+    Summand = 0
+    summand = Int64[]
+    summation = Int64[]
+  end
+
+  codiff_3 = @decapode begin
+    A::Form3
+    B::Form2
+
+    B == δ₃(A)
+  end
+  Decapodes.open_operators!(codiff_3, dimension = 3)
+  infer_types!(codiff_3, dim = 3)
+  resolve_overloads!(codiff_3, dim = 3)
+
+  @test codiff_3 == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 4
+    name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2]
+    type = [:Form3, :Form2, :DualForm0, :DualForm1]
+    Op1 = 3
+    src = [4, 1, 3]
+    tgt = [2, 3, 4]
+    op1 = [:⋆₂⁻¹, :⋆₃, :dual_d₀]
+    Op2 = 0
+    proj1 = Int64[]
+    proj2 = Int64[]
+    res = Int64[]
+    op2 = Any[]
+    Σ = 0
+    sum = Int64[]
+    Summand = 0
+    summand = Int64[]
+    summation = Int64[]
+  end
+
+  laplace_de_rham_0 = @decapode begin
+    (A, B)::Form0
+
+    B == Δ₀(A)
+  end
+  Decapodes.open_operators!(laplace_de_rham_0, dimension = 3)
+  infer_types!(laplace_de_rham_0, dim = 3)
+  resolve_overloads!(laplace_de_rham_0, dim = 3)
+
+  @test laplace_de_rham_0 == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 5
+    name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]
+    type = [:Form0, :Form0, :Form1, :DualForm2, :DualForm3]
+    Op1 = 4
+    src = [5, 1, 3, 4]
+    tgt = [2, 3, 4, 5]
+    op1 = [:⋆₀⁻¹, :d₀, :⋆₁, :dual_d₂]
+    Op2 = 0
+    proj1 = Int64[]
+    proj2 = Int64[]
+    res = Int64[]
+    op2 = Any[]
+    Σ = 0
+    sum = Int64[]
+    Summand = 0
+    summand = Int64[]
+    summation = Int64[]
+  end
+
+  laplace_de_rham_1 = @decapode begin
+    (A, B)::Form1
+
+    B == Δ₁(A)
+  end
+  Decapodes.open_operators!(laplace_de_rham_1, dimension = 3)
+  infer_types!(laplace_de_rham_1, dim = 3)
+  resolve_overloads!(laplace_de_rham_1, dim = 3)
+
+  @test laplace_de_rham_1 == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 10
+    name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3, :Gensim_Var_4, :Gensim_Var_5, :Gensim_Var_6, :Gensim_Var_7, :Gensim_Var_8]
+    type = [:Form1, :Form1, :Form1, :Form2, :DualForm1, :DualForm2, :Form1, :Form0, :DualForm2, :DualForm3]
+    Op1 = 8
+    src = [8, 1, 4, 5, 6, 1, 9, 10]
+    tgt = [7, 4, 5, 6, 3, 9, 10, 8]
+    op1 = [:d₀, :d₁, :⋆₂, :dual_d₁, :⋆₁⁻¹, :⋆₁, :dual_d₂, :⋆₀⁻¹]
+    Op2 = 0
+    proj1 = Int64[]
+    proj2 = Int64[]
+    res = Int64[]
+    op2 = Any[]
+    Σ = 1
+    sum = [2]
+    Summand = 2
+    summand = [3, 7]
+    summation = [1, 1]
+  end
+
+  laplace_de_rham_2 = @decapode begin
+    (A, B)::Form2
+
+    B == Δ₂(A)
+  end
+  Decapodes.open_operators!(laplace_de_rham_2, dimension = 3)
+  infer_types!(laplace_de_rham_2, dim = 3)
+  resolve_overloads!(laplace_de_rham_2, dim = 3)
+
+  @test laplace_de_rham_2 == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 10
+    name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3, :Gensim_Var_4, :Gensim_Var_5, :Gensim_Var_6, :Gensim_Var_7, :Gensim_Var_8]
+    type = [:Form2, :Form2, :Form2, :Form3, :DualForm0, :DualForm1, :Form2, :Form1, :DualForm1, :DualForm2]
+    Op1 = 8
+    src = [8, 1, 4, 5, 6, 1, 9, 10]
+    tgt = [7, 4, 5, 6, 3, 9, 10, 8]
+    op1 = [:d₁, :d₂, :⋆₃, :dual_d₀, :⋆₂⁻¹, :⋆₂, :dual_d₁, :⋆₁⁻¹]
+    Op2 = 0
+    proj1 = Int64[]
+    proj2 = Int64[]
+    res = Int64[]
+    op2 = Any[]
+    Σ = 1
+    sum = [2]
+    Summand = 2
+    summand = [3, 7]
+    summation = [1, 1]
+  end
+
+  laplace_de_rham_3 = @decapode begin
+    (A, B)::Form3
+
+    B == Δ₃(A)
+  end
+  Decapodes.open_operators!(laplace_de_rham_3, dimension = 3)
+  infer_types!(laplace_de_rham_3, dim = 3)
+  resolve_overloads!(laplace_de_rham_3, dim = 3)
+
+  @test laplace_de_rham_3 == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 5
+    name = [:A, :B, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]
+    type = [:Form3, :Form3, :Form2, :DualForm0, :DualForm1]
+    Op1 = 4
+    src = [3, 1, 4, 5]
+    tgt = [2, 4, 5, 3]
+    op1 = [:d₂, :⋆₃, :dual_d₀, :⋆₂⁻¹]
+    Op2 = 0
+    proj1 = Int64[]
+    proj2 = Int64[]
+    res = Int64[]
+    op2 = Any[]
+    Σ = 0
+    sum = Int64[]
+    Summand = 0
+    summand = Int64[]
+    summation = Int64[]
+  end
+end
