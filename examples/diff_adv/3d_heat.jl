@@ -10,7 +10,7 @@ using Distributions
 
 lx = ly = lz = 10
 
-s = parallelepiped(lx = lx, ly = ly, lz = lz; tetcmd = "vpq1.5a0.05")
+s = parallelepiped(lx = lx, ly = ly, lz = lz; tetcmd = "vpq1.5a0.25")
 sd = EmbeddedDeltaDualComplex3D{Bool, Float64, Point3D}(s)
 subdivide_duals!(sd, Circumcenter())
 GLMakie.wireframe(s)
@@ -18,7 +18,7 @@ GLMakie.wireframe(s)
 Heat = @decapode begin
     T::Form0
     D::Constant
-    ∂ₜ(T) == D * ⋆(d(⋆(d(T))))
+    ∂ₜ(T) == D * Δ(T)
 end
 
 infer_types!(Heat, dim=3)

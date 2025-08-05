@@ -323,7 +323,7 @@ function open_operators!(d::SummationDecapode; dimension::Int=2)
         add_Lie_3D!(Val{2}, d, op2_proj1, op2_proj2, op2_res)
         true
       end
-      (:L₂, 3) => begin
+      (:L₃, 3) => begin
         add_Lie_3D!(Val{3}, d, op2_proj1, op2_proj2, op2_res)
         true
       end
@@ -372,11 +372,11 @@ function add_Inter_Prod_2D!(::Type{Val{2}}, d::SummationDecapode, proj1_Inter::I
   add_Inter_Prod!(d, proj1_Inter, proj2_Inter, res_Inter)
 end
 
-function add_Inter_Prod_3D!!(::Type{Val{1}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+function add_Inter_Prod_3D!(::Type{Val{1}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
   add_Inter_Prod!(d, proj1_Inter, proj2_Inter, res_Inter)
 end
 
-function add_Inter_Prod_3D!!(::Type{Val{2}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+function add_Inter_Prod_3D!(::Type{Val{2}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
   ## Takes generic interior product
   pos_inter_prod = add_part!(d, :Var, type=:infer, name=nothing)
   add_Inter_Prod!(d, proj1_Inter, proj2_Inter, pos_inter_prod)
@@ -385,7 +385,7 @@ function add_Inter_Prod_3D!!(::Type{Val{2}}, d::SummationDecapode, proj1_Inter::
   add_part!(d, :Op1, src=pos_inter_prod, tgt=res_Inter, op1=:neg)
 end
 
-function add_Inter_Prod_3D!!(::Type{Val{3}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
+function add_Inter_Prod_3D!(::Type{Val{3}}, d::SummationDecapode, proj1_Inter::Int, proj2_Inter::Int, res_Inter::Int)
   add_Inter_Prod!(d, proj1_Inter, proj2_Inter, res_Inter)
 end
 

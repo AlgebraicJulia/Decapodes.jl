@@ -537,3 +537,96 @@ end
   @test laplace_de_rham_2 == test_laplace_de_rham_2
 end
 
+@testset "Opening 3D Operators" begin
+  lie_derivative_0 = @decapode begin
+    A::DualForm0
+    B::Form1
+    C::DualForm0
+
+    C == L₀(B, A)
+  end
+  Decapodes.open_operators!(lie_derivative_0, dimension = 3)
+  infer_types!(lie_derivative_0, dim = 3)
+  resolve_overloads!(lie_derivative_0, dim = 3)
+
+  lie_derivative_1 = @decapode begin
+    A::DualForm1
+    B::Form1
+    C::DualForm1
+
+    C == L₁(B, A)
+  end
+  Decapodes.open_operators!(lie_derivative_1, dimension = 3)
+  infer_types!(lie_derivative_1, dim = 3)
+  resolve_overloads!(lie_derivative_1, dim = 3)
+
+  lie_derivative_2 = @decapode begin
+    A::DualForm2
+    B::Form1
+    C::DualForm2
+
+    C == L₂(B, A)
+  end
+  Decapodes.open_operators!(lie_derivative_2, dimension = 3)
+  infer_types!(lie_derivative_2, dim = 3)
+  resolve_overloads!(lie_derivative_2, dim = 3)
+
+  lie_derivative_3 = @decapode begin
+    A::DualForm3
+    B::Form1
+    C::DualForm3
+
+    C == L₃(B, A)
+  end
+  Decapodes.open_operators!(lie_derivative_3, dimension = 3)
+  infer_types!(lie_derivative_3, dim = 3)
+  resolve_overloads!(lie_derivative_3, dim = 3)
+
+  codiff_3 = @decapode begin
+    A::Form3
+    B::Form2
+
+    B == δ₃(A)
+  end
+  Decapodes.open_operators!(codiff_3, dimension = 3)
+  infer_types!(codiff_3, dim = 3)
+  resolve_overloads!(codiff_3, dim = 3)
+
+  laplace_de_rham_0 = @decapode begin
+    (A, B)::Form0
+
+    B == Δ₀(A)
+  end
+  Decapodes.open_operators!(laplace_de_rham_0, dimension = 3)
+  infer_types!(laplace_de_rham_0, dim = 3)
+  resolve_overloads!(laplace_de_rham_0, dim = 3)
+
+  laplace_de_rham_1 = @decapode begin
+    (A, B)::Form1
+
+    B == Δ₁(A)
+  end
+  Decapodes.open_operators!(laplace_de_rham_1, dimension = 3)
+  infer_types!(laplace_de_rham_1, dim = 3)
+  resolve_overloads!(laplace_de_rham_1, dim = 3)
+
+  laplace_de_rham_2 = @decapode begin
+    (A, B)::Form2
+
+    B == Δ₂(A)
+  end
+  Decapodes.open_operators!(laplace_de_rham_2, dimension = 3)
+  infer_types!(laplace_de_rham_2, dim = 3)
+  resolve_overloads!(laplace_de_rham_2, dim = 3)
+
+  laplace_de_rham_3 = @decapode begin
+    (A, B)::Form3
+
+    B == Δ₃(A)
+  end
+  Decapodes.open_operators!(laplace_de_rham_3, dimension = 3)
+  infer_types!(laplace_de_rham_3, dim = 3)
+  resolve_overloads!(laplace_de_rham_3, dim = 3)
+
+
+end
