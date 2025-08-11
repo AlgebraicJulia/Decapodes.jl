@@ -163,8 +163,8 @@ end
 mat = p2_d2_interpolation(sd)
 
 # For no change conditions in top and bottom cooling/heating elements
-bottom_wall_idxs= findall(p -> p[2] == 0, s[:point]);
-top_wall_idxs = findall(p -> p[2] == ly, s[:point]);
+bottom_wall_idxs= findall(p -> p[2] == 0, sd[:point]);
+top_wall_idxs = findall(p -> p[2] == ly, sd[:point]);
 
 apply_tb_bc(x) = begin x[bottom_wall_idxs] .= 0; x[top_wall_idxs] .= 0; return x; end
 
