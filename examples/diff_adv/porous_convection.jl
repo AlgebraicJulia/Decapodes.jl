@@ -110,6 +110,7 @@ glue_sorted_triangle!(s, 5, 8, 9)
 glue_sorted_triangle!(s, 5, 6, 9)
 
 end
+coarsest_domain = copy(s)
 
 subs = 6
 series = PrimalGeometricMapSeries(s, BinarySubdivision(), subs, Barycenter());
@@ -118,54 +119,52 @@ s = repeated_subdivision(s, binary_subdivision, subs);
 md = MGData(series, sd -> Δ(0,sd), 3, BinarySubdivision());
 sd = finest_mesh(series);
 
-#fig = Figure();
-#ax = CairoMakie.Axis(fig[1,1],
-#                     title="Coarse Porous Convection Domain",
-#                     aspect = AxisAspect(2));
-#wireframe!(ax, s);
-#fig
-#save("coarse_pc_domain.svg", fig)
-#save("coarse_pc_domain.png", fig)
-#
-#fig = Figure();
-#ax = CairoMakie.Axis(fig[1,1],
-#                     title="Porous Convection Domain Subdivided Once",
-#                     aspect = AxisAspect(2));
-#wireframe!(ax, binary_subdivision(s));
-#fig
-#save("fine_pc_domain.svg", fig)
-#save("fine_pc_domain.png", fig)
-
+function plot_pc_domain()
+  fig = Figure(size = (1600, 500),
+               fontsize = 30,
+               fonts = (; regular = "CMU Serif Roman", bold = "CMU Serif Bold"));
+  ax1 = CairoMakie.Axis(fig[1,1],
+                       title="Coarse Porous Convection Domain",
+                       aspect = AxisAspect(2));
+  wireframe!(ax1, coarsest_domain);
+  
+  ax2 = CairoMakie.Axis(fig[1,2],
+                       title="Porous Convection Domain Subdivided Once",
+                       aspect = AxisAspect(2),
+                       yticklabelsvisible = false);
+  wireframe!(ax2, binary_subdivision(coarsest_domain));
+  fig
+end
+save("pc_coarse_domains.svg", plot_pc_domain())
 
 # GMRES, Direct_LU, MG, GMRES_MG, AMG
 solvername = "MG"
-#solvername = "Direct_LU"
-#solvername = "GMRES"
+solvername = "Direct_LU"
+solvername = "GMRES"
 
 Δ0 = first(md.operators)
 Δn = md.operators[begin+1]
 
-fig = Figure();
-ax = CairoMakie.Axis(fig[1,1],
-                     title="Sparsity Pattern of Finest Discrete Laplacian",
-                     xlabel="nz = $(length(Δ0.nzval))",
-                     aspect=AxisAspect(1));
-spy_plt = spy!(ax, Δ0, markersize=10, marker=FastPixel());
-hidedecorations!(ax, label=false)
-fig
-save("finest_sparsity.svg", fig)
-save("finest_sparsity.png", fig)
-
-fig = Figure();
-ax = CairoMakie.Axis(fig[1,1],
-                     title="Sparsity Pattern of Second-Finest Discrete Laplacian",
-                     xlabel="nz = $(length(Δn.nzval))",
-                     aspect=AxisAspect(1));
-spy_plt = spy!(ax, Δn, markersize=10, marker=FastPixel(), colormap=:jet);
-hidedecorations!(ax, label=false)
-fig
-save("secondfinest_sparsity.svg", fig)
-save("secondfinest_sparsity.png", fig)
+function plot_sparsities()
+  fig = Figure(size = (1700, 1200),
+               fontsize = 31,
+               fonts = (; regular = "CMU Serif Roman", bold = "CMU Serif Bold"));
+  ax1 = CairoMakie.Axis(fig[1,1],
+                       title="Sparsity Pattern of Finest Discrete Laplacian",
+                       xlabel="nz = $(length(Δ0.nzval))",
+                       aspect=AxisAspect(1));
+  spy_plt = spy!(ax1, Δ0, markersize=10, marker=FastPixel());
+  hidedecorations!(ax1, label=false)
+  
+  ax2 = CairoMakie.Axis(fig[1,2],
+                       title="Sparsity Pattern of Second-Finest Discrete Laplacian",
+                       xlabel="nz = $(length(Δn.nzval))",
+                       aspect=AxisAspect(1));
+  spy_plt = spy!(ax2, Δn, markersize=10, marker=FastPixel());
+  hidedecorations!(ax2, label=false)
+  fig
+end
+save("lap_sparsities.svg", plot_sparsities())
 
 function _multigrid_μ_cycle(u, b, md::MultigridData, alg=cg, μ=1)
   A,r,p,s = CombinatorialSpaces.Multigrid.car(md)
@@ -267,15 +266,28 @@ constants = (k_ηf = k_ηf, αρ₀ = αρ₀, ϕ = ϕ, λ_ρ₀Cp = λ_ρ₀Cp)
 
 tₑ = 0.5
 prob = ODEProblem(f, u₀, (0, tₑ), constants)
-soln = solve(prob, Tsit5(); saveat = 0.005, progress=true, progress_steps=1);
+t0 = time()
+soln_decgmg = solve(prob, Tsit5();
+  reltol=1e-9,
+  saveat = 0.005, progress=true, progress_steps=1);
+tend = time()
+time_decgmg =  tend - t0
 
-matwrite("all_solns.mat",
-         Dict("directlu" => temperature_matrix(soln_directlu),
+matwrite("all_solns_aug13_2025.mat",
+         Dict(
+              "directlu" => temperature_matrix(soln_directlu),
               "decgmg" => temperature_matrix(soln_decgmg),
               "gmres" => temperature_matrix(soln_gmres),
-              "time" => soln_directlu.t))
+              "nf_directlu" => (soln_directlu.stats.nf),
+              "nf_decgmg" =>   (soln_decgmg.stats.nf),
+              "nf_gmres" =>    (soln_gmres.stats.nf),
+              "time" => soln_directlu.t,
+              "time_decgmg" => time_decgmg,
+              "time_directlu" => time_directlu,
+              "time_gmres" => time_gmres,
+              "reltol" => 1e-9))
 
-all_solns_mat = matread("all_solns.mat")
+all_solns_mat = matread("all_solns_aug13_2025.mat")
 directlu = all_solns_mat["directlu"]
 decgmg = all_solns_mat["decgmg"]
 gmres = all_solns_mat["gmres"]
@@ -531,28 +543,62 @@ plot_rmse_over_time(soln_decgmg, "DEC GMG")
 plot_rmse_over_time(soln_gmres, "GMRES")
 
 function plot_comparison_rmse_over_time()
-  fig = Figure();
-  ax = CairoMakie.Axis(fig[1,1],
+  fig = Figure(size = (1600, 800),
+               fontsize = 30,
+               fonts = (; regular = "CMU Serif Roman", bold = "CMU Serif Bold"));
+  axlogit = CairoMakie.Axis(fig[1,2],
+                       title="log10 RMSE over Time",
+                       xlabel="time [s]",
+                       ylabel= "log10 RMSE",
+                       yaxisposition = :right)
+  axnologit = CairoMakie.Axis(fig[1,1],
                        title="RMSE over Time",
                        xlabel="time [s]",
                        ylabel="RMSE [°C]")
+
   rmse_over_time_decgmg = map(soln_directlu.t) do t
     rmse(soln_directlu(t).T, soln_decgmg(t).T)
   end
   rmse_over_time_gmres = map(soln_directlu.t) do t
     rmse(soln_directlu(t).T, soln_gmres(t).T)
   end
-  lines!(ax, soln_directlu.t, rmse_over_time_gmres, label="GMRES");
-  lines!(ax, soln_directlu.t, rmse_over_time_decgmg, label="DEC GMG");
-  Legend(fig[1,2], ax);
+
+  lines!(axlogit, soln_directlu.t[2:end], log10.(rmse_over_time_gmres)[2:end], label="GMRES");
+  lines!(axlogit, soln_directlu.t[2:end], log10.(rmse_over_time_decgmg)[2:end], label="DEC GMG");
+  lines!(axnologit, soln_directlu.t, rmse_over_time_gmres, label="GMRES");
+  lines!(axnologit, soln_directlu.t, rmse_over_time_decgmg, label="DEC GMG");
+
+  #Legend(fig[1,2], ax);
+  axislegend(axnologit,"Scheme", position=:lt, labelsize=24, fontsize=30);
   fig
 end
+plot_comparison_rmse_over_time()
 save("rmse_comparison.svg", plot_comparison_rmse_over_time())
 
-rmse_ratios = rmse_over_time_decgmg ./ rmse_over_time_gmres * 100
+rmse_ratios = rmse_over_time_decgmg ./ rmse_over_time_gmres
 
 function temperature_matrix(x)
   reduce(hcat, map(x) do v
     v.T
   end)
 end
+
+matwrite("rmses.mat", Dict("rmse_over_time_decgmg" => rmse_over_time_decgmg,
+                           "rmse_over_time_gmres" => rmse_over_time_gmres))
+
+using CairoMakie
+using MAT
+
+data = matread("rmses.mat")
+rmse_over_time_decgmg = data["rmse_over_time_decgmg"]
+rmse_over_time_gmres = data["rmse_over_time_gmres"]
+
+f = Figure();
+ax = CairoMakie.Axis(f[1,1], title="RMSE RATIOS");
+ax2 = CairoMakie.Axis(f[2,1], title="(log10 RMSE) RATIOS");
+lines!(ax, (rmse_over_time_decgmg ./ rmse_over_time_gmres)[2:end])
+lines!(ax2, (log10.(rmse_over_time_decgmg)[2:end] ./ log10.(rmse_over_time_gmres)[2:end]));
+f
+save("rmse_ratios_and_ratios_of_logs.png", ans)
+
+
