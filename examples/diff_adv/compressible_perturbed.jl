@@ -354,74 +354,74 @@ function perturbed_pressure(Thetaₕ, Theta′)
   return r_R_Cₚ .* (Thetaₕ) .^ (r_R_Cₚ - 1) .* Theta′ .* (R .* (P₀ .^ -R_Cₚ)) .^ (r_R_Cₚ)
 end
 
-# HYDROSTATIC
-simname = "Perturbed_Hydrostatic"
-Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
-U₀ = CUDA.zeros(Float64, ne(sd))
-ρ′ = CUDA.zeros(Float64, nv(sd))
-Theta′ = CUDA.zeros(Float64, nv(sd))
+# # HYDROSTATIC
+# simname = "Perturbed_Hydrostatic"
+# Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
+# U₀ = CUDA.zeros(Float64, ne(sd))
+# ρ′ = CUDA.zeros(Float64, nv(sd))
+# Theta′ = CUDA.zeros(Float64, nv(sd))
 
-# WARM BUBBLE
-simname = "Perturbed_Warm_Bubble"
-Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
-U₀ = CUDA.zeros(Float64, ne(sd))
+# # WARM BUBBLE
+# simname = "Perturbed_Warm_Bubble"
+# Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
+# U₀ = CUDA.zeros(Float64, ne(sd))
 
-ρ′ = CUDA.zeros(Float64, nv(sd))
-theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
-Theta′ = ρₕ .* CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
+# ρ′ = CUDA.zeros(Float64, nv(sd))
+# theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
+# Theta′ = ρₕ .* CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
 
-# WARM BUBBLE
-simname = "Perturbed_Warm_Bubble_Gradient"
-thetaₕ = 300 * CUDA.ones(Float64, nv(sd))
-Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
-Pₕ = exact_pressure(Thetaₕ)
+# # WARM BUBBLE
+# simname = "Perturbed_Warm_Bubble_Gradient"
+# thetaₕ = 300 * CUDA.ones(Float64, nv(sd))
+# Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
+# Pₕ = exact_pressure(Thetaₕ)
 
-perturb = false
-peturbation_size = 1e-4
+# perturb = false
+# peturbation_size = 1e-4
 
-U₀ = CUDA.zeros(Float64, ne(sd))
-theta_dist = MvNormal([lx / 2, ly / 4], 0.25)
-theta′ = 10 * CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]]) .+ perturb .* peturbation_size .* (2 * CUDA.rand(Float64, nv(sd)) .- 1)
-plot_zeroform(s, Array(theta′))
+# U₀ = CUDA.zeros(Float64, ne(sd))
+# theta_dist = MvNormal([lx / 2, ly / 4], 0.25)
+# theta′ = 10 * CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]]) .+ perturb .* peturbation_size .* (2 * CUDA.rand(Float64, nv(sd)) .- 1)
+# plot_zeroform(s, Array(theta′))
 
-ρ′ = (Pₕ .^ (1 - R / Cₚ) * P₀^(R / Cₚ)) ./ (R .* (thetaₕ .+ theta′)) .- ρₕ .+ perturb .* peturbation_size .* (2 * CUDA.rand(Float64, nv(sd)) .- 1)
-plot_zeroform(s, Array(ρ′))
-Theta′ = ρ′ .* thetaₕ .+ ρₕ .* theta′ .+ ρ′ .* theta′
-plot_zeroform(s, Array(Theta′))
+# ρ′ = (Pₕ .^ (1 - R / Cₚ) * P₀^(R / Cₚ)) ./ (R .* (thetaₕ .+ theta′)) .- ρₕ .+ perturb .* peturbation_size .* (2 * CUDA.rand(Float64, nv(sd)) .- 1)
+# plot_zeroform(s, Array(ρ′))
+# Theta′ = ρ′ .* thetaₕ .+ ρₕ .* theta′ .+ ρ′ .* theta′
+# plot_zeroform(s, Array(Theta′))
 
-# WARM BUBBLE WITH WIND
-simname = "Perturbed_Warm_Bubble_Wind"
-Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
+# # WARM BUBBLE WITH WIND
+# simname = "Perturbed_Warm_Bubble_Wind"
+# Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
 
-ρ′ = CUDA.zeros(Float64, nv(sd))
-theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
-Theta′ = ρₕ .* CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
+# ρ′ = CUDA.zeros(Float64, nv(sd))
+# theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
+# Theta′ = ρₕ .* CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
 
-U₀ = (ρₕ .+ ρ′) * CuVector{Float64}(eval_constant_primal_form(sd, Point3d(1, 0, 0)))
+# U₀ = (ρₕ .+ ρ′) .* CuVector{Float64}(eval_constant_primal_form(sd, Point3d(1, 0, 0)))
 
-# COLD BUBBLE
-simname = "Perturbed_Cold_Bubble"
-Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
-U₀ = CUDA.zeros(Float64, ne(sd))
+# # COLD BUBBLE
+# simname = "Perturbed_Cold_Bubble"
+# Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
+# U₀ = CUDA.zeros(Float64, ne(sd))
 
-ρ′ = CUDA.zeros(Float64, nv(sd))
-theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
-Theta′ = ρₕ .* -CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
+# ρ′ = CUDA.zeros(Float64, nv(sd))
+# theta_dist = MvNormal([lx / 2, ly / 2], 0.1)
+# Theta′ = ρₕ .* -CuArray{Float64}([pdf(theta_dist, [p[1], p[2]]) for p in sd[:point]])
 
-# LIGHT BUBBLE
-simname = "Perturbed_Light_Bubble_Gradient"
-thetaₕ = 300 * CUDA.ones(Float64, nv(sd))
-Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
-Pₕ = exact_pressure(Thetaₕ)
+# # LIGHT BUBBLE
+# simname = "Perturbed_Light_Bubble_Gradient"
+# thetaₕ = 300 * CUDA.ones(Float64, nv(sd))
+# Thetaₕ, ρₕ = generate_hydrostatic_vars(sd)
+# Pₕ = exact_pressure(Thetaₕ)
 
-U₀ = CUDA.zeros(Float64, ne(sd))
-rho_dist = MvNormal([lx / 2, ly / 4], 0.5)
-ρ′ = -0.01 * CuArray{Float64}([pdf(rho_dist, [p[1], p[2]]) for p in sd[:point]])
+# U₀ = CUDA.zeros(Float64, ne(sd))
+# rho_dist = MvNormal([lx / 2, ly / 4], 0.5)
+# ρ′ = -0.01 * CuArray{Float64}([pdf(rho_dist, [p[1], p[2]]) for p in sd[:point]])
 
-theta′ = (Pₕ .^ (1 - R / Cₚ) * P₀^(R / Cₚ)) ./ (R .* (ρₕ .+ ρ′)) .- 300
-plot_zeroform(s, Array(theta′))
-Theta′ = ρ′ .* thetaₕ .+ ρₕ .* theta′ .+ ρ′ .* theta′
-plot_zeroform(s, Array(Theta′))
+# theta′ = (Pₕ .^ (1 - R / Cₚ) * P₀^(R / Cₚ)) ./ (R .* (ρₕ .+ ρ′)) .- 300
+# plot_zeroform(s, Array(theta′))
+# Theta′ = ρ′ .* thetaₕ .+ ρₕ .* theta′ .+ ρ′ .* theta′
+# plot_zeroform(s, Array(Theta′))
 
 # RAYLEIGH-TAYLOR INSTABILITY
 simname = "Perturbed_RTI"
@@ -515,7 +515,7 @@ function smoothing(sd, c_smooth)
     i = 2*ne(sd) + v
     I[i] = v; J[i] = v; V[i] = 1 - c; V2[i] = 1 + c
   end
-  
+
   return sparse(I, J, V2) * sparse(I, J, V)
 end
 
@@ -615,9 +615,9 @@ function run_compressible_ns(Thetaₕ, Theta′₀, U₀, ρₕ, ρ′₀, tₑ,
 
   steps = ceil(Int64, tₑ / Δt)
 
-  Us = [deepcopy(U₀)]
-  Thetas = [deepcopy(Theta′₀)]
-  rhos = [deepcopy(ρ′₀)]
+  Us = [Array(U₀)]
+  Thetas = [Array(Theta′₀)]
+  rhos = [Array(ρ′₀)]
 
   for step in 1:steps
 
@@ -660,9 +660,9 @@ function run_compressible_ns(Thetaₕ, Theta′₀, U₀, ρₕ, ρ′₀, tₑ,
     end
 
     if step % saveat == 0
-      push!(Us, deepcopy(U))
-      push!(Thetas, deepcopy(Theta′))
-      push!(rhos, deepcopy(ρ′))
+      push!(Us, Array(U))
+      push!(Thetas, Array(Theta′))
+      push!(rhos, Array(ρ′))
       println("Loading simulation results: $((step / steps) * 100)%")
       println("Relative mass is : $((CUDA.sum(ρₕ .+ ρ′) / m₀) * 100)%")
       println("Relative energy is : $((CUDA.sum(Thetaₕ .+ Theta′) / E₀) * 100)%")
@@ -686,7 +686,7 @@ function run_compressible_ns(Thetaₕ, Theta′₀, U₀, ρₕ, ρ′₀, tₑ,
     end
   end
 
-  return Array.(Thetas), Array.(Us), Array.(rhos)
+  return Thetas, Us, rhos
 end
 
 # For dry air
@@ -695,12 +695,12 @@ Re = Inf
 μ = 1 / Re # Momentum diffusivity, 1/Re
 κ = μ / Pr # Heat diffusivity
 
-tₑ = 2 # 0.015
+tₑ = 0.1 # 2 # 0.015
 Δt = 1e-5 # 2e-5 - 0.04 | 5e-5 - 0.08 | 1e-4 - 0.16 # dx / 360
 Thetas, Us, rhos = run_compressible_ns(Thetaₕ, Theta′, U₀, ρₕ, ρ′, tₑ, Δt; saveat=250, debug=false);
 
-filename = "$(simname)_Re=$(Re)_tend=$(tₑ)_dx=$(dx)_rho_$(rho_smooth)_smoothing_part2"
-save("$(filename).jld2", Dict("Thetas" => Array.(Thetas), "Us" => Array.(Us), "rhos" => Array.(rhos)))
+filename = "$(simname)_Re=$(Re)_tend=$(tₑ)_dx=$(dx)_rho_$(rho_smooth)_smoothing"
+save("$(filename).jld2", Dict("Thetas" => Thetas, "Us" => Us, "rhos" => rhos))
 
 function load_savestate(filename)
   file = load("$(joinpath(pwd(), filename)).jld2")
@@ -761,7 +761,7 @@ plot_zeroform(s, Thetas[timestep]; title="Density-Coupled Potential Temperature 
 # Potential Temperature Plots
 theta_end = (Thetas[timestep] .+ cpu_Thetaₕ) ./ (rhos[timestep] .+ cpu_ρₕ)
 plot_zeroform(s, theta_end; title="Potential Temperature", colormap=:thermal)
-plot_zeroform(s, κ * Array(ptemp_zero_laplacian) * theta_end; title="Thermal Diffusion", colormap=:thermal)
+plot_zeroform(s, κ * SparseMatrixCSC(ptemp_zero_laplacian) * theta_end; title="Thermal Diffusion", colormap=:thermal)
 
 # Pressure Plots
 plot_zeroform(s, exact_pressure(Thetas[timestep] .+ cpu_Thetaₕ); title="Pressure Field", colormap = Reverse(:acton))
