@@ -124,7 +124,7 @@ datatype of the vector, and the `code_target` which is used by multiple dispatch
 An example overloaded hook signature would be `hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::UserTarget)`
 """
 function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CPUBackend)
-  :($(Symbol(:__,c.name)) = Decapodes.FixedSizeDiffCache(Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form))))))
+  :($(Symbol(:__,c.name)) = Decapodes.DiffCache(Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form))))))
 end
 
 # TODO: Allow user to overload these hooks with user-defined code_target
@@ -504,7 +504,7 @@ end
     hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
 
 This hook determines if preallocated vectors need to be be handled in a special manner everytime
-before a function run. This is useful in the example of using `FixedSizeDiffCache` from `PreallocationTools.jl`.
+before a function run. This is useful in the example of using `DiffCache` from `PreallocationTools.jl`.
 
 This hook is passed in `cache_exprs` which is the collection of exprs to be pasted, `alloc_vec` which is an
 `AllocVecCall` that stores information about the allocated vector and a code target.

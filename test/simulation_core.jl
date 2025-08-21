@@ -115,7 +115,7 @@ import Decapodes: AllocVecCall
 
   This function tests that the PreallocationTools usage is correct. Exactly, this tests that
   the form to simplex conversion is correct, that the correct collection is used and that the
-  name of the cache is different from the variable. This only works for `FixedSizeDiffCache`.
+  name of the cache is different from the variable. This only works for `DiffCache`.
   """
   function test_prealloc_tools(alloc_vec::AllocVecCall)
     expr = Expr(alloc_vec)
@@ -132,7 +132,7 @@ import Decapodes: AllocVecCall
 
     @test alloc_vec.name != name
 
-    @test cache == :(Decapodes.FixedSizeDiffCache)
+    @test cache == :(Decapodes.DiffCache)
 
     @test type_result == simplex_type
 
@@ -177,12 +177,12 @@ import Decapodes: AllocVecCall
 
   for type in [Float32, Float64]
 
-    # Test correct data for dimension 1 FixedSizeDiffCache
+    # Test correct data for dimension 1 DiffCache
     for form in [:Form0, :Form1, :DualForm1, :DualForm0]
       test_prealloc_tools(AllocVecCall(:V, form, 1, type, CPUTarget()))
     end
 
-    # Test correct data for dimension 2 FixedSizeDiffCache
+    # Test correct data for dimension 2 DiffCache
     for form in [:Form0, :Form1, :Form2, :DualForm2, :DualForm1, :DualForm0]
       test_prealloc_tools(AllocVecCall(:V, form, 2, type, CPUTarget()))
     end
