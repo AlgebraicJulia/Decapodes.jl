@@ -1,5 +1,6 @@
 using CombinatorialSpaces
 using ComponentArrays
+using ForwardDiff
 using LinearAlgebra
 using MLStyle
 using PreallocationTools
