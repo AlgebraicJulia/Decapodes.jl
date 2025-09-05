@@ -247,11 +247,27 @@ U₀ = wdg_10dd(CuArray{Float64}(u), ρ₀)
 # (U,u)::DualForm1
 # (ρ, P)::DualForm0
 
-m₀ = CUDA.sum(ρ₀)
+include("examples/diff_adv/periodic_bc.jl")
+
+depth = 5
+topb = collect_top_boundary_triangles(dx, lx, dy, ly, depth);
+botb = collect_bottom_boundary_triangles(dx, lx, dy, ly, depth);
+
+leftb = collect_left_boundary_triangles(dx, lx, dy, ly, depth);
+rightb = collect_right_boundary_triangles(dx, lx, dy, ly, depth);
+
+tb_bounds = vcat(topb, botb);
+lr_bounds = vcat(leftb, rightb);
+vtb_bounds = VertexMapping(sd, tb_bounds);
+vlr_bounds = VertexMapping(sd, lr_bounds);
+etb_bounds = EdgeMapping(sd, tb_bounds);
+elr_bounds = EdgeMapping(sd, lr_bounds);
 
 invhdg1 = CuSparseMatrixCSC{Float64}(inv_hdg_1)
 hdg1 = CuSparseMatrixCSC{Float64}(hdg_1)
 invhdg0_dd1 = CuSparseMatrixCSC{Float64}(inv_hdg_0 * dual_d1)
+invhdg2 = CuSparseMatrixCSC{Float64}(inv_hdg_2)
+hdg2 = CuSparseMatrixCSC{Float64}(hdg_2)
 
 special_dual_d0 = deepcopy(dual_d0)
 special_dual_d0[boundary_edges, :] .= 0
@@ -268,62 +284,72 @@ lap_term = lap_first_term + lap_second_term
 
 cu_flatsharp = CuSparseMatrixCSC{Float64}(flatsharp)
 
-function momentum_continuity(U, ρ)
+m₀ = CUDA.sum(invhdg2 * ρ₀)
+
+function momentum_continuity(U⁺, ρ⁺)
+  U = hdg1 * U⁺
+  ρ = hdg2 * ρ⁺
   u = wdg_10dd(U, 1 ./ ρ)
   v = cu_flatsharp * u
 
-  return -wdg_10dd(U, codif_1 * u) - # U ∧ δu
+  return -invhdg1 * (-wdg_10dd(U, codif_1 * u) - # U ∧ δu
          dd0_hdg2 * wdg_11(v, invhdg1 * U) - # L(u, U)
          hdg1 * wdg_10(v, invhdg0_dd1 * U) +
          0.5 * wdg_10dd(dd0_hdg2 * wdg_11(v, invhdg1 * u), ρ) - # 1/2 * ρ * d||u||^2
          cu_dual_d0 * (κ * ρ) + # dP, P = κρ
-         μ * lap_term * u # μΔu
+         μ * lap_term * u) # μΔu
 
 end
 
-function run_compressible_ns(U₀, ρ₀, tₑ, Δt; saveat=500)
+function run_compressible_ns(U⁺₀, ρ⁺₀, tₑ, Δt; saveat=500)
 
-  U = deepcopy(U₀)
-  ρ = deepcopy(ρ₀)
+  U⁺ = deepcopy(U⁺₀)
+  ρ⁺ = deepcopy(ρ⁺₀)
 
-  U_half = CUDA.zeros(Float64, ne(sd))
+  U⁺_half = CUDA.zeros(Float64, ne(sd))
 
-  ρ_half = CUDA.zeros(Float64, ntriangles(sd))
-  ρ_full = CUDA.zeros(Float64, ntriangles(sd))
-
+  ρ⁺_half = CUDA.zeros(Float64, ntriangles(sd))
+  ρ⁺_full = CUDA.zeros(Float64, ntriangles(sd))
 
   steps = ceil(Int64, tₑ / Δt)
 
-  Us = [Array(U₀)]
-  rhos = [Array(ρ₀)]
+  Us = [Array(hdg1 * U⁺₀)]
+  rhos = [Array(hdg2 * ρ⁺₀)]
 
   for step in 1:steps
-    U_half .= U .+ 0.5 * Δt * momentum_continuity(U, ρ)
-    ρ_full .= ρ - Δt * codif_1 * U_half
-    ρ_half .= 0.5 .* (ρ .+ ρ_full)
 
-    U .= U .+ Δt * momentum_continuity(U_half, ρ_half)
-    ρ .= ρ_full
+    apply_periodic!(U⁺, elr_bounds)
+    apply_periodic!(ρ⁺, lr_bounds)
 
-    if any(CUDA.isnan.(U))
+    apply_periodic!(U⁺, etb_bounds)
+    apply_periodic!(ρ⁺, tb_bounds)
+
+    U⁺_half .= U⁺ .+ 0.5 * Δt * momentum_continuity(U⁺, ρ⁺)
+    ρ⁺_full .= ρ⁺ - Δt * invhdg2 * codif_1 * hdg1 * U⁺_half
+    ρ⁺_half .= 0.5 .* (ρ⁺ .+ ρ⁺_full)
+
+    U⁺ .= U⁺ .+ Δt * momentum_continuity(U⁺_half, ρ⁺_half)
+    ρ⁺ .= ρ⁺_full
+
+    if any(CUDA.isnan.(U⁺))
       println("Warning, NAN result in U at step: $(step)")
       break
-    elseif any(CUDA.isinf.(U))
+    elseif any(CUDA.isinf.(U⁺))
       println("Warning, INF result in U at step: $(step)")
       break
-    elseif any(CUDA.isnan.(ρ))
-      println("Warning, NAN result in ρ at step: $(step)")
+    elseif any(CUDA.isnan.(ρ⁺))
+      println("Warning, NAN result in ρ⁺ at step: $(step)")
       break
-    elseif any(CUDA.isinf.(ρ))
-      println("Warning, INF result in ρ at step: $(step)")
+    elseif any(CUDA.isinf.(ρ⁺))
+      println("Warning, INF result in ρ⁺ at step: $(step)")
       break
     end
 
     if step % saveat == 0
-      push!(Us, Array(U))
-      push!(rhos, Array(ρ))
+      push!(Us, Array(hdg1 * U⁺))
+      push!(rhos, Array(hdg2 * ρ⁺))
       println("Loading simulation results: $((step / steps) * 100)%")
-      println("Relative mass is : $((CUDA.sum(ρ) / m₀) * 100)%")
+      println("Relative mass is : $((CUDA.sum(ρ⁺) / m₀) * 100)%")
       println("-----")
     end
   end
@@ -334,9 +360,12 @@ end
 Re = 1000
 μ = 1 / Re
 
-tₑ = 5
+tₑ = 10
 Δt = 1e-4 # dx / 360
-Us, rhos = run_compressible_ns(U₀, ρ₀, tₑ, Δt; saveat=250);
+
+U⁺₀ = -invhdg1 * U₀
+ρ⁺₀ = invhdg2 * ρ₀
+Us, rhos = run_compressible_ns(U⁺₀, ρ⁺₀, tₑ, Δt; saveat=250);
 
 cpu_wdg_10_dd_mat = wedge_dd_01_mat(sd)
 cpu_wdg_10dd(α, f) = α .* (cpu_wdg_10_dd_mat * f)
@@ -346,8 +375,8 @@ u_end = cpu_wdg_10dd(Us[timestep], 1 ./ rhos[timestep])
 ω_end = inv_hdg_0 * dual_d1 * u_end
 
 plot_zeroform(s, ω_end)
-plot_zeroform(s, interp * rhos[timestep])
-plot_zeroform(s, hdg_2 * d1 * inv_hdg_1 * u_end)
+# plot_zeroform(s, interp * rhos[timestep])
+# plot_zeroform(s, hdg_2 * d1 * inv_hdg_1 * u_end)
 
 function save_dynamics(save_file_name)
   time = Observable(1)
@@ -361,9 +390,9 @@ function save_dynamics(save_file_name)
   msh_w = mesh!(ax_w, s; color=w, colormap=:jet, colorrange=extrema(ω))
   Colorbar(f[1, 2], msh_w)
 
-  ax_ρ = CairoMakie.Axis(f[2, 1], title="Density with μ=$(μ)")
-  msh_ρ = mesh!(ax_ρ, s; color=ρ, colormap=:jet, colorrange=(-1e-5, 1e-5) .+ 1)
-  Colorbar(f[2, 2], msh_ρ)
+  # ax_ρ = CairoMakie.Axis(f[2, 1], title="Density with μ=$(μ)")
+  # msh_ρ = mesh!(ax_ρ, s; color=ρ, colormap=:jet, colorrange=(-1e-5, 1e-5) .+ 1)
+  # Colorbar(f[2, 2], msh_ρ)
 
   colsize!(f.layout, 1, Aspect(1, 1.0))
   resize_to_layout!(f)
@@ -374,4 +403,4 @@ function save_dynamics(save_file_name)
   end
 end
 
-save_dynamics("Compressible_Taylor_Vortices.mp4")
+save_dynamics("Compressible_Taylor_Vortices_VorticityOnly.mp4")
