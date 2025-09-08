@@ -5,37 +5,40 @@ using GeometryBasics
 using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
-Point2D = Point2{Float64}
-Point3D = Point3{Float64}
+using Distributions
+using CairoMakie
 
-rect = triangulated_grid(100, 100, 1, 1, Point3D)
-d_rect = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(rect)
-subdivide_duals!(d_rect, Circumcenter())
+lx = ly = 10
+s = triangulated_grid(lx, ly, 0.1, 0.1, Point3D)
+sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
+subdivide_duals!(sd, Circumcenter())
 
 Heat = @decapode begin
-    U::Form0
-    ∂ₜ(U) == 100 * Δ(U)
+    T::Form0
+    D::Constant
+    ∂ₜ(T) == D * Δ(T)
 end
 
 simulate = evalsim(Heat)
   
-fₘ = simulate(d_rect, nothing)
+fₘ = simulate(sd, nothing)
 
-U = map(d_rect[:point]) do (x,_)
-        return x
-    end
+T_dist = MvNormal([lx/2, ly/2], [1, 1])
+T = [pdf(T_dist, [p[1], p[2]]) for p in sd[:point]]
 
-u₀ = ComponentArray(U=U)
+D = 0.1
 
-constants_and_parameters = ()
+u₀ = ComponentArray(T=T)
 
-tₑ = 11.5
+constants_and_parameters = (D = D,)
 
-@info("Precompiling Solver")
-prob = ODEProblem(fₘ, u₀, (0, 1e-4), constants_and_parameters)
-soln = solve(prob, Tsit5())
-soln.retcode != :Unstable || error("Solver was not stable")
-@info("Solving")
+tₑ = 100
+
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
-@info("Done")
+
+fig = Figure();
+ax = CairoMakie.Axis(fig[1,1])
+msh = CairoMakie.mesh!(ax, s, color=soln.u[end].T, colormap=:jet)
+Colorbar(fig[1,2], msh)
+save("2d_heat.png", fig)
