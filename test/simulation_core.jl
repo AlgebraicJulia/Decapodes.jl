@@ -336,10 +336,10 @@ import Decapodes: UnsupportedDimensionException, UnsupportedStateeltypeException
 
 @testset "Gensim Fuzzing" begin
   let d = @decapode begin end
-    @test_throws UnsupportedDimensionException gensim(d, [:test], dimension = 3, stateeltype = Float64, code_target = CPUTarget())
+    @test_throws UnsupportedDimensionException gensim(d, [:test], dimension = 4, stateeltype = Float64, code_target = CPUTarget())
     @test_throws UnsupportedStateeltypeException gensim(d, [:test], dimension = 2, stateeltype = Int64, code_target = CPUTarget())
 
-    @test_throws UnsupportedDimensionException gensim(d, [:test], dimension = 3, stateeltype = Float64, code_target = CUDATarget())
+    @test_throws UnsupportedDimensionException gensim(d, [:test], dimension = 4, stateeltype = Float64, code_target = CUDATarget())
     @test_throws UnsupportedStateeltypeException gensim(d, [:test], dimension = 2, stateeltype = Int64, code_target = CUDATarget())
   end
 end
