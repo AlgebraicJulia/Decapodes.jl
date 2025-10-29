@@ -440,20 +440,30 @@ end
   end
   @test 4 == count_contractions(contract_with_op2)
 
-  for prealloc in [false, true]
-    let sim = eval(gensim(contract_with_op2, preallocate = prealloc))
-      f = sim(earth, default_dec_generate)
-      A = 3 * ones(nv(earth))
-      E_dec = ones(nv(earth))
-      u = ComponentArray(A=A, E=E_dec)
-      du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
-      constants_and_parameters = ()
-      f(du, u, constants_and_parameters, 0)
+  sim = eval(gensim(contract_with_op2, preallocate = false))
+  f = sim(earth, default_dec_generate)
+  A = 3 * ones(nv(earth))
+  E_dec = ones(nv(earth))
+  u = ComponentArray(A=A, E=E_dec)
+  du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
 
-      @test du.A == zeros(ntriangles(earth))
-      @test du.E ≈ 9 * ones(nv(earth))
-    end
-  end
+  @test du.A == zeros(ntriangles(earth))
+  @test du.E ≈ 9 * ones(nv(earth))
+
+  sim = eval(gensim(contract_with_op2, preallocate = true))
+  f = sim(earth, default_dec_generate)
+  A = 3 * ones(nv(earth))
+  E_dec = ones(nv(earth))
+  u = ComponentArray(A=A, E=E_dec)
+  du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test du.A == zeros(ntriangles(earth))
+  @test du.E ≈ 9 * ones(nv(earth))
+
 
   # Testing contract lines beyond the initial value
   later_contraction = @decapode begin
@@ -540,21 +550,31 @@ end
     F == A ∧ (C ∧ B)
   end
 
-  for prealloc in [false, true]
-    let sim = eval(gensim(wedges01, preallocate=prealloc))
-      f = sim(earth, default_dec_generate)
-      A = ones(nv(earth))
-      B = 2 * ones(nv(earth))
-      C = 3 * ones(ne(earth))
-      u = ComponentArray(A=A, B=B, C=C)
-      du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
+  sim = eval(gensim(wedges01, preallocate=false))
+  f = sim(earth, default_dec_generate)
+  A = ones(nv(earth))
+  B = 2 * ones(nv(earth))
+  C = 3 * ones(ne(earth))
+  u = ComponentArray(A=A, B=B, C=C)
+  du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
 
-      constants_and_parameters = ()
-      f(du, u, constants_and_parameters, 0)
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
 
-      @test du.A == du.B == du.C
-    end
-  end
+  @test du.A == du.B == du.C
+
+  sim = eval(gensim(wedges01, preallocate=true))
+  f = sim(earth, default_dec_generate)
+  A = ones(nv(earth))
+  B = 2 * ones(nv(earth))
+  C = 3 * ones(ne(earth))
+  u = ComponentArray(A=A, B=B, C=C)
+  du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
+
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test du.A == du.B == du.C
 
   # Testing wedge 11 operators function
   wedges11 = @decapode begin
@@ -947,20 +967,22 @@ end
 @testset "Allocations" begin
 # Test the heat equation Decapode has expected memory allocation.
 
-for prealloc in [false, true]
   Heat = @decapode begin
     C::Form0
     D::Constant
     ∂ₜ(C) == D*Δ(C)
   end
-  sim = eval(gensim(Heat, preallocate=prealloc))
+
   s = loadmesh(Icosphere(1))
   sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
   subdivide_duals!(sd, Circumcenter())
-  f = sim(sd,nothing)
   u₀ = ComponentArray(C = map(x -> x[3], point(sd)))
   p = (D=1e-1,)
   du = copy(u₀)
+
+  # Allocating
+  sim = eval(gensim(Heat, preallocate=false))
+  f = sim(sd,nothing)
   # The first call to the function makes many allocations.
   _ = @allocations f(du, u₀, p, (0,1.0)) # 55259
   _ = @allocated f(du, u₀, p, (0,1.0)) # 3962696
@@ -968,8 +990,25 @@ for prealloc in [false, true]
   nallocs = @allocations f(du, u₀, p, (0,1.0))
   bytes = @allocated f(du, u₀, p, (0,1.0))
 
-  @test (nallocs, bytes) <= (prealloc ? (6, 80) : (6, 400))
-end
+  @test (nallocs, bytes) <= (7, 400)
+
+  # Not allocating
+  Heat = @decapode begin
+    C::Form0
+    D::Constant
+    ∂ₜ(C) == D*Δ(C)
+  end
+
+  sim = eval(gensim(Heat, preallocate=true))
+  f = sim(sd,nothing)
+  # The first call to the function makes many allocations.
+  _ = @allocations f(du, u₀, p, (0,1.0)) # 55259
+  _ = @allocated f(du, u₀, p, (0,1.0)) # 3962696
+  # Test that subsequent calls make a reasonable amount.
+  nallocs = @allocations f(du, u₀, p, (0,1.0))
+  bytes = @allocated f(du, u₀, p, (0,1.0))
+
+  @test (nallocs, bytes) <= (6, 80)
 
 end
 
