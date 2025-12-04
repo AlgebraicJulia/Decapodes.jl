@@ -1,7 +1,7 @@
 name = "Decapodes"
 uuid = "679ab3ea-c928-4fe6-8d59-fd451142d391"
-authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
 version = "0.6.4"
+authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
 
 [deps]
 ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
@@ -27,7 +27,7 @@ ACSets = "0.2"
 Aqua = "0.8"
 CUDA = "5.2"
 Catlab = "0.16.20"
-CombinatorialSpaces = "0.7, 0.8"
+CombinatorialSpaces = "0.7, 0.8, 0.9"
 ComponentArrays = "0.15"
 DiagrammaticEquations = "0.2"
 DiffEqGPU = "0.3"
