@@ -1,7 +1,7 @@
 name = "Decapodes"
 uuid = "679ab3ea-c928-4fe6-8d59-fd451142d391"
-authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
 version = "0.6.4"
+authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
 
 [deps]
 ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
@@ -34,7 +34,7 @@ DiffEqGPU = "0.3"
 Distributions = "0.25"
 ForwardDiff = "1.0.1"
 GeometryBasics = "0.5"
-JSON = "0.21"
+JSON = "0.21, 1"
 Krylov = "0.9.6, 0.10"
 LinearAlgebra = "1.9"
 MLStyle = "0.4.17"
