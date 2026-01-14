@@ -356,7 +356,7 @@ Finally, as this operator is metric-dependent, it does not commute fully with re
 
 k-form → (n-k)-form
 
-$⟨ω^k, β^k ⟩v=ω^k∧⋆β^k$
+$ ⟨ω^k, β^k ⟩v=ω^k∧⋆β^k $
 
 The formula above displays the identity of the hodge star in the smooth case. The inner product of  two k-dimensional forms multiplied by their volume element is equal to the wedge product between the first form and the hodge star of the second form. The volume element encodes the metric and orientation, ensuring that the LHS has the same dimensions and sign as the righthand side. Due to this definition, it is inherantly a metric-dependent operator.
 
@@ -390,46 +390,222 @@ Section 5.3-5.4
 
 ### Signature
 
+Decapodes.jl
+
+    :♭ᵈᵖ => dec_♭(sd)                    # Dual-to-primal flat
+    :♭♯ => ♭♯_mat(sd) |> matmul          # Dual 1-form → primal 1-form interpolation
+
+
+CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
+
+    ♭(s::HasDeltaSet, X::DualVectorField)
+    ♭(s::AbstractDeltaDualComplex2D, X::AbstractVector, ::DPPFlat)
+    ♭(s::AbstractDeltaDualComplex2D, X::AbstractVector, ::PPFlat)
+    ♭_mat(s::AbstractDeltaDualComplex2D, f::DPPFlat)
+    ♭_mat(s::AbstractDeltaDualComplex2D, p2s, ::DPPFlat)
+    ♭_mat(s::AbstractDeltaDualComplex2D, ::PPFlat)
+
+CombinatorialSpaces.jl, FastDEC.jl
+
 ### Description
+
+The flat operator is a musical isomorphism that linearly maps vector fields to 1-forms. In the smooth case, it is the inverse of the sharp operator. In the discrete case, it has no exact inverse. It is often used to define certain vector quantities as forms, such as fluid flow.
+
+The smooth definition of the flat operator is reliant on an inner product, making the operator metric-dependent. Due to the existence of primal meshes, dual meshes, and differing interpolation methods, there are a total of eight different discrete flat operators. An example is the $♭_{dpp}$  operator, or the dual-primal-primal operator. This operator inputs dual vector fields, uses dual-primal interpolation, and outputs cochains on the primal mesh. For non-flat meshes, the use of operators that input vector fields on the dual mesh is preferred. The operator is represented as a sparse mesh.
 
 ### Important Properties
 
+k-vector → k-form
+
+$⟨X, v⟩=X^♭ (v)$
+
+The formula above displays the definition of the smooth flat operator. The inner product of the vector field with another vector should be equivalent to the vector 
+
+$ ⟨X^(♭_{dpp} ), σ^1 ⟩ = ∑_{σ^n≻ σ^1}▒〖|∗σ^1∩σ^n |/|∗σ^1 |  X(σ^n )⋅(σ^1 ) ̃ 〗$
+
+The formula above displays the definition for the DPP flat operator, or the operator that inputs a vector field on the dual mesh, uses dual-primal interpolation, and outputs a cochain on the primal mesh. The LHS states that the flatted vector field evaluated on an edge is equivalent to the RHS. The RHS states that for every simplex that contains the evaluated edge (∑_(σ^n≻ σ^1)▒ ), determine how much of the evaluated edge's dual cell is within the simplex, find that magnitude, and then divide it by the magnitude of the edge's dual cell (|∗σ^1∩σ^n |/|∗σ^1 | ). Then, multiply this value by the dot product of the simplex's average vector with the unit vector of the evaluated edge (X(σ^n )⋅(σ^1 ) ̃). Finally, sum all contibutions.
+
 ### Citations
 
+Discrete Exterior Calculus - Hirani  
+Section 5.3-5.6 (pp. 46-54)
+
+Discrete Exterior Calculus - Desbrun  
+Section 7 (p. 16)
+
+Notes on Discrete Exterior Calculus  
+Section 2.12 (pp. 14-15)
 
 ## Sharp
 
 ### Signature
 
+Decapodes.jl
+
+    :♯ᵖᵈ => dec_♯_pd(sd)                 # Primal-dual sharp (1D only)
+    :♯ᵖᵖ => dec_♯_pp(sd)                 # Primal-primal sharp (AltPPSharp in 2D)
+    :♯ᵈᵈ => dec_♯_dd(sd)                 # Dual-dual sharp (LLSDDSharp)
+
+CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
+
+    ♯(s::HasDeltaSet2D, α::EForm)
+    ♯(s::HasDeltaSet2D, α::DualForm{1})
+    ♯(s::AbstractDeltaDualComplex1D, X::AbstractVector, ::PDSharp)
+    ♯(s::AbstractDeltaDualComplex1D, X::AbstractVector, ::PPSharp)
+    ♯(s::AbstractDeltaDualComplex2D, α::AbstractVector, DS::DiscreteSharp)
+    ♯(s::AbstractDeltaDualComplex2D, α::AbstractVector, ::LLSDDSharp)
+    ♯_mat(s::AbstractDeltaDualComplex2D, DS::DiscreteSharp)
+    ♯_mat(s::AbstractDeltaDualComplex2D, ::LLSDDSharp)
+    ♯_denominator(s::AbstractDeltaDualComplex2D, v::Int, t::Int, ::DiscreteSharp)
+    ♯_denominator(s::AbstractDeltaDualComplex2D, v::Int, _::Int, ::AltPPSharp)
+    get_orthogonal_vector(s::AbstractDeltaDualComplex2D, v::Int, e::Int)
+    ♭♯(s::HasDeltaSet2D, α::SimplexForm{1})
+    ♭♯_mat(s::HasDeltaSet2D)
+    
+CombinatorialSpaces.jl, FastDEC.jl
+
 ### Description
+
+The sharp operator is a musical isomorphism that linearly maps 1-forms to vector fields. In the smooth case, it is the inverse of the flat operator. In the discrete case, it has no exact inverse. It is used as a component in the interior product and Lie Derivative operators.
+
+As the smooth definition of the sharp operator is reliant on the inner product, it is a metric operator. There are a total of four different discrete sharp operators to account for form inputs and vector outputs on the primal and dual meshes. It is represented as a sparse mesh. 
+
+The sharp vector turns k-forms into k-vectors. In the smooth case, it is inverses with the flat operator. The discrete sharp operator(s) lack this inverse.
 
 ### Important Properties
 
+k-form → k-vector
+
+$ ⟨ω^{\sharp}, v⟩= ω(v) $
+
+The formula above displays the definition of the smooth sharp operator. The inner product of the sharped form with a different vector should be equivalent to the vector being inputted into the regular form.
+
 ### Citations
 
+Discrete Exterior Calculus  
+Chapter 5.7-5.8 (pp. 54-56)
 
+Discrete Exterior Calculus - Desbrun  
+Section 7 (p. 16)
 
 ## Codifferential
 
 ### Signature
 
+Decapodes.jl
+
+    :δ₁ => add_Codiff!(d, src, tgt)  # Expands to ⋆ → d → ⋆ (with correct dual/primal flips)
+    :δ₂ => add_Codiff!(d, src, tgt)
+
+CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
+
+    δ(s::HasDeltaSet, x::SimplexForm{n}; kw...) where n
+    δ(n::Int, s::HasDeltaSet, args...; kw...)
+    δ(::Type{Val{n}}, s::HasDeltaSet; hodge::DiscreteHodge=GeometricHodge(), matrix_type::Type=SparseMatrixCSC{Float64}) where n
+    δ(::Type{Val{n}}, s::HasDeltaSet, form::AbstractVector; hodge::DiscreteHodge=GeometricHodge()) where n
+    δ(::Type{Val{n}}, s::HasDeltaSet, ::DiagonalHodge, args...) where n
+    δ(::Type{Val{n}}, s::HasDeltaSet, ::GeometricHodge, matrix_type) where n
+    δ(::Type{Val{n}}, s::HasDeltaSet, ::GeometricHodge, form::AbstractVector) where n
+
+CombinatorialSpaces.jl, FastDEC.jl
+
 ### Description
+
+The codifferential operator serves as the adjoint of the exterior derivative. It maps k-forms to (k-1)-forms. This operator is used to represent divergence and as a component of the Laplace-Beltrami operator.
+
+This operator is metric due to the reliance of the hodge star in its defintion. It is represented as a sparse matrix created by combining hodge star and exterior derivative matrices and accounting for orientation. 
+
+In the smooth setting, the codifferential is the adjoint of the exterior derivative operator. This property is retained in the discrete setting as well. It is defined through hodge star and exterior derivative operators. Due to its simple definition, it can be computed just by applying three matrix operators and accounting for orientation. This operator is also used as a part of the algebraic definition of the Laplace-Beltrami operator. 
+
+Finally, due to the prescence of the exterior derivative in its definition, the smooth codifferential operator has nilpotency - the operator applied to same form twice is zero. Due to inaccuracies in the discrete hodge star, the discrete codifferential applied twice is approximately zero.
 
 ### Important Properties
 
+k-form → (k-1)-form
+
+$ δf=0 $
+The formula above shows that the codifferential of a 0-form f is equal to zero. The codifferential operator takes a k-form and outputs a (k-1)-form. There is no such thing as a (-1)-form, so the operation outputs zero.
+
+$ δω=(−1)^{n(k−1)+1}⋆d⋆ω $
+
+The formula above displays the discrete definition of the codifferential operator on forms. It can be defined purely through hodge star and exterior derivative operators. The $(−1)^{n(k−1)+1}$  decides the orientation of the output. It is important to realize that if the codifferential is applied to a primal form, then the dual exterior derivative formula should be used in the definition, as $⋆ω$ would produce a dual form. 
+
+$ ⟨dω, β⟩=⟨ω, δβ⟩ $
+
+The exterior derivative and codifferential are adjoint in both the smooth and discrete settings. 
+
 ### Citations
 
+Discrete Exterior Calculus - Hirani  
+Section 4.2 (p. 42)
+
+Discrete Exterior Calculus - Desbrun  
+Section 6 (p. 15)
+
+Discrete Differential Forms   
+Section 5.5
 
 ## Interior Product
 
 ### Signature
 
+Decapodes.jl
+
+    :i₁ => add_Inter_Prod_1D! or add_Inter_Prod_2D!(Val{1}, ...)  # Expands to ⋆⁻¹ → ∧ → ⋆
+    :i₂ => add_Inter_Prod_2D!(Val{2}, ...)                         # Same, no sign flip
+    
+    :ι₁₁ => interior_product_dd(Tuple{1,1}, sd)   # Dual-dual: ⋆₂ ∧₁₁ ⋆₁⁻¹
+    :ι₁₂ => interior_product_dd(Tuple{1,2}, sd)   # Dual-dual: ⋆₁ (♭♯ ∧₀₁ ⋆₀⁻¹)
+
+CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
+
+    interior_product(s::HasDeltaSet, X♭::EForm, α::DualForm{n}; kw...) where n
+    interior_product_flat(n::Int, s::HasDeltaSet, args...; kw...)
+    interior_product_flat(::Type{Val{n}}, s::HasDeltaSet, X♭::AbstractVector, α::AbstractVector; kw...) where n
+
+CombinatorialSpaces.jl, FastDEC.jl
+
+    interior_product_dd(::Type{Tuple{1,1}}, s::SimplicialSets.HasDeltaSet)
+    interior_product_dd(::Type{Tuple{1,2}}, s::SimplicialSets.HasDeltaSet)
+
+
 ### Description
+
+The interior product contracts a vector field with a k-form, outputting a (k-1)-form. It is an operator that "combines" forms and vector fields together by plugging in the field into one of the form's inputs. In differential geometry, forms are measurement tools that input vectors and output scalar values. The interior product makes use of this definition to merge vector fields and forms together.
+
+In the smooth setting, it is a topological operator. However, using the algebraic definition, this tool becomes metric due to its reliance on the flat and hodge star operators.
+
+Due to the use of the wedge product in its definition, the Leibniz Property for this operator only applies for closed forms due to limits in associativity. This operator is used in the Lie Derivative, which faces this limitation as well. 
+
+Hirani notes the existence of an extrusion definition for this operator which is not covered in this description. 
 
 ### Important Properties
 
+k-form → (k-1)-form
+
+$ i_X ω(X_1, …, X_k )=ω(X, X_1. …, X_k ) $
+
+The above definition shows the algebraic definition of the interior product. This operator contracts a vector field with a k-form, "inserting" itself into one of the slots of the form. The output is a (k-1)-form.
+
+$ i_X ω=(−1)^k(n−k) ⋆(⋆ω∧X^♭ ) $
+
+The above identity displays the interior product operator composed of hodge star, wedge product, and flat operators. The discrete operator can be created in the discrete setting with discrete forms of these operators. The wedge product, hodge star, and flat operations $(⋆ω∧X^{\flat})$ represents inserting the contribution of vector field X into the form ω. The exterior hodge star returns the result to its proper dimension, k+1. Finally, the $(−1)^k(n−k)$ accounts for changes in orientation due to the hodge star and wedge product operators. Due to the use of the discrete wedge product in this identity, the Leibniz Property for contraction will only apply to closed forms (where $dω=0$), as the discrete wedge product is only associative on closed forms.
+
+$ i_X (f) = 0 $
+
+The interior product of a 0-form f with a vector field X is always zero.
+
+$ i_X (ω^k ∧ β^l )=(i_X ω)∧β+(−1)^k ω∧(i_X β) $
+
+The interior product follows the Leibniz Rule. For non-closed forms, it is important to note that the discrete wedge product is not associative and thus errors in this rule may appear.
+
 ### Citations
 
+Discrete Exterior Calculus - Hirani  
+Section 8.2-8.3 (pp. 79-83)
+
+Discrete Exterior Calculus - Desbrun  
+Section 10 (pp. 24-26)
 
 ## Lie Derivative
 
