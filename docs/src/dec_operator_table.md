@@ -117,23 +117,23 @@ Finally, this operator is natural with respect to discrete pullbacks, like the b
 
 k-form $-->$ (k+1)-form
 
-$d(dω)=0$
+$ d(dω)=0 $
 
 This is the property that the exterior derivative applied twice to the same form is always zero. This property retains the mathematical properties of $∇×∇f=0$ and $∇ ⋅∇×f=0$ without requiring any additional features. 
 
-$d(ω∧β)=dω∧β+(−1)^{deg⁡(ω)}  ω∧β$
+$ d(ω∧β)=dω∧β+(−1)^{deg⁡(ω)} ω∧β $
 
 The formula above displays the Leibniz Principle of exterior derivatives. It shows how the operator interacts with the wedge product.
 
-$d=∂^T$
+$ d=∂^T $
 
 In the discrete setting, the exterior derivative matrix is computed as the transpose of the boundary operator. It inputs k-forms and outputs the exterior derivative values of (k+1)-forms.
 
-$d_{n−k}^{Dual}=(−1)^k (d_{k−1}^{Primal} )^T$
+$ d_{n−k}^{Dual} = (−1)^k (d_{k−1}^{Primal} )^T $
 
 Due to the orientation changes in dual meshes, the exterior derivative applied to dual forms must be altered to account for differing orientation and orthogonality. The formula above displays this correction.
 
-$\int_\Omega d\omega=\int_{\partial\Omega}\omega$
+$ \int_\Omega d\omega=\int_{\partial\Omega}\omega $
 
 The formula above is Generalized Stokes' Theorem. It states that a person can determine the exterior derivative of a form across a manifold by determining the value of that across the boundary of the manifold. As the exterior derivative generalizes the gradient, divergence, and the curl. Generalized Stokes' Theorem combines Stokes' Theorem, Green's Theorem, and the Divergence Theorem into one expression.
 
@@ -225,7 +225,6 @@ Finally, the Leibniz Rule displays an important relationship between the wedge p
 $ deg⁡(ω)+deg⁡(β)=deg⁡(ω∧β) $
 
 The wedge product combines a k-form and a p-form and creates a (k+p)-form.
-
 
 $ 
 \langle \omega^k \wedge \beta^l, \sigma^{k+l}\rangle := 
@@ -421,9 +420,14 @@ $⟨X, v⟩=X^♭ (v)$
 
 The formula above displays the definition of the smooth flat operator. The inner product of the vector field with another vector should be equivalent to the vector 
 
-$ ⟨X^(♭_{dpp} ), σ^1 ⟩ = ∑_{σ^n≻ σ^1}▒〖|∗σ^1∩σ^n |/|∗σ^1 |  X(σ^n )⋅(σ^1 ) ̃ 〗$
 
-The formula above displays the definition for the DPP flat operator, or the operator that inputs a vector field on the dual mesh, uses dual-primal interpolation, and outputs a cochain on the primal mesh. The LHS states that the flatted vector field evaluated on an edge is equivalent to the RHS. The RHS states that for every simplex that contains the evaluated edge (∑_(σ^n≻ σ^1)▒ ), determine how much of the evaluated edge's dual cell is within the simplex, find that magnitude, and then divide it by the magnitude of the edge's dual cell (|∗σ^1∩σ^n |/|∗σ^1 | ). Then, multiply this value by the dot product of the simplex's average vector with the unit vector of the evaluated edge (X(σ^n )⋅(σ^1 ) ̃). Finally, sum all contibutions.
+
+$ \langle X^{\flat_{dpp}}, \sigma^1 \rangle =
+\sum_{\sigma^n \succ \sigma^1} \frac{\star \sigma^1 \cap \sigma^n |}{| \star \sigma^1 |}
+X(\sigma^n)\cdot \tilde{\sigma^1}
+$
+
+The formula above displays the definition for the DPP flat operator, or the operator that inputs a vector field on the dual mesh, uses dual-primal interpolation, and outputs a cochain on the primal mesh. The LHS states that the flatted vector field evaluated on an edge is equivalent to the RHS. The RHS states that for every simplex that contains the evaluated edge $(∑_{σ^n≻ σ^1} )$, determine how much of the evaluated edge's dual cell is within the simplex, find that magnitude, and then divide it by the magnitude of the edge's dual cell $( |∗σ^1 ∩ σ^n |/|∗ σ^1 | )$. Then, multiply this value by the dot product of the simplex's average vector with the unit vector of the evaluated edge $(X(\sigma^n) \cdot \tilde{\sigma^1})$. Finally, sum all contibutions.
 
 ### Citations
 
