@@ -50,16 +50,16 @@ The formula above displays how the boundary operator is computed/defined in the 
 
 ### Citations
 
-Discrete Exterior Calculus - Hirani
+Discrete Exterior Calculus - Hirani  
 Section 3.6 (pp. 35-36)
 
-Discrete Exterior Calculus - Desbrun
+Discrete Exterior Calculus - Desbrun  
 Section 5 (pp. 13-14)
 
-Notes on Discrete Exterior Calculus
+Notes on Discrete Exterior Calculus  
 Section 2.6 (p. 10)
 
-Discrete Differential Forms
+Discrete Differential Forms  
 Section 3 
 
 ## Exterior Derivative
@@ -139,16 +139,16 @@ The formula above is Generalized Stokes' Theorem. It states that a person can de
 
 ### Citations
 
-Discrete Exterior Calculus - Hirani
+Discrete Exterior Calculus - Hirani  
 Section 3.6 (pp. 35-37)
 
-Discrete Exterior Calculus - Desbrun
+Discrete Exterior Calculus - Desbrun  
 Section 5 (pp. 13)
 
-Notes on Discrete Exterior Calculus
+Notes on Discrete Exterior Calculus  
 Section 2.6 (p. 10-11)
 
-Discrete Differential Forms
+Discrete Differential Forms  
 Section 4.1-4.3
 
 ## Wedge Product
@@ -223,12 +223,56 @@ Section 4.1-4.3
 
 ### Signature
 
+Decapodes.jl
+
+    :L₀ => add_Lie_1D!(Val{0}, ...)  # d ∘ ι (interior then dual derivative)
+    :L₁ => add_Lie_1D!(Val{1}, ...)  # d ∘ ι (same in 1D)
+    :L₂ => add_Lie_2D!(Val{2}, ...)  # d ∘ ι (dual 2-form)
+    
+    :ℒ₁ => ℒ_dd(Tuple{1,1}, sd)      # Full dual-dual Lie: -(d∘ι + ι∘d)
+
+CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
+
+    ℒ(s::HasDeltaSet, X♭::EForm, α::DualForm{n}; kw...) where n
+    lie_derivative_flat(n::Int, s::HasDeltaSet, args...; kw...)
+    lie_derivative_flat(::Type{Val{0}}, s::HasDeltaSet, X♭::AbstractVector, α::AbstractVector; kw...)
+    lie_derivative_flat(::Type{Val{1}}, s::HasDeltaSet, X♭::AbstractVector, α::AbstractVector; kw...)
+    lie_derivative_flat(::Type{Val{2}}, s::HasDeltaSet, X♭::AbstractVector, α::AbstractVector; kw...)
+
+CombinatorialSpaces.jl, FastDEC.jl
+
+    ℒ_dd(::Type{Tuple{1,1}}, s::SimplicialSets.HasDeltaSet)
+
 ### Description
+
+The Lie Derivative operator inputs a k-form and outputs a k-form representing the rate of change of the form as it moves in the direction of a vector field. It is analogous to the directional derivative in vector calculus. A common application for the lie derivative is the formula for advection. 
+
+The Lie Derivative's algebraic definition is displayed in Cartan's Magic Formula, which uses exterior derivative and interior product operators. This smooth formula is used to define the discrete primal-dual lie derivative, where X is a discrete vector field on the primal mesh and ω is a dual k-form.
+
+However, this method may not satisfy the Leibniz Property of Lie Derivatives, as it uses the discrete wedge product operator (within the interior product operator). This operator is only associative on closed forms. 
+
+Hirani notes an alternative flow-out definition in Section 8.5 in his thesis, Discrete Exterior Calculus, which does not suffer from this lack of associativity. However, this definition is not covered here.
 
 ### Important Properties
 
+k-form → k-form
+
+$L_X ω=i_X (dω)+d(i_X ω)$
+
+This formula displays Cartan's Magic Formula, or an algebraic definition of the lie derivative using the interior product and the exterior derivative operators. This formula helps define the discrete primal-dual lie derivative operator on a simplicial complex. X is a discrete primal vector field and ω is a dual p-form.
+
+
+$L_X (ω∧β)=L_X (ω)∧β+ω∧L_X (β)$
+
+This is the Leibniz Property of the lie derivative, which displays the lie derivative's relationship with wedge product in the smooth case. In the discrete case, if the algebraic definition of the interior product is used, this relationship might not always be correct. This is because the algebraic interior product is defined using the wedge product. As the wedge product is only associative on closed forms (in the discrete setting), there may be errors in this Leibniz property.
+
 ### Citations
 
+Discrete Exterior Calculus - Hirani  
+Section 8.4-8.5 (pp. 83-85)
+
+Discrete Exterior Calculus - Desbrun  
+Section 10 (pp. 25-26)
 
 ## Laplace-Beltrami
 
@@ -284,16 +328,18 @@ It is represented as a sparse matrix. Due to its reliance on the codifferential 
 
 k-form → k-form
 
-Δ=dδ+δd
-This is the general Laplace-deRham Operator, which converts k-forms to dimensionally equivalent k-forms in the smooth case. The Laplace-Beltrami operator, ∇f=δdf, is a special situation for 0-form functions, where d(δf)=0 as the codifferential of a 0-form is always zero.
+$Δ=dδ+δd$
 
-⟨Δf, σ^0 ⟩=1/|⋆σ^0 |  ∑_(σ^1=[σ^0, v])▒〖|⋆σ^1 |/|σ^1 | (f(v)−f(σ^0 ))〗
-This formula above showcases the evaluation of a 0-form (f) at a primal vertex (σ^0) on a well-orientated triangular mesh. The mesh does not need to be flat. The formula states that the Laplacian of a 0-form f at a vertex σ^0  (⟨Δf, σ^0 ⟩) can be evaluated by the sum/contribution of all edges bordering σ^0, each weighted by the length of their corresponding dual edge divded by their primal length (|⋆σ^1 |/|σ^1 | ), and then multiplied by the difference between the form at the evaluated vertex (f(σ^0)) and the neighboring vertex (f(v)), connected by the edge. Then, the result of the weighted sum is divided by the volume/area of the vertice's coresponding dual cell (1/|⋆σ^0 | ) to normalize it. This formula matches with another geometric Laplace-Beltrami formula that uses cotangents and indices.
+This is the general Laplace-deRham Operator, which converts k-forms to dimensionally equivalent k-forms in the smooth case. The Laplace-Beltrami operator, $∇f=δdf$, is a special situation for 0-form functions, where $d(δf)=0$ as the codifferential of a 0-form is always zero.
+
+$⟨Δf, σ^0 ⟩ =\frac{1}{ |\sigma_o| }  ∑_{ σ^1=[σ^0, v] } \frac{|⋆σ^1 |}{|σ^1 |} (f(v) − f(σ^0)) $
+
+This formula above showcases the evaluation of a 0-form (f) at a primal vertex (σ^0) on a well-orientated triangular mesh. The mesh does not need to be flat. The formula states that the Laplacian of a 0-form f at a vertex $σ^0$,  $(⟨Δf, σ^0 ⟩)$ can be evaluated by the sum/contribution of all edges bordering $σ^0$, each weighted by the length of their corresponding dual edge divded by their primal length $(|⋆σ^1 |/|σ^1 | )$, and then multiplied by the difference between the form at the evaluated vertex $(f(σ^0))$ and the neighboring vertex $(f(v))$, connected by the edge. Then, the result of the weighted sum is divided by the volume/area of the vertice's coresponding dual cell $(1/|⋆σ^0 | )$ to normalize it. This formula matches with another geometric Laplace-Beltrami formula that uses cotangents and indices.
 
 ### Citations
 
-Discrete Exterior Calculus - Hirani
+Discrete Exterior Calculus - Hirani  
 Section 6.4 (pp. 68-70)
 
-Discrete Exterior Calculus - Desbrun
+Discrete Exterior Calculus - Desbrun  
 Section 10 (pp. 26-27)
