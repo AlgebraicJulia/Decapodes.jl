@@ -2,6 +2,20 @@
 
 Preface: This document is meant to provide simplified descriptions of the operators of Discrete Exterior Calculus. The reader can find more rigorous definitions in the referenced sources for each operator.
 
+Here are the links to the sources referenced for the operators below:
+
+Discrete Exterior Calculus - Hirani
+https://www.cs.jhu.edu/~misha/Fall09/Hirani03.pdf
+
+Discrete Exterior Calculus - Desbrun et. al.
+https://arxiv.org/abs/math/0508341
+
+Notes on Discrete Exterior Calculus - Gillette
+https://math.arizona.edu/~agillette/research/decNotes.pdf
+
+Discrete Differential Forms for Computational Modeling - Desbrun et. al.  
+https://geometry.caltech.edu/pubs/DKT05.pdf
+
 ## Boundary
 
 ### Signature
@@ -28,7 +42,7 @@ The boundary operator acts on the geometry of the mesh, linearly mapping k-chain
 
 This operator inputs k-chains and outputs (k-1)-chains (or k-manifolds to (k-1)-manifolds in the smooth case). For example, it would input a 1-chain, representing a line, into the two endpoints of that line. This operator has nilpotency, meaning the boundary operator applied to that same geometry is always zero. This property is important in the exterior derivative in preserving geometric invariants and physical conservation laws. 
 
-This operator is computed by comparing the orientation of the k-chain with its respective (k-1)-chain boundary. It is represented as a matrix with dimensions $|C_(k−1) |×|C_k |$, meaning it inputs a k-chain and outputs a (k-1)-chain, as explained before. This matrix is sparse with elements of either 0, +1, or -1, depending on boundary relations with their respective k-chain. This computation only needs local information involving the k-chain and the simplexes within/around it. It does not require global information of the entire mesh to compute it. The computation of this operator is local, topological, and coordiante-free. As the geometric intuition for this matrix calculation is difficult to describe, I recommend further investigation online.
+This operator is computed by comparing the orientation of the k-chain with its respective (k-1)-chain boundary. It is represented as a matrix with dimensions $|C_{k−1} |×|C_k |$, meaning it inputs a k-chain and outputs a (k-1)-chain, as explained before. This matrix is sparse with elements of either 0, +1, or -1, depending on boundary relations with their respective k-chain. This computation only needs local information involving the k-chain and the simplexes within/around it. It does not require global information of the entire mesh to compute it. The computation of this operator is local, topological, and coordinate-free. As the geometric intuition for this matrix calculation is difficult to describe, I recommend further investigation online.
 
 This tool is important in defining the exterior derivative operator through Generalized Stokes' Theorem. This theorem states that the exterior derivative of a form integrated/evaluated over a manifold is equivalent to the form integrated over the boundary of that manifold. Using this definition and the boundary operator's duality, the exterior derivative is the transpose of the boundary matrix. 
 
@@ -36,15 +50,19 @@ Finally, this operator is natural with respect to discrete pullbacks. This state
 
 ### Important Properties
 
-∂(∂c)=0 
+$C_k(K; \Z) \rightarrow C_{k - 1} (K; \Z) $
+
+The boundary operator linearly inputs linear combinations of k-chains (integers with respect to simplex orientation, represented by $ \Z $) on mesh K and outputs the combined (k-1)-chain sum of the boundary of those k-chains.
+
+$ ∂(∂c) = 0 $
 
 The formula above displays the property of nilpotency for the boundary operator. In other words, the boundary of a boundary is always zero. For example, the boundary of a line is its two endpoints, and the boundary of points is zero. The boundary of a ball is a hollow sphere, and the boundary of a hollow sphere is zero. This property applies to discrete chains as well.
 
-⟨dω, c⟩ = ⟨ω, ∂c⟩
+$ ⟨dω, c⟩ = ⟨ω, ∂c⟩ $
 
 The boundary operator is dual to the exterior derivative. In fact, the exterior derivative can be called the coboundary operator. In other words, the exterior derivative of a form dω applied to the chain c is equivalent to the regular form ω applied to the boundary of that chain ∂c. This property is described in Generalized Stokes' Theorem and helps in the calculation of the exterior derivative. Consider ⟨ ⟩  to be brackets representing the inner product, where the inner product of a chain and a cochain is synonymous to integrating the cochain on the chain, requiring neither a metric nor a dot product. It is also the discrete analogue of integrating a form over a region.
 
-$\partial[v_o, v_1, ..., v_k]=\sum^k_{i=0}(-1)^i[v_o, ..., v_i, ..., v_k]$
+$ \partial[v_o, v_1, ..., v_k] = \sum^k_{i=0}(-1)^i[v_o, ..., v_i, ..., v_k] $
 
 The formula above displays how the boundary operator is computed/defined in the discrete setting. The operator inputs a chain with a particular ordering of vertices, where edges may look like $e=[v_0, v_1]$ and faces may look like $σ=[v_0, v_1, v_2]$. Let's assume the operator inputs the triangular face $σ_o=[v_0, v_1, v_2]$ surrounded by the edges $e_0=[v_0, v_1]$, $e_1=[v_1, v_2]$, and $e_2=[v_o, v_2]$. The boundary operator omits the i-th vertex of the face for each iteration. The operation determines the sign of this edge based on if 'i' is even or odd. For this face $σ_o$, the result $∂[v_o, v_1, v_2 ]=[v_1, v_2 ]−[v_o, v_2 ]+[v_o, v_1 ]=e_1−e_2+e_o$. If the reader creates a visual representation of the face and surrounding vertices, with orientations going from the first vertex and moving to the last, the result will be the same.
 
@@ -53,13 +71,13 @@ The formula above displays how the boundary operator is computed/defined in the 
 Discrete Exterior Calculus - Hirani  
 Section 3.6 (pp. 35-36)
 
-Discrete Exterior Calculus - Desbrun  
+Discrete Exterior Calculus - Desbrun et. al.  
 Section 5 (pp. 13-14)
 
-Notes on Discrete Exterior Calculus  
+Notes on Discrete Exterior Calculus - Gillette  
 Section 2.6 (p. 10)
 
-Discrete Differential Forms  
+Discrete Differential Forms for Computational Modeling - Desbrun et. al.  
 Section 3 
 
 ## Exterior Derivative
@@ -72,8 +90,6 @@ Decapodes.jl
     :d₁ => dec_differential(1, sd) |> matmul
     :dual_d₀ || :d̃₀ => dec_dual_derivative(0, sd) |> matmul
     :dual_d₁ || :d̃₁ => dec_dual_derivative(1, sd) |> matmul
-
-    # Dual Differentials
     :dual_d₀ || :d̃₀ => dec_dual_derivative(0, sd) |> matmul
     :dual_d₁ || :d̃₁ => dec_dual_derivative(1, sd) |> matmul
 
@@ -103,25 +119,27 @@ The exterior derivative operator (ED) extends the idea of differentiation into d
 
 This operator maps k-forms to (k+1)-forms (or k-cochains to (k+1)-cochains in the discrete setting), representing the form's rate of change on the mesh. In 3D space, the ED operator represents the gradient on a 0-form, the curl on a 1-form, and divergence on a 2-form. The ED on a 3-form in 3D space is always zero.
 
-This operator matrix is calculated with Generalized Stokes' Theorem, which states that the exterior derivative of a form integrated/evaluated over a manifold is equivalent to the form integrated over the boundary of that manifold. In the discrete setting, the exterior derivative for a cochain is the transpose of the boundary matrix operator for its respective chain. Like the boundary operator, it is a sparse matrix with elements 0, +1, and -1. The computation of this operator is local, topological, and coordiante-free.
+This operator matrix is calculated with Generalized Stokes' Theorem, which states that the exterior derivative of a form integrated/evaluated over a manifold is equivalent to the form integrated over the boundary of that manifold. In the discrete setting, the exterior derivative for a cochain is the transpose of the boundary matrix operator for its respective chain. Like the boundary operator, it is a sparse matrix with elements 0, +1, and -1. The computation of this operator is local, topological, and coordinate-free.
 
-Using geometric intuition, this operator determines the dimensional rate of change of a form based on the values of the forms around it. For example, imagine three cochains attatched to 1-simplexes (lines) that form a triangle. The exterior derivative of the 1-cochain formed from the three values is a 2-cochain residing on the triangular face, calculated by adding the cochains together and accounting for differing orientation.
+Using geometric intuition, this operator determines the dimensional rate of change of a form based on the values of the forms around it. For example, imagine three cochains attached to 1-simplexes (lines) that form a triangle. The exterior derivative of the 1-cochain formed from the three values is a 2-cochain residing on the triangular face, calculated by adding the cochains together and accounting for differing orientation.
 
 Furthermore, the exterior derivative shares the property of nilpotency with its dual operator. Thus, the exterior derivative applied twice to the same form is always zero. This trait ingrains geometrical information and mathematical conservation properties, such as the curl of a form's divergence always being zero. 
 
 On a dual mesh, the discrete exterior derivative may change in sign to account for the mesh's differing orientation. This formula is displayed in the Important Properties section.
 
-Finally, this operator is natural with respect to discrete pullbacks, like the boundary. It also has an adjoint with the codifferential operator, allowing for Laplacians and Hodge decompositions.
+Finally, this operator is natural with respect to discrete pullbacks, like the boundary. It also has an adjoint with the codifferential operator, allowing for the Laplacian and Hodge decompositions.
 
 ### Important Properties
 
-k-form $-->$ (k+1)-form
+$ \Omega_d^k (K) \rightarrow \Omega_d^{p + 1} (K) $
+
+The discrete exterior derivative linearly maps discrete k-forms on mesh K to discrete (k+1)-forms on the same mesh K.
 
 $ d(dω)=0 $
 
 This is the property that the exterior derivative applied twice to the same form is always zero. This property retains the mathematical properties of $∇×∇f=0$ and $∇ ⋅∇×f=0$ without requiring any additional features. 
 
-$ d(ω∧β)=dω∧β+(−1)^{deg⁡(ω)} ω∧β $
+$ d(ω∧β) = dω ∧ β+(−1)^{deg⁡(ω)} ω ∧ β $
 
 The formula above displays the Leibniz Principle of exterior derivatives. It shows how the operator interacts with the wedge product.
 
@@ -129,9 +147,9 @@ $ d=∂^T $
 
 In the discrete setting, the exterior derivative matrix is computed as the transpose of the boundary operator. It inputs k-forms and outputs the exterior derivative values of (k+1)-forms.
 
-$ d_{n−k}^{Dual} = (−1)^k (d_{k−1}^{Primal} )^T $
+$ \tilde{d}_{n−k} = (−1)^k (d_{k−1} )^T $
 
-Due to the orientation changes in dual meshes, the exterior derivative applied to dual forms must be altered to account for differing orientation and orthogonality. The formula above displays this correction.
+Due to the orientation changes in dual meshes, the exterior derivative applied to dual forms must be altered to account for differing orientation and orthogonality. The formula above displays this correction, where $\tilde{d} $ represents the dual exterior derivative operator.
 
 $ \int_\Omega d\omega=\int_{\partial\Omega}\omega $
 
@@ -142,13 +160,13 @@ The formula above is Generalized Stokes' Theorem. It states that a person can de
 Discrete Exterior Calculus - Hirani  
 Section 3.6 (pp. 35-37)
 
-Discrete Exterior Calculus - Desbrun  
+Discrete Exterior Calculus - Desbrun et. al.  
 Section 5 (pp. 13)
 
-Notes on Discrete Exterior Calculus  
+Notes on Discrete Exterior Calculus - Gillette   
 Section 2.6 (p. 10-11)
 
-Discrete Differential Forms  
+Discrete Differential Forms for Computational Modeling - Desbrun et. al.  
 Section 4.1-4.3
 
 ## Wedge Product
@@ -162,12 +180,10 @@ Decapodes.jl
     :∧₀₂ => dec_pair_wedge_product(Tuple{0,2}, sd)
     :∧₂₀ => dec_pair_wedge_product(Tuple{2,0}, sd)
     :∧₁₁ => dec_pair_wedge_product(Tuple{1,1}, sd)
-    
     :∧ᵖᵈ₁₁ => dec_wedge_product_pd(Tuple{1,1}, sd)
     :∧ᵖᵈ₀₁ => dec_wedge_product_pd(Tuple{0,1}, sd)
     :∧ᵈᵖ₁₁ => dec_wedge_product_dp(Tuple{1,1}, sd)
     :∧ᵈᵖ₁₀ => dec_wedge_product_dp(Tuple{1,0}, sd)
-    
     :∧ᵈᵈ₁₁ => dec_wedge_product_dd(Tuple{1,1}, sd)
     :∧ᵈᵈ₁₀ => dec_wedge_product_dd(Tuple{1,0}, sd)
     :∧ᵈᵈ₀₁ => dec_wedge_product_dd(Tuple{0,1}, sd)
@@ -212,19 +228,19 @@ CombinatorialSpaces.jl, FastDEC.jl
 
 ### Description
 
-The wedge product operator is used to "combine" a k-form and an l-form into a higher degree (k+l)-form. As an example, imagine two vector-like 1-cochains. The wedge product would be the signed area formed by dragging one of the forms across the other, like a determinant. For this reason, the wedge product has nilpotency, where the wedge product of the same form $(ω∧ω=0)$ is likely zero.
+The wedge product operator is used to "combine" a k-form and an l-form into a higher degree (k+l)-form. As an example, imagine two vector-like 1-cochains. The wedge product would be the signed area formed by dragging one of the forms across the other, like a determinant.
 
-It is an anticommutative operator, meaning $β∧ω$ is often equal to $−ω∧β$ under most circumstances. It is also associative, meaning $(ω∧β)∧γ=ω∧(β∧γ)$. In the discrete case however, the associative property is limitted to only closed forms. The exterior derivative of closed forms is always zero. Later operators which use this tool as a component also face this limitation.
+It is an anti-commutative operator, meaning $β∧ω$ is often equal to $−ω∧β$ under most circumstances. It is also associative, meaning $(ω∧β)∧γ=ω∧(β∧γ)$. In the discrete case however, the associative property is limited to only closed forms. The exterior derivative of closed forms is always zero. Later operators which use this tool as a component also face this limitation.
 
 Another limitation is the wedge product's reliance on the metric. Certain operator formulas may require defined angles for calculating the result of this operator. However, other formulas may lack this limitation. Formulas that are not metric-dependent are natural with respect to discrete pullbacks.
 
-Finally, the Leibniz Rule displays an important relationship between the wedge product and exterior derivative. This rule is approximated using the operator formulas. 
+Finally, the Leibniz Rule highlights an important relationship between the wedge product and exterior derivative. This rule is approximated using the operator formulas. 
 
 ### Important Properties
 
-$ deg⁡(ω)+deg⁡(β)=deg⁡(ω∧β) $
+$ \Omega^k_d (K) \times \Omega^l_d (K) \rightarrow \Omega^{k + l}_d (K) $
 
-The wedge product combines a k-form and a p-form and creates a (k+p)-form.
+The discrete primal-primal wedge product inputs a discrete primal k-form and discrete primal l-form on mesh K and outputs a discrete (k+l)-form on mesh K. The discrete dual-dual wedge product and discrete primal-dual wedge product would be defined differently.
 
 $ 
 \langle \omega^k \wedge \beta^l, \sigma^{k+l}\rangle := 
@@ -234,7 +250,7 @@ $
 \langle \beta, [v_{\tau(k)}, ..., v_{\tau(k+l)}] \rangle 
 $
 
-This is the metric formulation for the discrete primal-primal wedge product operator, where ω is a is a discrete primal k-form and β is a discrete primal l-form. The LHS states that the evaluation of the wedge product of two forms on the appropraite face is equal to the RHS. The RHS states that for each permutation of the simplex $σ^{k+l}$  (where there are $(k+l+1)!$  orderings of the vertices), it finds the sign of that permutation $(sign(τ))$ and multiplies it by a geometric weight $(|σ^{k+l}∩⋆v_τ (k)| / |σ^(k+l) | )$. The weight determines the volume of the new simplex that is shared by the simplices touching the k-th vertex of the current permutation, divided by the volume of the new simplex. Finally, it multiplies this weight by the inner product of ω on a k-simplex formed from initial vertices $(⟨ω, [v_τ(0) , …, v_τ(k) ]⟩)$ and the inner product of β on a l-simplex formed from the vertices afterwards $(⟨β, [v_τ(k) , …, v_τ(k+l) ]⟩)$. The contributions from each permutation are summed together and normalized based on the forms' dimensions $(1/(k+l)!)$. As this formula relies on simplex magnitudes, it is metric.
+This is the metric formulation for the discrete primal-primal wedge product operator, where ω is a is a discrete primal k-form and β is a discrete primal l-form. The LHS states that the evaluation of the wedge product of two forms on the appropriate face is equal to the RHS. The RHS states that for each permutation of the simplex $σ^{k+l}$  (where there are $(k+l+1)!$  orderings of the vertices), it finds the sign of that permutation $(sign(τ))$ and multiplies it by a geometric weight $(|σ^{k+l}∩⋆v_τ (k)| / |σ^(k+l) | )$. The weight determines the volume of the new simplex that is shared by the simplices touching the k-th vertex of the current permutation, divided by the volume of the new simplex. Finally, it multiplies this weight by the inner product of ω on a k-simplex formed from initial vertices $(⟨ω, [v_τ(0) , …, v_τ(k) ]⟩)$ and the inner product of β on a l-simplex formed from the vertices afterwards $(⟨β, [v_τ(k) , …, v_τ(k+l) ]⟩)$. The contributions from each permutation are summed together and normalized based on the forms' dimensions $(1/(k+l)!)$. As this formula relies on simplex magnitudes, it is metric.
 
 $ 
 \langle \omega^k \wedge \beta^l, \sigma^{k+l}\rangle := 
@@ -254,16 +270,20 @@ $ (ω∧β)∧γ=ω∧(β∧γ) $
 
 This formula displays the associative property of the wedge product operator in the smooth case. In the discrete case, this is only true for closed forms. The exterior derivative of a closed form is zero.
 
-$ ω∧ω=0 $
+$ d(ω∧β) = dω ∧ β+(−1)^{deg⁡(ω)} ω ∧ β $
 
-This formula shows the nilpotency property of wedge product in the smooth case. Consider two differing 1-forms, ω and β, which can be considered dual to vectors. Then, think of the wedge product as an operator which finds the signed area of the parallelogram created by smearing one of those vectors across the edge of the other. If those two forms were in the same direction, like two ω forms, the smearing would only create a line with an area of zero.
+As displayed in the exterior derivative section, the Leibniz Rule underscores the interaction between the exterior derivative and the wedge product operators. 
+
+$ ω ∧ ω = 0 $
+
+This formula shows the alternating property of wedge product in the smooth case. Due to its antisymmetric nature, the wedge product of two equivalent, even-dimensioned forms is always zero.
 
 ### Citations
 
 Discrete Exterior Calculus - Hirani  
 Section 7.1-7.3 (pp. 71-76)
 
-Discrete Exterior Calculus - Desbrun  
+Discrete Exterior Calculus - Desbrun et. al.  
 Section 8 (pp. 17-21)
 
 ## Hodge Star
@@ -275,9 +295,8 @@ Decapodes.jl
     :⋆₀ => dec_hodge_star(0, sd, hodge=hodge) |> matmul
     :⋆₁ => dec_hodge_star(1, sd, hodge=hodge) |> matmul
     :⋆₂ => dec_hodge_star(2, sd, hodge=hodge) |> matmul
-    
     :⋆₀⁻¹ => dec_inv_hodge_star(0, sd, hodge) |> matmul
-    :⋆₁⁻¹ => dec_pair_inv_hodge(Val{1}, sd, hodge)  # Special: returns (in-place, out-of-place) solver
+    :⋆₁⁻¹ => dec_pair_inv_hodge(Val{1}, sd, hodge)  
     :⋆₂⁻¹ => dec_inv_hodge_star(1, sd, hodge) |> matmul
 
 CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
@@ -337,7 +356,7 @@ CombinatorialSpaces.jl, FastDEC.jl
     dec_inv_hodge_star(::Type{Val{1}}, sd::EmbeddedDeltaDualComplex2D, ::GeometricHodge)
     dec_inv_hodge_star(::Type{Val{0}}, sd::EmbeddedDeltaDualComplex3D, ::GeometricHodge)
     dec_inv_hodge_star(::Type{Val{3}}, sd::EmbeddedDeltaDualComplex3D, ::GeometricHodge)
-dec_inv_hodge_star(::Type{Val{j}}, sd::EmbeddedDeltaDualComplex3D, ::GeometricHodge) where {j}
+    dec_inv_hodge_star(::Type{Val{j}}, sd::EmbeddedDeltaDualComplex3D, ::GeometricHodge) where {j}
 
 ### Description
 
@@ -353,11 +372,13 @@ Finally, as this operator is metric-dependent, it does not commute fully with re
 
 ### Important Properties
 
-k-form → (n-k)-form
+$ \Omega^k_d (K) \rightarrow \Omega^{n - k}_d (\star K) $
 
-$ ⟨ω^k, β^k ⟩v=ω^k∧⋆β^k $
+The discrete hodge star linearly maps discrete k-forms on mesh K to discrete (n-k)-forms on dual mesh $ \star $ K, where n is the number of dimensions of the space.
 
-The formula above displays the identity of the hodge star in the smooth case. The inner product of  two k-dimensional forms multiplied by their volume element is equal to the wedge product between the first form and the hodge star of the second form. The volume element encodes the metric and orientation, ensuring that the LHS has the same dimensions and sign as the righthand side. Due to this definition, it is inherantly a metric-dependent operator.
+$ ⟨ω^k, β^k ⟩v = ω^k∧⋆β^k $
+
+The formula above displays the identity of the hodge star in the smooth case. The inner product of  two k-dimensional forms multiplied by their volume element is equal to the wedge product between the first form and the hodge star of the second form. The volume element encodes the metric and orientation, ensuring that the LHS has the same dimensions and sign as the right-hand side. Due to this definition, it is inherently a metric-dependent operator.
 
 $ 
 \frac{1}{|⋆σ^k |}  
@@ -376,13 +397,13 @@ The hodge star operator is an isomorphism. Using the hodge star on a form twice 
 Discrete Exterior Calculus - Hirani  
 Section 4.1 (pp. 40-42)
 
-Discrete Exterior Calculus - Desbrun  
+Discrete Exterior Calculus - Desbrun et. al.
 Section 6 (pp. 14-15)
 
-Notes on Discrete Exterior Calculus  
+Notes on Discrete Exterior Calculus - Gillette  
 Section 2.9 (pp. 12-13)
 
-Discrete Differential Forms  
+Discrete Differential Forms for Computational Modeling - Desbrun et. al.  
 Section 5.3-5.4
 
 ## Flat
@@ -391,8 +412,8 @@ Section 5.3-5.4
 
 Decapodes.jl
 
-    :♭ᵈᵖ => dec_♭(sd)                    # Dual-to-primal flat
-    :♭♯ => ♭♯_mat(sd) |> matmul          # Dual 1-form → primal 1-form interpolation
+    :♭ᵈᵖ => dec_♭(sd)                    
+    :♭♯ => ♭♯_mat(sd) |> matmul          
 
 
 CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
@@ -414,30 +435,26 @@ The smooth definition of the flat operator is reliant on an inner product, makin
 
 ### Important Properties
 
-k-vector → k-form
+$ ⟨X, v⟩ = X^♭ (v)$
 
-$⟨X, v⟩=X^♭ (v)$
-
-The formula above displays the definition of the smooth flat operator. The inner product of the vector field with another vector should be equivalent to the vector 
-
-
+The formula defines displays the flat operator in the smooth case. The inner product of a vector field X with a second vector field v is equivalent to the inner product $ X^♭ (v) = \langle \rangle $ at every point of the Riemannian manifold M with metric $ \langle \rangle $.
 
 $ \langle X^{\flat_{dpp}}, \sigma^1 \rangle =
 \sum_{\sigma^n \succ \sigma^1} \frac{\star \sigma^1 \cap \sigma^n |}{| \star \sigma^1 |}
 X(\sigma^n)\cdot \tilde{\sigma^1}
 $
 
-The formula above displays the definition for the DPP flat operator, or the operator that inputs a vector field on the dual mesh, uses dual-primal interpolation, and outputs a cochain on the primal mesh. The LHS states that the flatted vector field evaluated on an edge is equivalent to the RHS. The RHS states that for every simplex that contains the evaluated edge $(∑_{σ^n≻ σ^1} )$, determine how much of the evaluated edge's dual cell is within the simplex, find that magnitude, and then divide it by the magnitude of the edge's dual cell $( |∗σ^1 ∩ σ^n |/|∗ σ^1 | )$. Then, multiply this value by the dot product of the simplex's average vector with the unit vector of the evaluated edge $(X(\sigma^n) \cdot \tilde{\sigma^1})$. Finally, sum all contibutions.
+The formula above displays the definition for the DPP flat operator, or the operator that inputs a vector field on the dual mesh, uses dual-primal interpolation, and outputs a cochain on the primal mesh. The LHS states that the flatted vector field evaluated on an edge is equivalent to the RHS. The RHS states that for every simplex that contains the evaluated edge $(∑_{σ^n≻ σ^1} )$, determine how much of the evaluated edge's dual cell is within the simplex, find that magnitude, and then divide it by the magnitude of the edge's dual cell $( |∗σ^1 ∩ σ^n |/|∗ σ^1 | )$. Then, multiply this value by the dot product of the simplex's average vector with the unit vector of the evaluated edge $(X(\sigma^n) \cdot \tilde{\sigma^1})$. Finally, sum all contributions.
 
 ### Citations
 
 Discrete Exterior Calculus - Hirani  
 Section 5.3-5.6 (pp. 46-54)
 
-Discrete Exterior Calculus - Desbrun  
+Discrete Exterior Calculus - Desbrun et. al.
 Section 7 (p. 16)
 
-Notes on Discrete Exterior Calculus  
+Notes on Discrete Exterior Calculus - Gillette 
 Section 2.12 (pp. 14-15)
 
 ## Sharp
@@ -446,9 +463,9 @@ Section 2.12 (pp. 14-15)
 
 Decapodes.jl
 
-    :♯ᵖᵈ => dec_♯_pd(sd)                 # Primal-dual sharp (1D only)
-    :♯ᵖᵖ => dec_♯_pp(sd)                 # Primal-primal sharp (AltPPSharp in 2D)
-    :♯ᵈᵈ => dec_♯_dd(sd)                 # Dual-dual sharp (LLSDDSharp)
+    :♯ᵖᵈ => dec_♯_pd(sd)                 
+    :♯ᵖᵖ => dec_♯_pp(sd)                 
+    :♯ᵈᵈ => dec_♯_dd(sd)                 
 
 CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
 
@@ -478,18 +495,16 @@ The sharp vector turns k-forms into k-vectors. In the smooth case, it is inverse
 
 ### Important Properties
 
-k-form → k-vector
+$ ⟨ω^{\sharp}, v⟩ = ω(v) $
 
-$ ⟨ω^{\sharp}, v⟩= ω(v) $
-
-The formula above displays the definition of the smooth sharp operator. The inner product of the sharped form with a different vector should be equivalent to the vector being inputted into the regular form.
+The formula defines the sharp operator map in the smooth case. The inner product $\omega^{\sharp}$ with vector field v is equivalent to the output of form $ \omega $ with the input v. This should be the case for all points in Riemannian manifold M.
 
 ### Citations
 
-Discrete Exterior Calculus  
+Discrete Exterior Calculus - Hirani  
 Chapter 5.7-5.8 (pp. 54-56)
 
-Discrete Exterior Calculus - Desbrun  
+Discrete Exterior Calculus - Desbrun et. al.  
 Section 7 (p. 16)
 
 ## Codifferential
@@ -498,7 +513,7 @@ Section 7 (p. 16)
 
 Decapodes.jl
 
-    :δ₁ => add_Codiff!(d, src, tgt)  # Expands to ⋆ → d → ⋆ (with correct dual/primal flips)
+    :δ₁ => add_Codiff!(d, src, tgt)  
     :δ₂ => add_Codiff!(d, src, tgt)
 
 CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
@@ -515,26 +530,29 @@ CombinatorialSpaces.jl, FastDEC.jl
 
 ### Description
 
-The codifferential operator serves as the adjoint of the exterior derivative. It maps k-forms to (k-1)-forms. This operator is used to represent divergence and as a component of the Laplace-Beltrami operator.
+The codifferential operator serves as the adjoint of the exterior derivative. It maps k-forms to (k-1)-forms. This operator is used to represent divergence and as a component of the Laplace-Beltrami (Laplacian) operator.
 
-This operator is metric due to the reliance of the hodge star in its defintion. It is represented as a sparse matrix created by combining hodge star and exterior derivative matrices and accounting for orientation. 
+This operator is metric due to the reliance of the hodge star in its definition. It is represented as a sparse matrix created by combining hodge star and exterior derivative matrices and accounting for orientation. 
 
-In the smooth setting, the codifferential is the adjoint of the exterior derivative operator. This property is retained in the discrete setting as well. It is defined through hodge star and exterior derivative operators. Due to its simple definition, it can be computed just by applying three matrix operators and accounting for orientation. This operator is also used as a part of the algebraic definition of the Laplace-Beltrami operator. 
+In the smooth setting, the codifferential is the adjoint of the exterior derivative operator. This property is retained in the discrete setting as well. It is defined through hodge star and exterior derivative operators. Due to its simple definition, it can be computed just by applying three matrix operators and accounting for orientation. This operator is also used as a part of the algebraic definition for the Laplace-Beltrami operator. 
 
-Finally, due to the prescence of the exterior derivative in its definition, the smooth codifferential operator has nilpotency - the operator applied to same form twice is zero. Due to inaccuracies in the discrete hodge star, the discrete codifferential applied twice is approximately zero.
+Finally, due to the presence of the exterior derivative in its definition, the smooth codifferential operator has nilpotency - the operator applied to same form twice is zero. Due to inaccuracies in the discrete hodge star, the discrete codifferential applied twice is approximately zero.
 
 ### Important Properties
 
-k-form → (k-1)-form
+$ \Omega_d^{k+1} (K) \rightarrow \Omega_d^k (K) $
 
-$ δf=0 $
+The discrete codifferential operator is a linear map that inputs discrete (k+1)-forms on mesh K and outputs discrete k-forms.
+
+$ δf = 0 $
+
 The formula above shows that the codifferential of a 0-form f is equal to zero. The codifferential operator takes a k-form and outputs a (k-1)-form. There is no such thing as a (-1)-form, so the operation outputs zero.
 
-$ δω=(−1)^{n(k−1)+1}⋆d⋆ω $
+$ δω = (−1)^{n(k−1)+1} ⋆ d ⋆ ω $
 
 The formula above displays the discrete definition of the codifferential operator on forms. It can be defined purely through hodge star and exterior derivative operators. The $(−1)^{n(k−1)+1}$  decides the orientation of the output. It is important to realize that if the codifferential is applied to a primal form, then the dual exterior derivative formula should be used in the definition, as $⋆ω$ would produce a dual form. 
 
-$ ⟨dω, β⟩=⟨ω, δβ⟩ $
+$ ⟨dω, β⟩ = ⟨ω, δβ⟩ $
 
 The exterior derivative and codifferential are adjoint in both the smooth and discrete settings. 
 
@@ -543,10 +561,10 @@ The exterior derivative and codifferential are adjoint in both the smooth and di
 Discrete Exterior Calculus - Hirani  
 Section 4.2 (p. 42)
 
-Discrete Exterior Calculus - Desbrun  
+Discrete Exterior Calculus - Desbrun et. al.  
 Section 6 (p. 15)
 
-Discrete Differential Forms   
+Discrete Differential Forms for Computational Modeling - Desbrun et. al.   
 Section 5.5
 
 ## Interior Product
@@ -555,11 +573,11 @@ Section 5.5
 
 Decapodes.jl
 
-    :i₁ => add_Inter_Prod_1D! or add_Inter_Prod_2D!(Val{1}, ...)  # Expands to ⋆⁻¹ → ∧ → ⋆
-    :i₂ => add_Inter_Prod_2D!(Val{2}, ...)                         # Same, no sign flip
+    :i₁ => add_Inter_Prod_1D! or add_Inter_Prod_2D!(Val{1}, ...)  
+    :i₂ => add_Inter_Prod_2D!(Val{2}, ...)                         
     
-    :ι₁₁ => interior_product_dd(Tuple{1,1}, sd)   # Dual-dual: ⋆₂ ∧₁₁ ⋆₁⁻¹
-    :ι₁₂ => interior_product_dd(Tuple{1,2}, sd)   # Dual-dual: ⋆₁ (♭♯ ∧₀₁ ⋆₀⁻¹)
+    :ι₁₁ => interior_product_dd(Tuple{1,1}, sd)   
+    :ι₁₂ => interior_product_dd(Tuple{1,2}, sd)   
 
 CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
 
@@ -585,7 +603,9 @@ Hirani notes the existence of an extrusion definition for this operator which is
 
 ### Important Properties
 
-k-form → (k-1)-form
+$ \Omega^k (M) \rightarrow \Omega^{k-1} (M) $
+
+The smooth interior product operator $ i_X $ maps k-forms on smooth manifold M to (k-1)-forms on M depending on vector field X. 
 
 $ i_X ω(X_1, …, X_k )=ω(X, X_1. …, X_k ) $
 
@@ -608,7 +628,7 @@ The interior product follows the Leibniz Rule. For non-closed forms, it is impor
 Discrete Exterior Calculus - Hirani  
 Section 8.2-8.3 (pp. 79-83)
 
-Discrete Exterior Calculus - Desbrun  
+Discrete Exterior Calculus - Desbrun et. al.  
 Section 10 (pp. 24-26)
 
 ## Lie Derivative
@@ -617,11 +637,10 @@ Section 10 (pp. 24-26)
 
 Decapodes.jl
 
-    :L₀ => add_Lie_1D!(Val{0}, ...)  # d ∘ ι (interior then dual derivative)
-    :L₁ => add_Lie_1D!(Val{1}, ...)  # d ∘ ι (same in 1D)
-    :L₂ => add_Lie_2D!(Val{2}, ...)  # d ∘ ι (dual 2-form)
-    
-    :ℒ₁ => ℒ_dd(Tuple{1,1}, sd)      # Full dual-dual Lie: -(d∘ι + ι∘d)
+    :L₀ => add_Lie_1D!(Val{0}, ...)  
+    :L₁ => add_Lie_1D!(Val{1}, ...)  
+    :L₂ => add_Lie_2D!(Val{2}, ...)  
+    :ℒ₁ => ℒ_dd(Tuple{1,1}, sd)      
 
 CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
 
@@ -647,9 +666,11 @@ Hirani notes an alternative flow-out definition in Section 8.5 in his thesis, Di
 
 ### Important Properties
 
-k-form → k-form
+$ \Omega^k (M) \rightarrow \Omega^k (M) $
 
-$L_X ω=i_X (dω)+d(i_X ω)$
+The smooth lie derivative $ L_X $ maps k-forms on smooth manifold M to k-forms on M depending on vector field X.
+
+$ L_X ω = i_X (dω) + d(i_X ω) $
 
 This formula displays Cartan's Magic Formula, or an algebraic definition of the lie derivative using the interior product and the exterior derivative operators. This formula helps define the discrete primal-dual lie derivative operator on a simplicial complex. X is a discrete primal vector field and ω is a dual p-form.
 
@@ -663,23 +684,21 @@ This is the Leibniz Property of the lie derivative, which displays the lie deriv
 Discrete Exterior Calculus - Hirani  
 Section 8.4-8.5 (pp. 83-85)
 
-Discrete Exterior Calculus - Desbrun  
+Discrete Exterior Calculus - Desbrun et. al.  
 Section 10 (pp. 25-26)
 
-## Laplace-Beltrami
+## Laplacian Operator
 
 ### Signature
 
 Decapodes.jl
 
-    :Δ₀ => add_De_Rham_1D!(Val{0}, ...)  # dδ + δd → expands to full Laplace–de Rham
+    :Δ₀ => add_De_Rham_1D!(Val{0}, ...)  
     :Δ₁ => add_De_Rham_1D!(Val{1}, ...) or add_De_Rham_2D!(Val{1}, ...)
     :Δ₂ => add_De_Rham_2D!(Val{2}, ...)
-    
-    :Δᵈ₀ => Δᵈ(Val{0}, sd)               # Dual 0-form Laplacian (fast version)
-    :Δᵈ₁ => Δᵈ(Val{1}, sd)               # Dual 1-form Laplacian
-    
-    :Δ₀⁻¹ => dec_inv_lap_solver(Val{0}, sd)  # factorize(∇²(0, sd)) \ x
+    :Δᵈ₀ => Δᵈ(Val{0}, sd)               
+    :Δᵈ₁ => Δᵈ(Val{1}, sd)              
+    :Δ₀⁻¹ => dec_inv_lap_solver(Val{0}, sd)  
 
 CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
 
@@ -687,7 +706,6 @@ CombinatorialSpaces.jl, DiscreteExteriorCalculus.jl
     ∇²(n::Int, s::HasDeltaSet, args...; kw...)
     ∇²(::Type{Val{n}}, s::HasDeltaSet, form::AbstractVector; kw...) where n
     ∇²(::Type{Val{n}}, s::HasDeltaSet; matrix_type::Type=SparseMatrixCSC{Float64}, kw...) where n
-    
     Δ(s::HasDeltaSet, x::SimplexForm{n}; kw...) where n
     Δ(n::Int, s::HasDeltaSet, args...; kw...)
     Δ(::Type{Val{0}}, s::HasDeltaSet, form::AbstractVector; kw...)
@@ -710,21 +728,23 @@ CombinatorialSpaces.jl, FastDEC.jl
 
 ### Description
 
-The Laplace-Beltrami operator generalizes the traditional Laplacian to curved surfaces. It linearly maps k-forms to k-forms. The ordinary Laplacian determines how much a point in a function deviates from the average of the functions surrounding it. A positive Laplacian implies that the point is less than the surrounding average (or convex down), while a negative one implies the point is greater than the surrounding average (or convex up).
+The Laplacian operator, or the Laplace-Beltrami operator on 0-forms, generalizes the traditional Laplacian onto curved surfaces. It linearly maps k-forms to k-forms. The ordinary Laplacian determines how much a point in a function deviates from the average of the functions surrounding it. A positive Laplacian implies that the point is less than the surrounding average (or convex down), while a negative one implies the point is greater than the surrounding average (or convex up).
 
-This operator is defined with the exterior derivative and codifferential operators. For 0-forms (scalars), this operator simplifies to $δd$, as the exterior codifferential of a 0-form is always zero.
+This operator is defined with the exterior derivative and codifferential operators. For 0-forms (scalars), this operator simplifies from $ \Delta = \delta d + d \delta $ to $ δd $, as the codifferential of a 0-form is always zero.
 
 It is represented as a sparse matrix. Due to its reliance on the codifferential (and thus the hodge star), it is metric-dependent. 
 
 ### Important Properties
 
-k-form → k-form
+$ \Omega^k (M) \rightarrow \Omega^k (M) $
 
-$Δ=dδ+δd$
+The smooth Laplace-deRham operator, the general form of the Laplace-Beltrami, maps k-forms on smooth manifold M to k-forms on the same manifold.
 
-This is the general Laplace-deRham Operator, which converts k-forms to dimensionally equivalent k-forms in the smooth case. The Laplace-Beltrami operator, $∇f=δdf$, is a special situation for 0-form functions, where $d(δf)=0$ as the codifferential of a 0-form is always zero.
+$ Δ = dδ + δd $
 
-$⟨Δf, σ^0 ⟩ =\frac{1}{ |\sigma_o| }  ∑_{ σ^1=[σ^0, v] } \frac{|⋆σ^1 |}{|σ^1 |} (f(v) − f(σ^0)) $
+This is the general Laplace-deRham Operator, which converts k-forms to dimensionally equivalent k-forms in the smooth case. The Laplace-Beltrami operator, $∇f=δdf$, is a special situation for 0-form functions, where $ d(δf) = 0$ as the codifferential of a 0-form is always zero.
+
+$ ⟨Δf, σ^0 ⟩ = \frac{1}{ |\sigma_o| }  ∑_{ σ^1=[σ^0, v] } \frac{|⋆σ^1 |}{|σ^1 |} (f(v) − f(σ^0)) $
 
 This formula above showcases the evaluation of a 0-form (f) at a primal vertex (σ^0) on a well-orientated triangular mesh. The mesh does not need to be flat. The formula states that the Laplacian of a 0-form f at a vertex $σ^0$,  $(⟨Δf, σ^0 ⟩)$ can be evaluated by the sum/contribution of all edges bordering $σ^0$, each weighted by the length of their corresponding dual edge divded by their primal length $(|⋆σ^1 |/|σ^1 | )$, and then multiplied by the difference between the form at the evaluated vertex $(f(σ^0))$ and the neighboring vertex $(f(v))$, connected by the edge. Then, the result of the weighted sum is divided by the volume/area of the vertice's coresponding dual cell $(1/|⋆σ^0 | )$ to normalize it. This formula matches with another geometric Laplace-Beltrami formula that uses cotangents and indices.
 
@@ -733,5 +753,5 @@ This formula above showcases the evaluation of a 0-form (f) at a primal vertex (
 Discrete Exterior Calculus - Hirani  
 Section 6.4 (pp. 68-70)
 
-Discrete Exterior Calculus - Desbrun  
+Discrete Exterior Calculus - Desbrun et. al.  
 Section 10 (pp. 26-27)
