@@ -136,7 +136,7 @@ $ d(ω∧β) = dω ∧ β + (−1)^{deg⁡(ω)} ω ∧ β $
 
 The formula above displays the Leibniz Principle of exterior derivatives. The operator has a product-rule-like relationship with the wedge product.
 
-$ d=∂^T $
+$ d = ∂^T $
 
 In the discrete setting, the exterior derivative matrix is computed as the transpose of the boundary operator. It inputs k-forms and outputs the exterior derivative values of (k+1)-forms.
 
