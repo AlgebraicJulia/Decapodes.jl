@@ -6,6 +6,8 @@
 
 Decapodes.jl is a framework for developing, composing, and simulating physical systems.
 
+Click [here](https://algebraicjulia.github.io/Decapodes.jl/dev) or the `docs` badge above for rendered documentation and notebooks.
+
 Decapodes.jl is the synthesis of Applied Category Theory (ACT) techniques for formalizing and composing physics equations, and Discrete Exterior Calculus (DEC) techniques for formalizing differential operators.
 [CombinatorialSpaces.jl](https://algebraicjulia.github.io/CombinatorialSpaces.jl/dev/) hosts tools for discretizing space and defining DEC operators on simplicial complexes, and [DiagrammaticEquations.jl](https://github.com/AlgebraicJulia/DiagrammaticEquations.jl) hosts tooling for representing the equations as formal ACT diagrams. This repository combines these two packages, compiling diagrams down to simulatable code.
 
