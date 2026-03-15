@@ -831,6 +831,11 @@ end
   sim_Halfar = evalsim(halfar)
   @test sim_Halfar(d_rect, halfar_generate, DiagonalHodge()) isa Any
 
+  # Test that CSE eliminates a redundant computation in the Halfar simulation.
+  halfar_cse    = countlines(IOBuffer(string(gensim(halfar))))
+  halfar_no_cse = countlines(IOBuffer(string(gensim(halfar; cse=false))))
+  @test halfar_cse == halfar_no_cse - 1
+  
   # Test for Poisson
   eq11_inviscid_poisson = @decapode begin
     d𝐮::DualForm2
