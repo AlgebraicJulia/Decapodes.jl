@@ -831,10 +831,13 @@ end
   sim_Halfar = evalsim(halfar)
   @test sim_Halfar(d_rect, halfar_generate, DiagonalHodge()) isa Any
 
-  # Test that CSE eliminates a redundant computation in the Halfar simulation.
+  # Test that CSE eliminates:
+  # 1. Allocation of diff cache.
+  # 2. get_tmp on that diff cache.
+  # 3. Redundant d computation.
   halfar_cse    = countlines(IOBuffer(string(gensim(halfar))))
   halfar_no_cse = countlines(IOBuffer(string(gensim(halfar; cse=false))))
-  @test halfar_cse == halfar_no_cse - 1
+  @test halfar_cse == halfar_no_cse - 3
   
   # Test for Poisson
   eq11_inviscid_poisson = @decapode begin
