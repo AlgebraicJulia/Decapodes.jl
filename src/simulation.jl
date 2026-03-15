@@ -637,8 +637,10 @@ to operator mappings to return a simulator that can be used to solve the represe
 `contract`: Enables(`true`)/disables(`false`) pre-computation of matrix-matrix multiplications for chains of such operators. This feature can interfere with certain auto-differentiation methods, in which case this can be disabled. (Defaults to `true`)
 
 `multigrid`: Enables multigrid methods during code generation. If `true`, then the function produced by `gensim` will expect a `PrimalGeometricMapSeries`. (Defaults to `false`)
+
+`cse`: Enables(`true`)/disables(`false`) common subexpression elimination to avoid redundant computations. (Defaults to `true`)
 """
-function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, multigrid::Bool = false)
+function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, multigrid::Bool = false, cse::Bool = true)
   (dimension == 1 || dimension == 2) ||
     throw(UnsupportedDimensionException(dimension))
 
@@ -664,6 +666,9 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   replace_names!(d, Pair{Symbol, Any}[], Pair{Symbol, Symbol}[(:∧₀₀ => :.*)])
   open_operators!(d, dimension = dimension)
   infer_overload_compiler!(d, dimension)
+
+  # This performs common subexpression elimination (CSE).
+  cse && bundle!(d)
 
   present_dec_ops = Set{Symbol}(dec_operator_set(code_target) ∩ (d[:op1] ∪ d[:op2]))
 
