@@ -28,7 +28,7 @@ else
   else
     "unknown reason"
   end
-  @info "CUDA tests were not run, since CUDA.functional() is false." reason=error_msgend
+  @info "CUDA tests were not run, since CUDA.functional() is false." reason=error_msg
 end
 
 @testset "Code Quality (Aqua.jl)" begin
