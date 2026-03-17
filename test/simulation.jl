@@ -1056,10 +1056,10 @@ end
     prob_func = (prob, i, repeat) ->
       remake(prob, u0=ComponentArray(C=C[:,i])))
   soln = solve(ens_prob, Tsit5(); trajectories=2)
-  @test all(soln[1].u[1] .== Csin)
-  @test all(soln[1].u[1] .!= Ccos)
-  @test all(soln[2].u[1] .!= Csin)
-  @test all(soln[2].u[1] .== Ccos)
+  @test all(soln.u[1].u[1] .== Csin)
+  @test all(soln.u[1].u[1] .!= Ccos)
+  @test all(soln.u[2].u[1] .!= Csin)
+  @test all(soln.u[2].u[1] .== Ccos)
 end
 
 @testset "Large Summations" begin
