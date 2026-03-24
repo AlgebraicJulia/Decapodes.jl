@@ -1,5 +1,7 @@
 using Test
 
+@info "Executing tests with $(Threads.nthreads()) threads."
+
 @testset "ComponentArrays.jl Integration" begin
   include("componentarrays.jl")
 end
