@@ -1096,7 +1096,7 @@ end
   fₘ = sim(sd, nothing) # No custom operators needed
   tₑ = 1.15
   prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
-  soln = solve(prob, KuttaPRK2p5())
+  soln = solve(prob, KuttaPRK2p5(), dt=1e-2)
   @test soln.u[1] ≈ u₀
 end
 
