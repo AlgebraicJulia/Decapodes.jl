@@ -1091,6 +1091,7 @@ end
   Csin = map(p -> sin(p[1]), point(s))
   u₀ = ComponentArray(C=Csin,)
   constants_and_parameters = (D = 0.001,)
+  
   # Observe that preallocate is turned off to avoid FixedSizeDiffCache:
   sim = eval(gensim(Heat, dimension=1, preallocate=false))
   fₘ = sim(sd, nothing) # No custom operators needed
@@ -1098,6 +1099,13 @@ end
   prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
   soln = solve(prob, KuttaPRK2p5(), dt=1e-2)
   @test soln.u[1] ≈ u₀
+
+  # Observe that FixedSizeDiffCaches are preallocated:
+  sim = eval(gensim(Heat, dimension=1, preallocate=true))
+  fₘ = sim(sd, nothing) # No custom operators needed
+  tₑ = 1.15
+  prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+  @test_throws "Parallel solver with preallocation" solve(prob, KuttaPRK2p5(), dt=1e-2)
 end
 
 @testset "Large Summations" begin
