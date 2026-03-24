@@ -9,6 +9,7 @@ using GeometryBasics: Point2, Point3
 using LinearAlgebra
 using MLStyle
 using OrdinaryDiffEqTsit5
+using OrdinaryDiffEqPRK
 using Test
 using Random
 Point3D = Point3{Float64}
@@ -1060,6 +1061,42 @@ end
   @test all(soln.u[1].u[1] .!= Ccos)
   @test all(soln.u[2].u[1] .!= Csin)
   @test all(soln.u[2].u[1] .== Ccos)
+end
+
+@testset "Parallel Solvers" begin
+  # Test that parallel solvers like KuttaPRK2p5 can be used without error.
+  # In the past, the error "@threads :static cannot be used concurrently or
+  # nested" was encountered when trying to use these solvers.
+  # Note: threading must be disabled (KuttaPRK2p5(false)) when using
+  # preallocated caches (preallocate=true, the default), because the generated
+  # simulation function uses shared intermediate buffers (FixedSizeDiffCache)
+  # that are not thread-safe for concurrent invocations.
+  Heat = @decapode begin
+    C::Form0
+    D::Constant
+    ∂ₜ(C) == D*Δ(C)
+  end
+  function circle(n, c)
+    s = EmbeddedDeltaSet1D{Bool, Point2D}()
+    map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
+      add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+    end
+    add_edges!(s, 1:(nv(s)-1), 2:nv(s))
+    add_edge!(s, nv(s), 1)
+    sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+    subdivide_duals!(sd, Circumcenter())
+    s,sd
+  end
+  s,sd = circle(7, 500)
+  Csin = map(p -> sin(p[1]), point(s))
+  u₀ = ComponentArray(C=Csin,)
+  constants_and_parameters = (D = 0.001,)
+  sim = eval(gensim(Heat, dimension=1))
+  fₘ = sim(sd, nothing) # No custom operators needed
+  tₑ = 1.15
+  prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+  soln = solve(prob, KuttaPRK2p5(false))
+  @test soln.u[1] ≈ u₀
 end
 
 @testset "Large Summations" begin
