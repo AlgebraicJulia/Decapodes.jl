@@ -1067,10 +1067,6 @@ end
   # Test that parallel solvers like KuttaPRK2p5 can be used without error.
   # In the past, the error "@threads :static cannot be used concurrently or
   # nested" was encountered when trying to use these solvers.
-  # Note: threading must be disabled (KuttaPRK2p5(false)) when using
-  # preallocated caches (preallocate=true, the default), because the generated
-  # simulation function uses shared intermediate buffers (FixedSizeDiffCache)
-  # that are not thread-safe for concurrent invocations.
   Heat = @decapode begin
     C::Form0
     D::Constant
