@@ -35,9 +35,6 @@ permissions:
   security-events: read
   statuses: read
 
-env:
-  JULIA_NUM_THREADS: 2
-      
 jobs:
   CI:
     if: github.event_name == 'pull_request' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'test')
