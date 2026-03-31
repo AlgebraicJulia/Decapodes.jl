@@ -1,5 +1,7 @@
 using Test
 
+@info "Executing tests with $(Threads.nthreads()) threads."
+
 @testset "ComponentArrays.jl Integration" begin
   include("componentarrays.jl")
 end
@@ -22,8 +24,13 @@ if CUDA.functional()
     include("cuda_sims.jl")
   end
 else
-  @info "CUDA tests were not run."
-  @info CUDA.functional(true)
+  # Get the short error description instead of full stacktrace
+  error_msg = if isdefined(CUDA, :_initialization_error) && CUDA._initialization_error !== nothing
+    CUDA._initialization_error
+  else
+    "unknown reason"
+  end
+  @info "CUDA tests were not run, since CUDA.functional() is false." reason=error_msg
 end
 
 @testset "Code Quality (Aqua.jl)" begin

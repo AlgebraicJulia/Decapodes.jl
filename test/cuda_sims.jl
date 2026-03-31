@@ -288,10 +288,10 @@ end
     prob_func = (prob, i, repeat) ->
       remake(prob, u0=ComponentArray(C=C[:,i])))
   soln = solve(ens_prob, Tsit5(), EnsembleThreads(); trajectories=2)
-  @test all(Array(soln[1].u[1]) .== Csin)
-  @test all(Array(soln[1].u[1]) .!= Ccos)
-  @test all(Array(soln[2].u[1]) .!= Csin)
-  @test all(Array(soln[2].u[1]) .== Ccos)
+  @test all(Array(soln.u[1].u[1]) .== Csin)
+  @test all(Array(soln.u[1].u[1]) .!= Ccos)
+  @test all(Array(soln.u[2].u[1]) .!= Csin)
+  @test all(Array(soln.u[2].u[1]) .== Ccos)
 
   # In this test, set up a Decapodes CPU simulation and parallelize an ensemble GPU array.
   # This fails, because the SciML GPU compiler cannot compile the sparse matrix
@@ -315,10 +315,10 @@ end
       prob_func = (prob, i, repeat) ->
         remake(prob, u0=ComponentArray(C=C[:,i])))
     soln = solve(ens_prob, Tsit5(), EnsembleGPUArray(CUDA.CUDABackend()); trajectories=2)
-    @test all(Array(soln[1].u[1]) .== Csin)
-    @test all(Array(soln[1].u[1]) .!= Ccos)
-    @test all(Array(soln[2].u[1]) .!= Csin)
-    @test all(Array(soln[2].u[1]) .== Ccos)
+    @test all(Array(soln.u[1].u[1]) .== Csin)
+    @test all(Array(soln.u[1].u[1]) .!= Ccos)
+    @test all(Array(soln.u[2].u[1]) .!= Csin)
+    @test all(Array(soln.u[2].u[1]) .== Ccos)
     true
   end
 end
