@@ -1,6 +1,6 @@
 name = "Decapodes"
 uuid = "679ab3ea-c928-4fe6-8d59-fd451142d391"
-version = "0.6.6"
+version = "0.6.7"
 authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
 
 [deps]
