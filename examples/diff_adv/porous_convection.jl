@@ -1,3 +1,8 @@
+# GMRES, Direct_LU, MG, GMRES_MG, AMG
+solvername = "MG"
+#solvername = "Direct_LU"
+#solvername = "GMRES"
+
 using Pkg
 Pkg.add(["AlgebraicMultigrid",
 "CairoMakie",
@@ -135,12 +140,8 @@ function plot_pc_domain()
   wireframe!(ax2, binary_subdivision(coarsest_domain));
   fig
 end
+@info "Saving coarse domains"
 save("pc_coarse_domains.svg", plot_pc_domain())
-
-# GMRES, Direct_LU, MG, GMRES_MG, AMG
-solvername = "MG"
-solvername = "Direct_LU"
-solvername = "GMRES"
 
 Δ0 = first(md.operators)
 Δn = md.operators[begin+1]
@@ -164,6 +165,7 @@ function plot_sparsities()
   hidedecorations!(ax2, label=false)
   fig
 end
+@info "Saving sparsities"
 save("lap_sparsities.svg", plot_sparsities())
 
 function _multigrid_μ_cycle(u, b, md::MultigridData, alg=cg, μ=1)
@@ -207,9 +209,11 @@ function ldiv!(Y, A::MultigridData, B)
 end  
 
 if solvername == "Direct_LU"
+  @info "Factorizing with LU"
   fΔ0 = LinearAlgebra.factorize(Δ0);
   Δ⁻¹(x) = begin y = fΔ0 \ x; y .-= minimum(y); end
 elseif solvername == "GMRES"
+  @info "Factorizing with ILU"
   pΔ0 = ilu(Δ0);
   Δ⁻¹(x) = begin y, _ = Krylov.gmres(Δ0, x; M = pΔ0, ldiv = true, rtol = 1e-10); y .-= minimum(y) end
 elseif solvername == "MG"
@@ -218,6 +222,7 @@ elseif solvername == "GMRES_MG"
   Δ⁻¹(x) = begin y, _ = Krylov.gmres(Δ0, x; M = md, ldiv = true); y .-= minimum(y) end
 end
 
+@info "Creating interpolation matrix"
 mat = p2_d2_interpolation(sd)
 
 # For no change conditions in top and bottom cooling/heating elements
@@ -236,7 +241,9 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return op
 end
 
+@info "eval(gensim())"
 sim = eval(gensim(Porous_Convection))
+@info "sim()"
 f = sim(sd, generate, GeometricHodge())
 
 ΔT = 200.0
@@ -265,27 +272,49 @@ k_ηf = 1.0
 constants = (k_ηf = k_ηf, αρ₀ = αρ₀, ϕ = ϕ, λ_ρ₀Cp = λ_ρ₀Cp)
 
 tₑ = 0.5
+@info "ODEProblem()"
 prob = ODEProblem(f, u₀, (0, tₑ), constants)
 t0 = time()
-soln_decgmg = solve(prob, Tsit5();
-  reltol=1e-9,
-  saveat = 0.005, progress=true, progress_steps=1);
-tend = time()
-time_decgmg =  tend - t0
 
+
+@info "Solving"
+const reltol = 1e-9
+soln = solve(prob, Tsit5();
+  reltol = reltol,
+  saveat = 0.005,
+  progress = true,
+  progress_steps = 1);
+tend = time()
+time_s = tend - t0
+
+function temperature_matrix(x)
+  reduce(hcat, map(x) do v
+    v.T
+  end)
+end
+
+matwrite("solns_$(solvername).mat",
+         Dict(
+              "soln" => temperature_matrix(soln),
+              "nf" => soln.stats.nf,
+              "time" => soln.t,
+              "time_s" => time_s,
+              "reltol" => reltol))
+
+#=
 matwrite("all_solns_aug13_2025.mat",
          Dict(
-              "directlu" => temperature_matrix(soln_directlu),
-              "decgmg" => temperature_matrix(soln_decgmg),
-              "gmres" => temperature_matrix(soln_gmres),
-              "nf_directlu" => (soln_directlu.stats.nf),
-              "nf_decgmg" =>   (soln_decgmg.stats.nf),
-              "nf_gmres" =>    (soln_gmres.stats.nf),
-              "time" => soln_directlu.t,
-              "time_decgmg" => time_decgmg,
-              "time_directlu" => time_directlu,
-              "time_gmres" => time_gmres,
-              "reltol" => 1e-9))
+              "directlu" => temperature_matrix(solns["Direct_LU"]),
+              "decgmg" => temperature_matrix(solns["MG"]),
+              "gmres" => temperature_matrix(solns["GMRES"]),
+              "nf_directlu" => (solns["Direct_LU"].stats.nf),
+              "nf_decgmg" =>   (solns["MG"].stats.nf),
+              "nf_gmres" =>    (solns["GMRES"].stats.nf),
+              "time" => (solns["Direct_LU"]).t,
+              "time_decgmg" => times["Direct_LU"],
+              "time_directlu" => times["MG"],
+              "time_gmres" => times["GMRES"],
+              "reltol" => reltol))
 
 all_solns_mat = matread("all_solns_aug13_2025.mat")
 directlu = all_solns_mat["directlu"]
@@ -300,7 +329,7 @@ codif_1 = δ(1, sd)
 function save_dynamics(save_file_name, video_length = 30)
   time = Observable(0.0)
 
-  T = @lift(soln($time).T)
+  T = @lift((solns["Direct_LU"]($time)).T)
   f = Figure(size = (1600, 1200),
              fontsize = 30,
              fonts = (; regular = "CMU Serif Roman", bold = "CMU Serif Bold"));
@@ -309,14 +338,15 @@ function save_dynamics(save_file_name, video_length = 30)
   msh_T = mesh!(ax_T, s; color=T, colormap=:jet, colorrange=(-ΔT/2, ΔT/2))
   Colorbar(f[1,2], msh_T)
 
-  timestamps = range(0, soln.t[end], length=video_length)
+  timestamps = range(0, (solns["Direct_LU"]).t[end], length=video_length)
   record(f, save_file_name, timestamps; framerate = 15) do t
     time[] = t
   end
 end
 
+@info "Saving LU dynamics"
 filename = "Porous_Convection_$(solvername)_subs=$(subs)_Ra=$(Ra)"
-save_dynamics("$(filename).mp4", length(soln.t))
+save_dynamics("$(filename).mp4", length((solns["Direct_LU"]).t))
 
 function save_error(save_file_name, soln1, soln2, solvers::String, video_length = 30)
   time = Observable(0.0)
@@ -328,7 +358,7 @@ function save_error(save_file_name, soln1, soln2, solvers::String, video_length 
   msh_T = mesh!(ax_T, s; color=T, colormap=:jet, colorrange = (-0.01, 0.01))
   Colorbar(f[1,2], msh_T)
 
-  timestamps = range(0, soln.t[end], length=video_length)
+  timestamps = range(0, (solns[solvername]).t[end], length=video_length)
   record(f, save_file_name, timestamps; framerate = 15) do t
     time[] = t
   end
@@ -338,18 +368,20 @@ comp1 = "LU MG"
 comp2 = "LU GMRES"
 comp3 = "GMRES MG"
 
-save_error("Porous_Convection_$(comp1)_subs=$(subs)_Ra=$(Ra).mp4", soln_lu, soln_mg, comp1, length(soln.t))
-save_error("Porous_Convection_$(comp2)_subs=$(subs)_Ra=$(Ra).mp4", soln_lu, soln_gmres, comp2, length(soln.t))
-save_error("Porous_Convection_$(comp3)_subs=$(subs)_Ra=$(Ra).mp4", soln_gmres, soln_mg, comp3, length(soln.t))
+@info "Saving error"
+save_error("Porous_Convection_$(comp1)_subs=$(subs)_Ra=$(Ra).mp4", solns["Direct_LU"], solns["MG"], comp1, length((solns["Direct_LU"]).t))
+save_error("Porous_Convection_$(comp2)_subs=$(subs)_Ra=$(Ra).mp4", solns["Direct_LU"], solns["GMRES"], comp2, length((solns["Direct_LU"]).t))
+save_error("Porous_Convection_$(comp3)_subs=$(subs)_Ra=$(Ra).mp4", solns["GMRES"], solns["MG"], comp3, length((solns["Direct_LU"]).t))
 
 iterations = Int64[]
-for t in soln.t
-  rho = codif_1 * wdg10(g, constants.αρ₀ * soln(t).T)
+for t in (solns[solvername]).t
+  rho = codif_1 * wdg10(g, constants.αρ₀ * ((solns[solvername])(t)).T)
   _, stats = Krylov.gmres(Δ0, rho; M = pΔ0, ldiv = true, rtol = 1e-12, atol = 1e-10)
   # _, stats = multi_solve(rho; rtol = 1e-12, atol = 1e-10)
   push!(iterations, stats.niter)
 end
 
+@info "Saving iterations"
 save("$(solvername)_iterations_histo.png", hist(iterations))
 save("$(solvername)_iterations_lines.png", plot(iterations))
 
@@ -411,54 +443,32 @@ function dynamics_composite()
 end
 dynamics_composite()
 
+@info "Saving dynamics"
 filename = "Porous_Convection_$(solvername)_subs=$(subs)_Ra=$(Ra)"
-save_dynamics("$(filename).mp4", length(soln.t))
+save_dynamics("$(filename).mp4", length(solns[solvername].t))
 
-function save_error(save_file_name, soln1, soln2, solvers::String, video_length = 30)
-  time = Observable(0.0)
 
-  T = @lift(soln1($time).T - soln2($time).T)
+function dynamics_ICs(soln)
   f = Figure()
 
-  ax_T = CairoMakie.Axis(f[1,1], title = @lift("Difference in Temp ($(solvers)) at Time $(round($time, digits=3))"))
-  msh_T = mesh!(ax_T, s; color=T, colormap=:jet, colorrange = (-0.01, 0.01))
-  Colorbar(f[1,2], msh_T)
+  ax_T = CairoMakie.Axis(f[1,1],
+                         title = "Temperature at Time 0",
+                         aspect = AxisAspect(2))
+  msh_T = mesh!(ax_T, s;
+                color=soln(0).T,
+                colormap=:jet,
+                colorrange=(-ΔT/2, ΔT/2))
 
-  timestamps = range(0, soln.t[end], length=video_length)
-  record(f, save_file_name, timestamps; framerate = 15) do t
-    time[] = t
-  end
+  # https://discourse.julialang.org/t/makie-jl-limiting-height-of-colorbar-to-that-of-a-nearby-equal-aspect-axis/55876/4
+  # Pixel-accurate value is .6351:
+  Colorbar(f[1,2], msh_T, height=Relative(0.6351))
+
+  f
 end
+@info "Saving ICs"
+save("temperature_ics.png", dynamics_ICs(solns["MG"]))
 
-comp1 = "LU MG"
-comp2 = "LU GMRES"
-comp3 = "GMRES MG"
-
-save_error("Porous_Convection_$(comp1)_subs=$(subs)_Ra=$(Ra).mp4", soln_lu, soln_mg, comp1, length(soln.t))
-save_error("Porous_Convection_$(comp2)_subs=$(subs)_Ra=$(Ra).mp4", soln_lu, soln_gmres, comp2, length(soln.t))
-save_error("Porous_Convection_$(comp3)_subs=$(subs)_Ra=$(Ra).mp4", soln_gmres, soln_mg, comp3, length(soln.t))
-
-iterations = Int64[]
-for t in soln.t
-  rho = codif_1 * wdg10(g, constants.αρ₀ * soln(t).T)
-  _, stats = Krylov.gmres(Δ0, rho; M = pΔ0, ldiv = true, rtol = 1e-12, atol = 1e-10)
-  # _, stats = multi_solve(rho; rtol = 1e-12, atol = 1e-10)
-  push!(iterations, stats.niter)
-end
-
-save("$(solvername)_iterations_histo.png", hist(iterations))
-save("$(solvername)_iterations_lines.png", plot(iterations))
-
-# df = DataFrame(soln);
-# CSV.write("$(filename).csv", df)
-
-# Can use to read out rows
-# out_df = CSV.read("$(filename).csv", DataFrame)
-# outT = Array(out_df[2, 2:end])
-
-# SVGs of such plots will exhibit fuzzy text.
-
-function dynamics_FCS(soln, titleextra)
+function dynamics_FCs(soln, titleextra)
   f = Figure()
 
   ax_T = CairoMakie.Axis(f[1,1],
@@ -475,31 +485,13 @@ function dynamics_FCS(soln, titleextra)
 
   f
 end
-save("temperature_ics.png", dynamics_ICS(soln_decgmg))
-
-function dynamics_FCS(soln, titleextra)
-  f = Figure()
-
-  ax_T = CairoMakie.Axis(f[1,1],
-                         title = "Temperature at Time 0.5 ; $titleextra",
-                         aspect = AxisAspect(2))
-  msh_T = mesh!(ax_T, s;
-                color=soln(0.5).T,
-                colormap=:jet,
-                colorrange=(-ΔT/2, ΔT/2))
-
-  # https://discourse.julialang.org/t/makie-jl-limiting-height-of-colorbar-to-that-of-a-nearby-equal-aspect-axis/55876/4
-  # Pixel-accurate value is .6351:
-  Colorbar(f[1,2], msh_T, height=Relative(0.6351))
-
-  f
-end
-dynamics_FCS(soln_decgmg, "DEC GMG")
+dynamics_FCs(solns["MG"], "DEC GMG")
 
 # SVGs of such plots will exhibit fuzzy text.
-save("temperature_fcs_decgmg.png", dynamics_FCS(soln_decgmg, "DEC GMG"))
+@info "Saving FCs"
+save("temperature_fcs_decgmg.png", dynamics_FCs(solns["MG"], "DEC GMG"))
 
-function diffs_FCS(soln, titleextra)
+function diffs_FCs(soln, titleextra)
   f = Figure()
 
   ax_T = CairoMakie.Axis(f[1,1],
@@ -507,8 +499,8 @@ function diffs_FCS(soln, titleextra)
                          aspect = AxisAspect(2))
 
   msh_T = mesh!(ax_T, s;
-                color=soln_directlu[:,end] - soln[:,end],
-                colormap=:jet)
+                color = (solns["Direct_LU"])[:,end] - soln[:,end],
+                colormap = :jet)
 
   # https://discourse.julialang.org/t/makie-jl-limiting-height-of-colorbar-to-that-of-a-nearby-equal-aspect-axis/55876/4
   # Pixel-accurate value is .605:
@@ -516,13 +508,14 @@ function diffs_FCS(soln, titleextra)
 
   f
 end
-diffs_FCS(soln_gmres, "GMRES")
+diffs_FCs(solns["GMRES"], "GMRES")
 
 # SVGs of such plots will exhibit fuzzy text.
-save("temperature_diff_decgmg.png", diffs_FCS(soln_decgmg, "DEC GMG"))
-save("temperature_diff_gmres.png", diffs_FCS(soln_gmres, "GMRES"))
+@info "Saving temperature differences"
+save("temperature_diff_decgmg.png", diffs_FCs(solns["MG"], "DEC GMG"))
+save("temperature_diff_gmres.png", diffs_FCs(solns["GMRES"], "GMRES"))
 
-sqrt(mean((soln_directlu(0.5).T - soln_gmres(0.5).T) .^ 2))
+sqrt(mean(((solns["Direct_LU"](0.5)).T - (solns["GMRES"](0.5)).T) .^ 2))
 
 rmse(ana_sol, num_sol) = sqrt(mean((ana_sol .- num_sol) .^ 2))
 
@@ -532,15 +525,22 @@ function plot_rmse_over_time(num_sol, titleextra)
                        title="RMSE of $titleextra over Time",
                        xlabel="time [s]",
                        ylabel="RMSE [°C]")
-  rmse_over_time = map(soln_directlu.t) do t
-    rmse(soln_directlu(t).T, num_sol(t).T)
+  rmse_over_time = map(solns["Direct_LU"].t) do t
+    rmse(solns["Direct_LU"](t).T, num_sol(t).T)
   end
-  lines!(ax, soln_directlu.t, rmse_over_time);
+  lines!(ax, (solns["Direct_LU"]).t, rmse_over_time);
   fig
 end
 
-plot_rmse_over_time(soln_decgmg, "DEC GMG")
-plot_rmse_over_time(soln_gmres, "GMRES")
+plot_rmse_over_time(solns["MG"], "DEC GMG")
+plot_rmse_over_time(solns["GMRES"], "GMRES")
+
+rmse_over_time_decgmg = map(solns["Direct_LU"].t) do t
+  rmse(solns["Direct_LU"](t).T, solns["MG"](t).T)
+end
+rmse_over_time_gmres = map(solns["Direct_LU"].t) do t
+  rmse(solns["Direct_LU"](t).T, solns["GMRES"](t).T)
+end
 
 function plot_comparison_rmse_over_time()
   fig = Figure(size = (1600, 800),
@@ -556,39 +556,23 @@ function plot_comparison_rmse_over_time()
                        xlabel="time [s]",
                        ylabel="RMSE [°C]")
 
-  rmse_over_time_decgmg = map(soln_directlu.t) do t
-    rmse(soln_directlu(t).T, soln_decgmg(t).T)
-  end
-  rmse_over_time_gmres = map(soln_directlu.t) do t
-    rmse(soln_directlu(t).T, soln_gmres(t).T)
-  end
-
-  lines!(axlogit, soln_directlu.t[2:end], log10.(rmse_over_time_gmres)[2:end], label="GMRES");
-  lines!(axlogit, soln_directlu.t[2:end], log10.(rmse_over_time_decgmg)[2:end], label="DEC GMG");
-  lines!(axnologit, soln_directlu.t, rmse_over_time_gmres, label="GMRES");
-  lines!(axnologit, soln_directlu.t, rmse_over_time_decgmg, label="DEC GMG");
+  lines!(axlogit, solns["Direct_LU"].t[2:end], log10.(rmse_over_time_gmres)[2:end], label="GMRES");
+  lines!(axlogit, solns["Direct_LU"].t[2:end], log10.(rmse_over_time_decgmg)[2:end], label="DEC GMG");
+  lines!(axnologit, solns["Direct_LU"].t, rmse_over_time_gmres, label="GMRES");
+  lines!(axnologit, solns["Direct_LU"].t, rmse_over_time_decgmg, label="DEC GMG");
 
   #Legend(fig[1,2], ax);
   axislegend(axnologit,"Scheme", position=:lt, labelsize=24, fontsize=30);
   fig
 end
+@info "Saving RMSE comparison"
 plot_comparison_rmse_over_time()
 save("rmse_comparison.svg", plot_comparison_rmse_over_time())
 
 rmse_ratios = rmse_over_time_decgmg ./ rmse_over_time_gmres
 
-function temperature_matrix(x)
-  reduce(hcat, map(x) do v
-    v.T
-  end)
-end
-
 matwrite("rmses.mat", Dict("rmse_over_time_decgmg" => rmse_over_time_decgmg,
                            "rmse_over_time_gmres" => rmse_over_time_gmres))
-
-using CairoMakie
-using MAT
-
 data = matread("rmses.mat")
 rmse_over_time_decgmg = data["rmse_over_time_decgmg"]
 rmse_over_time_gmres = data["rmse_over_time_gmres"]
@@ -599,6 +583,8 @@ ax2 = CairoMakie.Axis(f[2,1], title="(log10 RMSE) RATIOS");
 lines!(ax, (rmse_over_time_decgmg ./ rmse_over_time_gmres)[2:end])
 lines!(ax2, (log10.(rmse_over_time_decgmg)[2:end] ./ log10.(rmse_over_time_gmres)[2:end]));
 f
-save("rmse_ratios_and_ratios_of_logs.png", ans)
+@info "Saving RMSE ratios"
+save("rmse_ratios_and_ratios_of_logs.png", f)
 
 
+=#
