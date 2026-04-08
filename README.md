@@ -15,6 +15,8 @@ By combining the power of ACT and the DEC, we seek to improve the scientific com
 
 <img src='https://algebraicjulia.github.io/Decapodes.jl/dev/navier_stokes/vort.gif' width='512' alt='Solution of the Vorticity-Formulation of the Incompressible Navier-Stokes Equations'>
 
+A collection of simulations produced with Decapodes is available at the [Decapodes Leaderboard](https://cise.ufl.edu/~luke.morris/dlb.cgi).
+
 ## Citation
 
 The ideas behind this package are described in the paper:
