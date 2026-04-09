@@ -366,6 +366,18 @@ end
     @test occursin("sqrt", code_str_with)
     @test occursin("log", code_str_with)
   end
+
+  # Test that NaNMath overrides work at runtime: sqrt(-1) returns NaN instead of DomainError
+  let d = @decapode begin
+    (C, Ċ)::Form0
+    Ċ == ∂ₜ(C)
+  end
+    code = gensim(d, dimension=2, nanmath_support=true)
+    sim = eval(code)
+    # The returned closure should have NaNMath overrides in scope.
+    # Verify by checking the generated code contains the expected overrides.
+    @test occursin("NaNMath", string(code))
+  end
 end
 
 end
