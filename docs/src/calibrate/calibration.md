@@ -83,7 +83,7 @@ end
 Now we define the mesh and the dual mesh that the glacial flow equations will be solved on, along with initial conditions on the mesh and parameters for the model.
 
 ```@example Calibration
-s2D = triangulated_grid(10_000, 10_000, 500, 500, Point3d)
+s2D = triangulated_grid(10_000, 10_000, 250, 250, Point3d)
 sd2D = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3d}(s2D)
 subdivide_duals!(sd2D, Barycenter())
 
