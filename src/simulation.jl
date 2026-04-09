@@ -691,16 +691,8 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   multigrid_defs = quote end
   multigrid && push!(multigrid_defs.args, :(mesh = finest_mesh(mesh)))
 
-  nanmath_defs = quote end
-  if nanmath_support
-    push!(nanmath_defs.args, :(^(x, y) = Decapodes.NaNMath.pow(x, y)))
-    push!(nanmath_defs.args, :(sqrt(x) = Decapodes.NaNMath.sqrt(x)))
-    push!(nanmath_defs.args, :(log(x) = Decapodes.NaNMath.log(x)))
-  end
-
-  quote
+  result = quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
-      $nanmath_defs
       $func_defs
       $contracted_defs
       $multigrid_defs
@@ -714,6 +706,18 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
       end;
     end
   end
+
+  if nanmath_support
+    nanmath_defs = quote
+      ^(x, y) = Decapodes.NaNMath.pow(x, y)
+      sqrt(x) = Decapodes.NaNMath.sqrt(x)
+      log(x) = Decapodes.NaNMath.log(x)
+    end
+    body = result.args[2].args[2]
+    insert!(body.args, 2, nanmath_defs)
+  end
+
+  result
 end
 
 gather_inputs(d::SummationDecapode) = vcat(infer_state_names(d), d[incident(d, :Literal, :type), :name])
