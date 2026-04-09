@@ -16,7 +16,9 @@ Point3D = Point3{Float64}
 
 import Decapodes: default_dec_matrix_generate
 
+# Remove LineNumberNodes from an AST args vector.
 filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
+# Extract the non-LineNumberNode body blocks from a gensim-generated Expr.
 gensim_body_blocks(e::Expr) = filter_lnn(e.args[2].args[2].args)
 
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
