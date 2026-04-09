@@ -344,4 +344,28 @@ import Decapodes: UnsupportedDimensionException, UnsupportedStateeltypeException
   end
 end
 
+##############################
+# NaNMath Support Code Tests #
+##############################
+
+@testset "NaNMath Support" begin
+  let d = @decapode begin
+    (C, Ċ)::Form0
+    Ċ == ∂ₜ(C)
+  end
+    # Test that nanmath_support=false (default) does not include NaNMath overrides
+    code_without = gensim(d, dimension=2)
+    code_str_without = string(code_without)
+    @test !occursin("NaNMath", code_str_without)
+
+    # Test that nanmath_support=true includes NaNMath overrides
+    code_with = gensim(d, dimension=2, nanmath_support=true)
+    code_str_with = string(code_with)
+    @test occursin("NaNMath", code_str_with)
+    @test occursin("pow", code_str_with)
+    @test occursin("sqrt", code_str_with)
+    @test occursin("log", code_str_with)
+  end
+end
+
 end
