@@ -380,4 +380,136 @@ end
   end
 end
 
+##########################
+# vars_upstream_of Tests #
+##########################
+
+import Decapodes: vars_upstream_of
+
+@testset "Test vars_upstream_of" begin
+
+  # Test simple chain: F = f(S)
+  let d = @decapode begin
+    S::Form0
+    F::Form0
+    F == f(S)
+  end
+    target_idx = only(incident(d, :F, :name))
+    needed = vars_upstream_of(d, target_idx)
+    needed_names = Set(d[collect(needed), :name])
+    @test :F in needed_names
+    @test :S in needed_names
+  end
+
+  # Test binary operation: C = A * B
+  let d = @decapode begin
+    (A, B, C)::Form0
+    C == A * B
+  end
+    target_idx = only(incident(d, :C, :name))
+    needed = vars_upstream_of(d, target_idx)
+    needed_names = Set(d[collect(needed), :name])
+    @test :A in needed_names
+    @test :B in needed_names
+    @test :C in needed_names
+  end
+
+  # Test that unrelated variables are excluded
+  let d = @decapode begin
+    (U, V)::Form0
+    U2V::Form0
+    (α)::Constant
+    U2V == (U .* U) .* V
+    ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U))
+    ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+  end
+    u2v_idx = only(incident(d, :U2V, :name))
+    needed = vars_upstream_of(d, u2v_idx)
+    needed_names = Set(d[collect(needed), :name])
+    @test :U in needed_names
+    @test :V in needed_names
+    @test :U2V in needed_names
+    @test !(:α in needed_names)
+  end
+
+  # Test with a state variable as target (trivial downset)
+  let d = @decapode begin
+    S::Form0
+    F::Form0
+    F == f(S)
+  end
+    target_idx = only(incident(d, :S, :name))
+    needed = vars_upstream_of(d, target_idx)
+    @test length(needed) == 1
+    @test d[only(collect(needed)), :name] == :S
+  end
+end
+
+########################
+# gen_retriever Tests  #
+########################
+
+@testset "Test gen_retriever" begin
+
+  # Test that gen_retriever generates evaluable code for Brusselator U2V
+  let d = @decapode begin
+    (U, V)::Form0
+    U2V::Form0
+    (α)::Constant
+    F::Parameter
+    U2V == (U .* U) .* V
+    ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+    ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+  end
+    code = gen_retriever(d, :U2V)
+    @test code isa Expr
+    sim = eval(code)
+    @test sim isa Function
+  end
+
+  # Test that eval_retriever works
+  let d = @decapode begin
+    (U, V)::Form0
+    U2V::Form0
+    (α)::Constant
+    F::Parameter
+    U2V == (U .* U) .* V
+    ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+    ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+  end
+    sim = eval_retriever(d, :U2V)
+    @test sim isa Function
+  end
+
+  # Test gen_retriever for a simple diffusion equation (disable contraction to preserve ϕ)
+  let d = @decapode begin
+    (C, Ċ)::Form0
+    ϕ::Form1
+    ϕ == d₀(C)
+    Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
+    ∂ₜ(C) == Ċ
+  end
+    code = gen_retriever(d, :ϕ, contract=false)
+    @test code isa Expr
+    sim = eval(code)
+    @test sim isa Function
+  end
+
+  # Test that only needed operations are compiled (fewer equations for U2V than full sim)
+  let d = @decapode begin
+    (U, V)::Form0
+    U2V::Form0
+    (α)::Constant
+    F::Parameter
+    U2V == (U .* U) .* V
+    ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+    ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+  end
+    retriever_code = gen_retriever(d, :U2V)
+    sim_code = gensim(d)
+    # The retriever code should be shorter (fewer equations) than the full simulation
+    @test length(string(retriever_code)) < length(string(sim_code))
+  end
+end
+
 end
