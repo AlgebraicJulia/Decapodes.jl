@@ -336,17 +336,15 @@ const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
                                     :.= => :.=)
 
 """
-    compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool; target_vars::Union{Nothing, Set{Int}} = nothing)
+    compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
 
 Function that compiles the computation body. `d` is the input Decapode, `inputs` is a vector of state variables and literals,
 `inplace_dec_ops` is a collection of all DEC operator symbols that can use special
 in-place methods, `dimension` is the dimension of the problem (usually 1 or 2), `stateeltype` is the type of the state elements
 (usually Float32 or Float64), `code_target` determines what architecture the code is compiled for (either CPU or CUDA), and `preallocate`
 which is set to `true` by default and determines if intermediate results can be preallocated.
-
-If `target_vars` is provided, only operations whose output variable index is in the set will emit code. Other operations will still be traversed for topological ordering but will not generate equations.
 """
-function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool; target_vars::Union{Nothing, Set{Int}} = nothing)
+function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
   alloc_vectors = Vector{AllocVecCall}()
   # Get the Vars of the inputs (probably state Vars).
   visited_Var = falses(nparts(d, :Var))
@@ -374,12 +372,6 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::
         t = d[op, :tgt]
         visited_1[op] = true
         if operator == DerivOp
-          continue
-        end
-
-        # Skip operations not needed for target computation
-        if !isnothing(target_vars) && !(t in target_vars)
-          visited_Var[t] = true
           continue
         end
 
@@ -412,14 +404,6 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::
       arg2 = d[op, :proj2]
       if !visited_2[op] && visited_Var[arg1] && visited_Var[arg2]
         r = d[op, :res]
-
-        # Skip operations not needed for target computation
-        if !isnothing(target_vars) && !(r in target_vars)
-          visited_2[op] = true
-          visited_Var[r] = true
-          continue
-        end
-
         a1name = d[arg1, :name]
         a2name = d[arg2, :name]
         rname  = d[r, :name]
@@ -475,14 +459,6 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::
       args = subpart(d, incident(d, op, :summation), :summand)
       if !visited_Σ[op] && all(visited_Var[args])
         r = d[op, :sum]
-
-        # Skip operations not needed for target computation
-        if !isnothing(target_vars) && !(r in target_vars)
-          visited_Σ[op] = true
-          visited_Var[r] = true
-          continue
-        end
-
         argnames = d[args, :name]
         rname  = d[r, :name]
 
@@ -751,53 +727,15 @@ gensim(d::SummationDecapode; kwargs...) =
 evalsim(args...; kwargs...) = eval(gensim(args...; kwargs...))
 
 """
-    vars_upstream_of(d::SummationDecapode, target_idx::Int)
-
-Compute the set of variable indices in the Decapode `d` that are needed to compute the variable
-at index `target_idx`. This traverses the dependency graph backwards from the target, skipping
-`∂ₜ` edges, to find all upstream variables (the "downset" of the target in the computation graph).
-"""
-function vars_upstream_of(d::SummationDecapode, target_idx::Int)
-  needed = Set{Int}([target_idx])
-  queue = Int[target_idx]
-  while !isempty(queue)
-    v = popfirst!(queue)
-    for op in incident(d, v, :tgt)
-      d[op, :op1] == DerivOp && continue
-      src = d[op, :src]
-      if !(src in needed)
-        push!(needed, src)
-        push!(queue, src)
-      end
-    end
-    for op in incident(d, v, :res)
-      for input_var in (d[op, :proj1], d[op, :proj2])
-        if !(input_var in needed)
-          push!(needed, input_var)
-          push!(queue, input_var)
-        end
-      end
-    end
-    for op in incident(d, v, :sum)
-      for s in d[incident(d, op, :summation), :summand]
-        if !(s in needed)
-          push!(needed, s)
-          push!(queue, s)
-        end
-      end
-    end
-  end
-  needed
-end
-
-"""
     gen_retriever(user_d::SummationDecapode, target_var::Symbol, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType=Float64, code_target::AbstractGenerationTarget=CPUTarget(), preallocate::Bool=true, contract::Bool=true, cse::Bool=true)
 
 Generate code to compute a specific intermediate variable from a Decapode.
 
-Given a Decapode and the name of a target variable, this function determines the minimal set of
-operations needed to compute that variable from the state variables, and generates code that
-performs only those operations.
+Given a Decapode and the name of a target variable, this function uses
+[`downset`](@ref) from DiagrammaticEquations to extract the sub-Decapode
+containing only the operations needed to compute that variable from the state
+variables. It then passes that sub-Decapode through the standard `gensim`
+compilation pipeline.
 
 The returned expression, when evaluated, produces a function with the signature:
 `(mesh, operators, hodge) -> (__u__, __p__, __t__) -> value`
@@ -835,8 +773,9 @@ function gen_retriever(user_d::SummationDecapode, target_var::Symbol, input_vars
   (stateeltype == Float32 || stateeltype == Float64) ||
     throw(UnsupportedStateeltypeException(stateeltype))
 
-  # Explicit copy for safety
-  d = deepcopy(user_d)
+  # Use downset from DiagrammaticEquations to extract the sub-Decapode
+  # containing only the operations needed to compute target_var.
+  d = downset(user_d, target_var)
 
   recognize_types(d)
 
@@ -864,20 +803,13 @@ function gen_retriever(user_d::SummationDecapode, target_var::Symbol, input_vars
   # Combination of already in-place dec operators and newly contracted matrices
   inplace_dec_ops = union(optimizable(code_target), contracted_ops)
 
-  # Compute the needed variables for the target
-  target_idxs = incident(d, target_var, :name)
-  isempty(target_idxs) && error("Variable $target_var not found in the Decapode.")
-  target_idx = only(target_idxs)
-  needed_vars = vars_upstream_of(d, target_idx)
+  # Filter input variables to only those in the sub-Decapode
+  sub_input_vars = filter(v -> v in d[:name], input_vars)
 
-  # Filter input variables to only those needed
-  needed_var_names = Set(d[collect(needed_vars), :name])
-  filtered_inputs = filter(v -> v in needed_var_names, input_vars)
+  vars = get_vars_code(d, sub_input_vars, stateeltype, code_target)
 
-  vars = get_vars_code(d, filtered_inputs, stateeltype, code_target)
-
-  # Compilation of the simulation, filtered to only needed operations
-  equations, alloc_vectors = compile(d, input_vars, inplace_dec_ops, dimension, stateeltype, code_target, preallocate, target_vars=needed_vars)
+  # Compile the sub-Decapode
+  equations, alloc_vectors = compile(d, sub_input_vars, inplace_dec_ops, dimension, stateeltype, code_target, preallocate)
   data = post_process_vector_allocs(alloc_vectors, code_target)
 
   func_defs = compile_env(d, present_dec_ops, contracted_ops, code_target)
