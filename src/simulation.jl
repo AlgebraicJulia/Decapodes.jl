@@ -732,7 +732,7 @@ evalsim(args...; kwargs...) = eval(gensim(args...; kwargs...))
 Generate code to compute a specific intermediate variable from a Decapode.
 
 Given a Decapode and the name of a target variable, this function uses
-[`downset`](@ref) from DiagrammaticEquations to extract the sub-Decapode
+`downset` from DiagrammaticEquations to extract the sub-Decapode
 containing only the operations needed to compute that variable from the state
 variables. It then passes that sub-Decapode through the standard `gensim`
 compilation pipeline.
