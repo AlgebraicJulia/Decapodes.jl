@@ -446,7 +446,7 @@ import Decapodes: vars_upstream_of
 end
 
 ########################
-# gen_retriever Tests  #
+# gen_retriever Tests #
 ########################
 
 @testset "Test gen_retriever" begin

@@ -866,7 +866,7 @@ function gen_retriever(user_d::SummationDecapode, target_var::Symbol, input_vars
 
   # Compute the needed variables for the target
   target_idxs = incident(d, target_var, :name)
-  isempty(target_idxs) && error("Variable :$target_var not found in the Decapode.")
+  isempty(target_idxs) && error("Variable $target_var not found in the Decapode.")
   target_idx = only(target_idxs)
   needed_vars = vars_upstream_of(d, target_idx)
 
