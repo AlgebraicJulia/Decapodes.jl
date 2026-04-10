@@ -83,7 +83,7 @@ end
 Now we define the mesh and the dual mesh that the glacial flow equations will be solved on, along with initial conditions on the mesh and parameters for the model.
 
 ```@example Calibration
-s2D = triangulated_grid(10_000, 10_000, 500, 500, Point3d)
+s2D = triangulated_grid(10_000, 10_000, 250, 250, Point3d)
 sd2D = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3d}(s2D)
 subdivide_duals!(sd2D, Barycenter())
 
@@ -107,22 +107,13 @@ constants_and_parameters = ComponentArray(
 
 Now we have everything we need to generate the function that will be used in the ODE solver. Thinking ahead however, the optimization routines we want to use might try non-physical parameters, e.g. maybe a set of parameters the optimizer tries will cause the ice height solution to become complex. In this case, certain parameter sets might cause an error to occur, e.g. an out of domain error could be thrown if the square root function is called on a negative number. If an error occurs, the optimization process will stop. But we would like it if when a non-physical set of parameters is used, the optimization routine rejects it and keeps going. For that we can use the [`NaNMath` library](https://github.com/JuliaMath/NaNMath.jl). When functions in the `NaNMath` library are called with values that would usually produce an out of domain error, they return a `NaN` value instead. This allows for the optimization routine to continue, while disregarding that set of parameters. 
 
+We enable this behavior by passing `nanmath_support = true` to the simulation generation function.
+
 ```@example Calibration
 
-decapode_code =
-    quote
-        let
-            ^(x,y) = NaNMath.pow(x,y)
-            sqrt(x) = NaNMath.sqrt(x)
-            log(x) = NaNMath.log(x)
-            
-            $(gensim(ice_dynamics2D, dimension = 2, preallocate = false))
-        end
-    end
+f_2D = evalsim(ice_dynamics2D, dimension = 2, preallocate = false, nanmath_support = true)
 
-f_eval_2D = eval(decapode_code)
-
-f_2D = f_eval_2D(sd2D,generate)
+f_2D = f_2D(sd2D, generate)
 ```
 
 Now we can solve the problem and generate some reference data.
@@ -185,7 +176,7 @@ First, let's solve the ODE with sparsity not used.
 
 ```@example Calibration
 no_sparse_prob_2D = ODEProblem(f_2D, u02D, (0, tₑ), constants_and_parameters)
-no_sparse_soln_2D, exec_time_seconds, _, _, _ = @btimed solve(no_sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))
+no_sparse_soln_2D, exec_time_seconds, _, _, _ = @btimed solve(no_sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()));
 no_sparse_soln_2D.retcode, exec_time_seconds
 ```
 
@@ -193,7 +184,7 @@ Now the same problem but with the sparsity pattern and Jacobian coloring taken i
 ```@example Calibration
 sparse_f_2D = ODEFunction(f_2D, sparsity = jac_sparsity_2D, colorvec = column_colors(jac_colors_2D))
 sparse_prob_2D = ODEProblem(sparse_f_2D,u02D,(0,tₑ), constants_and_parameters)
-sparse_soln_2D, exec_time_seconds, _, _, _ = @btimed solve(sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()))
+sparse_soln_2D, exec_time_seconds, _, _, _ = @btimed solve(sparse_prob_2D, Rodas5P(autodiff = AutoForwardDiff()));
 sparse_soln_2D.retcode, exec_time_seconds
 ```
 

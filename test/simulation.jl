@@ -16,6 +16,11 @@ Point3D = Point3{Float64}
 
 import Decapodes: default_dec_matrix_generate
 
+# Remove LineNumberNodes from an AST args vector.
+filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
+# Extract the non-LineNumberNode body blocks from a gensim-generated Expr.
+gensim_body_blocks(e::Expr) = filter_lnn(e.args[2].args[2].args)
+
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
 function test_hodge(k, sd::HasDeltaSet, hodge)
@@ -346,8 +351,9 @@ end
 @testset "Gensim Transformations" begin
 
   function count_contractions(e::Expr)
-    block = e.args[2].args[2].args[5]
-    length(block.args) - 1
+    blocks = gensim_body_blocks(e)
+    contracted_block = blocks[3]
+    length(contracted_block.args) - 1
   end
 
   count_contractions(d::SummationDecapode) = count_contractions(gensim(d))
@@ -399,7 +405,8 @@ end
   @test 0 == count_contractions(gensim(single_contract; contract=false))
 
   f = gensim(single_contract)
-  @test f.args[2].args[2].args[5].args[[2,4]] == [
+  contracted_block = gensim_body_blocks(f)[3]
+  @test contracted_block.args[[2,4]] == [
     :(var"GenSim-M_GenSim-ConMat_0" = var"GenSim-M_d₁" * var"GenSim-M_d₀"),
     :(var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_⋆₀")]
 
@@ -692,8 +699,6 @@ end
 
 end
 
-filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
-
 @testset "1-D Mat Generation" begin
   Point2D = Point2{Float64}
   function generate_dual_mesh(s::HasDeltaSet1D)
@@ -716,8 +721,9 @@ filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
     B == ⋆(⋆(A))
   end
   g = gensim(DiagonalInvHodge1)
-  @test g.args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
-  @test length(filter_lnn(g.args[2].args[2].args[3].args)) == 2
+  func_block = gensim_body_blocks(g)[2]
+  @test func_block.args[2].args[2].args[3].value == :⋆₁⁻¹
+  @test length(filter_lnn(func_block.args)) == 2
   sim = eval(g)
 
   # TODO: Error is being thrown here

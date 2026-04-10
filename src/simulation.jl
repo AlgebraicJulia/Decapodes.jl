@@ -639,8 +639,10 @@ to operator mappings to return a simulator that can be used to solve the represe
 `multigrid`: Enables multigrid methods during code generation. If `true`, then the function produced by `gensim` will expect a `PrimalGeometricMapSeries`. (Defaults to `false`)
 
 `cse`: Enables(`true`)/disables(`false`) common subexpression elimination to avoid redundant computations. (Defaults to `true`)
+
+`nanmath_support`: Enables(`true`)/disables(`false`) NaNMath mode. When enabled, the generated code will locally override `^`, `sqrt`, and `log` with their NaNMath equivalents (`NaNMath.pow`, `NaNMath.sqrt`, `NaNMath.log`). This is useful during calibration or optimization, where non-physical parameter sets might cause out-of-domain errors. With NaNMath, such calls return `NaN` instead of throwing errors, allowing optimization routines to reject those parameters and continue. (Defaults to `false`)
 """
-function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, multigrid::Bool = false, cse::Bool = true)
+function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, multigrid::Bool = false, cse::Bool = true, nanmath_support::Bool = false)
   (dimension == 1 || dimension == 2) ||
     throw(UnsupportedDimensionException(dimension))
 
@@ -689,8 +691,16 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   multigrid_defs = quote end
   multigrid && push!(multigrid_defs.args, :(mesh = finest_mesh(mesh)))
 
+  nanmath_defs = quote end
+  if nanmath_support
+    push!(nanmath_defs.args, :(^(x, y) = Decapodes.NaNMath.pow(x, y)))
+    push!(nanmath_defs.args, :(sqrt(x) = Decapodes.NaNMath.sqrt(x)))
+    push!(nanmath_defs.args, :(log(x) = Decapodes.NaNMath.log(x)))
+  end
+
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
+      $nanmath_defs
       $func_defs
       $contracted_defs
       $multigrid_defs
