@@ -613,7 +613,7 @@ non_optimizable(::CUDABackend) = NON_OPTIMIZABLE_CUDA_OPERATORS
 dec_operator_set(code_target::AbstractGenerationTarget) = optimizable(code_target) ∪ non_optimizable(code_target)
 
 """
-    _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false)
+    _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
 
 Internal helper that runs the shared preprocessing and compilation pipeline
 used by both [`gensim`](@ref) and [`gen_retriever`](@ref).
@@ -621,9 +621,12 @@ used by both [`gensim`](@ref) and [`gen_retriever`](@ref).
 The caller is expected to supply an already-prepared Decapode `d` (e.g. a
 `deepcopy` or a `downset` result). This function mutates `d` and returns a
 `NamedTuple` of compilation artifacts. When `gen_tars` is `true`, the tangent
-variable assignment code used by `gensim` is also generated.
+variable assignment code used by `gensim` is also generated. When `multigrid`
+is `true`, the returned `multigrid_defs` block contains `mesh = finest_mesh(mesh)`.
+When `nanmath_support` is `true`, the returned `nanmath_defs` block overrides
+`^`, `sqrt`, and `log` with their NaNMath equivalents.
 """
-function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false)
+function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
   recognize_types(d)
 
   # Makes copy
@@ -663,9 +666,20 @@ function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}; dim
   func_defs = compile_env(d, present_dec_ops, contracted_ops, code_target)
   vect_defs = quote $(Expr.(alloc_vectors)...) end
 
+  multigrid_defs = quote end
+  multigrid && push!(multigrid_defs.args, :(mesh = finest_mesh(mesh)))
+
+  nanmath_defs = quote end
+  if nanmath_support
+    push!(nanmath_defs.args, :(^(x, y) = Decapodes.NaNMath.pow(x, y)))
+    push!(nanmath_defs.args, :(sqrt(x) = Decapodes.NaNMath.sqrt(x)))
+    push!(nanmath_defs.args, :(log(x) = Decapodes.NaNMath.log(x)))
+  end
+
   (d = d, vars = vars, tars = tars, equations = equations,
    alloc_vectors = alloc_vectors, data = data,
-   func_defs = func_defs, contracted_defs = contracted_defs, vect_defs = vect_defs)
+   func_defs = func_defs, contracted_defs = contracted_defs, vect_defs = vect_defs,
+   multigrid_defs = multigrid_defs, nanmath_defs = nanmath_defs)
 end
 
 """
@@ -710,24 +724,14 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
 
   c = _compile_decapode(d, input_vars;
     dimension, stateeltype, code_target, preallocate, contract, cse,
-    gen_tars = true)
-
-  multigrid_defs = quote end
-  multigrid && push!(multigrid_defs.args, :(mesh = finest_mesh(mesh)))
-
-  nanmath_defs = quote end
-  if nanmath_support
-    push!(nanmath_defs.args, :(^(x, y) = Decapodes.NaNMath.pow(x, y)))
-    push!(nanmath_defs.args, :(sqrt(x) = Decapodes.NaNMath.sqrt(x)))
-    push!(nanmath_defs.args, :(log(x) = Decapodes.NaNMath.log(x)))
-  end
+    gen_tars = true, multigrid, nanmath_support)
 
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
-      $nanmath_defs
+      $(c.nanmath_defs)
       $(c.func_defs)
       $(c.contracted_defs)
-      $multigrid_defs
+      $(c.multigrid_defs)
       $(c.vect_defs)
       f(__du__, __u__, __p__, __t__) = begin
         $(c.vars)
