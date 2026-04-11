@@ -613,6 +613,62 @@ non_optimizable(::CUDABackend) = NON_OPTIMIZABLE_CUDA_OPERATORS
 dec_operator_set(code_target::AbstractGenerationTarget) = optimizable(code_target) ∪ non_optimizable(code_target)
 
 """
+    _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false)
+
+Internal helper that runs the shared preprocessing and compilation pipeline
+used by both [`gensim`](@ref) and [`gen_retriever`](@ref).
+
+The caller is expected to supply an already-prepared Decapode `d` (e.g. a
+`deepcopy` or a `downset` result). This function mutates `d` and returns a
+`NamedTuple` of compilation artifacts. When `gen_tars` is `true`, the tangent
+variable assignment code used by `gensim` is also generated.
+"""
+function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false)
+  recognize_types(d)
+
+  # Makes copy
+  d = expand_operators(d)
+
+  # get_vars_code and set_tanvars_code read variable names/types and ∂ₜ
+  # edges that are stable after expand_operators, so they must run before
+  # the inference passes that follow.
+  vars = get_vars_code(d, input_vars, stateeltype, code_target)
+  tars = gen_tars ? set_tanvars_code(d, code_target) : nothing
+
+  infer_overload_compiler!(d, dimension)
+  convert_cs_ps_to_infer!(d)
+  infer_overload_compiler!(d, dimension)
+
+  # XXX: expand_operators should be called if any replacement is a chain of operations.
+  replace_names!(d, Pair{Symbol, Any}[], Pair{Symbol, Symbol}[(:∧₀₀ => :.*)])
+  open_operators!(d, dimension = dimension)
+  infer_overload_compiler!(d, dimension)
+
+  # This performs common subexpression elimination (CSE).
+  cse && bundle!(d)
+
+  present_dec_ops = Set{Symbol}(dec_operator_set(code_target) ∩ (d[:op1] ∪ d[:op2]))
+
+  # This contracts matrices together into a single matrix
+  contract && contract_operators!(d, white_list = MATRIX_OPTIMIZABLE_DEC_OPERATORS)
+  contracted_defs, contracted_ops = link_contracted_operators!(d, code_target)
+
+  # Combination of already in-place dec operators and newly contracted matrices
+  inplace_dec_ops = union(optimizable(code_target), contracted_ops)
+
+  # Compilation of the simulation
+  equations, alloc_vectors = compile(d, input_vars, inplace_dec_ops, dimension, stateeltype, code_target, preallocate)
+  data = post_process_vector_allocs(alloc_vectors, code_target)
+
+  func_defs = compile_env(d, present_dec_ops, contracted_ops, code_target)
+  vect_defs = quote $(Expr.(alloc_vectors)...) end
+
+  (d = d, vars = vars, tars = tars, equations = equations,
+   alloc_vectors = alloc_vectors, data = data,
+   func_defs = func_defs, contracted_defs = contracted_defs, vect_defs = vect_defs)
+end
+
+"""
     gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
 
 Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol
@@ -652,41 +708,9 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   # Explicit copy for safety
   d = deepcopy(user_d)
 
-  recognize_types(d)
-
-  # Makes copy
-  d = expand_operators(d)
-
-  vars = get_vars_code(d, input_vars, stateeltype, code_target)
-  tars = set_tanvars_code(d, code_target)
-
-  infer_overload_compiler!(d, dimension)
-  convert_cs_ps_to_infer!(d)
-  infer_overload_compiler!(d, dimension)
-
-  # XXX: expand_operators should be called if any replacement is a chain of operations.
-  replace_names!(d, Pair{Symbol, Any}[], Pair{Symbol, Symbol}[(:∧₀₀ => :.*)])
-  open_operators!(d, dimension = dimension)
-  infer_overload_compiler!(d, dimension)
-
-  # This performs common subexpression elimination (CSE).
-  cse && bundle!(d)
-
-  present_dec_ops = Set{Symbol}(dec_operator_set(code_target) ∩ (d[:op1] ∪ d[:op2]))
-
-  # This contracts matrices together into a single matrix
-  contract && contract_operators!(d, white_list = MATRIX_OPTIMIZABLE_DEC_OPERATORS)
-  contracted_defs, contracted_ops = link_contracted_operators!(d, code_target)
-
-  # Combination of already in-place dec operators and newly contracted matrices
-  inplace_dec_ops = union(optimizable(code_target), contracted_ops)
-
-  # Compilation of the simulation
-  equations, alloc_vectors = compile(d, input_vars, inplace_dec_ops, dimension, stateeltype, code_target, preallocate)
-  data = post_process_vector_allocs(alloc_vectors, code_target)
-
-  func_defs = compile_env(d, present_dec_ops, contracted_ops, code_target)
-  vect_defs = quote $(Expr.(alloc_vectors)...) end
+  c = _compile_decapode(d, input_vars;
+    dimension, stateeltype, code_target, preallocate, contract, cse,
+    gen_tars = true)
 
   multigrid_defs = quote end
   multigrid && push!(multigrid_defs.args, :(mesh = finest_mesh(mesh)))
@@ -701,15 +725,15 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
       $nanmath_defs
-      $func_defs
-      $contracted_defs
+      $(c.func_defs)
+      $(c.contracted_defs)
       $multigrid_defs
-      $vect_defs
+      $(c.vect_defs)
       f(__du__, __u__, __p__, __t__) = begin
-        $vars
-        $data
-        $(equations...)
-        $tars
+        $(c.vars)
+        $(c.data)
+        $(c.equations...)
+        $(c.tars)
         return nothing
       end;
     end
@@ -734,8 +758,8 @@ Generate code to compute a specific intermediate variable from a Decapode.
 Given a Decapode and the name of a target variable, this function uses
 `downset` from DiagrammaticEquations to extract the sub-Decapode
 containing only the operations needed to compute that variable from the state
-variables. It then passes that sub-Decapode through the standard `gensim`
-compilation pipeline.
+variables. It then passes that sub-Decapode through the standard compilation
+pipeline via the shared `_compile_decapode` helper.
 
 The returned expression, when evaluated, produces a function with the signature:
 `(mesh, operators, hodge) -> (__u__, __p__, __t__) -> value`
@@ -777,53 +801,21 @@ function gen_retriever(user_d::SummationDecapode, target_var::Symbol, input_vars
   # containing only the operations needed to compute target_var.
   d = downset(user_d, target_var)
 
-  recognize_types(d)
-
-  # Makes copy
-  d = expand_operators(d)
-
-  infer_overload_compiler!(d, dimension)
-  convert_cs_ps_to_infer!(d)
-  infer_overload_compiler!(d, dimension)
-
-  # XXX: expand_operators should be called if any replacement is a chain of operations.
-  replace_names!(d, Pair{Symbol, Any}[], Pair{Symbol, Symbol}[(:∧₀₀ => :.*)])
-  open_operators!(d, dimension = dimension)
-  infer_overload_compiler!(d, dimension)
-
-  # This performs common subexpression elimination (CSE).
-  cse && bundle!(d)
-
-  present_dec_ops = Set{Symbol}(dec_operator_set(code_target) ∩ (d[:op1] ∪ d[:op2]))
-
-  # This contracts matrices together into a single matrix
-  contract && contract_operators!(d, white_list = MATRIX_OPTIMIZABLE_DEC_OPERATORS)
-  contracted_defs, contracted_ops = link_contracted_operators!(d, code_target)
-
-  # Combination of already in-place dec operators and newly contracted matrices
-  inplace_dec_ops = union(optimizable(code_target), contracted_ops)
-
   # Filter input variables to only those in the sub-Decapode
   sub_input_vars = filter(v -> v in d[:name], input_vars)
 
-  vars = get_vars_code(d, sub_input_vars, stateeltype, code_target)
-
-  # Compile the sub-Decapode
-  equations, alloc_vectors = compile(d, sub_input_vars, inplace_dec_ops, dimension, stateeltype, code_target, preallocate)
-  data = post_process_vector_allocs(alloc_vectors, code_target)
-
-  func_defs = compile_env(d, present_dec_ops, contracted_ops, code_target)
-  vect_defs = quote $(Expr.(alloc_vectors)...) end
+  c = _compile_decapode(d, sub_input_vars;
+    dimension, stateeltype, code_target, preallocate, contract, cse)
 
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
-      $func_defs
-      $contracted_defs
-      $vect_defs
+      $(c.func_defs)
+      $(c.contracted_defs)
+      $(c.vect_defs)
       f(__u__, __p__, __t__) = begin
-        $vars
-        $data
-        $(equations...)
+        $(c.vars)
+        $(c.data)
+        $(c.equations...)
         return $(target_var)
       end;
     end
