@@ -9,7 +9,7 @@ using NaNMath
 export
 gensim, evalsim, compile, compile_env, default_dec_matrix_generate, default_dec_cu_matrix_generate, default_dec_generate,
 CPUBackend, CUDABackend, CPUTarget, CUDATarget,
-gen_retriever, eval_retriever
+gen_int, eval_int
 
 include("operators.jl")
 include("simulation.jl")

@@ -1151,8 +1151,8 @@ haystack = string(gensim(LargeSum))
 
 end
 
-# End-to-end test of gen_retriever with mesh and actual computation
-@testset "gen_retriever End-to-End" begin
+# End-to-end test of gen_int with mesh and actual computation
+@testset "gen_int End-to-End" begin
 
 # Brusselator example: compute the intermediate variable U2V from solution data
 Brusselator = @decapode begin
@@ -1172,8 +1172,8 @@ s = triangulated_grid(1, 1, 0.01, 0.01, Point3D)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Circumcenter())
 
-# Generate the retriever for U2V
-compute_U2V_factory = eval_retriever(Brusselator, :U2V)
+# Generate the int for U2V
+compute_U2V_factory = eval_int(Brusselator, :U2V)
 compute_U2V = compute_U2V_factory(sd, nothing, DiagonalHodge())
 
 # Create test data
@@ -1188,7 +1188,7 @@ u_test = ComponentArray(U=U_vals, V=V_vals)
 F_test = zeros(nv(sd))
 constants_and_parameters = (α = 0.001, F = t -> F_test)
 
-# Compute U2V using the retriever
+# Compute U2V using the int
 U2V_result = compute_U2V(u_test, constants_and_parameters, 0.0)
 
 # Manually compute U2V for comparison

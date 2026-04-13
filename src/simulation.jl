@@ -755,7 +755,7 @@ gensim(d::SummationDecapode; kwargs...) =
 evalsim(args...; kwargs...) = eval(gensim(args...; kwargs...))
 
 """
-    gen_int(user_d::SummationDecapode, target_var::Symbol, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType=Float64, code_target::AbstractGenerationTarget=CPUTarget(), preallocate::Bool=true, contract::Bool=true, cse::Bool=true)
+    gen_int(user_d::SummationDecapode, target_vars::Symbol, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType=Float64, code_target::AbstractGenerationTarget=CPUTarget(), preallocate::Bool=true, contract::Bool=true, cse::Bool=true)
 
 Generate code to compute a specific intermediate variable from a Decapode.
 
@@ -769,7 +769,7 @@ The returned expression, when evaluated, produces a function with the signature:
 `(mesh, operators, hodge) -> (__u__, __p__, __t__) -> value`
 
 The inner function takes a `ComponentArray` `__u__` (e.g. from an ODE solution `soln(t)`),
-a parameters named tuple `__p__`, and a time value `__t__`, and returns the computed value of `target_var`.
+a parameters named tuple `__p__`, and a time value `__t__`, and returns the computed value of `target_vars`.
 
 # Example (Brusselator)
 
@@ -803,7 +803,6 @@ function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractA
 
   d = downset(user_d, target_vars)
 
-  # Filter input variables to only those in the sub-Decapode
   sub_input_vars = filter(v -> v in d[:name], input_vars)
 
   c = _compile_decapode(d, sub_input_vars;
@@ -818,7 +817,7 @@ function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractA
         $(c.vars)
         $(c.data)
         $(c.equations...)
-        return $(target_var)
+        return $(target_vars)
       end;
     end
   end
