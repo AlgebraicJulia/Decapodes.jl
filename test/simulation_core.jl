@@ -447,4 +447,26 @@ end
   end
 end
 
+@testset "Test gen_int multi-target" begin
+  # Test that multiple variables are returned as a tuple from composed Klausmeier dynamics
+  let d = @decapode begin
+    (n,w)::DualForm0
+    dX::Form1
+    (a,ν,m)::Constant
+    Lw::DualForm0
+    Δn::DualForm0
+    Lw == L(dX, w)
+    Δn == Δ(n)
+    ∂ₜ(w) == a - w - w * n^2 + ν * Lw
+    ∂ₜ(n) == w * n^2 - m*n + Δn
+  end
+    code = gen_int(d, [:Lw, :Δn], compute_downset=false)
+    @test code isa Expr
+    sim = eval(code)
+    @test sim isa Function
+    # Verify the generated code returns a tuple of values, not symbol literals
+    @test occursin("return (Lw, Δn)", string(code))
+  end
+end
+
 end
