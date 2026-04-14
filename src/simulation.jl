@@ -813,7 +813,9 @@ function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractA
   c = _compile_decapode(d, sub_input_vars;
     dimension, stateeltype, code_target, preallocate, contract, cse)
 
-  return_val = target_vars isa Symbol ? target_vars : Expr(:tuple, target_vars...)
+  return_val = target_vars isa Symbol ?
+    Expr(:call, :ComponentArray, Expr(:kw, target_vars, target_vars)) :
+    Expr(:call, :ComponentArray, map(x -> Expr(:kw, x, x), target_vars)...)
 
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin

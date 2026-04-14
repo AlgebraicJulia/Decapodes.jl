@@ -448,7 +448,7 @@ end
 end
 
 @testset "Test gen_int multi-target" begin
-  # Test that multiple variables are returned as a tuple from composed Klausmeier dynamics
+  # Test intermediate compilation with multiple variables.
   let d = @decapode begin
     (n,w)::DualForm0
     dX::Form1
@@ -464,8 +464,7 @@ end
     @test code isa Expr
     sim = eval(code)
     @test sim isa Function
-    # Verify the generated code returns a tuple of values, not symbol literals
-    @test occursin("return (Lw, Δn)", string(code))
+    @test occursin("ComponentArray(Lw = Lw, Δn = Δn)", string(code))
   end
 end
 
