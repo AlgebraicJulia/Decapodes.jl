@@ -381,12 +381,12 @@ end
 end
 
 ########################
-# gen_retriever Tests #
+# gen_int Tests #
 ########################
 
-@testset "Test gen_retriever" begin
+@testset "Test gen_int" begin
 
-  # Test that gen_retriever generates evaluable code for Brusselator U2V
+  # Test that gen_int generates evaluable code for Brusselator U2V
   let d = @decapode begin
     (U, V)::Form0
     U2V::Form0
@@ -396,13 +396,13 @@ end
     ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
     ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
   end
-    code = gen_retriever(d, :U2V)
+    code = gen_int(d, :U2V)
     @test code isa Expr
     sim = eval(code)
     @test sim isa Function
   end
 
-  # Test that eval_retriever works
+  # Test that eval_int works
   let d = @decapode begin
     (U, V)::Form0
     U2V::Form0
@@ -412,11 +412,11 @@ end
     ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
     ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
   end
-    sim = eval_retriever(d, :U2V)
+    sim = eval_int(d, :U2V)
     @test sim isa Function
   end
 
-  # Test gen_retriever for a simple diffusion equation (disable contraction to preserve ϕ)
+  # Test gen_int for a simple diffusion equation (disable contraction to preserve ϕ)
   let d = @decapode begin
     (C, Ċ)::Form0
     ϕ::Form1
@@ -424,7 +424,7 @@ end
     Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
     ∂ₜ(C) == Ċ
   end
-    code = gen_retriever(d, :ϕ, contract=false)
+    code = gen_int(d, :ϕ, contract=false)
     @test code isa Expr
     sim = eval(code)
     @test sim isa Function
@@ -440,10 +440,10 @@ end
     ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
     ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
   end
-    retriever_code = gen_retriever(d, :U2V)
+    int_code = gen_int(d, :U2V)
     sim_code = gensim(d)
-    # The retriever code should be shorter (fewer equations) than the full simulation
-    @test length(string(retriever_code)) < length(string(sim_code))
+    # The int code should be shorter (fewer equations) than the full simulation
+    @test length(string(int_code)) < length(string(sim_code))
   end
 end
 
