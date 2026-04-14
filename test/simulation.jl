@@ -1204,4 +1204,66 @@ compute_U2V = compute_U2V_factory(sd, nothing, DiagonalHodge())
 U2V_result = compute_U2V(u_test, constants_and_parameters, 0.0)
 @test U2V_result ≈ U2V_expected
 
+# Test intermediate compilation with multiple variables.
+d = @decapode begin
+  (n,w)::DualForm0
+  dX::Form1
+  (a,ν,m)::Constant
+  Lw::DualForm0
+  Δn::DualForm0
+  Lw == L(dX, w)
+  Δn == Δ(n)
+  ∂ₜ(w) == a - w - w * n^2 + ν * Lw
+  ∂ₜ(n) == w * n^2 - m*n + Δn
+end
+sim_code = gensim(d, dimension=1)
+sim = eval(sim_code)
+
+function circle(n, c)
+  s = EmbeddedDeltaSet1D{Bool, Point2D}()
+  map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
+    add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+  end
+  add_edges!(s, 1:(nv(s)-1), 2:nv(s))
+  add_edge!(s, nv(s), 1)
+  sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+  subdivide_duals!(sd, Circumcenter())
+  s,sd
+end
+mesh,dualmesh = circle(9, 500)
+
+lap_mat = dec_hodge_star(1,dualmesh) * dec_differential(0,dualmesh) * dec_inv_hodge_star(0,dualmesh) * dec_dual_derivative(0,dualmesh)
+function generate(sd, my_symbol; hodge=DiagonalHodge())
+  op = @match my_symbol begin
+    :Δ => x -> begin
+      lap_mat * x
+    end
+    _ => default_dec_matrix_generate(sd, my_symbol, hodge)
+  end
+  return (args...) -> op(args...)
+end
+fₘ = sim(dualmesh, generate, DiagonalHodge())
+
+n_dist = Normal(pi)
+n = [pdf(n_dist, t)*(√(2pi))*7.2 + 0.08 - 5e-2 for t in range(0,2pi; length=ne(dualmesh))]
+
+w_dist = Normal(pi, 20)
+w = [pdf(w_dist, t) for t in range(0,2pi; length=ne(dualmesh))]
+
+dX = dualmesh[:length]
+
+u₀ = ComponentArray(n = n, w = w, dX = dX)
+
+cs_ps = (m = 0.45,
+         a = 0.94,
+         ν = 182.5)
+
+tₑ = 300.0
+problem = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
+solution = solve(problem, Tsit5(), saveat=0.1)
+
+int_forms_code = gen_int(d, [:Lw, :Δn], dimension=1)
+int_forms = eval(int_forms_code)
+g = int_forms(dualmesh, generate, DiagonalHodge())
+@test g(solution(150.0), cs_ps, 150.0) isa ComponentArray
 end
