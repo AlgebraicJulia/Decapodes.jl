@@ -792,16 +792,21 @@ compute_U2V = get_U2V(sd, generate, DiagonalHodge())
 U2V_at_t = compute_U2V(soln(t), constants_and_parameters, t)
 ```
 
+The downset computation can be skipped if `compute_downset` is `false` (defaults to `true`).
+
 See also: [`gensim`](@ref), [`eval_int`](@ref).
 """
-function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractArray{Symbol}}, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, cse::Bool = true)
+function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractArray{Symbol}}, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, cse::Bool = true, compute_downset=true)
   (dimension == 1 || dimension == 2) ||
     throw(UnsupportedDimensionException(dimension))
 
   (stateeltype == Float32 || stateeltype == Float64) ||
     throw(UnsupportedStateeltypeException(stateeltype))
 
-  d = downset(user_d, target_vars)
+  # Compute the downset, or do an explicit deep copy for safety.
+  d = compute_downset ?
+    downset(user_d, target_vars) :
+    deepcopy(user_d)
 
   sub_input_vars = filter(v -> v in d[:name], input_vars)
 

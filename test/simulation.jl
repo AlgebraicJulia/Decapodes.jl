@@ -1172,10 +1172,6 @@ s = triangulated_grid(1, 1, 0.01, 0.01, Point3D)
 sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Circumcenter())
 
-# Generate the int for U2V
-compute_U2V_factory = eval_int(Brusselator, :U2V)
-compute_U2V = compute_U2V_factory(sd, nothing, DiagonalHodge())
-
 # Create test data
 U_vals = map(sd[:point]) do (x, y)
   22 * (y * (1 - y))^(3/2)
@@ -1188,12 +1184,24 @@ u_test = ComponentArray(U=U_vals, V=V_vals)
 F_test = zeros(nv(sd))
 constants_and_parameters = (α = 0.001, F = t -> F_test)
 
-# Compute U2V using the int
+# Generate the int for U2V
+compute_U2V_factory = eval_int(Brusselator, :U2V)
+compute_U2V = compute_U2V_factory(sd, nothing, DiagonalHodge())
+
 U2V_result = compute_U2V(u_test, constants_and_parameters, 0.0)
-
-# Manually compute U2V for comparison
 U2V_expected = (U_vals .* U_vals) .* V_vals
+@test U2V_result ≈ U2V_expected
 
+# Generate the downset as a pre-processing step.
+compute_U2V_factory = eval_int(downset(Brusselator, :U2V), :U2V, compute_downset=false)
+compute_U2V = compute_U2V_factory(sd, nothing, DiagonalHodge())
+U2V_result = compute_U2V(u_test, constants_and_parameters, 0.0)
+@test U2V_result ≈ U2V_expected
+
+# Compute all equations, but only return U2V.
+compute_U2V_factory = eval_int(Brusselator, :U2V, compute_downset=false)
+compute_U2V = compute_U2V_factory(sd, nothing, DiagonalHodge())
+U2V_result = compute_U2V(u_test, constants_and_parameters, 0.0)
 @test U2V_result ≈ U2V_expected
 
 end
