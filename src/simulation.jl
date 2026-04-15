@@ -613,7 +613,7 @@ non_optimizable(::CUDABackend) = NON_OPTIMIZABLE_CUDA_OPERATORS
 dec_operator_set(code_target::AbstractGenerationTarget) = optimizable(code_target) ∪ non_optimizable(code_target)
 
 """
-    _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
+    _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::AbstractArray; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
 
 Internal helper that runs the shared preprocessing and compilation pipeline
 used by both [`gensim`](@ref) and [`gen_int`](@ref).
@@ -626,7 +626,7 @@ is `true`, the returned `multigrid_defs` block contains `mesh = finest_mesh(mesh
 When `nanmath_support` is `true`, the returned `nanmath_defs` block overrides
 `^`, `sqrt`, and `log` with their NaNMath equivalents.
 """
-function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
+function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::AbstractArray; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
   recognize_types(d)
 
   # Makes copy
@@ -676,10 +676,16 @@ function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}; dim
     push!(nanmath_defs.args, :(log(x) = Decapodes.NaNMath.log(x)))
   end
 
+  return_val = @match output_vars begin
+    []     => :nothing
+    [x...] => Expr(:call, :ComponentArray, map(y -> Expr(:kw, y, y), x)...)
+    x      => Expr(:call, :ComponentArray,          Expr(:kw, x, x))
+  end
+
   (d = d, vars = vars, tars = tars, equations = equations,
    alloc_vectors = alloc_vectors, data = data,
    func_defs = func_defs, contracted_defs = contracted_defs, vect_defs = vect_defs,
-   multigrid_defs = multigrid_defs, nanmath_defs = nanmath_defs)
+   multigrid_defs = multigrid_defs, nanmath_defs = nanmath_defs, return_val = return_val)
 end
 
 """
@@ -722,7 +728,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   # Explicit copy for safety
   d = deepcopy(user_d)
 
-  c = _compile_decapode(d, input_vars;
+  c = _compile_decapode(d, input_vars, [];
     dimension, stateeltype, code_target, preallocate, contract, cse,
     gen_tars = true, multigrid, nanmath_support)
 
@@ -738,7 +744,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
         $(c.data)
         $(c.equations...)
         $(c.tars)
-        return nothing
+        return $(c.return_val)
       end;
     end
   end
@@ -810,12 +816,8 @@ function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractA
 
   sub_input_vars = filter(v -> v in d[:name], input_vars)
 
-  c = _compile_decapode(d, sub_input_vars;
+  c = _compile_decapode(d, sub_input_vars, target_vars;
     dimension, stateeltype, code_target, preallocate, contract, cse)
-
-  return_val = target_vars isa Symbol ?
-    Expr(:call, :ComponentArray, Expr(:kw, target_vars, target_vars)) :
-    Expr(:call, :ComponentArray, map(x -> Expr(:kw, x, x), target_vars)...)
 
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
@@ -826,7 +828,7 @@ function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractA
         $(c.vars)
         $(c.data)
         $(c.equations...)
-        return $(return_val)
+        return $(c.return_val)
       end;
     end
   end
