@@ -380,4 +380,93 @@ end
   end
 end
 
+########################
+# gen_int Tests #
+########################
+
+@testset "Test gen_int" begin
+
+  # Test that gen_int generates evaluable code for Brusselator U2V
+  let d = @decapode begin
+    (U, V)::Form0
+    U2V::Form0
+    (α)::Constant
+    F::Parameter
+    U2V == (U .* U) .* V
+    ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+    ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+  end
+    code = gen_int(d, :U2V)
+    @test code isa Expr
+    sim = eval(code)
+    @test sim isa Function
+  end
+
+  # Test that eval_int works
+  let d = @decapode begin
+    (U, V)::Form0
+    U2V::Form0
+    (α)::Constant
+    F::Parameter
+    U2V == (U .* U) .* V
+    ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+    ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+  end
+    sim = eval_int(d, :U2V)
+    @test sim isa Function
+  end
+
+  # Test gen_int for a simple diffusion equation (disable contraction to preserve ϕ)
+  let d = @decapode begin
+    (C, Ċ)::Form0
+    ϕ::Form1
+    ϕ == d₀(C)
+    Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
+    ∂ₜ(C) == Ċ
+  end
+    code = gen_int(d, :ϕ, contract=false)
+    @test code isa Expr
+    sim = eval(code)
+    @test sim isa Function
+  end
+
+  # Test that only needed operations are compiled (fewer equations for U2V than full sim)
+  let d = @decapode begin
+    (U, V)::Form0
+    U2V::Form0
+    (α)::Constant
+    F::Parameter
+    U2V == (U .* U) .* V
+    ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+    ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+  end
+    int_code = gen_int(d, :U2V)
+    sim_code = gensim(d)
+    # The int code should be shorter (fewer equations) than the full simulation
+    @test length(string(int_code)) < length(string(sim_code))
+  end
+end
+
+@testset "Test gen_int multi-target" begin
+  # Test intermediate compilation with multiple variables.
+  let
+    d = @decapode begin
+      (n,w)::DualForm0
+      dX::Form1
+      (a,ν,m)::Constant
+      Lw::DualForm0
+      Δn::DualForm0
+      Lw == L(dX, w)
+      Δn == Δ(n)
+      ∂ₜ(w) == a - w - w * n^2 + ν * Lw
+      ∂ₜ(n) == w * n^2 - m*n + Δn
+    end
+    code = gen_int(d, [:Lw, :Δn], compute_downset=false)
+    @test code isa Expr
+    sim = eval(code)
+    @test sim isa Function
+    @test occursin("ComponentArray(Lw = Lw, Δn = Δn)", string(code))
+  end
+end
+
 end

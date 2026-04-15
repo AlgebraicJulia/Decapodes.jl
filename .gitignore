@@ -9,3 +9,5 @@
 .buildkite/toolbox/config.json
 .buildkite/toolbox/username
 docs/Manifest.toml
+test/Manifest.toml
+test/Project.toml
