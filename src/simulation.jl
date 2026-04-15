@@ -613,7 +613,7 @@ non_optimizable(::CUDABackend) = NON_OPTIMIZABLE_CUDA_OPERATORS
 dec_operator_set(code_target::AbstractGenerationTarget) = optimizable(code_target) ∪ non_optimizable(code_target)
 
 """
-    _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::AbstractArray; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
+    _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::Union{Symbol, AbstractArray}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
 
 Internal helper that runs the shared preprocessing and compilation pipeline
 used by both [`gensim`](@ref) and [`gen_int`](@ref).
@@ -626,7 +626,7 @@ is `true`, the returned `multigrid_defs` block contains `mesh = finest_mesh(mesh
 When `nanmath_support` is `true`, the returned `nanmath_defs` block overrides
 `^`, `sqrt`, and `log` with their NaNMath equivalents.
 """
-function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::AbstractArray; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
+function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::Union{Symbol, AbstractArray}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
   recognize_types(d)
 
   # Makes copy
