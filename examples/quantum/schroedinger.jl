@@ -19,7 +19,7 @@ orient!(s′)
 s = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s′)
 subdivide_duals!(s, Circumcenter())
 
-sim = eval(gensim(Schroedinger, dimension=1, stateeltype=ComplexF64))
+sim = eval(gensim(Schroedinger, dimension=1, stateeltype=ComplexF64, preallocate=false))
 fₘ = sim(s, nothing)
 
 x_coords = map(x -> x[1], point(s′))
