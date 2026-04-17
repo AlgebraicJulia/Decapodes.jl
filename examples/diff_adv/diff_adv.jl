@@ -1,12 +1,13 @@
-""" diff_adv.jl
+## """ diff_adv.jl
 
-This file contains the code for the example presented in the Overview section
-of the Decapodes.jl documentation. Comments have been removed, but description
-of code is present in the Overview section.
-"""
-
+## This file contains the code for the example presented in the Overview section
+## of the Decapodes.jl documentation. Comments have been removed, but description
+## of code is present in the Overview section.
+## """
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes, Decapodes.Diagrams
-using Catlab.Present, Catlab.Graphics
+using Catlab, Catlab.Graphics
 
 Variable = @decapode Decapodes2D begin
   C::Form0{X}
@@ -35,16 +36,16 @@ end;
 draw_equation(Equation)
 
 @present DiffusionQuantities <: Decapodes2D begin
-  k::Hom(Form1(X), Form1(X))    # diffusivity (usually scalar multiplication)
+  k::Hom(Form1(X), Form1(X))    ## diffusivity (usually scalar multiplication)
 end;
 
-Diffusion = @decapode DiffusionQuantities begin
+Diffusion = @decapode begin
   (C, Ċ)::Form0{X}
   ϕ::Form1{X}
 
-  # Fick's first law
+  ## Fick's first law
   ϕ ==  k(d₀{X}(C))
-  # Diffusion equation
+  ## Diffusion equation
   Ċ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(ϕ)))
   ∂ₜ{Form0{X}}(C) == Ċ
 end;
@@ -107,21 +108,21 @@ record(fig, "diffusion.gif", range(0.0, 100.0; length=150); framerate = 30) do t
 ob.color = sol(t)[point_map]
 end
 
-Diffusion = @decapode DiffusionQuantities begin
+Diffusion = @decapode begin
   C::Form0{X}
   ϕ::Form1{X}
 
-  # Fick's first law
+  ## Fick's first law
   ϕ ==  k(d₀{X}(C))
 end
 
-Advection = @decapode DiffusionQuantities begin
+Advection = @decapode  begin
   C::Form0{X}
   (V, ϕ)::Form1{X}
   ϕ == ∧₀₁{X}(C,V)
 end
 
-Superposition = @decapode DiffusionQuantities begin
+Superposition = @decapode begin
   (C, Ċ)::Form0{X}
   (ϕ, ϕ₁, ϕ₂)::Form1{X}
 
@@ -169,10 +170,10 @@ function closest_point(p1, p2, dims)
 end
 
 function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, Inf, Inf])
-  # XXX: Creating this lookup table shouldn't be necessary. Of course, we could
-  # index `tri_center` but that shouldn't be necessary either. Rather, we should
-  # loop over incident triangles instead of the elementary duals, which just
-  # happens to be inconvenient.
+  ## XXX: Creating this lookup table shouldn't be necessary. Of course, we could
+  ## index `tri_center` but that shouldn't be necessary either. Rather, we should
+  ## loop over incident triangles instead of the elementary duals, which just
+  ## happens to be inconvenient.
   tri_map = Dict{Int,Int}(triangle_center(s,t) => t for t in triangles(s))
 
   map(edges(s)) do e

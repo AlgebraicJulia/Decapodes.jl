@@ -3,15 +3,18 @@ using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
 using CombinatorialSpaces.ExteriorCalculus
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
-using MultiScaleArrays
 using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
 using CairoMakie
+import CairoMakie: wireframe, mesh, Figure, Axis
 using Logging
 using JLD2
 using Printf
+using ComponentArrays
 using GeometryBasics: Point3
 Point3D = Point3{Float64}
 
@@ -23,7 +26,7 @@ Brusselator = @decapode begin
 
   U2V == (U*U) * V
   ∂ₜ(U)== 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
-  ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(U))
+  ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
 end
 infer_types!(Brusselator)
 resolve_overloads!(Brusselator)
@@ -47,7 +50,7 @@ F₂ = zeros(nv(sd))
 constants_and_parameters = (
   α = 0.001,
   F = t -> t ≥ 1.1 ? F₂ : F₁)
-u₀ = construct(PhysicsState, [VectorForm(U), VectorForm(V)], Float64[], [:U, :V])
+u₀ = ComponentArray(U=U, V=V)
 
 # Run
 function generate(sd, my_symbol; hodge=GeometricHodge()) end
@@ -62,17 +65,17 @@ soln = solve(prob, Tsit5())
 # Create side-by-side GIF
 begin
 frames = 800
-# Initial frame
-fig = CairoMakie.Figure(resolution = (1200, 1200))
-p1 = CairoMakie.mesh(fig[1,1], s, color=findnode(soln(0), :U), colormap=:jet, colorrange=extrema(findnode(soln(0), :U)))
-p2 = CairoMakie.mesh(fig[2,1], s, color=findnode(soln(0), :V), colormap=:jet, colorrange=extrema(findnode(soln(0), :V)))
+## Initial frame
+fig = Figure(resolution = (1200, 1200))
+p1 = mesh(fig[1,1], s, color=soln(0).U, colormap=:jet, colorrange=extrema(soln(0).U))
+p2 = mesh(fig[2,1], s, color=soln(0).V, colormap=:jet, colorrange=extrema(soln(0).V))
 Colorbar(fig[1,2])
 Colorbar(fig[2,2])
 
-# Animation
+## Animation
 record(fig, "brusselator_teapot.gif", range(0.0, tₑ; length=frames); framerate = 30) do t
-    p1.plot.color = findnode(soln(t), :U)
-    p2.plot.color = findnode(soln(t), :V)
+    p1.plot.color = soln(t).U
+    p2.plot.color = soln(t).V
 end
 
 end

@@ -1,16 +1,16 @@
-#######################
-# Import Dependencies #
-#######################
+# Import Dependencies
 
 # AlgebraicJulia Dependencies
 using Catlab
 using Catlab.Graphics
 using CombinatorialSpaces
+using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Decapodes
 
 # External Dependencies
 using MLStyle
-using MultiScaleArrays
+using ComponentArrays
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
@@ -20,9 +20,7 @@ using JLD2
 using GeometryBasics: Point2
 Point2D = Point2{Float64}
 
-####################
-# Define the model #
-####################
+# Define the model
 
 # ϕ := Latitude
 # Tₛ(ϕ,t) := Surface temperature
@@ -37,7 +35,7 @@ energy_balance = @decapode begin
   (Tₛ, ASR, OLR, HT)::Form0
   (C)::Constant
 
-  Tₛ̇ == ∂ₜ(Tₛ) 
+  Tₛ̇ == ∂ₜ(Tₛ)
 
   Tₛ̇ == (ASR - OLR + HT) ./ C
 end
@@ -96,15 +94,13 @@ budyko_sellers_cospan = oapply(budyko_sellers_composition_diagram,
 budyko_sellers = apex(budyko_sellers_cospan)
 to_graphviz(budyko_sellers)
 
-infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
+infer_types!(budyko_sellers, dim = 1)
 to_graphviz(budyko_sellers)
 
-resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
+resolve_overloads!(budyko_sellers, dim = 1)
 to_graphviz(budyko_sellers)
 
-###############################
-# Demonstrate storing as JSON #
-###############################
+# Demonstrate storing as JSON
 
 write_json_acset(budyko_sellers, "budyko_sellers.json")
 # When reading back in, we specify that all attributes are "Symbol"s.
@@ -112,10 +108,7 @@ budyko_sellers2 = read_json_acset(SummationDecapode{Symbol,Symbol,Symbol}, "budy
 # Or, you could choose to interpret the data as "String"s.
 budyko_sellers3 = read_json_acset(SummationDecapode{String,String,String}, "budyko_sellers.json")
 
-###################
-# Define the mesh #
-###################
-
+# Define the mesh
 s′ = EmbeddedDeltaSet1D{Bool, Point2D}()
 add_vertices!(s′, 30, point=Point2D.(range(-π/2 + π/32, π/2 - π/32, length=30), 0))
 add_edges!(s′, 1:nv(s′)-1, 2:nv(s′))
@@ -123,9 +116,7 @@ orient!(s′)
 s = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s′)
 subdivide_duals!(s, Circumcenter())
 
-########################################################
-# Define constants, parameters, and initial conditions #
-########################################################
+# Define constants, parameters, and initial conditions
 
 # This is a primal 0-form, with values at vertices.
 cosϕᵖ = map(x -> cos(x[1]), point(s′))
@@ -159,7 +150,9 @@ Tₛ₀ = map(point(s′)) do ϕ
 end
 
 # Store these values to be passed to the solver.
-u₀ = construct(PhysicsState, [VectorForm(Tₛ₀)], Float64[], [:Tₛ])
+
+u₀ = ComponentArray{Float64}(Tₛ = Tₛ₀)
+
 constants_and_parameters = (
   absorbed_radiation_α = α,
   outgoing_radiation_A = A,
@@ -169,24 +162,18 @@ constants_and_parameters = (
   cosϕᵖ = cosϕᵖ,
   diffusion_cosϕᵈ = cosϕᵈ)
 
-#############################################
-# Define how symbols map to Julia functions #
-#############################################
+# Define how symbols map to Julia functions
 
 # In this example, all operators come from the Discrete Exterior Calculus module
 # from CombinatorialSpaces.
 function generate(sd, my_symbol; hodge=GeometricHodge()) end
 
-#######################
-# Generate simulation #
-#######################
+# Generate simulation
 
 sim = eval(gensim(budyko_sellers, dimension=1))
 fₘ = sim(s, generate)
 
-##################
-# Run simulation #
-##################
+# Run simulation
 
 tₑ = 1e9
 
@@ -202,26 +189,25 @@ prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
 soln = solve(prob, Tsit5())
 @show soln.retcode
 @info("Done")
-
 @save "budyko_sellers.jld2" soln
 
-#############
-# Visualize #
-#############
+soln = solve(prob, FBDF())
 
-lines(map(x -> x[1], point(s′)), findnode(soln(0.0), :Tₛ))
-lines(map(x -> x[1], point(s′)), findnode(soln(tₑ), :Tₛ))
+# Visualize
+
+lines(map(x -> x[1], point(s′)), soln(0.0).Tₛ)
+lines(map(x -> x[1], point(s′)), soln(tₑ).Tₛ)
 
 # Initial frame
 frames = 100
 fig = Figure(resolution = (800, 800))
-ax1 = Axis(fig[1,1])
+ax1 = CairoMakie.Axis(fig[1,1])
 xlims!(ax1, extrema(map(x -> x[1], point(s′))))
-ylims!(ax1, extrema(findnode(soln(tₑ), :Tₛ)))
+ylims!(ax1, extrema(soln(tₑ).Tₛ))
 Label(fig[1,1,Top()], "Surface temperature, Tₛ, [C°]")
 Label(fig[2,1,Top()], "Line plot of temperature from North to South pole, every $(tₑ/frames) time units")
 
 # Animation
 record(fig, "budyko_sellers.gif", range(0.0, tₑ; length=frames); framerate = 15) do t
-  lines!(fig[1,1], map(x -> x[1], point(s′)), findnode(soln(t), :Tₛ))
+  lines!(fig[1,1], map(x -> x[1], point(s′)), soln(t).Tₛ)
 end

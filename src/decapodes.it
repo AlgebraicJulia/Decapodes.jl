@@ -1,0 +1,25 @@
+@sum Term begin
+  Var(name::Symbol)
+  Lit(name::Symbol)
+  AppCirc1(fs::Vector{Symbol}, arg::Term)
+  App1(f::Symbol, arg::Term)
+  App2(f::Symbol, arg1::Term, arg2::Term)
+  Plus(args::Vector{Term})
+  Mult(args::Vector{Term})
+  Tan(var::Term)
+end
+
+struct Judgement
+  var::Symbol
+  dim::Symbol
+  space::Symbol
+end
+
+@sum Equation begin
+  Eq(lhs::Term, rhs::Term)
+end
+
+struct DecaExpr
+  context::Vector{Judgement}
+  equations::Vector{Equation}
+end

@@ -1,131 +1,154 @@
 using CombinatorialSpaces
-using MultiScaleArrays
-using OrdinaryDiffEq
-using GeometryBasics
+using ComponentArrays
+using ForwardDiff
 using LinearAlgebra
-using Base.Iterators
-using Catlab
 using MLStyle
-import Catlab.Programs.GenerateJuliaPrograms: compile
+using PreallocationTools
 
-struct VectorForm{B} <: AbstractMultiScaleArrayLeaf{B}
-    values::Vector{B}
-end
+const GENSIM_INPLACE_STUB = Symbol("GenSim-M")
+const NO_STUB_RETURN = Symbol("NOSTUB")
 
-struct PhysicsState{T<:AbstractMultiScaleArray,B<:Number} <: AbstractMultiScaleArray{B}
-    nodes::Vector{T}
-    values::Vector{B}
-    end_idxs::Vector{Int}
-    names::Vector{Symbol}
-end
+abstract type AbstractGenerationTarget end
 
-findname(u::PhysicsState, s::Symbol) = findfirst(isequal(s), u.names)
-findnode(u::PhysicsState, s::Symbol) = u.nodes[findname(u, s)]
+abstract type CPUBackend <: AbstractGenerationTarget end
+abstract type CUDABackend <: AbstractGenerationTarget end
+# TODO: Test that AbstractGenerationTargets are user-extendable.
 
+struct CPUTarget <: CPUBackend end
+struct CUDATarget <: CUDABackend end
+
+# TODO: Make it so AbstractCall code terminates into an error, not into default code
 abstract type AbstractCall end
 
-struct UnaryCall <: AbstractCall 
-    operator
-    equality
-    input
-    output
+struct InvalidCallException <: Exception end
+
+Base.showerror(io::IO, e::InvalidCallException) = print(io, "Compiler call being made is not a valid one")
+
+# A catch all if an AbstractCall's child doesn't define `Base.Expr`
+Base.Expr(::AbstractCall) = throw(InvalidCallException)
+
+struct UnaryCall <: AbstractCall
+  operator::Union{Symbol, Expr}
+  equality::Symbol
+  input::Symbol
+  output::Symbol
 end
 
-# TODO: Add back support for contract operators
+# ! WARNING: Do not pass this an inplace function without setting equality to :.=
 Base.Expr(c::UnaryCall) = begin
-    operator = c.operator
-    #= if isa(operator, AbstractArray)
-        operator = Expr(:call, :∘, reverse(operator)...)
-    end =#
-    if(c.equality == :.=)
-        Expr(:call, :mul!, c.output, operator, c.input)
-    else
-        Expr(c.equality, c.output, Expr(:call, operator, c.input))
+  operator = c.operator
+  if c.equality == :.=
+    # TODO: Generalize to inplacable functions
+    if operator == add_inplace_stub(:⋆₁⁻¹) # Since inverse hodge Geo is a solver
+      Expr(:call, c.operator, c.output, c.input)
+    elseif operator == :.-
+      Expr(c.equality, c.output, Expr(:call, operator, c.input))
+    else # TODO: Add check that this operator is a matrix
+      Expr(:call, :mul!, c.output, operator, c.input)
     end
-end
-                
-struct BinaryCall <: AbstractCall 
-    operator
-    equality
-    input1
-    input2
-    output
+  else
+    Expr(c.equality, c.output, Expr(:call, operator, c.input))
+  end
 end
 
-# TODO: After getting rid of AppCirc2, do we need this check?
+struct BinaryCall <: AbstractCall
+  operator::Union{Symbol, Expr}
+  equality::Symbol
+  input1::Symbol
+  input2::Symbol
+  output::Symbol
+end
+
+# ! WARNING: Do not pass this an inplace function without setting equality to :.=, vice versa
 Base.Expr(c::BinaryCall) = begin
-    #= if isa(c.operator, AbstractArray)
-        operator = :(compose($(c.operator)))
-    end =#
-    return Expr(c.equality, c.output, Expr(:call, c.operator, c.input1, c.input2))
+  # These operators can be done in-place
+  if c.equality == :.= && get_stub(c.operator) == GENSIM_INPLACE_STUB
+    return Expr(:call, c.operator, c.output, c.input1, c.input2)
+  end
+  return Expr(c.equality, c.output, Expr(:call, c.operator, c.input1, c.input2))
 end
 
-struct VarargsCall <: AbstractCall 
-    operator
-    equality
-    inputs
-    output
+struct SummationCall <: AbstractCall
+  equality::Symbol
+  inputs::Vector{Symbol}
+  output::Symbol
 end
 
-Base.Expr(c::VarargsCall) = begin
-    #= if isa(c.operator, AbstractArray)
-        operator = :(compose($(c.operator)))
-    end =#
-    return Expr(c.equality, c.output, Expr(:call, c.operator, c.inputs...))
+# The output of @code_llvm (.+) of more than 32 variables is inefficient.
+Base.Expr(c::SummationCall) = begin
+  length(c.inputs) ≤ 32 ?
+    Expr(c.equality, c.output, Expr(:call, Expr(:., :+), c.inputs...)) : # (.+)(a,b,c)
+    Expr(c.equality, c.output, Expr(:call, :sum, Expr(:vect, c.inputs...))) # sum([a,b,c])
 end
 
-struct AllocVecCall <: AbstractCall 
-    name
-    form
-    dimension
+struct AllocVecCall <: AbstractCall
+  name::Symbol
+  form::Symbol
+  dimension::Int
+  T::DataType
+  code_target::AbstractGenerationTarget
+end
+
+struct AllocVecCallException <: Exception
+  c::AllocVecCall
 end
 
 # TODO: There are likely better ways of dispatching on dimension instead of
 # storing it inside an AllocVecCall.
 Base.Expr(c::AllocVecCall) = begin
-    resolved_form = @match (c.name, c.form, c.dimension) begin
-        (_, :Form0, 2) => :V
-        (_, :Form1, 2) => :E
-        (_, :Form2, 2) => :Tri
-        (_, :DualForm0, 2) => :Tri
-        (_, :DualForm1, 2) => :E
-        (_, :DualForm2, 2) => :V
+  resolved_form = @match (c.form, c.dimension) begin
+    (:Form0, 2) => :V
+    (:Form1, 2) => :E
+    (:Form2, 2) => :Tri
+    (:DualForm0, 2) => :Tri
+    (:DualForm1, 2) => :E
+    (:DualForm2, 2) => :V
 
-        (_, :Form0, 1) => :V
-        (_, :Form1, 1) => :E
-        (_, :DualForm0, 1) => :E
-        (_, :DualForm1, 1) => :V
-        _ => return :AllocVecCall_Error
-    end
+    (:Form0, 1) => :V
+    (:Form1, 1) => :E
+    (:DualForm0, 1) => :E
+    (:DualForm1, 1) => :V
+    _ => throw(AllocVecCallException(c))
+  end
 
-    :($(c.name) = Vector{ComplexF64}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
+  hook_AVC_caching(c, resolved_form, c.code_target)
 end
 
-#= function get_form_number(d::SummationDecapode, var_id::Int)
-    type = d[var_id, :type]
-    if(type == :Form0)
-        return 0
-    elseif(type == :Form1)
-        return 1
-    elseif(type == :Form2)
-        return 2
-    end
-    return -1
+# TODO: Should maybe have default CPU generation be Vector with PreallocTools being opt-in
+"""
+    hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CPUBackend)
+
+This hook can be overridden to change the way in which vectors can be preallocated for use by in-place functions.
+The AllocVecCall stores the `name` of the vector, the `form` type, the `dimension` of the simulation, the `T` which is the
+datatype of the vector, and the `code_target` which is used by multiple dispatch to select a hook.
+
+An example overloaded hook signature would be `hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::UserTarget)`
+"""
+function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CPUBackend)
+  :($(Symbol(:__,c.name)) = Decapodes.FixedSizeDiffCache(Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form))))))
 end
 
-# WARNING: This may not work if names are not unique, use above instead
-function get_form_number(d::SummationDecapode, var_name::Symbol)
-    var_id = first(incident(d, var_name, :name))
-    return get_form_number(d, var_id)
-end =#
+# TODO: Allow user to overload these hooks with user-defined code_target
+function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CUDABackend)
+  :($(c.name) = CuVector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
+end
 
+# TODO: This should be edited when we replace types as symbols with types as Julia types
 function is_form(d::SummationDecapode, var_id::Int)
-    type = d[var_id, :type]
-    return (type == :Form0 || type == :Form1 || type == :Form2 || 
-        type == :DualForm0 || type == :DualForm1 || type == :DualForm2)
+  type = d[var_id, :type]
+  return (type == :Form0 || type == :Form1 || type == :Form2 ||
+    type == :DualForm0 || type == :DualForm1 || type == :DualForm2)
 end
 
 is_form(d::SummationDecapode, var_name::Symbol) = is_form(d, first(incident(d, var_name, :name)))
+
+function getgeneric_type(type::Symbol)
+  if (type == :Form0 || type == :Form1 || type == :Form2 ||
+    type == :DualForm0 || type == :DualForm1 || type == :DualForm2)
+    return :Form
+  end
+  return type
+end
 
 is_literal(d::SummationDecapode, var_id::Int) = (d[var_id, :type] == :Literal)
 is_literal(d::SummationDecapode, var_name::Symbol) = is_literal(d, first(incident(d, var_name, :name)))
@@ -133,464 +156,701 @@ is_literal(d::SummationDecapode, var_name::Symbol) = is_literal(d, first(inciden
 is_infer(d::SummationDecapode, var_id::Int) = (d[var_id, :type] == :infer)
 is_infer(d::SummationDecapode, var_name::Symbol) = is_infer(d, first(incident(d, var_name, :name)))
 
-add_stub(stub_name::Symbol, var_name::Symbol) = return Symbol("$(stub_name)_$(var_name)")
-
-
-function infer_states(d::SummationDecapode)
-    filter(parts(d, :Var)) do v
-        length(incident(d, v, :tgt)) == 0 &&
-        length(incident(d, v, :res)) == 0 &&
-        length(incident(d, v, :sum)) == 0 &&
-        d[v, :type] != :Literal
-    end
+struct InvalidStubException <: Exception
+  stub::Symbol
 end
 
-infer_state_names(d) = d[infer_states(d), :name]
+Base.showerror(io::IO, e::InvalidStubException) = print(io, "Stub \"$(e.stub)\" is invalid")
 
-# This will be the function and matrix generation
-function compile_env(d::AbstractNamedDecapode, dec_matrices::Vector{Symbol})
-    assumed_ops = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./])
-    defined_ops = Set()
-
-    defs = quote end
-
-    for op in dec_matrices
-        if(op in defined_ops)
-            continue
-        end
-
-        quote_op = QuoteNode(op)
-        mat_op = add_stub(:M, op)
-        # Could turn this into a special call
-        def = :(($mat_op, $op) = default_dec_matrix_generate(mesh, $quote_op, hodge))
-        push!(defs.args, def)
-
-        push!(defined_ops, op)
-    end
-
-    for op in d[:op1]
-      if op == DerivOp
-        continue
-      end
-      #= if typeof(op) <: AbstractArray
-        for sub_op in op
-          if(sub_op in defined_ops)
-              continue
-          end
-  
-          ops = QuoteNode(sub_op)
-          def = :($sub_op = generate(mesh, $ops))
-          push!(defs.args, def)
-  
-          push!(defined_ops, sub_op)
-        end
-        continue
-      end =#
-      if(op in defined_ops)
-          continue
-      end
-  
-      ops = QuoteNode(op)
-      def = :($op = operators(mesh, $ops))
-        
-      push!(defs.args, def)
-  
-      push!(defined_ops, op)
-    end
-    for op in d[:op2]
-      if op in assumed_ops || op in defined_ops
-        continue
-      end
-      ops = QuoteNode(op)
-      def = :($op = operators(mesh, $ops))
-      push!(defs.args, def)
-  
-      push!(defined_ops, op)
-    end
-    return defs
+function add_stub(stub_name::Symbol, var_name::Symbol)
+  # No empty stubs
+  if stub_name == Symbol() || stub_name == NO_STUB_RETURN || !isascii(String(stub_name))
+    throw(InvalidStubException(stub_name))
   end
 
-function compile_var(alloc_vectors::Vector{AllocVecCall})
-    return quote $(Expr.(alloc_vectors)...) end
+  return Symbol("$(stub_name)_$(var_name)")
 end
 
-# This is the block of parameter setting inside f
-# TODO: Pass this an extra type parameter that sets the size of the Floats
-function get_vars_code(d::AbstractNamedDecapode, vars::Vector{Symbol})
-    stmts = map(vars) do s
-        ssymbl = QuoteNode(s)
-        if all(d[incident(d, s, :name) , :type] .== :Constant)
-        #if only(d[incident(d, s, :name) , :type]) == :Constant
-            :($s = p.$s)
-        elseif all(d[incident(d, s, :name) , :type] .== :Parameter)
-            :($s = (p.$s)(t))
-        elseif all(d[incident(d, s, :name) , :type] .== :Literal)
-            # TODO: Fix this. We assume that all literals are ComplexF64s.
-            :($s = $(parse(ComplexF64, String(s))))
-        else
-            # TODO: If names are not unique, then the type is assumed to be a
-            # form for all of the vars sharing a same name.
-            :($s = findnode(u, $ssymbl).values)
-        end
-    end
-    return quote $(stmts...) end
+# ! WARNING: The variable names will be picked up as a stub if no stub was added and the
+# ! variable has an "_" itself
+function get_stub(var_name::Symbol)
+  var_str = String(var_name)
+  idx = findfirst("_", var_str)
+
+  if isnothing(idx)
+    return NO_STUB_RETURN
+  end
+
+  if first(idx) == 1
+    throw(InvalidStubException(var_name))
+  end
+
+  return Symbol(var_str[begin:first(idx) - 1])
 end
 
-# This is the setting of the du vector at the end of f
-function set_tanvars_code(d::AbstractNamedDecapode)
-    tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
-    stmts = map(tanvars) do (s,t)
-        ssymb = QuoteNode(s)
-        :(findnode(du, $ssymb).values .= $t)
-    end
-    return stmts
+add_inplace_stub(var_name::Symbol) = add_stub(GENSIM_INPLACE_STUB, var_name)
+
+const ARITHMETIC_OPS = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^, :.>, :.<, :.≤, :.≥])
+
+struct InvalidCodeTargetException <: Exception
+  code_target::AbstractGenerationTarget
 end
 
-function compile(d::SummationDecapode, inputs::Vector, dec_matrices::Vector{Symbol}, alloc_vectors::Vector{AllocVecCall}; dimension=2)
-    # Get the Vars of the inputs (probably state Vars).
-    visited_Var = falses(nparts(d, :Var))
+Base.showerror(io::IO, e::InvalidCodeTargetException) = print(io, "Provided code target $(e.code_target) is not yet supported in simulations")
 
-    # input_numbers = incident(d, inputs, :name)
-    input_numbers = reduce(vcat, incident(d, inputs, :name))
-    # visited_Var[collect(flatten(input_numbers))] .= true
-    visited_Var[input_numbers] .= true
-    visited_Var[incident(d, :Literal, :type)] .= true
+opt_generator_function(code_target::AbstractGenerationTarget) = throw(InvalidCodeTargetException(code_target))
+opt_generator_function(::CPUBackend) = :default_dec_matrix_generate
+opt_generator_function(::CUDABackend) = :default_dec_cu_matrix_generate
 
-    visited_1 = falses(nparts(d, :Op1))
-    visited_2 = falses(nparts(d, :Op2))
-    visited_Σ = falses(nparts(d, :Σ))
+generator_function(code_target::AbstractGenerationTarget) = throw(InvalidCodeTargetException(code_target))
+generator_function(::CPUBackend) = :default_dec_generate
+generator_function(::CUDABackend) = :default_dec_cu_generate
 
-    promote_arithmetic_map = Dict(:(+) => :.+, :(-) => :.-, :(*) => :.*, :(/) => :./, :(=) => :.=,
-                                  :.+ => :.+, :.- => :.-, :.* => :.*, :./ => :./, :.= => :.=)
+# TODO: This function should be handled with dispatch.
+"""    compile_env(d::SummationDecapode, present_dec_ops::Vector{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
 
-    optimizable_dec_operators = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₁⁻¹, 
-                                    :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
-                                    :δ₀, :δ₁,
-                                    :Δ₀, :Δ₁, :Δ₂])
+Emit code to define functions given operator Symbols.
 
-    # FIXME: this is a quadratic implementation of topological_sort inlined in here.
-    op_order = []
-    for _ in 1:(nparts(d, :Op1) + nparts(d,:Op2) + nparts(d, :Σ))
-        for op in parts(d, :Op1)
-            s = d[op, :src]
-            if !visited_1[op] && visited_Var[s]
-                # skip the derivative edges
-                operator = d[op, :op1]
-                t = d[op, :tgt]
-                visited_1[op] = true
-                if operator == DerivOp
-                    continue
-                end
-
-                equality = :(=)
-
-                sname = d[s, :name]
-                tname = d[t, :name]
-
-                # TODO: Check to see if this is a DEC operator
-                if(operator in optimizable_dec_operators)
-                    push!(dec_matrices, operator)
-
-                    if(is_form(d, t))
-                        equality = promote_arithmetic_map[equality]
-                        operator = add_stub(:M, operator)
-
-                        push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension))
-                    end
-                end
-
-
-                visited_Var[t] = true
-                c = UnaryCall(operator, equality, sname, tname)
-                push!(op_order, c)
-            end
-        end
-
-        for op in parts(d, :Op2)
-            arg1 = d[op, :proj1]
-            arg2 = d[op, :proj2]
-            if !visited_2[op] && visited_Var[arg1] && visited_Var[arg2]
-                r = d[op, :res]
-                a1name = d[arg1, :name]
-                a2name = d[arg2, :name]
-                rname  = d[r, :name]
-
-                operator = d[op, :op2]
-                equality = :(=)
-
-                # TODO: Check to make sure that this logic never breaks
-                if(is_form(d, r))
-                    if(operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-)
-                        operator = promote_arithmetic_map[operator]
-                        equality = promote_arithmetic_map[equality]
-                        push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
-                    
-                    # TODO: Do we want to support the ability of a user to use the backslash operator?
-                    elseif(operator == :(*) || operator == :(/) || operator == :.* || operator == :./)
-                        # WARNING: This part may break if we add more compiler types that have different 
-                        # operations for basic and broadcast modes, e.g. matrix multiplication vs broadcast
-                        if(!is_infer(d, arg1) && !is_infer(d, arg2))
-                            operator = promote_arithmetic_map[operator]
-                            equality = promote_arithmetic_map[equality]
-                            push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
-                        end
-                    end
-
-                end
-
-                if(operator == :(*))
-                    operator = promote_arithmetic_map[operator]
-                end
-                if(operator == :(-))
-                    operator = promote_arithmetic_map[operator]
-                end
-
-                visited_2[op] = true
-                visited_Var[r] = true
-                c = BinaryCall(operator, equality, a1name, a2name, rname)
-                push!(op_order, c)
-            end
-        end
-
-        for op in parts(d, :Σ)
-            args = subpart(d, incident(d, op, :summation), :summand)
-            if !visited_Σ[op] && all(visited_Var[args])
-                r = d[op, :sum]
-                argnames = d[args, :name]
-                rname  = d[r, :name]
-
-                operator = :(+)
-                equality = :(=)
-
-                # If result is a known form, broadcast addition
-                # TODO: Also need to tell handler to prealloc
-                if(is_form(d, r))
-                    operator = promote_arithmetic_map[operator]
-                    equality = promote_arithmetic_map[equality]
-                    push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension))
-                end
-
-                operator = :(.+)
-
-                visited_Σ[op] = true
-                visited_Var[r] = true
-                c = VarargsCall(operator, equality, argnames, rname)
-                push!(op_order, c)
-            end
-        end
-    end
-
-    return map(Expr, op_order)
-end
-  
-# TODO: Add more specific types later for optimization
-function resolve_types_compiler!(d::SummationDecapode)
-    d[:type] = map(d[:type]) do x
-        if(x == :Constant || x == :Parameter)
-            return :infer
-        end
-        return x
-    end
-    d
-end
-
-# TODO: Will want to eventually support contracted operations
-function gensim(user_d::AbstractNamedDecapode, input_vars; dimension::Int=2)
-    # TODO: May want to move this after infer_types if we let users
-    # set their own inference rules
-    recognize_types(user_d)
-
-    # Makes copy
-    d′ = expand_operators(user_d)
-    #d′ = average_rewrite(d′)
-
-    dec_matrices = Vector{Symbol}();
-    alloc_vectors = Vector{AllocVecCall}();
-
-    vars = get_vars_code(d′, input_vars)
-    tars = set_tanvars_code(d′)
-    
-    # We need to run this after we grab the constants and parameters out
-    resolve_types_compiler!(d′)
-
-    # Mutates
-    infer_types!(d′)
-    resolve_overloads!(d′)
-    
-    # rhs = compile(d′, input_vars)
-    equations = compile(d′, input_vars, dec_matrices, alloc_vectors, dimension=dimension)
-
-    func_defs = compile_env(d′, dec_matrices)
-    vect_defs = compile_var(alloc_vectors)
-
-    quote
-        function simulate(mesh, operators, hodge=GeometricHodge())
-            $func_defs
-            $vect_defs
-            f(du, u, p, t) = begin
-                $vars
-                $(equations...)
-                $(tars...)
-            end;
-        end
-    end
-end
-
-"""    function gensim(d::AbstractNamedDecapode; dimension::Int=2)
-
-Generate a simulation function from the given Decapode. The returned function can then be combined with a mesh and a function describing function mappings to return a simulator to be passed to `solve`.
+Default operations return a tuple of an in-place and an out-of-place function. User-defined operations return an out-of-place function.
 """
-gensim(d::AbstractNamedDecapode; dimension::Int=2) = gensim(d,
-    vcat(collect(infer_state_names(d)), d[incident(d, :Literal, :type), :name]), dimension=dimension)
+function compile_env(d::SummationDecapode, present_dec_ops::Set{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
 
-evalsim(d::AbstractNamedDecapode) = eval(gensim(d))
-evalsim(d::AbstractNamedDecapode, input_vars) = eval(gensim(d, input_vars))
+  defs = quote end
 
-function default_dec_matrix_generate(sd, my_symbol, hodge=GeometricHodge())
-    op = @match my_symbol begin
+  all_ops = d[:op1] ∪ d[:op2] ∪ present_dec_ops
+  avoid_ops = contracted_ops ∪ [DerivOp] ∪ ARITHMETIC_OPS
 
-        # Regular Hodge Stars
-        :⋆₀ => dec_mat_hodge(0, sd, hodge)
-        :⋆₁ => dec_mat_hodge(1, sd, hodge)
-        :⋆₂ => dec_mat_hodge(2, sd, hodge)
+  for op in setdiff(all_ops, avoid_ops)
+    quote_op = QuoteNode(op)
+    def = @match op begin
+      if op in optimizable(code_target) end => :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $quote_op, hodge))
+      if op in non_optimizable(code_target) end => :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
+      _ => :($op = operators(mesh, $quote_op))
+    end
+    push!(defs.args, def)
+  end
 
-        # Inverse Hodge Stars
-        :⋆₀⁻¹ => dec_mat_inverse_hodge(0, sd, hodge)
-        :⋆₁⁻¹ => dec_mat_inverse_hodge(1, sd, hodge)
+  defs
+end
 
-        # Differentials
-        :d₀ => dec_mat_differential(0, sd)
-        :d₁ => dec_mat_differential(1, sd)
+struct AmbiguousNameException <: Exception
+  name::Symbol
+  indices::Vector{Int}
+end
 
-        # Dual Differentials
-        :dual_d₀ || :d̃₀ => dec_mat_dual_differential(0, sd)
-        :dual_d₁ || :d̃₁ => dec_mat_dual_differential(1, sd)
+Base.showerror(io::IO, e::AmbiguousNameException) = begin
+  if isempty(e.indices)
+    print(io, "Name \"$(e.name)\" is does not exist")
+  else
+    print(io, "Name \"$(e.name)\" is repeated at indices $(e.indices) and is ambiguous")
+  end
+end
 
-        # Codifferential
-        # TODO: Why do we have a matrix type parameter which is unused?
-        :δ₀ => dec_mat_codifferential(0, sd, hodge)
-        :δ₁ => dec_mat_codifferential(1, sd, hodge)
+struct InvalidDecaTypeException <: Exception
+  name::Symbol
+  type::Symbol
+end
 
-        # Laplace-de Rham
-        :Δ₀ => dec_mat_laplace_de_rham(0, sd)
-        :Δ₁ => dec_mat_laplace_de_rham(1, sd)
-        :Δ₂ => dec_mat_laplace_de_rham(2, sd)
+Base.showerror(io::IO, e::InvalidDecaTypeException) = print(io, "Variable \"$(e.name)\" has invalid type \"$(e.type)\"")
 
-        x => error("Unmatched operator $my_symbol")
+"""
+    get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::AbstractGenerationTarget) where stateeltype
+
+This initalizes all input variables according to their Decapodes type.
+"""
+function get_vars_code(d::SummationDecapode, vars::Vector{Symbol}, ::Type{stateeltype}, code_target::AbstractGenerationTarget) where stateeltype
+  stmts = quote end
+
+  foreach(vars) do s
+    # If name is not unique (or not just literals) then error
+    found_names_idxs = incident(d, s, :name)
+
+    # TODO: we should handle the case of same literals better
+    is_singular = length(found_names_idxs) == 1
+    is_all_literals = all(d[found_names_idxs, :type] .== :Literal)
+
+    if isempty(found_names_idxs) || (!is_singular && !is_all_literals)
+      throw(AmbiguousNameException(s, found_names_idxs))
     end
 
-    return op
-end
+    s_type = is_all_literals ? :Literal : getgeneric_type(d[only(found_names_idxs), :type])
 
-function dec_mat_hodge(k, sd::HasDeltaSet, hodge)
-    hodge = ⋆(k,sd,hodge=hodge)
-    return (hodge, x-> hodge * x)
-end
-
-function dec_mat_inverse_hodge(k, sd::HasDeltaSet, hodge)
-    invhodge = inv_hodge_star(k,sd,hodge)
-    return (invhodge, x-> invhodge * x)
-end
-
-function dec_mat_differential(k, sd::HasDeltaSet)
-    diff = d(k,sd)
-    return (diff, x-> diff * x)
-end
-
-function dec_mat_dual_differential(k, sd::HasDeltaSet)
-    dualdiff = dual_derivative(k,sd)
-    return (dualdiff, x-> dualdiff * x)
-end
-
-function dec_mat_codifferential(k, sd::HasDeltaSet, hodge)
-    codiff = δ(k, sd, hodge, nothing)
-    return (codiff, x-> codiff * x)
-end
-
-function dec_mat_laplace_de_rham(k, sd::HasDeltaSet)
-    lpdr = Δ(k, sd)
-    return (lpdr, x-> lpdr * x)
-end
-
-function dec_mat_laplace_beltrami(k, sd::HasDeltaSet)
-    lpbt = ∇²(k, sd)
-    return (lpbt, x-> lpbt * x)
-end
-
-function default_dec_generate(sd, my_symbol, hodge=GeometricHodge())
-    
-    op = @match my_symbol begin
-
-        :plus => (+)
-        :(-) => x-> -x
-        :neg => x-> -x
-        :.* => (x,y) -> x .* y
-        :./ => (x,y) -> x ./ y
-
-        # Wedge products
-        :∧₀₀ => (f, g) -> wedge_product(Tuple{0,0}, sd, x, y)
-        :∧₀₁ => dec_wedge_product(Tuple{0, 1}, sd)
-        :∧₁₀ => dec_wedge_product(Tuple{1, 0}, sd)
-
-        # Lie Derivative 0
-        :L₀ => dec_lie_derivative_zero(sd, hodge)
-
-        x => error("Unmatched operator $my_symbol")
+    # Literals don't need assignments, because they are literals, but we stored them as Symbols.
+    # TODO: we should fix that upstream so that we don't need this.
+    line = @match s_type begin
+      :Literal => :($s = $(parse(stateeltype, String(s))))
+      :Constant => :($s = __p__.$s)
+      :Parameter => :($s = (__p__.$s)(__t__))
+      _ => hook_GVC_get_form(s, s_type, code_target) # ! WARNING: This assumes a form
+      # _ => throw(InvalidDecaTypeException(s, s_type)) # TODO: Use this for invalid types
     end
-
-    return (args...) ->  op(args...)
+    push!(stmts.args, line)
+  end
+  return stmts
 end
 
-function dec_lie_derivative_zero(sd::HasDeltaSet, hodge)
-    M_tmphodge1 = ⋆(1,sd,hodge)
-    tmphodge1 = x-> M_tmphodge1 * x
-    # tmphodge1 = dec_hodge(1, sd, hodge)
-    tmpwedge10 = dec_wedge_product(Tuple{1, 0}, sd)
-    (v, x)-> tmphodge1(tmpwedge10(v, x))
-end
-
-function dec_p_wedge_product_zero(k, sd)
-
-    # Gets a list of all of the 0 -> vertices, 1 -> edges, 2 -> triangles on mesh
-    simples = simplices(k, sd)
-
-    #These are a memory killers!!
-
-    # For 1 -> edges, grabs the two dual edges that form the primal edge 
-    # For 2 -> triangles, grabs all of the edges that radiate from the triangle center 
-    subsimples = map(x -> subsimplices(k, sd, x), simples)
-
-    # For 1 -> edges, gets the primal vertices of the dual edges 
-    primal_vertices = map(x -> primal_vertex(k, sd, x), subsimples)
-
-    # Finding coeffs in wedge product is brutal on memory, around 345976 allocations for one map
-    #vols = map(x -> volume(k,sd,x), simples)
-    vols = CombinatorialSpaces.volume(k,sd,simples)
-    dual_vols = map(y -> dual_volume(k,sd,y), subsimples)
-    coeffs = dual_vols ./ vols
-    return (primal_vertices, coeffs)
-end
-
-function dec_c_wedge_product_zero(k, f, α, val_pack)
-    primal_vertices, coeffs = val_pack
-    f_terms = map(x -> f[x], primal_vertices)
-
-    lhs = dot.(coeffs, f_terms)
-    return (lhs .*  α) ./ factorial(k)
-end
-
-function dec_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where k
-    val_pack = dec_p_wedge_product_zero(k, sd)
-    (α, g) -> dec_c_wedge_product_zero(k, g, α, val_pack)
-end
-
-function dec_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where k
-    val_pack = dec_p_wedge_product_zero(k, sd)
-    (f, β) -> dec_c_wedge_product_zero(k, f, β, val_pack)
+# TODO: Expand on this to be able to handle vector and ComponentArrays inputs
+function hook_GVC_get_form(var_name::Symbol, var_type::Symbol, ::Union{CPUBackend, CUDABackend})
+  return :($var_name = __u__.$var_name)
 end
 
 """
-    function find_unreachable_tvars(d)
+    set_tanvars_code(d::SummationDecapode)
+
+This function creates the code that sets the value of the Tvars at the end of the code
+"""
+function set_tanvars_code(d::SummationDecapode, code_target::AbstractGenerationTarget)
+  stmts = quote end
+
+  tanvars = [(d[e, [:src,:name]], d[e, [:tgt,:name]]) for e in incident(d, :∂ₜ, :op1)]
+  foreach(tanvars) do (s,t)
+    push!(stmts.args, hook_STC_settvar(s, t, code_target))
+  end
+  return stmts
+end
+
+# TODO: Why do we need a QuoteNode for this?
+"""
+    hook_STC_settvar(src_name::Symbol, tgt_name::Symbol, ::Union{CPUBackend, CUDABackend})
+
+This hook is meant to control how data is set into the tangent variables after a simulation function
+execution. It expects the `state_name`, the name of the original state variable, the `tgt_name` which
+is the name of the variable whose data will be stored and a code target.
+"""
+function hook_STC_settvar(state_name::Symbol, tgt_name::Symbol, ::Union{CPUBackend, CUDABackend})
+  ssymb = QuoteNode(state_name)
+  return :(setproperty!(__du__, $ssymb, $tgt_name))
+end
+
+const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
+                                    :(-) => :.-,
+                                    :(*) => :.*,
+                                    :(/) => :./,
+                                    :(^) => :.^,
+                                    :(=) => :.=,
+                                    :.+ => :.+,
+                                    :.- => :.-,
+                                    :.* => :.*,
+                                    :./ => :./,
+                                    :.^ => :.^,
+                                    :.= => :.=)
+
+"""
+    compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
+
+Function that compiles the computation body. `d` is the input Decapode, `inputs` is a vector of state variables and literals,
+`inplace_dec_ops` is a collection of all DEC operator symbols that can use special
+in-place methods, `dimension` is the dimension of the problem (usually 1 or 2), `stateeltype` is the type of the state elements
+(usually Float32 or Float64), `code_target` determines what architecture the code is compiled for (either CPU or CUDA), and `preallocate`
+which is set to `true` by default and determines if intermediate results can be preallocated.
+"""
+function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
+  alloc_vectors = Vector{AllocVecCall}()
+  # Get the Vars of the inputs (probably state Vars).
+  visited_Var = falses(nparts(d, :Var))
+
+  # TODO: Pass in state indices instead of names
+  input_numbers = reduce(vcat, incident(d, inputs, :name))
+
+  visited_Var[input_numbers] .= true
+  visited_Var[incident(d, :Literal, :type)] .= true
+
+  # TODO: Collect these visited arrays into one structure indexed by :Op1, :Op2, and :Σ
+  visited_1 = falses(nparts(d, :Op1))
+  visited_2 = falses(nparts(d, :Op2))
+  visited_Σ = falses(nparts(d, :Σ))
+
+  # FIXME: this is a quadratic implementation of topological_sort inlined in here.
+  op_order = AbstractCall[]
+
+  for _ in 1:(nparts(d, :Op1) + nparts(d,:Op2) + nparts(d, :Σ))
+    for op in parts(d, :Op1)
+      s = d[op, :src]
+      if !visited_1[op] && visited_Var[s]
+        # skip the derivative edges
+        operator = d[op, :op1]
+        t = d[op, :tgt]
+        visited_1[op] = true
+        if operator == DerivOp
+          continue
+        end
+
+        equality = :(=)
+
+        sname = d[s, :name]
+        tname = d[t, :name]
+
+        if preallocate && is_form(d, t)
+          if operator in inplace_dec_ops
+            equality = PROMOTE_ARITHMETIC_MAP[equality]
+            operator = add_inplace_stub(operator)
+            push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype, code_target))
+
+          elseif operator == :(-) || operator == :.-
+            equality = PROMOTE_ARITHMETIC_MAP[equality]
+            operator = PROMOTE_ARITHMETIC_MAP[operator]
+            push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype, code_target))
+          end
+        end
+
+        visited_Var[t] = true
+        c = UnaryCall(operator, equality, sname, tname)
+        push!(op_order, c)
+      end
+    end
+
+    for op in parts(d, :Op2)
+      arg1 = d[op, :proj1]
+      arg2 = d[op, :proj2]
+      if !visited_2[op] && visited_Var[arg1] && visited_Var[arg2]
+        r = d[op, :res]
+        a1name = d[arg1, :name]
+        a2name = d[arg2, :name]
+        rname  = d[r, :name]
+
+        operator = d[op, :op2]
+        equality = :(=)
+
+        # TODO: Check to make sure that this logic never breaks
+        if preallocate && is_form(d, r)
+          if operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-
+            operator = PROMOTE_ARITHMETIC_MAP[operator]
+            equality = PROMOTE_ARITHMETIC_MAP[equality]
+            push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
+
+          # TODO: Do we want to support the ability of a user to use the backslash operator?
+          elseif operator == :(*) || operator == :(/) || operator == :.* || operator == :./
+            # ! WARNING: This part may break if we add more compiler types that have different
+            # ! operations for basic and broadcast modes, e.g. matrix multiplication vs broadcast
+            if !is_infer(d, arg1) && !is_infer(d, arg2)
+              operator = PROMOTE_ARITHMETIC_MAP[operator]
+              equality = PROMOTE_ARITHMETIC_MAP[equality]
+              push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
+            end
+          elseif operator in inplace_dec_ops
+            operator = add_inplace_stub(operator)
+            equality = PROMOTE_ARITHMETIC_MAP[equality]
+            push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
+          end
+        end
+
+        # TODO: Clean this in another PR (with a @match maybe).
+        if operator == :(*)
+          operator = PROMOTE_ARITHMETIC_MAP[operator]
+        end
+        if operator == :(-)
+          operator = PROMOTE_ARITHMETIC_MAP[operator]
+        end
+        if operator == :(/)
+          operator = PROMOTE_ARITHMETIC_MAP[operator]
+        end
+        if operator == :(^)
+          operator = PROMOTE_ARITHMETIC_MAP[operator]
+        end
+
+        visited_2[op] = true
+        visited_Var[r] = true
+        c = BinaryCall(operator, equality, a1name, a2name, rname)
+        push!(op_order, c)
+      end
+    end
+
+    for op in parts(d, :Σ)
+      args = subpart(d, incident(d, op, :summation), :summand)
+      if !visited_Σ[op] && all(visited_Var[args])
+        r = d[op, :sum]
+        argnames = d[args, :name]
+        rname  = d[r, :name]
+
+        # operator = :(+)
+        operator = :.+
+        equality = :(=)
+
+        # If result is a known form, broadcast addition
+        if preallocate && is_form(d, r)
+          operator = PROMOTE_ARITHMETIC_MAP[operator]
+          equality = PROMOTE_ARITHMETIC_MAP[equality]
+          push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
+        end
+
+        visited_Σ[op] = true
+        visited_Var[r] = true
+        c = SummationCall(equality, argnames, rname)
+        push!(op_order, c)
+      end
+    end
+  end
+
+  Expr.(op_order), alloc_vectors
+end
+
+"""
+    post_process_vector_allocs(alloc_vecs::Vector{AllocVecCall}, code_target::AbstractGenerationTarget)
+
+This deals with any post processing needed by the allocations, like if data needs to be retrieved
+from a special cache.
+"""
+function post_process_vector_allocs(alloc_vecs::Vector{AllocVecCall}, code_target::AbstractGenerationTarget)
+  list_exprs = Expr[]
+  foreach(alloc_vecs) do alloc_vec
+    hook_PPVA_data_handle!(list_exprs, alloc_vec, code_target)
+  end
+
+  cache_exprs = quote end
+  append!(cache_exprs.args, list_exprs)
+  return cache_exprs
+end
+
+"""
+    hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
+
+This hook determines if preallocated vectors need to be be handled in a special manner everytime
+before a function run. This is useful in the example of using `FixedSizeDiffCache` from `PreallocationTools.jl`.
+
+This hook is passed in `cache_exprs` which is the collection of exprs to be pasted, `alloc_vec` which is an
+`AllocVecCall` that stores information about the allocated vector and a code target.
+"""
+function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUBackend)
+  line = :($(alloc_vec.name) = (Decapodes.get_tmp($(Symbol(:__,alloc_vec.name)), __u__)))
+  push!(cache_exprs, line)
+end
+
+function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CUDABackend)
+  return
+end
+
+"""
+    convert_cs_ps_to_infer!(d::SummationDecapode)
+
+Convert `Constant` and `Parameter` types to `infer`.
+"""
+function convert_cs_ps_to_infer!(d::SummationDecapode)
+  cs_ps = incident(d, [:Constant, :Parameter], :type)
+  d[vcat(cs_ps...), :type] = :infer
+end
+
+# TODO: This should be extended to accept user rules
+"""
+    infer_overload_compiler!(d::SummationDecapode, dimension::Int)
+
+A combined `infer_types` and `resolve_overloads` pipeline with default DEC rules.
+"""
+function infer_overload_compiler!(d::SummationDecapode, dimension::Int)
+  infer_types!(d, dim = dimension)
+  resolve_overloads!(d, dim = dimension)
+end
+
+"""    link_contracted_operators!(d::SummationDecapode, code_target::AbstractGenerationTarget)
+
+Emit code to pre-multiply unique sequences of matrix operations, and rename corresponding operations.
+"""
+function link_contracted_operators!(d::SummationDecapode, code_target::AbstractGenerationTarget)
+  contracted_defs = quote end
+  contracted_ops = Symbol[]
+  chain_idxs = findall(x -> x isa AbstractArray, d[:op1])
+
+  for (i, chain) in enumerate(unique(d[chain_idxs, :op1]))
+    LHS = add_stub(Symbol("GenSim-ConMat"), Symbol(i-1))
+    RHS = reverse!(add_inplace_stub.(chain))
+
+    push!(contracted_ops, LHS)
+    push!(contracted_defs.args, mat_def_expr(LHS, RHS, code_target), mat_mul_func_expr(LHS))
+    d[findall(==(chain), d[:op1]), :op1] = LHS
+  end
+  contracted_defs, contracted_ops
+end
+
+# Given the name of a matrix, return an Expr that multiplies by that matrix.
+mat_mul_func_expr(mat_name) =
+  :($mat_name = x -> $(add_inplace_stub(mat_name)) * x)
+
+# Given the name and factors of a matrix, return an Expr that defines that matrix.
+mat_def_expr(computation_name::Symbol, factors::Vector{Symbol}, ::CPUBackend) =
+  :($(add_inplace_stub(computation_name)) = *($(factors...)))
+
+nested_mul(factors) =
+  length(factors) == 1 ?
+    factors[begin] :
+    Expr(:call, :*, nested_mul(factors[begin:end-1]), factors[end])
+
+mat_def_expr(computation_name::Symbol, factors::Vector{Symbol}, ::CUDABackend) =
+  :($(add_inplace_stub(computation_name)) = $(nested_mul(factors)))
+
+struct UnsupportedDimensionException <: Exception
+  dim::Int
+end
+
+Base.showerror(io::IO, e::UnsupportedDimensionException) = print(io, "Decapodes does not support dimension $(e.dim) simulations")
+
+struct UnsupportedStateeltypeException <: Exception
+  type::DataType
+end
+
+Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32 or Float64")
+
+const MATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
+                                              :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
+                                              :avg₀₁, :♭♯])
+
+const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
+
+
+const NON_OPTIMIZABLE_CPU_OPERATORS = Set([:♯ᵖᵈ, :♯ᵖᵖ, :♯ᵈᵈ, :♭ᵈᵖ,
+                                           :∧ᵖᵈ₁₁, :∧ᵖᵈ₀₁, :∧ᵈᵖ₁₁, :∧ᵈᵖ₁₀, :∧ᵈᵈ₁₁, :∧ᵈᵈ₁₀, :∧ᵈᵈ₀₁,
+                                           :ι₁₁, :ι₁₂, :ℒ₁, :Δᵈ₀ , :Δᵈ₁, :Δ₀⁻¹, :neg, :mag, :norm])
+const NON_OPTIMIZABLE_CUDA_OPERATORS = Set{Symbol}()
+
+const DEC_GEN_OPTIMIZABLE_OPERATORS = MATRIX_OPTIMIZABLE_DEC_OPERATORS ∪ NONMATRIX_OPTIMIZABLE_DEC_OPERATORS
+
+optimizable(code_target::AbstractGenerationTarget) = throw(InvalidCodeTargetException(code_target))
+optimizable(::CPUBackend) = DEC_GEN_OPTIMIZABLE_OPERATORS
+optimizable(::CUDABackend) = DEC_GEN_OPTIMIZABLE_OPERATORS
+
+non_optimizable(code_target::AbstractGenerationTarget) = throw(InvalidCodeTargetException(code_target))
+non_optimizable(::CPUBackend) = NON_OPTIMIZABLE_CPU_OPERATORS
+non_optimizable(::CUDABackend) = NON_OPTIMIZABLE_CUDA_OPERATORS
+
+dec_operator_set(code_target::AbstractGenerationTarget) = optimizable(code_target) ∪ non_optimizable(code_target)
+
+"""
+    _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::Union{Symbol, AbstractArray}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
+
+Internal helper that runs the shared preprocessing and compilation pipeline
+used by both [`gensim`](@ref) and [`gen_int`](@ref).
+
+The caller is expected to supply an already-prepared Decapode `d` (e.g. a
+`deepcopy` or a `downset` result). This function mutates `d` and returns a
+`NamedTuple` of compilation artifacts. When `gen_tars` is `true`, the tangent
+variable assignment code used by `gensim` is also generated. When `multigrid`
+is `true`, the returned `multigrid_defs` block contains `mesh = finest_mesh(mesh)`.
+When `nanmath_support` is `true`, the returned `nanmath_defs` block overrides
+`^`, `sqrt`, and `log` with their NaNMath equivalents.
+"""
+function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::Union{Symbol, AbstractArray}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
+  recognize_types(d)
+
+  # Makes copy
+  d = expand_operators(d)
+
+  # get_vars_code and set_tanvars_code read variable names/types and ∂ₜ
+  # edges that are stable after expand_operators, so they must run before
+  # the inference passes that follow.
+  vars = get_vars_code(d, input_vars, stateeltype, code_target)
+  tars = gen_tars ? set_tanvars_code(d, code_target) : nothing
+
+  infer_overload_compiler!(d, dimension)
+  convert_cs_ps_to_infer!(d)
+  infer_overload_compiler!(d, dimension)
+
+  # XXX: expand_operators should be called if any replacement is a chain of operations.
+  replace_names!(d, Pair{Symbol, Any}[], Pair{Symbol, Symbol}[(:∧₀₀ => :.*)])
+  open_operators!(d, dimension = dimension)
+  infer_overload_compiler!(d, dimension)
+
+  # This performs common subexpression elimination (CSE).
+  cse && bundle!(d)
+
+  present_dec_ops = Set{Symbol}(dec_operator_set(code_target) ∩ (d[:op1] ∪ d[:op2]))
+
+  # This contracts matrices together into a single matrix
+  contract && contract_operators!(d, white_list = MATRIX_OPTIMIZABLE_DEC_OPERATORS)
+  contracted_defs, contracted_ops = link_contracted_operators!(d, code_target)
+
+  # Combination of already in-place dec operators and newly contracted matrices
+  inplace_dec_ops = union(optimizable(code_target), contracted_ops)
+
+  # Compilation of the simulation
+  equations, alloc_vectors = compile(d, input_vars, inplace_dec_ops, dimension, stateeltype, code_target, preallocate)
+  data = post_process_vector_allocs(alloc_vectors, code_target)
+
+  func_defs = compile_env(d, present_dec_ops, contracted_ops, code_target)
+  vect_defs = quote $(Expr.(alloc_vectors)...) end
+
+  multigrid_defs = quote end
+  multigrid && push!(multigrid_defs.args, :(mesh = finest_mesh(mesh)))
+
+  nanmath_defs = quote end
+  if nanmath_support
+    push!(nanmath_defs.args, :(^(x, y) = Decapodes.NaNMath.pow(x, y)))
+    push!(nanmath_defs.args, :(sqrt(x) = Decapodes.NaNMath.sqrt(x)))
+    push!(nanmath_defs.args, :(log(x) = Decapodes.NaNMath.log(x)))
+  end
+
+  return_val = @match output_vars begin
+    []     => :nothing
+    [x...] => Expr(:call, :ComponentArray, map(y -> Expr(:kw, y, y), x)...)
+    x      => Expr(:call, :ComponentArray,          Expr(:kw, x, x))
+  end
+
+  (d = d, vars = vars, tars = tars, equations = equations,
+   alloc_vectors = alloc_vectors, data = data,
+   func_defs = func_defs, contracted_defs = contracted_defs, vect_defs = vect_defs,
+   multigrid_defs = multigrid_defs, nanmath_defs = nanmath_defs, return_val = return_val)
+end
+
+"""
+    gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
+
+Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol
+to operator mappings to return a simulator that can be used to solve the represented equations given initial conditions.
+
+**Arguments:**
+
+`user_d`: The user passed Decapode for which simulation code will be generated. (This is not modified)
+
+`input_vars` is the collection of variables whose values are known at the beginning of the simulation. (Defaults to all state variables and literals in the Decapode)
+
+**Keyword arguments:**
+
+`dimension`: The dimension of the problem. (Defaults to `2`)(Must be `1` or `2`)
+
+`stateeltype`: The element type of the state forms. (Defaults to `Float64`)(Must be `Float32` or `Float64`)
+
+`code_target`: The intended architecture target for the generated code. (Defaults to `CPUTarget()`)(Use `CUDATarget()` for NVIDIA CUDA GPUs)
+
+`preallocate`: Enables(`true`)/disables(`false`) pre-allocated caches for intermediate computations. Some functions, such as those that determine Jacobian sparsity patterns, or perform auto-differentiation, may require this to be disabled. (Defaults to `true`)
+
+`contract`: Enables(`true`)/disables(`false`) pre-computation of matrix-matrix multiplications for chains of such operators. This feature can interfere with certain auto-differentiation methods, in which case this can be disabled. (Defaults to `true`)
+
+`multigrid`: Enables multigrid methods during code generation. If `true`, then the function produced by `gensim` will expect a `PrimalGeometricMapSeries`. (Defaults to `false`)
+
+`cse`: Enables(`true`)/disables(`false`) common subexpression elimination to avoid redundant computations. (Defaults to `true`)
+
+`nanmath_support`: Enables(`true`)/disables(`false`) NaNMath mode. When enabled, the generated code will locally override `^`, `sqrt`, and `log` with their NaNMath equivalents (`NaNMath.pow`, `NaNMath.sqrt`, `NaNMath.log`). This is useful during calibration or optimization, where non-physical parameter sets might cause out-of-domain errors. With NaNMath, such calls return `NaN` instead of throwing errors, allowing optimization routines to reject those parameters and continue. (Defaults to `false`)
+"""
+function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, multigrid::Bool = false, cse::Bool = true, nanmath_support::Bool = false)
+  (dimension == 1 || dimension == 2) ||
+    throw(UnsupportedDimensionException(dimension))
+
+  (stateeltype == Float32 || stateeltype == Float64) ||
+    throw(UnsupportedStateeltypeException(stateeltype))
+
+  # Explicit copy for safety
+  d = deepcopy(user_d)
+
+  c = _compile_decapode(d, input_vars, [];
+    dimension, stateeltype, code_target, preallocate, contract, cse,
+    gen_tars = true, multigrid, nanmath_support)
+
+  quote
+    (mesh, operators, hodge=GeometricHodge()) -> begin
+      $(c.nanmath_defs)
+      $(c.func_defs)
+      $(c.contracted_defs)
+      $(c.multigrid_defs)
+      $(c.vect_defs)
+      f(__du__, __u__, __p__, __t__) = begin
+        $(c.vars)
+        $(c.data)
+        $(c.equations...)
+        $(c.tars)
+        return $(c.return_val)
+      end;
+    end
+  end
+end
+
+gather_inputs(d::SummationDecapode) = vcat(infer_state_names(d), d[incident(d, :Literal, :type), :name])
+
+gensim(c::Collage; dimension::Int=2) =
+gensim(collate(c); dimension=dimension)
+
+gensim(d::SummationDecapode; kwargs...) =
+  gensim(d, gather_inputs(d); kwargs...)
+
+evalsim(args...; kwargs...) = eval(gensim(args...; kwargs...))
+
+"""
+    gen_int(user_d::SummationDecapode, target_vars::Symbol, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType=Float64, code_target::AbstractGenerationTarget=CPUTarget(), preallocate::Bool=true, contract::Bool=true, cse::Bool=true)
+
+Generate code to compute a specific intermediate variable from a Decapode.
+
+Given a Decapode and the name of a target variable, this function uses
+`downset` from DiagrammaticEquations to extract the sub-Decapode
+containing only the operations needed to compute that variable from the state
+variables. It then passes that sub-Decapode through the standard compilation
+pipeline via the shared `_compile_decapode` helper.
+
+The returned expression, when evaluated, produces a function with the signature:
+`(mesh, operators, hodge) -> (__u__, __p__, __t__) -> value`
+
+The inner function takes a `ComponentArray` `__u__` (e.g. from an ODE solution `soln(t)`),
+a parameters named tuple `__p__`, and a time value `__t__`, and returns the computed value of `target_vars`.
+
+# Example (Brusselator)
+
+```julia
+Brusselator = @decapode begin
+  (U, V)::Form0
+  U2V::Form0
+  (α)::Constant
+  F::Parameter
+  U2V == (U .* U) .* V
+  ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+  ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+end
+
+# Generate and evaluate a function to compute U2V from the ODE solution:
+get_U2V = eval(gen_int(Brusselator, :U2V))
+compute_U2V = get_U2V(sd, generate, DiagonalHodge())
+
+# Now compute U2V at any time from the ODE solution:
+U2V_at_t = compute_U2V(soln(t), constants_and_parameters, t)
+```
+
+The downset computation can be skipped if `compute_downset` is `false` (defaults to `true`).
+
+See also: [`gensim`](@ref), [`eval_int`](@ref).
+"""
+function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractArray{Symbol}}, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, cse::Bool = true, compute_downset=true)
+  (dimension == 1 || dimension == 2) ||
+    throw(UnsupportedDimensionException(dimension))
+
+  (stateeltype == Float32 || stateeltype == Float64) ||
+    throw(UnsupportedStateeltypeException(stateeltype))
+
+  # Compute the downset, or do an explicit deep copy for safety.
+  d = compute_downset ?
+    downset(user_d, target_vars) :
+    deepcopy(user_d)
+
+  sub_input_vars = filter(v -> v in d[:name], input_vars)
+
+  c = _compile_decapode(d, sub_input_vars, target_vars;
+    dimension, stateeltype, code_target, preallocate, contract, cse)
+
+  quote
+    (mesh, operators, hodge=GeometricHodge()) -> begin
+      $(c.func_defs)
+      $(c.contracted_defs)
+      $(c.vect_defs)
+      f(__u__, __p__, __t__) = begin
+        $(c.vars)
+        $(c.data)
+        $(c.equations...)
+        return $(c.return_val)
+      end;
+    end
+  end
+end
+
+gen_int(d::SummationDecapode, target_var::Symbol; kwargs...) =
+  gen_int(d, target_var, gather_inputs(d); kwargs...)
+
+gen_int(d::SummationDecapode, target_vars::AbstractArray{Symbol}; kwargs...) =
+  gen_int(d, target_vars, gather_inputs(d); kwargs...)
+
+"""
+    eval_int(args...; kwargs...)
+
+Convenience wrapper that evaluates the code generated by [`gen_int`](@ref).
+
+See also: [`gen_int`](@ref).
+"""
+eval_int(args...; kwargs...) = eval(gen_int(args...; kwargs...))
+
+"""
+function find_unreachable_tvars(d)
 
 Determine if the given Decapode can be compiled to an explicit time-stepping
 simulation. Use the simple check that one can traverse the Decapode starting
@@ -611,94 +871,4 @@ function find_unreachable_tvars(d)
     end
   end
   TVars = d[:incl]
-end
-
-"""
-    function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
-
-Delete the given nodes and their parents in the decapode, recursively.
-"""
-function recursive_delete_parents(d::SummationDecapode, to_delete::Vector{Int64})
-  e = SummationDecapode{Any, Any, Symbol}()
-  copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
-  isempty(to_delete) || recursive_delete_parents!(e, to_delete)
-  return e
-end
-
-function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
-  # TODO: We assume to_delete vars have no children. Is that okay?
-  # TODO: Explicitly check that a Var in to_delete is not a summand.
-  vars_to_remove = Vector{Int64}()
-  s = Stack{Int64}()
-  foreach(v -> push!(s, v), to_delete)
-  while true
-    curr = pop!(s)
-    parents = reduce(vcat,
-                     [d[incident(d, curr, :tgt), :src],
-                      d[incident(d, curr, :res), :proj1],
-                      d[incident(d, curr, :res), :proj2],
-                      d[incident(d, curr, [:summation, :sum]), :summand]])
-
-    # Remove the operations which have curr as the result.
-    rem_parts!(d, :TVar,    incident(d, curr, :incl))
-    rem_parts!(d, :Op1,     incident(d, curr, :tgt))
-    rem_parts!(d, :Op2,     incident(d, curr, :proj1))
-    rem_parts!(d, :Op2,     incident(d, curr, :proj2))
-    rem_parts!(d, :Op2,     incident(d, curr, :res))
-    # Note: Delete Summands before Σs.
-    rem_parts!(d, :Summand, incident(d, curr, [:summation, :sum]))
-    rem_parts!(d, :Σ,       incident(d, curr, :sum))
-
-    # Do not remove parents which are used in some other computation. We rely
-    # on the fact that a parent is guaranteed to point to curr.
-    filter!(parents) do p
-      # p must not be the src of any Op1.
-      isempty(incident(d, p, :src)) &&
-      # p must not be a proj of any Op2.
-      isempty(incident(d, p, :proj1)) &&
-      isempty(incident(d, p, :proj2)) &&
-      # p must not be a summand of any summation.
-      isempty(incident(d, p, :summand))
-    end
-    foreach(p -> push!(s, p), parents)
-
-    push!(vars_to_remove, curr)
-
-    isempty(s) && break
-  end
-  rem_parts!(d, :Var, sort!(unique!(vars_to_remove)))
-end
-
-function closest_point(p1, p2, dims)
-    p_res = collect(p2)
-    for i in 1:length(dims)
-        if dims[i] != Inf
-            p = p1[i] - p2[i]
-            f, n = modf(p / dims[i])
-            p_res[i] += dims[i] * n
-            if abs(f) > 0.5
-                p_res[i] += sign(f) * dims[i]
-            end
-        end
-    end
-    Point3{ComplexF64}(p_res...)
-end
-
-function flat_op(s::AbstractDeltaDualComplex2D, X::AbstractVector; dims=[Inf, Inf, Inf])
-  # XXX: Creating this lookup table shouldn't be necessary. Of course, we could
-  # index `tri_center` but that shouldn't be necessary either. Rather, we should
-  # loop over incident triangles instead of the elementary duals, which just
-  # happens to be inconvenient.
-  tri_map = Dict{Int,Int}(triangle_center(s,t) => t for t in triangles(s))
-
-  map(edges(s)) do e
-    p = closest_point(point(s, tgt(s,e)), point(s, src(s,e)), dims)
-    e_vec = (point(s, tgt(s,e)) - p) * sign(1,s,e)
-    dual_edges = elementary_duals(1,s,e)
-    dual_lengths = dual_volume(1, s, dual_edges)
-    mapreduce(+, dual_edges, dual_lengths) do dual_e, dual_length
-      X_vec = X[tri_map[s[dual_e, :D_∂v0]]]
-      dual_length * dot(X_vec, e_vec)
-    end / sum(dual_lengths)
-  end
 end
