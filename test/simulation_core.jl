@@ -200,6 +200,19 @@ import Decapodes: AllocVecCall
       test_vector_cache(AllocVecCall(:V, form, 2, type, CUDATarget()))
     end
   end
+
+  for type in [Float32, Float64, ComplexF32, ComplexF64]
+
+    # Test correct data for dimension 1 CPUVectorTarget
+    for form in [:Form0, :Form1, :DualForm1, :DualForm0]
+      test_vector_cache(AllocVecCall(:V, form, 1, type, CPUVectorTarget()))
+    end
+
+    # Test correct data for dimension 2 CPUVectorTarget
+    for form in [:Form0, :Form1, :Form2, :DualForm2, :DualForm1, :DualForm0]
+      test_vector_cache(AllocVecCall(:V, form, 2, type, CPUVectorTarget()))
+    end
+  end
 end
 
 #####################
