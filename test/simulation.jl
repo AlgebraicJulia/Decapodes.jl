@@ -782,6 +782,9 @@ end
   sim_Schoedinger = evalsim(Schoedinger)
   @test sim_Schoedinger(d_rect, generate, DiagonalHodge()) isa Any
 
+  sim_Schoedinger_complex = evalsim(Schoedinger; stateeltype=ComplexF64, preallocate=false)
+  @test sim_Schoedinger_complex(d_rect, generate, DiagonalHodge()) isa Any
+
   Gray_Scott = @decapode begin
     (U, V)::Form0
     UV2::Form0
