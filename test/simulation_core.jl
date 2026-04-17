@@ -20,7 +20,7 @@ import Decapodes: UnaryCall, add_inplace_stub
   @test Expr(UnaryCall(:F, EQUALS, :x, :y)) ==  :(y = F(x))
 
   # Test equality, inplace negation
-  @test Expr(UnaryCall(:.-, EQUALS, :x, :y)) ==  :(y = .-x)
+  @test Expr(UnaryCall(:.-, EQUALS, :x, :y)) ==  :(y = broadcast(-, x))
 
   # Test equality, inplacable op
   let inplacable_op = :⋆₁⁻¹
@@ -31,7 +31,7 @@ import Decapodes: UnaryCall, add_inplace_stub
   @test Expr(UnaryCall(:F, DOT_EQUALS, :x, :y)) == :(mul!(y, F, x))
 
   # Test broadcast equality, inplace negation
-  @test Expr(UnaryCall(:.-, DOT_EQUALS, :x, :y)) == :(y .= .-x)
+  @test Expr(UnaryCall(:.-, DOT_EQUALS, :x, :y)) == :(y .= broadcast(-, x))
 
   # Test broadcast equality, inplace non-matrix method
   let inplace_op = add_inplace_stub(:⋆₁⁻¹)
@@ -49,37 +49,51 @@ import Decapodes: BinaryCall
   let inplace_operator = add_inplace_stub(:F)
     @test Expr(BinaryCall(inplace_operator, DOT_EQUALS, :x, :y, :z)) == :($inplace_operator(z, x, y))
   end
+
+  # Test that arithmetic operators use broadcast
+  @test Expr(BinaryCall(:*, EQUALS, :x, :y, :z)) == :(z = broadcast(*, x, y))
+  @test Expr(BinaryCall(:+, EQUALS, :x, :y, :z)) == :(z = broadcast(+, x, y))
+  @test Expr(BinaryCall(:-, EQUALS, :x, :y, :z)) == :(z = broadcast(-, x, y))
+  @test Expr(BinaryCall(:/, EQUALS, :x, :y, :z)) == :(z = broadcast(/, x, y))
+  @test Expr(BinaryCall(:^, EQUALS, :x, :y, :z)) == :(z = broadcast(^, x, y))
+
+  # Test that dot-prefixed arithmetic operators are normalized to broadcast
+  @test Expr(BinaryCall(:.*, EQUALS, :x, :y, :z)) == :(z = broadcast(*, x, y))
+  @test Expr(BinaryCall(:.+, EQUALS, :x, :y, :z)) == :(z = broadcast(+, x, y))
+
+  # Test broadcast with in-place equality
+  @test Expr(BinaryCall(:*, DOT_EQUALS, :x, :y, :z)) == :(z .= broadcast(*, x, y))
 end
 
 import Decapodes: SummationCall
 
 @testset "Test SummationCall" begin
   # Test equality, 2 inputs
-  @test Expr(SummationCall(EQUALS, [:x, :y], :z)) == :(z = (.+)(x, y))
+  @test Expr(SummationCall(EQUALS, [:x, :y], :z)) == :(z = broadcast(+, x, y))
 
   # Test equality, 3 inputs
-  @test Expr(SummationCall(EQUALS, [:x, :y, :w], :z)) == :(z = (.+)(x, y, w))
+  @test Expr(SummationCall(EQUALS, [:x, :y, :w], :z)) == :(z = broadcast(+, x, y, w))
 
   # Test equality, 1 input
-  @test Expr(SummationCall(EQUALS, [:x], :z)) == :(z = (.+)(x))
+  @test Expr(SummationCall(EQUALS, [:x], :z)) == :(z = broadcast(+, x))
 
   # Test equality, 0 inputs
-  @test Expr(SummationCall(EQUALS, [], :z)) == :(z = (.+)())
+  @test Expr(SummationCall(EQUALS, [], :z)) == :(z = broadcast(+))
   
   # Test broadcast equality, 33 inputs
   @test Expr(SummationCall(EQUALS, fill(:x, 33), :z)) == Meta.parse("z = sum([" * foldl(*, fill("x, ", 32)) * "x])")
 
   # Test broadcast equality, 2 inputs
-  @test Expr(SummationCall(DOT_EQUALS, [:x, :y], :z)) == :(z .= (.+)(x, y))
+  @test Expr(SummationCall(DOT_EQUALS, [:x, :y], :z)) == :(z .= broadcast(+, x, y))
 
   # Test broadcast equality, 3 inputs
-  @test Expr(SummationCall(DOT_EQUALS, [:x, :y, :w], :z)) == :(z .= (.+)(x, y, w))
+  @test Expr(SummationCall(DOT_EQUALS, [:x, :y, :w], :z)) == :(z .= broadcast(+, x, y, w))
 
   # Test broadcast equality, 1 input
-  @test Expr(SummationCall(DOT_EQUALS, [:x], :z)) == :(z .= (.+)(x))
+  @test Expr(SummationCall(DOT_EQUALS, [:x], :z)) == :(z .= broadcast(+, x))
 
   # Test broadcast equality, 0 inputs
-  @test Expr(SummationCall(DOT_EQUALS, [], :z)) == :(z .= (.+)())
+  @test Expr(SummationCall(DOT_EQUALS, [], :z)) == :(z .= broadcast(+))
   
   # Test broadcast equality, 33 inputs
   @test Expr(SummationCall(DOT_EQUALS, fill(:x, 33), :z)) == Meta.parse("z .= sum([" * foldl(*, fill("x, ", 32)) * "x])")

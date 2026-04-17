@@ -37,18 +37,22 @@ end
 
 # ! WARNING: Do not pass this an inplace function without setting equality to :.=
 Base.Expr(c::UnaryCall) = begin
-  operator = c.operator
+  operator = normalize_arithmetic_operator(c.operator)
   if c.equality == :.=
     # TODO: Generalize to inplacable functions
-    if operator == add_inplace_stub(:⋆₁⁻¹) # Since inverse hodge Geo is a solver
+    if c.operator == add_inplace_stub(:⋆₁⁻¹) # Since inverse hodge Geo is a solver
       Expr(:call, c.operator, c.output, c.input)
-    elseif operator == :.-
-      Expr(c.equality, c.output, Expr(:call, operator, c.input))
+    elseif operator == :-
+      Expr(c.equality, c.output, Expr(:call, :broadcast, :-, c.input))
     else # TODO: Add check that this operator is a matrix
-      Expr(:call, :mul!, c.output, operator, c.input)
+      Expr(:call, :mul!, c.output, c.operator, c.input)
     end
   else
-    Expr(c.equality, c.output, Expr(:call, operator, c.input))
+    if operator == :-
+      Expr(c.equality, c.output, Expr(:call, :broadcast, :-, c.input))
+    else
+      Expr(c.equality, c.output, Expr(:call, c.operator, c.input))
+    end
   end
 end
 
@@ -66,6 +70,10 @@ Base.Expr(c::BinaryCall) = begin
   if c.equality == :.= && get_stub(c.operator) == GENSIM_INPLACE_STUB
     return Expr(:call, c.operator, c.output, c.input1, c.input2)
   end
+  op = normalize_arithmetic_operator(c.operator)
+  if op in BROADCAST_ARITHMETIC_OPS
+    return Expr(c.equality, c.output, Expr(:call, :broadcast, op, c.input1, c.input2))
+  end
   return Expr(c.equality, c.output, Expr(:call, c.operator, c.input1, c.input2))
 end
 
@@ -75,10 +83,10 @@ struct SummationCall <: AbstractCall
   output::Symbol
 end
 
-# The output of @code_llvm (.+) of more than 32 variables is inefficient.
+# The output of @code_llvm broadcast(+, ...) of more than 32 variables is inefficient.
 Base.Expr(c::SummationCall) = begin
   length(c.inputs) ≤ 32 ?
-    Expr(c.equality, c.output, Expr(:call, Expr(:., :+), c.inputs...)) : # (.+)(a,b,c)
+    Expr(c.equality, c.output, Expr(:call, :broadcast, :+, c.inputs...)) : # broadcast(+, a, b, c)
     Expr(c.equality, c.output, Expr(:call, :sum, Expr(:vect, c.inputs...))) # sum([a,b,c])
 end
 
@@ -196,6 +204,14 @@ end
 add_inplace_stub(var_name::Symbol) = add_stub(GENSIM_INPLACE_STUB, var_name)
 
 const ARITHMETIC_OPS = Set([:+, :*, :-, :/, :.+, :.*, :.-, :./, :^, :.^, :.>, :.<, :.≤, :.≥])
+
+# Arithmetic operators that should always use broadcast(op, ...) in generated code.
+const BROADCAST_ARITHMETIC_OPS = Set([:+, :-, :*, :/, :^, :>, :<, :≤, :≥])
+
+# Map to normalize dot-prefixed arithmetic operators to their base form.
+const NORMALIZE_ARITHMETIC_MAP = Dict(
+  :.+ => :+, :.- => :-, :.* => :*, :./ => :/, :.^ => :^,
+  :.> => :>, :.< => :<, :.≤ => :≤, :.≥ => :≥)
 
 struct InvalidCodeTargetException <: Exception
   code_target::AbstractGenerationTarget
@@ -327,18 +343,12 @@ function hook_STC_settvar(state_name::Symbol, tgt_name::Symbol, ::Union{CPUBacke
   return :(setproperty!(__du__, $ssymb, $tgt_name))
 end
 
-const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
-                                    :(-) => :.-,
-                                    :(*) => :.*,
-                                    :(/) => :./,
-                                    :(^) => :.^,
-                                    :(=) => :.=,
-                                    :.+ => :.+,
-                                    :.- => :.-,
-                                    :.* => :.*,
-                                    :./ => :./,
-                                    :.^ => :.^,
-                                    :.= => :.=)
+"""    normalize_arithmetic_operator(op::Symbol)
+
+Normalize a dot-prefixed arithmetic operator to its base form (e.g. `.*` → `*`).
+Non-dot-prefixed operators are returned unchanged.
+"""
+normalize_arithmetic_operator(op::Symbol) = get(NORMALIZE_ARITHMETIC_MAP, op, op)
 
 """
     compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
@@ -387,13 +397,13 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::
 
         if preallocate && is_form(d, t)
           if operator in inplace_dec_ops
-            equality = PROMOTE_ARITHMETIC_MAP[equality]
+            equality = :.=
             operator = add_inplace_stub(operator)
             push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype, code_target))
 
           elseif operator == :(-) || operator == :.-
-            equality = PROMOTE_ARITHMETIC_MAP[equality]
-            operator = PROMOTE_ARITHMETIC_MAP[operator]
+            equality = :.=
+            operator = normalize_arithmetic_operator(operator)
             push!(alloc_vectors, AllocVecCall(tname, d[t, :type], dimension, stateeltype, code_target))
           end
         end
@@ -419,8 +429,8 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::
         # TODO: Check to make sure that this logic never breaks
         if preallocate && is_form(d, r)
           if operator == :(+) || operator == :(-) || operator == :.+ || operator == :.-
-            operator = PROMOTE_ARITHMETIC_MAP[operator]
-            equality = PROMOTE_ARITHMETIC_MAP[equality]
+            operator = normalize_arithmetic_operator(operator)
+            equality = :.=
             push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
 
           # TODO: Do we want to support the ability of a user to use the backslash operator?
@@ -428,30 +438,19 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::
             # ! WARNING: This part may break if we add more compiler types that have different
             # ! operations for basic and broadcast modes, e.g. matrix multiplication vs broadcast
             if !is_infer(d, arg1) && !is_infer(d, arg2)
-              operator = PROMOTE_ARITHMETIC_MAP[operator]
-              equality = PROMOTE_ARITHMETIC_MAP[equality]
+              operator = normalize_arithmetic_operator(operator)
+              equality = :.=
               push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
             end
           elseif operator in inplace_dec_ops
             operator = add_inplace_stub(operator)
-            equality = PROMOTE_ARITHMETIC_MAP[equality]
+            equality = :.=
             push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
           end
         end
 
-        # TODO: Clean this in another PR (with a @match maybe).
-        if operator == :(*)
-          operator = PROMOTE_ARITHMETIC_MAP[operator]
-        end
-        if operator == :(-)
-          operator = PROMOTE_ARITHMETIC_MAP[operator]
-        end
-        if operator == :(/)
-          operator = PROMOTE_ARITHMETIC_MAP[operator]
-        end
-        if operator == :(^)
-          operator = PROMOTE_ARITHMETIC_MAP[operator]
-        end
+        # Normalize all arithmetic operators to their base form for broadcast.
+        operator = normalize_arithmetic_operator(operator)
 
         visited_2[op] = true
         visited_Var[r] = true
@@ -468,13 +467,11 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::
         rname  = d[r, :name]
 
         # operator = :(+)
-        operator = :.+
         equality = :(=)
 
         # If result is a known form, broadcast addition
         if preallocate && is_form(d, r)
-          operator = PROMOTE_ARITHMETIC_MAP[operator]
-          equality = PROMOTE_ARITHMETIC_MAP[equality]
+          equality = :.=
           push!(alloc_vectors, AllocVecCall(rname, d[r, :type], dimension, stateeltype, code_target))
         end
 
@@ -655,7 +652,7 @@ function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, out
   infer_overload_compiler!(d, dimension)
 
   # XXX: expand_operators should be called if any replacement is a chain of operations.
-  replace_names!(d, Pair{Symbol, Any}[], Pair{Symbol, Symbol}[(:∧₀₀ => :.*)])
+  replace_names!(d, Pair{Symbol, Any}[], Pair{Symbol, Symbol}[(:∧₀₀ => :*)])
   open_operators!(d, dimension = dimension)
   infer_overload_compiler!(d, dimension)
 
