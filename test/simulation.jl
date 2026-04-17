@@ -764,8 +764,8 @@ end
   sim_Schroedinger = evalsim(Schroedinger)
   @test sim_Schroedinger(d_rect, generate, DiagonalHodge()) isa Any
 
-  sim_Schoedinger_complex = evalsim(Schoedinger; stateeltype=ComplexF64, preallocate=false)
-  @test sim_Schoedinger_complex(d_rect, generate, DiagonalHodge()) isa Any
+  sim_Schroedinger_complex = evalsim(Schroedinger; stateeltype=ComplexF64, preallocate=false)
+  @test sim_Schroedinger_complex(d_rect, generate, DiagonalHodge()) isa Any
 
   Gray_Scott = @decapode begin
     (U, V)::Form0
