@@ -1132,6 +1132,54 @@ end
   @test soln.u[1] ≈ u₀
 end
 
+@testset "CPUVectorTarget Schroedinger" begin
+  # Test that CPUVectorTarget (plain Julia arrays) works with complex-valued
+  # state using the Schroedinger equation.
+  Schroedinger = @decapode begin
+    (i, h, m)::Constant
+    V::Parameter
+    Ψ::Form0
+    ∂ₜ(Ψ) == (((-1 * h ^ 2) / (2m)) * Δ(Ψ) + V * Ψ) / (i * h)
+  end
+
+  function circle(n, c)
+    s = EmbeddedDeltaSet1D{Bool, Point2D}()
+    map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
+      add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+    end
+    add_edges!(s, 1:(nv(s)-1), 2:nv(s))
+    add_edge!(s, nv(s), 1)
+    sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+    subdivide_duals!(sd, Circumcenter())
+    s, sd
+  end
+  s, sd = circle(7, 1)
+
+  sim = evalsim(Schroedinger, dimension=1, stateeltype=ComplexF64, code_target=CPUVectorTarget())
+  fₘ = sim(sd, nothing)
+
+  x_coords = [0, accumulate(+, sd[:length])[1:end-1]...]
+  x₀, σ, k = 0.5, 0.08, 35.0
+  Ψ = map(x_coords) do x
+    exp(-((x - x₀)^2) / (2σ^2)) * cis(k * x)
+  end
+
+  u₀ = ComponentArray(Ψ=Ψ)
+  constants_and_parameters = (
+    i = im,
+    V = t -> zeros(ComplexF64, nv(sd)),
+    h = 6.5e-16,
+    m = 5.49e-4,
+  )
+
+  tₑ = 1e10
+  prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+  soln = solve(prob, Tsit5(), dtmax=1e6)
+  # Verify that the squared modulus is approximately conserved.
+  ∫squared_modulus(x) = sum(abs2.(x))
+  @test ∫squared_modulus(soln(0.0).Ψ) ≈ ∫squared_modulus(soln(tₑ).Ψ) rtol=1e-4
+end
+
 @testset "Large Summations" begin
 # Elementwise summations of more than 32 variables are not pre-compiled by our
 # host language.
