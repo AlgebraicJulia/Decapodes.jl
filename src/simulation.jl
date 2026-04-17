@@ -341,7 +341,7 @@ const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
 Function that compiles the computation body. `d` is the input Decapode, `inputs` is a vector of state variables and literals,
 `inplace_dec_ops` is a collection of all DEC operator symbols that can use special
 in-place methods, `dimension` is the dimension of the problem (usually 1 or 2), `stateeltype` is the type of the state elements
-(usually Float32 or Float64), `code_target` determines what architecture the code is compiled for (either CPU or CUDA), and `preallocate`
+(usually Float32, Float64, ComplexF32, or ComplexF64), `code_target` determines what architecture the code is compiled for (either CPU or CUDA), and `preallocate`
 which is set to `true` by default and determines if intermediate results can be preallocated.
 """
 function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
@@ -586,7 +586,10 @@ struct UnsupportedStateeltypeException <: Exception
   type::DataType
 end
 
-Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32 or Float64")
+const SUPPORTED_STATEELTYPES = (Float32, Float64, ComplexF32, ComplexF64)
+supports_stateeltype(stateeltype::DataType) = stateeltype in SUPPORTED_STATEELTYPES
+
+Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32, Float64, ComplexF32, or ComplexF64")
 
 const MATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
                                               :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
@@ -704,7 +707,7 @@ to operator mappings to return a simulator that can be used to solve the represe
 
 `dimension`: The dimension of the problem. (Defaults to `2`)(Must be `1` or `2`)
 
-`stateeltype`: The element type of the state forms. (Defaults to `Float64`)(Must be `Float32` or `Float64`)
+`stateeltype`: The element type of the state forms. (Defaults to `Float64`)(Must be `Float32`, `Float64`, `ComplexF32`, or `ComplexF64`)
 
 `code_target`: The intended architecture target for the generated code. (Defaults to `CPUTarget()`)(Use `CUDATarget()` for NVIDIA CUDA GPUs)
 
@@ -722,7 +725,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   (dimension == 1 || dimension == 2) ||
     throw(UnsupportedDimensionException(dimension))
 
-  (stateeltype == Float32 || stateeltype == Float64) ||
+  supports_stateeltype(stateeltype) ||
     throw(UnsupportedStateeltypeException(stateeltype))
 
   # Explicit copy for safety
@@ -806,7 +809,7 @@ function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractA
   (dimension == 1 || dimension == 2) ||
     throw(UnsupportedDimensionException(dimension))
 
-  (stateeltype == Float32 || stateeltype == Float64) ||
+  supports_stateeltype(stateeltype) ||
     throw(UnsupportedStateeltypeException(stateeltype))
 
   # Compute the downset, or do an explicit deep copy for safety.
