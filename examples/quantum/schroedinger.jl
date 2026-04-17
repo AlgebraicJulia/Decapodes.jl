@@ -25,7 +25,7 @@ function circle(n, c, float_type)
 end
 s′, s = circle(7, 1, Float64);
 
-sim = evalsim(Schroedinger, dimension=1, stateeltype=ComplexF64, preallocate=false)
+sim = evalsim(Schroedinger, dimension=1, stateeltype=ComplexF64, code_target=CPUVectorTarget())
 fₘ = sim(s, nothing)
 
 # Map the circle of unit circumference to the unit interval for setting ICs.

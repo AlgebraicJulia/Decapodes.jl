@@ -15,6 +15,7 @@ abstract type CUDABackend <: AbstractGenerationTarget end
 # TODO: Test that AbstractGenerationTargets are user-extendable.
 
 struct CPUTarget <: CPUBackend end
+struct CPUVectorTarget <: CPUBackend end
 struct CUDATarget <: CUDABackend end
 
 # TODO: Make it so AbstractCall code terminates into an error, not into default code
@@ -131,6 +132,10 @@ end
 # TODO: Allow user to overload these hooks with user-defined code_target
 function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CUDABackend)
   :($(c.name) = CuVector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
+end
+
+function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CPUVectorTarget)
+  :($(c.name) = Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end
 
 # TODO: This should be edited when we replace types as symbols with types as Julia types
@@ -516,6 +521,10 @@ function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCa
 end
 
 function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CUDABackend)
+  return
+end
+
+function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUVectorTarget)
   return
 end
 
