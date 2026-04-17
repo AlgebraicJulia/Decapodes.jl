@@ -1,3 +1,5 @@
+# TODO: This simulation of the Schroedinger
+# equation should be vetted by an outside reviewer.
 using Catlab, CombinatorialSpaces, Decapodes, DiagrammaticEquations
 using GLMakie, JLD2, LinearAlgebra, OrdinaryDiffEqTsit5
 using ComponentArrays
@@ -26,7 +28,7 @@ s′, s = circle(7, 1, Float64);
 sim = evalsim(Schroedinger, dimension=1, stateeltype=ComplexF64, preallocate=false)
 fₘ = sim(s, nothing)
 
-# Map the unit circle to the unit interval for setting ICs.
+# Map the circle of unit circumference to the unit interval for setting ICs.
 x_coords = [0, accumulate(+, s[:length])[1:end-1]...];
 x₀, σ, k = 0.5, 0.08, 35.0
 Ψ = map(x_coords) do x
@@ -45,12 +47,13 @@ constants_and_parameters = (
   m = 5.49e-4, # mass of electron in [eV]
 );
 
-@save "schroedinger.jld2" soln
 tₑ = 1e10
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters);
-soln = solve(prob, Tsit5(), reltol=1e-13);
+soln = solve(prob, Tsit5(), dtmax=1e6);
 @show ∫squared_modulus(soln(0.0).Ψ)
 @show ∫squared_modulus(soln(tₑ).Ψ)
+@show maximum(abs2.(soln(0.0).Ψ))
+@show maximum(abs2.(soln(tₑ).Ψ))
 
 lines(x_coords, abs2.(soln(0.0).Ψ))
 lines(x_coords, abs2.(soln(tₑ).Ψ))
