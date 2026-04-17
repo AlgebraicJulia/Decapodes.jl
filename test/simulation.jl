@@ -755,14 +755,14 @@ end
   sim_JKO = evalsim(Jordan_Kinderlehrer_Otto)
   @test sim_JKO(d_rect, generate, DiagonalHodge()) isa Any
 
-  Schoedinger = @decapode begin
+  Schroedinger = @decapode begin
     (i, h, m)::Constant
     V::Parameter
     Ψ::Form0
     ∂ₜ(Ψ) == (((-1 * h ^ 2) / (2m)) * Δ(Ψ) + V * Ψ) / (i * h)
   end
-  sim_Schoedinger = evalsim(Schoedinger)
-  @test sim_Schoedinger(d_rect, generate, DiagonalHodge()) isa Any
+  sim_Schroedinger = evalsim(Schroedinger)
+  @test sim_Schroedinger(d_rect, generate, DiagonalHodge()) isa Any
 
   sim_Schoedinger_complex = evalsim(Schoedinger; stateeltype=ComplexF64, preallocate=false)
   @test sim_Schoedinger_complex(d_rect, generate, DiagonalHodge()) isa Any
