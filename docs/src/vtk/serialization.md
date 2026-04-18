@@ -123,25 +123,22 @@ vtk_save(vtk)
 
 ### Saving a 1-form (Vector Point Data)
 
-A 1-form has one scalar value per edge. To visualize it in ParaView, we use the **sharp** operator (`♯`) to convert it into a vector field at vertices. The [`AltPPSharp`](https://algebraicjulia.github.io/CombinatorialSpaces.jl/dev/) interpolation method produces a primal-primal sharp suitable for visualization on 2D simplicial complexes.
+A 1-form has one scalar value per edge. To visualize it in ParaView, we use the **sharp** operator (`♯`) to convert it into a vector field at vertices. The `AltPPSharp` interpolation method produces a primal-primal sharp suitable for visualization on 2D simplicial complexes.
 
-We first compute the flux 1-form `ϕ = k * d₀(C)` from the solution, then sharpen it. The resulting vector field has one vector per vertex and is exported as a `3 × nv(s)` matrix with `VTKPointData`.
+We first compute the flux 1-form `ϕ = k * d₀(C)` from the solution, then sharpen it. The resulting vector field has one vector per vertex and is exported as a `3 × N` matrix with `VTKPointData`. We define a small helper `vec_to_mat` to convert the vector of points into the matrix layout that WriteVTK expects.
 
 ```@example DEC
+vec_to_mat(vecs) = hcat(collect.(vecs)...)
+
 d₀_mat = dec_differential(0, sd)
 ϕ = 0.05 * d₀_mat * soln(tₑ).C
 
 sharp = ♯_mat(sd, AltPPSharp())
 ϕ_vec = sharp * ϕ
 
-ϕ_out = zeros(3, nv(s))
-for (i, v) in enumerate(ϕ_vec)
-  ϕ_out[:, i] .= collect(v)
-end
-
 vtk = vtk_grid("diffusion_flux", points, cells)
 vtk["C", VTKPointData()] = soln(tₑ).C
-vtk["flux", VTKPointData()] = ϕ_out
+vtk["flux", VTKPointData()] = vec_to_mat(ϕ_vec)
 vtk_save(vtk)
 ```
 
@@ -176,17 +173,12 @@ timestamps = range(0.0, tₑ, length=50)
 for (i, t) in enumerate(timestamps)
   local C_t = soln(t).C
   local ϕ_t = 0.05 * d₀_mat * C_t
-  local ϕ_vec_t = sharp * ϕ_t
-  local ϕ_out_t = zeros(3, nv(s))
-  for (j, v) in enumerate(ϕ_vec_t)
-    ϕ_out_t[:, j] .= collect(v)
-  end
   local avg_C_t = [sum(C_t[triangle_vertices(s, t_idx)]) / 3
                    for t_idx in 1:ntriangles(s)]
 
   local vtk_step = vtk_grid("diffusion_series_$i", points, cells)
   vtk_step["C", VTKPointData()] = C_t
-  vtk_step["flux", VTKPointData()] = ϕ_out_t
+  vtk_step["flux", VTKPointData()] = vec_to_mat(sharp * ϕ_t)
   vtk_step["avg_C", VTKCellData()] = avg_C_t
   collection_add_timestep(pvd, vtk_step, t)
 end
