@@ -84,6 +84,7 @@ makedocs(
         "Oncology" => "examples/oncology/tumor_proliferation_invasion.md",
         "MHD" => "examples/mhd.md", # TODO convert original file to a docs page
     ],
+    "Simulation Data Serialization" => "vtk/serialization.md",
     "Calibration" => "calibrate/calibration.md",
     "Misc Features" => "bc/bc_debug.md", # Requires overview
     "FAQ" => "faq/faq.md",
