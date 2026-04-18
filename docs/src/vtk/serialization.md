@@ -111,9 +111,9 @@ cells = [MeshCell(VTKCellTypes.VTK_TRIANGLE, triangle_vertices(s, t))
 nothing # hide
 ```
 
-### Single Timestep
+### Saving a 0-form (Scalar Point Data)
 
-A single snapshot of the simulation can be saved as a `.vtu` (VTK Unstructured Grid) file. Point data such as scalar fields defined on the mesh vertices are attached with `VTKPointData`.
+A single snapshot of the simulation can be saved as a `.vtu` (VTK Unstructured Grid) file. A 0-form like `C` has one value per vertex, so it is attached as point data with `VTKPointData`.
 
 ```@example DEC
 vtk = vtk_grid("diffusion_final", points, cells)
@@ -121,16 +121,73 @@ vtk["C", VTKPointData()] = soln(tₑ).C
 vtk_save(vtk)
 ```
 
+### Saving a 1-form (Vector Point Data)
+
+A 1-form has one scalar value per edge. To visualize it in ParaView, we use the **sharp** operator (`♯`) to convert it into a vector field at vertices. The [`AltPPSharp`](https://algebraicjulia.github.io/CombinatorialSpaces.jl/dev/) interpolation method produces a primal-primal sharp suitable for visualization on 2D simplicial complexes.
+
+We first compute the flux 1-form `ϕ = k * d₀(C)` from the solution, then sharpen it. The resulting vector field has one vector per vertex and is exported as a `3 × nv(s)` matrix with `VTKPointData`.
+
+```@example DEC
+d₀_mat = dec_differential(0, sd)
+ϕ = 0.05 * d₀_mat * soln(tₑ).C
+
+sharp = ♯_mat(sd, AltPPSharp())
+ϕ_vec = sharp * ϕ
+
+ϕ_out = zeros(3, nv(s))
+for (i, v) in enumerate(ϕ_vec)
+  ϕ_out[:, i] .= collect(v)
+end
+
+vtk = vtk_grid("diffusion_flux", points, cells)
+vtk["C", VTKPointData()] = soln(tₑ).C
+vtk["flux", VTKPointData()] = ϕ_out
+vtk_save(vtk)
+```
+
+### Saving a 2-form (Cell Data)
+
+A 2-form has one scalar value per triangle (2-simplex). In VTK terminology, triangles are **cells**, so 2-form data is attached with `VTKCellData`.
+
+Here we compute a 2-form by taking the exterior derivative `d₁` of the flux 1-form. On a flat mesh, `d₁ ∘ d₀ = 0` exactly, so these values will be near-zero — this serves as a numerical consistency check. We also compute a more visual example: the average vertex concentration per triangle, which illustrates how any per-triangle quantity is exported as cell data.
+
+```@example DEC
+d₁_mat = dec_differential(1, sd)
+curl_ϕ = d₁_mat * ϕ
+
+C_final = soln(tₑ).C
+avg_C = [sum(C_final[triangle_vertices(s, t)]) / 3
+         for t in 1:ntriangles(s)]
+
+vtk = vtk_grid("diffusion_celldata", points, cells)
+vtk["C", VTKPointData()] = C_final
+vtk["curl_flux", VTKCellData()] = curl_ϕ
+vtk["avg_C", VTKCellData()] = avg_C
+vtk_save(vtk)
+```
+
 ### Time Series with ParaView Collection
 
-For visualizing the full time evolution in ParaView, we export each timestep as a separate `.vtu` file and collect them into a `.pvd` (ParaView Data) file. ParaView can then load the `.pvd` file and animate through the timesteps.
+For visualizing the full time evolution in ParaView, we export each timestep as a separate `.vtu` file and collect them into a `.pvd` (ParaView Data) file. ParaView can then load the `.pvd` file and animate through the timesteps. This example exports the 0-form, the sharpened 1-form, and the 2-form together.
 
 ```@example DEC
 pvd = paraview_collection("diffusion_series")
 timestamps = range(0.0, tₑ, length=50)
 for (i, t) in enumerate(timestamps)
+  local C_t = soln(t).C
+  local ϕ_t = 0.05 * d₀_mat * C_t
+  local ϕ_vec_t = sharp * ϕ_t
+  local ϕ_out_t = zeros(3, nv(s))
+  for (j, v) in enumerate(ϕ_vec_t)
+    ϕ_out_t[:, j] .= collect(v)
+  end
+  local avg_C_t = [sum(C_t[triangle_vertices(s, t_idx)]) / 3
+                   for t_idx in 1:ntriangles(s)]
+
   local vtk_step = vtk_grid("diffusion_series_$i", points, cells)
-  vtk_step["C", VTKPointData()] = soln(t).C
+  vtk_step["C", VTKPointData()] = C_t
+  vtk_step["flux", VTKPointData()] = ϕ_out_t
+  vtk_step["avg_C", VTKCellData()] = avg_C_t
   collection_add_timestep(pvd, vtk_step, t)
 end
 vtk_save(pvd)
@@ -144,7 +201,9 @@ The resulting `diffusion_series.pvd` file can be opened in ParaView to visualize
 foreach(filter(endswith(".vtu"), readdir())) do f # hide
   rm(f) # hide
 end # hide
-rm("diffusion_series.pvd") # hide
+foreach(filter(endswith(".pvd"), readdir())) do f # hide
+  rm(f) # hide
+end # hide
 nothing # hide
 ```
 
