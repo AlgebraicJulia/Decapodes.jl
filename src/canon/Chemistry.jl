@@ -6,8 +6,8 @@ using ..Canon
 using Markdown
 
 @docapode("Brusselator"
-  ,"https://en.wikipedia.org/wiki/Brusselator"
-  ,"A model of reaction-diffusion for an oscillatory chemical system."
+  ,""
+  ,"A model of reaction-diffusion for an oscillatory chemical system [prigogine_symmetry_1968](@cite)"
   ,brusselator
   ,begin
     # Values living on vertices.
@@ -28,14 +28,15 @@ using Markdown
 end)
 
 @docapode("Gray-Scott"
-  ,"https://www.google.com"
-  ,"A model of reaction-diffusion"
+  ,""
+  ,"A model of reaction-diffusion [pearson_complex_1993](@cite)"
   ,GrayScott
   ,begin
     (U, V)::Form0
     (UV2)::Form0
     (U̇, V̇)::Form0
     (f, k, rᵤ, rᵥ)::Constant
+
     UV2 == (U .* (V .* V))
     U̇ == rᵤ * Δ(U) - UV2 + f * (1 .- U)
     V̇ == rᵥ * Δ(V) + UV2 - (f + k) .* V
