@@ -1,5 +1,6 @@
 using CombinatorialSpaces
 using ComponentArrays
+using ForwardDiff
 using LinearAlgebra
 using MLStyle
 using PreallocationTools
@@ -14,6 +15,7 @@ abstract type CUDABackend <: AbstractGenerationTarget end
 # TODO: Test that AbstractGenerationTargets are user-extendable.
 
 struct CPUTarget <: CPUBackend end
+struct CPUVectorTarget <: CPUBackend end
 struct CUDATarget <: CUDABackend end
 
 # TODO: Make it so AbstractCall code terminates into an error, not into default code
@@ -130,6 +132,10 @@ end
 # TODO: Allow user to overload these hooks with user-defined code_target
 function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CUDABackend)
   :($(c.name) = CuVector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
+end
+
+function hook_AVC_caching(c::AllocVecCall, resolved_form::Symbol, ::CPUVectorTarget)
+  :($(c.name) = Vector{$(c.T)}(undef, nparts(mesh, $(QuoteNode(resolved_form)))))
 end
 
 # TODO: This should be edited when we replace types as symbols with types as Julia types
@@ -340,8 +346,8 @@ const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
 Function that compiles the computation body. `d` is the input Decapode, `inputs` is a vector of state variables and literals,
 `inplace_dec_ops` is a collection of all DEC operator symbols that can use special
 in-place methods, `dimension` is the dimension of the problem (usually 1 or 2), `stateeltype` is the type of the state elements
-(usually Float32 or Float64), `code_target` determines what architecture the code is compiled for (either CPU or CUDA), and `preallocate`
-which is set to `true` by default and determines if intermediate results can be preallocated..
+(usually Float32, Float64, ComplexF32, or ComplexF64), `code_target` determines what architecture the code is compiled for (either CPU or CUDA), and `preallocate`
+which is set to `true` by default and determines if intermediate results can be preallocated.
 """
 function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
   alloc_vectors = Vector{AllocVecCall}()
@@ -518,6 +524,10 @@ function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCa
   return
 end
 
+function hook_PPVA_data_handle!(cache_exprs::Vector{Expr}, alloc_vec::AllocVecCall, ::CPUVectorTarget)
+  return
+end
+
 """
     convert_cs_ps_to_infer!(d::SummationDecapode)
 
@@ -535,13 +545,8 @@ end
 A combined `infer_types` and `resolve_overloads` pipeline with default DEC rules.
 """
 function infer_overload_compiler!(d::SummationDecapode, dimension::Int)
-  if dimension == 1
-    infer_types!(d, op1_inf_rules_1D, op2_inf_rules_1D)
-    resolve_overloads!(d, op1_res_rules_1D, op2_res_rules_1D)
-  elseif dimension == 2
-    infer_types!(d, op1_inf_rules_2D, op2_inf_rules_2D)
-    resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
-  end
+  infer_types!(d, dim = dimension)
+  resolve_overloads!(d, dim = dimension)
 end
 
 """    link_contracted_operators!(d::SummationDecapode, code_target::AbstractGenerationTarget)
@@ -590,18 +595,21 @@ struct UnsupportedStateeltypeException <: Exception
   type::DataType
 end
 
-Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32 or Float64")
+const SUPPORTED_STATEELTYPES = (Float32, Float64, ComplexF32, ComplexF64)
+supports_stateeltype(stateeltype::DataType) = stateeltype in SUPPORTED_STATEELTYPES
+
+Base.showerror(io::IO, e::UnsupportedStateeltypeException) = print(io, "Decapodes does not support state element types as $(e.type), only Float32, Float64, ComplexF32, or ComplexF64")
 
 const MATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₂⁻¹,
                                               :d₀, :d₁, :dual_d₀, :d̃₀, :dual_d₁, :d̃₁,
-                                              :avg₀₁])
+                                              :avg₀₁, :♭♯])
 
 const NONMATRIX_OPTIMIZABLE_DEC_OPERATORS = Set([:⋆₁⁻¹, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀])
 
 
 const NON_OPTIMIZABLE_CPU_OPERATORS = Set([:♯ᵖᵈ, :♯ᵖᵖ, :♯ᵈᵈ, :♭ᵈᵖ,
                                            :∧ᵖᵈ₁₁, :∧ᵖᵈ₀₁, :∧ᵈᵖ₁₁, :∧ᵈᵖ₁₀, :∧ᵈᵈ₁₁, :∧ᵈᵈ₁₀, :∧ᵈᵈ₀₁,
-                                           :ι₁₁, :ι₁₂, :ℒ₁, :Δᵈ₀ , :Δᵈ₁, :Δ₀⁻¹, :neg, :mag])
+                                           :ι₁₁, :ι₁₂, :ℒ₁, :Δᵈ₀ , :Δᵈ₁, :Δ₀⁻¹, :neg, :mag, :norm])
 const NON_OPTIMIZABLE_CUDA_OPERATORS = Set{Symbol}()
 
 const DEC_GEN_OPTIMIZABLE_OPERATORS = MATRIX_OPTIMIZABLE_DEC_OPERATORS ∪ NONMATRIX_OPTIMIZABLE_DEC_OPERATORS
@@ -617,48 +625,30 @@ non_optimizable(::CUDABackend) = NON_OPTIMIZABLE_CUDA_OPERATORS
 dec_operator_set(code_target::AbstractGenerationTarget) = optimizable(code_target) ∪ non_optimizable(code_target)
 
 """
-    gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
+    _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::Union{Symbol, AbstractArray}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
 
-Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol
-to operator mappings to return a simulator that can be used to solve the represented equations given initial conditions.
+Internal helper that runs the shared preprocessing and compilation pipeline
+used by both [`gensim`](@ref) and [`gen_int`](@ref).
 
-**Arguments:**
-
-`user_d`: The user passed Decapode for which simulation code will be generated. (This is not modified)
-
-`input_vars` is the collection of variables whose values are known at the beginning of the simulation. (Defaults to all state variables and literals in the Decapode)
-
-**Keyword arguments:**
-
-`dimension`: The dimension of the problem. (Defaults to `2`)(Must be `1` or `2`)
-
-`stateeltype`: The element type of the state forms. (Defaults to `Float64`)(Must be `Float32` or `Float64`)
-
-`code_target`: The intended architecture target for the generated code. (Defaults to `CPUTarget()`)(Use `CUDATarget()` for NVIDIA CUDA GPUs)
-
-`preallocate`: Enables(`true`)/disables(`false`) pre-allocated caches for intermediate computations. Some functions, such as those that determine Jacobian sparsity patterns, or perform auto-differentiation, may require this to be disabled. (Defaults to `true`)
-
-`contract`: Enables(`true`)/disables(`false`) pre-computation of matrix-matrix multiplications for chains of such operators. This feature can interfere with certain auto-differentiation methods, in which case this can be disabled. (Defaults to `true`)
-
-`multigrid`: Enables multigrid methods during code generation. If `true`, then the function produced by `gensim` will expect a `PrimalGeometricMapSeries`. (Defaults to `false`)
+The caller is expected to supply an already-prepared Decapode `d` (e.g. a
+`deepcopy` or a `downset` result). This function mutates `d` and returns a
+`NamedTuple` of compilation artifacts. When `gen_tars` is `true`, the tangent
+variable assignment code used by `gensim` is also generated. When `multigrid`
+is `true`, the returned `multigrid_defs` block contains `mesh = finest_mesh(mesh)`.
+When `nanmath_support` is `true`, the returned `nanmath_defs` block overrides
+`^`, `sqrt`, and `log` with their NaNMath equivalents.
 """
-function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, multigrid::Bool = false)
-  (dimension == 1 || dimension == 2) ||
-    throw(UnsupportedDimensionException(dimension))
-
-  (stateeltype == Float32 || stateeltype == Float64) ||
-    throw(UnsupportedStateeltypeException(stateeltype))
-
-  # Explicit copy for safety
-  d = deepcopy(user_d)
-
+function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::Union{Symbol, AbstractArray}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
   recognize_types(d)
 
   # Makes copy
   d = expand_operators(d)
 
+  # get_vars_code and set_tanvars_code read variable names/types and ∂ₜ
+  # edges that are stable after expand_operators, so they must run before
+  # the inference passes that follow.
   vars = get_vars_code(d, input_vars, stateeltype, code_target)
-  tars = set_tanvars_code(d, code_target)
+  tars = gen_tars ? set_tanvars_code(d, code_target) : nothing
 
   infer_overload_compiler!(d, dimension)
   convert_cs_ps_to_infer!(d)
@@ -668,6 +658,9 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   replace_names!(d, Pair{Symbol, Any}[], Pair{Symbol, Symbol}[(:∧₀₀ => :.*)])
   open_operators!(d, dimension = dimension)
   infer_overload_compiler!(d, dimension)
+
+  # This performs common subexpression elimination (CSE).
+  cse && bundle!(d)
 
   present_dec_ops = Set{Symbol}(dec_operator_set(code_target) ∩ (d[:op1] ∪ d[:op2]))
 
@@ -688,18 +681,82 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
   multigrid_defs = quote end
   multigrid && push!(multigrid_defs.args, :(mesh = finest_mesh(mesh)))
 
+  nanmath_defs = quote end
+  if nanmath_support
+    push!(nanmath_defs.args, :(^(x, y) = Decapodes.NaNMath.pow(x, y)))
+    push!(nanmath_defs.args, :(sqrt(x) = Decapodes.NaNMath.sqrt(x)))
+    push!(nanmath_defs.args, :(log(x) = Decapodes.NaNMath.log(x)))
+  end
+
+  return_val = @match output_vars begin
+    []     => :nothing
+    [x...] => Expr(:call, :ComponentArray, map(y -> Expr(:kw, y, y), x)...)
+    x      => Expr(:call, :ComponentArray,          Expr(:kw, x, x))
+  end
+
+  (d = d, vars = vars, tars = tars, equations = equations,
+   alloc_vectors = alloc_vectors, data = data,
+   func_defs = func_defs, contracted_defs = contracted_defs, vect_defs = vect_defs,
+   multigrid_defs = multigrid_defs, nanmath_defs = nanmath_defs, return_val = return_val)
+end
+
+"""
+    gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
+
+Generates the entire code body for the simulation function. The returned simulation function can then be combined with a mesh, provided by `CombinatorialSpaces`, and a function describing symbol
+to operator mappings to return a simulator that can be used to solve the represented equations given initial conditions.
+
+**Arguments:**
+
+`user_d`: The user passed Decapode for which simulation code will be generated. (This is not modified)
+
+`input_vars` is the collection of variables whose values are known at the beginning of the simulation. (Defaults to all state variables and literals in the Decapode)
+
+**Keyword arguments:**
+
+`dimension`: The dimension of the problem. (Defaults to `2`)(Must be `1` or `2`)
+
+`stateeltype`: The element type of the state forms. (Defaults to `Float64`)(Must be `Float32`, `Float64`, `ComplexF32`, or `ComplexF64`)
+
+`code_target`: The intended architecture target for the generated code. (Defaults to `CPUTarget()`)(Use `CUDATarget()` for NVIDIA CUDA GPUs)
+
+`preallocate`: Enables(`true`)/disables(`false`) pre-allocated caches for intermediate computations. Some functions, such as those that determine Jacobian sparsity patterns, or perform auto-differentiation, may require this to be disabled. (Defaults to `true`)
+
+`contract`: Enables(`true`)/disables(`false`) pre-computation of matrix-matrix multiplications for chains of such operators. This feature can interfere with certain auto-differentiation methods, in which case this can be disabled. (Defaults to `true`)
+
+`multigrid`: Enables multigrid methods during code generation. If `true`, then the function produced by `gensim` will expect a `PrimalGeometricMapSeries`. (Defaults to `false`)
+
+`cse`: Enables(`true`)/disables(`false`) common subexpression elimination to avoid redundant computations. (Defaults to `true`)
+
+`nanmath_support`: Enables(`true`)/disables(`false`) NaNMath mode. When enabled, the generated code will locally override `^`, `sqrt`, and `log` with their NaNMath equivalents (`NaNMath.pow`, `NaNMath.sqrt`, `NaNMath.log`). This is useful during calibration or optimization, where non-physical parameter sets might cause out-of-domain errors. With NaNMath, such calls return `NaN` instead of throwing errors, allowing optimization routines to reject those parameters and continue. (Defaults to `false`)
+"""
+function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, multigrid::Bool = false, cse::Bool = true, nanmath_support::Bool = false)
+  (dimension == 1 || dimension == 2) ||
+    throw(UnsupportedDimensionException(dimension))
+
+  supports_stateeltype(stateeltype) ||
+    throw(UnsupportedStateeltypeException(stateeltype))
+
+  # Explicit copy for safety
+  d = deepcopy(user_d)
+
+  c = _compile_decapode(d, input_vars, [];
+    dimension, stateeltype, code_target, preallocate, contract, cse,
+    gen_tars = true, multigrid, nanmath_support)
+
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
-      $func_defs
-      $contracted_defs
-      $multigrid_defs
-      $vect_defs
+      $(c.nanmath_defs)
+      $(c.func_defs)
+      $(c.contracted_defs)
+      $(c.multigrid_defs)
+      $(c.vect_defs)
       f(__du__, __u__, __p__, __t__) = begin
-        $vars
-        $data
-        $(equations...)
-        $tars
-        return nothing
+        $(c.vars)
+        $(c.data)
+        $(c.equations...)
+        $(c.tars)
+        return $(c.return_val)
       end;
     end
   end
@@ -714,6 +771,95 @@ gensim(d::SummationDecapode; kwargs...) =
   gensim(d, gather_inputs(d); kwargs...)
 
 evalsim(args...; kwargs...) = eval(gensim(args...; kwargs...))
+
+"""
+    gen_int(user_d::SummationDecapode, target_vars::Symbol, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType=Float64, code_target::AbstractGenerationTarget=CPUTarget(), preallocate::Bool=true, contract::Bool=true, cse::Bool=true)
+
+Generate code to compute a specific intermediate variable from a Decapode.
+
+Given a Decapode and the name of a target variable, this function uses
+`downset` from DiagrammaticEquations to extract the sub-Decapode
+containing only the operations needed to compute that variable from the state
+variables. It then passes that sub-Decapode through the standard compilation
+pipeline via the shared `_compile_decapode` helper.
+
+The returned expression, when evaluated, produces a function with the signature:
+`(mesh, operators, hodge) -> (__u__, __p__, __t__) -> value`
+
+The inner function takes a `ComponentArray` `__u__` (e.g. from an ODE solution `soln(t)`),
+a parameters named tuple `__p__`, and a time value `__t__`, and returns the computed value of `target_vars`.
+
+# Example (Brusselator)
+
+```julia
+Brusselator = @decapode begin
+  (U, V)::Form0
+  U2V::Form0
+  (α)::Constant
+  F::Parameter
+  U2V == (U .* U) .* V
+  ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+  ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+end
+
+# Generate and evaluate a function to compute U2V from the ODE solution:
+get_U2V = eval(gen_int(Brusselator, :U2V))
+compute_U2V = get_U2V(sd, generate, DiagonalHodge())
+
+# Now compute U2V at any time from the ODE solution:
+U2V_at_t = compute_U2V(soln(t), constants_and_parameters, t)
+```
+
+The downset computation can be skipped if `compute_downset` is `false` (defaults to `true`).
+
+See also: [`gensim`](@ref), [`eval_int`](@ref).
+"""
+function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractArray{Symbol}}, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, cse::Bool = true, compute_downset=true)
+  (dimension == 1 || dimension == 2) ||
+    throw(UnsupportedDimensionException(dimension))
+
+  supports_stateeltype(stateeltype) ||
+    throw(UnsupportedStateeltypeException(stateeltype))
+
+  # Compute the downset, or do an explicit deep copy for safety.
+  d = compute_downset ?
+    downset(user_d, target_vars) :
+    deepcopy(user_d)
+
+  sub_input_vars = filter(v -> v in d[:name], input_vars)
+
+  c = _compile_decapode(d, sub_input_vars, target_vars;
+    dimension, stateeltype, code_target, preallocate, contract, cse)
+
+  quote
+    (mesh, operators, hodge=GeometricHodge()) -> begin
+      $(c.func_defs)
+      $(c.contracted_defs)
+      $(c.vect_defs)
+      f(__u__, __p__, __t__) = begin
+        $(c.vars)
+        $(c.data)
+        $(c.equations...)
+        return $(c.return_val)
+      end;
+    end
+  end
+end
+
+gen_int(d::SummationDecapode, target_var::Symbol; kwargs...) =
+  gen_int(d, target_var, gather_inputs(d); kwargs...)
+
+gen_int(d::SummationDecapode, target_vars::AbstractArray{Symbol}; kwargs...) =
+  gen_int(d, target_vars, gather_inputs(d); kwargs...)
+
+"""
+    eval_int(args...; kwargs...)
+
+Convenience wrapper that evaluates the code generated by [`gen_int`](@ref).
+
+See also: [`gen_int`](@ref).
+"""
+eval_int(args...; kwargs...) = eval(gen_int(args...; kwargs...))
 
 """
 function find_unreachable_tvars(d)

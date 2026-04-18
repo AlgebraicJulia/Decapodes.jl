@@ -1,9 +1,9 @@
 # ASCII and Vector Calculus Operators
 
-```@setup INFO
-include(joinpath(Base.@__DIR__, "..", "docinfo.jl"))
-info = DocInfo.Info()
-```
+Decapodes is able to present equations which closely resemble their
+representation in mathematics because of Julia's native Unicode support. Most
+editors (such as Vim or Emacs) or IDEs (such as VSCode) support Julia plug-ins
+with built-in support for typing Unicode.
 
 Some users may have trouble entering unicode characters like ⋆ or ∂ in their development environment. So, we offer the following ASCII equivalents. Further, some users may like to use vector calculus symbols instead of exterior calculus symbols where possible. We offer support for such symbols as well.
 
@@ -31,6 +31,3 @@ Some users may have trouble entering unicode characters like ⋆ or ∂ in their
 | ∇x       | ∘(d,⋆)           | \nabla \<tab\> x            |
 | adv(X,Y) | ∘(⋆,d,⋆)(X∧Y)    | adv                         |
 
-```@example INFO
-DocInfo.get_report(info) # hide
-```

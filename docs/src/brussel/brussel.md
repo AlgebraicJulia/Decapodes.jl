@@ -1,6 +1,6 @@
 # Brusselator
 
-This Brusselator example is adapted from [MethodOfLines.jl](https://docs.sciml.ai/MethodOfLines/stable/tutorials/brusselator/#brusselator)'s page on the same topic. The [Brusselator](https://en.wikipedia.org/wiki/Brusselator) is a autocatalytic chemical reaction that takes place between two reactants `U` and `V`.
+This Brusselator example is adapted from [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/advanced_ode_example/)'s page on the same topic. The [Brusselator](https://en.wikipedia.org/wiki/Brusselator) is a autocatalytic chemical reaction that takes place between two reactants `U` and `V`.
 
 ```@setup INFO
 include(joinpath(Base.@__DIR__, ".." , "..", "docinfo.jl"))
@@ -102,6 +102,8 @@ V = map(sd[:point]) do (x,_)
   27 * (x *(1-x))^(3/2)
 end
 
+B = 1.0
+
 fig = Figure() 
 ax = CairoMakie.Axis(fig[1,1], aspect=1, title = "Initial value of U") 
 msh = CairoMakie.mesh!(ax, s, color=U, colormap=:jet, colorrange=extrema(U)) 
@@ -122,7 +124,6 @@ F₂ = zeros(nv(sd))
 
 constants_and_parameters = (
   α = 0.001,
-  B = 1.0, # Boundary value
   F = t -> t ≥ 1.1 ? F₁ : F₂)
 nothing # hide
 ```
@@ -168,7 +169,7 @@ We generate our simulation code and store the function in `fₘ` and then run ou
 sim = evalsim(Brusselator)
 fₘ = sim(sd, generate, DiagonalHodge())
 
-u₀ = ComponentArray(U=U, V=V)
+u₀ = ComponentArray(U=U, V=V, B=B)
 
 tₑ = 11.5
 

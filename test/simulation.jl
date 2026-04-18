@@ -8,12 +8,18 @@ using Distributions
 using GeometryBasics: Point2, Point3
 using LinearAlgebra
 using MLStyle
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
+using OrdinaryDiffEqPRK
 using Test
 using Random
 Point3D = Point3{Float64}
 
 import Decapodes: default_dec_matrix_generate
+
+# Remove LineNumberNodes from an AST args vector.
+filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
+# Extract the non-LineNumberNode body blocks from a gensim-generated Expr.
+gensim_body_blocks(e::Expr) = filter_lnn(e.args[2].args[2].args)
 
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
@@ -313,8 +319,8 @@ end
 
     Tₛ̇ == (ASR - OLR + HT) ./ C
   end
-  infer_types!(budyko_sellers, op1_inf_rules_1D, op2_inf_rules_1D)
-  resolve_overloads!(budyko_sellers, op1_res_rules_1D, op2_res_rules_1D)
+  infer_types!(budyko_sellers, dim=1)
+  resolve_overloads!(budyko_sellers, dim=1)
 
   # This test ensures that the next one does not break, since it depends on
   # arbitrary internal variable naming.
@@ -327,8 +333,9 @@ end
 @testset "Gensim Transformations" begin
 
   function count_contractions(e::Expr)
-    block = e.args[2].args[2].args[5]
-    length(block.args) - 1
+    blocks = gensim_body_blocks(e)
+    contracted_block = blocks[3]
+    length(contracted_block.args) - 1
   end
 
   count_contractions(d::SummationDecapode) = count_contractions(gensim(d))
@@ -380,7 +387,8 @@ end
   @test 0 == count_contractions(gensim(single_contract; contract=false))
 
   f = gensim(single_contract)
-  @test f.args[2].args[2].args[5].args[[2,4]] == [
+  contracted_block = gensim_body_blocks(f)[3]
+  @test contracted_block.args[[2,4]] == [
     :(var"GenSim-M_GenSim-ConMat_0" = var"GenSim-M_d₁" * var"GenSim-M_d₀"),
     :(var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_⋆₀")]
 
@@ -440,20 +448,30 @@ end
   end
   @test 4 == count_contractions(contract_with_op2)
 
-  for prealloc in [false, true]
-    let sim = eval(gensim(contract_with_op2, preallocate = prealloc))
-      f = sim(earth, default_dec_generate)
-      A = 3 * ones(nv(earth))
-      E_dec = ones(nv(earth))
-      u = ComponentArray(A=A, E=E_dec)
-      du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
-      constants_and_parameters = ()
-      f(du, u, constants_and_parameters, 0)
+  sim = eval(gensim(contract_with_op2, preallocate = false))
+  f = sim(earth, default_dec_generate)
+  A = 3 * ones(nv(earth))
+  E_dec = ones(nv(earth))
+  u = ComponentArray(A=A, E=E_dec)
+  du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
 
-      @test du.A == zeros(ntriangles(earth))
-      @test du.E ≈ 9 * ones(nv(earth))
-    end
-  end
+  @test du.A == zeros(ntriangles(earth))
+  @test du.E ≈ 9 * ones(nv(earth))
+
+  sim = eval(gensim(contract_with_op2, preallocate = true))
+  f = sim(earth, default_dec_generate)
+  A = 3 * ones(nv(earth))
+  E_dec = ones(nv(earth))
+  u = ComponentArray(A=A, E=E_dec)
+  du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test du.A == zeros(ntriangles(earth))
+  @test du.E ≈ 9 * ones(nv(earth))
+
 
   # Testing contract lines beyond the initial value
   later_contraction = @decapode begin
@@ -494,7 +512,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == CombinatorialSpaces.d(0, earth) * A
+  @test du.A == CombinatorialSpaces.DiscreteExteriorCalculus.d(0, earth) * A
 
   # Testing no contraction of unallowed operators
   no_unallowed = @decapode begin
@@ -522,7 +540,7 @@ end
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == CombinatorialSpaces.d(0, earth) * 20 * A
+  @test du.A == CombinatorialSpaces.DiscreteExteriorCalculus.d(0, earth) * 20 * A
 
   # Testing wedge 01 operators function
   wedges01 = @decapode begin
@@ -540,21 +558,31 @@ end
     F == A ∧ (C ∧ B)
   end
 
-  for prealloc in [false, true]
-    let sim = eval(gensim(wedges01, preallocate=prealloc))
-      f = sim(earth, default_dec_generate)
-      A = ones(nv(earth))
-      B = 2 * ones(nv(earth))
-      C = 3 * ones(ne(earth))
-      u = ComponentArray(A=A, B=B, C=C)
-      du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
+  sim = eval(gensim(wedges01, preallocate=false))
+  f = sim(earth, default_dec_generate)
+  A = ones(nv(earth))
+  B = 2 * ones(nv(earth))
+  C = 3 * ones(ne(earth))
+  u = ComponentArray(A=A, B=B, C=C)
+  du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
 
-      constants_and_parameters = ()
-      f(du, u, constants_and_parameters, 0)
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
 
-      @test du.A == du.B == du.C
-    end
-  end
+  @test du.A == du.B == du.C
+
+  sim = eval(gensim(wedges01, preallocate=true))
+  f = sim(earth, default_dec_generate)
+  A = ones(nv(earth))
+  B = 2 * ones(nv(earth))
+  C = 3 * ones(ne(earth))
+  u = ComponentArray(A=A, B=B, C=C)
+  du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
+
+  constants_and_parameters = ()
+  f(du, u, constants_and_parameters, 0)
+
+  @test du.A == du.B == du.C
 
   # Testing wedge 11 operators function
   wedges11 = @decapode begin
@@ -653,8 +681,6 @@ end
 
 end
 
-filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
-
 @testset "1-D Mat Generation" begin
   Point2D = Point2{Float64}
   function generate_dual_mesh(s::HasDeltaSet1D)
@@ -674,11 +700,12 @@ filter_lnn(arr::AbstractVector) = filter(x -> !(x isa LineNumberNode), arr)
     A::DualForm1
 
     B == ∂ₜ(A)
-    B == ⋆(A)
+    B == ⋆(⋆(A))
   end
   g = gensim(DiagonalInvHodge1)
-  @test g.args[2].args[2].args[3].args[2].args[2].args[3].value == :⋆₁⁻¹
-  @test length(filter_lnn(g.args[2].args[2].args[3].args)) == 1
+  func_block = gensim_body_blocks(g)[2]
+  @test func_block.args[2].args[2].args[3].value == :⋆₁⁻¹
+  @test length(filter_lnn(func_block.args)) == 2
   sim = eval(g)
 
   # TODO: Error is being thrown here
@@ -728,14 +755,17 @@ end
   sim_JKO = evalsim(Jordan_Kinderlehrer_Otto)
   @test sim_JKO(d_rect, generate, DiagonalHodge()) isa Any
 
-  Schoedinger = @decapode begin
+  Schroedinger = @decapode begin
     (i, h, m)::Constant
     V::Parameter
     Ψ::Form0
     ∂ₜ(Ψ) == (((-1 * h ^ 2) / (2m)) * Δ(Ψ) + V * Ψ) / (i * h)
   end
-  sim_Schoedinger = evalsim(Schoedinger)
-  @test sim_Schoedinger(d_rect, generate, DiagonalHodge()) isa Any
+  sim_Schroedinger = evalsim(Schroedinger)
+  @test sim_Schroedinger(d_rect, generate, DiagonalHodge()) isa Any
+
+  sim_Schroedinger_complex = evalsim(Schroedinger; stateeltype=ComplexF64, preallocate=false)
+  @test sim_Schroedinger_complex(d_rect, generate, DiagonalHodge()) isa Any
 
   Gray_Scott = @decapode begin
     (U, V)::Form0
@@ -802,7 +832,7 @@ end
 
   function halfar_generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
-      :mag => x -> norm.(x)
+      :norm => x -> norm.(x)
       x => error("Unmatched operator $my_symbol")
     end
     return op
@@ -811,6 +841,14 @@ end
   sim_Halfar = evalsim(halfar)
   @test sim_Halfar(d_rect, halfar_generate, DiagonalHodge()) isa Any
 
+  # Test that CSE eliminates:
+  # 1. Allocation of diff cache.
+  # 2. get_tmp on that diff cache.
+  # 3. Redundant d computation.
+  halfar_cse    = countlines(IOBuffer(string(gensim(halfar))))
+  halfar_no_cse = countlines(IOBuffer(string(gensim(halfar; cse=false))))
+  @test halfar_cse == halfar_no_cse - 3
+  
   # Test for Poisson
   eq11_inviscid_poisson = @decapode begin
     d𝐮::DualForm2
@@ -891,7 +929,7 @@ end
   function halmo_generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin
       :σ => x -> nothing
-      :mag => x -> nothing
+      :norm => x -> nothing
       _ => error("Unmatched operator $my_symbol")
     end
     return op
@@ -947,20 +985,22 @@ end
 @testset "Allocations" begin
 # Test the heat equation Decapode has expected memory allocation.
 
-for prealloc in [false, true]
   Heat = @decapode begin
     C::Form0
     D::Constant
     ∂ₜ(C) == D*Δ(C)
   end
-  sim = eval(gensim(Heat, preallocate=prealloc))
+
   s = loadmesh(Icosphere(1))
   sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
   subdivide_duals!(sd, Circumcenter())
-  f = sim(sd,nothing)
   u₀ = ComponentArray(C = map(x -> x[3], point(sd)))
   p = (D=1e-1,)
   du = copy(u₀)
+
+  # Allocating
+  sim = eval(gensim(Heat, preallocate=false))
+  f = sim(sd,nothing)
   # The first call to the function makes many allocations.
   _ = @allocations f(du, u₀, p, (0,1.0)) # 55259
   _ = @allocated f(du, u₀, p, (0,1.0)) # 3962696
@@ -968,9 +1008,158 @@ for prealloc in [false, true]
   nallocs = @allocations f(du, u₀, p, (0,1.0))
   bytes = @allocated f(du, u₀, p, (0,1.0))
 
-  @test (nallocs, bytes) <= (prealloc ? (6, 80) : (6, 400))
+  @test (nallocs, bytes) <= (7, 400)
+
+  # Not allocating
+  Heat = @decapode begin
+    C::Form0
+    D::Constant
+    ∂ₜ(C) == D*Δ(C)
+  end
+
+  sim = eval(gensim(Heat, preallocate=true))
+  f = sim(sd,nothing)
+  # The first call to the function makes many allocations.
+  _ = @allocations f(du, u₀, p, (0,1.0)) # 55259
+  _ = @allocated f(du, u₀, p, (0,1.0)) # 3962696
+  # Test that subsequent calls make a reasonable amount.
+  nallocs = @allocations f(du, u₀, p, (0,1.0))
+  bytes = @allocated f(du, u₀, p, (0,1.0))
+
+  @test (nallocs, bytes) <= (6, 80)
+
 end
 
+@testset "Ensemble Simulations" begin
+  # Define Model
+  Heat = @decapode begin
+    C::Form0
+    D::Constant
+    ∂ₜ(C) == D*Δ(C)
+  end
+  # Define Domain
+  function circle(n, c)
+    s = EmbeddedDeltaSet1D{Bool, Point2D}()
+    map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
+      add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+    end
+    add_edges!(s, 1:(nv(s)-1), 2:nv(s))
+    add_edge!(s, nv(s), 1)
+    sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+    subdivide_duals!(sd, Circumcenter())
+    s,sd
+  end
+  s,sd = circle(7, 500)
+  # Create initial data.
+  Csin = map(p -> sin(p[1]), point(s))
+  Ccos = map(p -> cos(p[1]), point(s))
+  C = stack([Csin, Ccos])
+  u₀ = ComponentArray(C=Csin,)
+  constants_and_parameters = (D = 0.001,)
+  # Run
+  function generate(sd, my_symbol; hodge=GeometricHodge()) end
+  sim = eval(gensim(Heat,dimension=1))
+  fₘ = sim(sd, nothing)
+  tₑ = 1.15
+  ode_prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+  ens_prob = EnsembleProblem(ode_prob,
+    prob_func = (prob, i, repeat) ->
+      remake(prob, u0=ComponentArray(C=C[:,i])))
+  soln = solve(ens_prob, Tsit5(); trajectories=2)
+  @test all(soln.u[1].u[1] .== Csin)
+  @test all(soln.u[1].u[1] .!= Ccos)
+  @test all(soln.u[2].u[1] .!= Csin)
+  @test all(soln.u[2].u[1] .== Ccos)
+end
+
+@testset "Parallel Solvers" begin
+  # Test that parallel solvers like KuttaPRK2p5 can be used without error.
+  # In the past, the error "@threads :static cannot be used concurrently or
+  # nested" was encountered when trying to use these solvers.
+  Heat = @decapode begin
+    C::Form0
+    D::Constant
+    ∂ₜ(C) == D*Δ(C)
+  end
+  function circle(n, c)
+    s = EmbeddedDeltaSet1D{Bool, Point2D}()
+    map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
+      add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+    end
+    add_edges!(s, 1:(nv(s)-1), 2:nv(s))
+    add_edge!(s, nv(s), 1)
+    sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+    subdivide_duals!(sd, Circumcenter())
+    s,sd
+  end
+  s,sd = circle(7, 500)
+  Csin = map(p -> sin(p[1]), point(s))
+  u₀ = ComponentArray(C=Csin,)
+  constants_and_parameters = (D = 0.001,)
+  
+  # Observe that preallocate is turned off to avoid FixedSizeDiffCache:
+  sim = eval(gensim(Heat, dimension=1, preallocate=false))
+  fₘ = sim(sd, nothing) # No custom operators needed
+  tₑ = 1.15
+  prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+  soln = solve(prob, KuttaPRK2p5(), dt=1e-2)
+  @test soln.u[1] ≈ u₀
+
+  # Observe that FixedSizeDiffCaches are preallocated:
+  sim = eval(gensim(Heat, dimension=1, preallocate=true))
+  fₘ = sim(sd, nothing) # No custom operators needed
+  tₑ = 1.15
+  prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+  soln = solve(prob, KuttaPRK2p5(), dt=1e-2)
+  @test soln.u[1] ≈ u₀
+end
+
+@testset "CPUVectorTarget Schroedinger" begin
+  # Test that CPUVectorTarget (plain Julia arrays) works with complex-valued
+  # state using the Schroedinger equation.
+  Schroedinger = @decapode begin
+    (i, h, m)::Constant
+    V::Parameter
+    Ψ::Form0
+    ∂ₜ(Ψ) == (((-1 * h ^ 2) / (2m)) * Δ(Ψ) + V * Ψ) / (i * h)
+  end
+
+  function circle(n, c)
+    s = EmbeddedDeltaSet1D{Bool, Point2D}()
+    map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
+      add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+    end
+    add_edges!(s, 1:(nv(s)-1), 2:nv(s))
+    add_edge!(s, nv(s), 1)
+    sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+    subdivide_duals!(sd, Circumcenter())
+    s, sd
+  end
+  s, sd = circle(7, 1)
+
+  sim = evalsim(Schroedinger, dimension=1, stateeltype=ComplexF64, code_target=CPUVectorTarget())
+  fₘ = sim(sd, nothing)
+
+  x_coords = [0, accumulate(+, sd[:length])[1:end-1]...]
+  x₀, σ, k = 0.5, 0.08, 35.0
+  Ψ = map(x_coords) do x
+    exp(-((x - x₀)^2) / (2σ^2)) * cis(k * x)
+  end
+
+  u₀ = ComponentArray(Ψ=Ψ)
+  constants_and_parameters = (
+    i = im,
+    V = t -> zeros(ComplexF64, nv(sd)),
+    h = 6.5e-16,
+    m = 5.49e-4,
+  )
+
+  tₑ = 1e10
+  prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
+  soln = solve(prob, Tsit5(), dtmax=1e6)
+  # Verify that the squared modulus is approximately conserved.
+  ∫squared_modulus(x) = sum(abs2.(x))
+  @test ∫squared_modulus(soln(0.0).Ψ) ≈ ∫squared_modulus(soln(tₑ).Ψ) rtol=1e-4
 end
 
 @testset "Large Summations" begin
@@ -1011,4 +1200,121 @@ needle = "A00̇ .= sum([A01, A02, A03, A04, A05, A06, A07, A08, A09, A10, A11, A
 haystack = string(gensim(LargeSum))
 @test occursin(needle, haystack)
 
+end
+
+# End-to-end test of gen_int with mesh and actual computation
+@testset "gen_int End-to-End" begin
+
+# Brusselator example: compute the intermediate variable U2V from solution data
+Brusselator = @decapode begin
+  (U, V)::Form0
+  U2V::Form0
+  (U̇, V̇)::Form0
+  (α)::Constant
+  F::Parameter
+  U2V == (U .* U) .* V
+  U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+  V̇ == (3.4 * U) - U2V + (α * Δ(V))
+  ∂ₜ(U) == U̇
+  ∂ₜ(V) == V̇
+end
+
+s = triangulated_grid(1, 1, 0.01, 0.01, Point3D)
+sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
+subdivide_duals!(sd, Circumcenter())
+
+# Create test data
+U_vals = map(sd[:point]) do (x, y)
+  22 * (y * (1 - y))^(3/2)
+end
+V_vals = map(sd[:point]) do (x, y)
+  27 * (x * (1 - x))^(3/2)
+end
+
+u_test = ComponentArray(U=U_vals, V=V_vals)
+F_test = zeros(nv(sd))
+constants_and_parameters = (α = 0.001, F = t -> F_test)
+
+# Generate the int for U2V
+compute_U2V_factory = eval_int(Brusselator, :U2V)
+compute_U2V = compute_U2V_factory(sd, nothing, DiagonalHodge())
+
+U2V_result = compute_U2V(u_test, constants_and_parameters, 0.0)
+U2V_expected = (U_vals .* U_vals) .* V_vals
+@test U2V_result ≈ U2V_expected
+
+# Generate the downset as a pre-processing step.
+compute_U2V_factory = eval_int(downset(Brusselator, :U2V), :U2V, compute_downset=false)
+compute_U2V = compute_U2V_factory(sd, nothing, DiagonalHodge())
+U2V_result = compute_U2V(u_test, constants_and_parameters, 0.0)
+@test U2V_result ≈ U2V_expected
+
+# Compute all equations, but only return U2V.
+compute_U2V_factory = eval_int(Brusselator, :U2V, compute_downset=false)
+compute_U2V = compute_U2V_factory(sd, nothing, DiagonalHodge())
+U2V_result = compute_U2V(u_test, constants_and_parameters, 0.0)
+@test U2V_result ≈ U2V_expected
+
+# Test intermediate compilation with multiple variables.
+d = @decapode begin
+  (n,w)::DualForm0
+  dX::Form1
+  (a,ν,m)::Constant
+  Lw::DualForm0
+  Δn::DualForm0
+  Lw == L(dX, w)
+  Δn == Δ(n)
+  ∂ₜ(w) == a - w - w * n^2 + ν * Lw
+  ∂ₜ(n) == w * n^2 - m*n + Δn
+end
+sim_code = gensim(d, dimension=1)
+sim = eval(sim_code)
+
+function circle(n, c)
+  s = EmbeddedDeltaSet1D{Bool, Point2D}()
+  map(range(0, 2pi - (pi/(2^(n-1))); step=pi/(2^(n-1)))) do t
+    add_vertex!(s, point=Point2D(cos(t),sin(t))*(c/2pi))
+  end
+  add_edges!(s, 1:(nv(s)-1), 2:nv(s))
+  add_edge!(s, nv(s), 1)
+  sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
+  subdivide_duals!(sd, Circumcenter())
+  s,sd
+end
+mesh,dualmesh = circle(9, 500)
+
+lap_mat = dec_hodge_star(1,dualmesh) * dec_differential(0,dualmesh) * dec_inv_hodge_star(0,dualmesh) * dec_dual_derivative(0,dualmesh)
+function generate(sd, my_symbol; hodge=DiagonalHodge())
+  op = @match my_symbol begin
+    :Δ => x -> begin
+      lap_mat * x
+    end
+    _ => default_dec_matrix_generate(sd, my_symbol, hodge)
+  end
+  return (args...) -> op(args...)
+end
+fₘ = sim(dualmesh, generate, DiagonalHodge())
+
+n_dist = Normal(pi)
+n = [pdf(n_dist, t)*(√(2pi))*7.2 + 0.08 - 5e-2 for t in range(0,2pi; length=ne(dualmesh))]
+
+w_dist = Normal(pi, 20)
+w = [pdf(w_dist, t) for t in range(0,2pi; length=ne(dualmesh))]
+
+dX = dualmesh[:length]
+
+u₀ = ComponentArray(n = n, w = w, dX = dX)
+
+cs_ps = (m = 0.45,
+         a = 0.94,
+         ν = 182.5)
+
+tₑ = 300.0
+problem = ODEProblem(fₘ, u₀, (0.0, tₑ), cs_ps)
+solution = solve(problem, Tsit5(), saveat=0.1)
+
+int_forms_code = gen_int(d, [:Lw, :Δn], dimension=1)
+int_forms = eval(int_forms_code)
+g = int_forms(dualmesh, generate, DiagonalHodge())
+@test g(solution(150.0), cs_ps, 150.0) isa ComponentArray
 end

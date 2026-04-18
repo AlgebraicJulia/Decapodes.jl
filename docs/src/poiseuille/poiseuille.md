@@ -45,8 +45,8 @@ Poise = @decapode begin
 end
 
 Poise = expand_operators(Poise)
-infer_types!(Poise, op1_inf_rules_1D, op2_inf_rules_1D)
-resolve_overloads!(Poise, op1_res_rules_1D, op2_res_rules_1D)
+infer_types!(Poise, dim=1)
+resolve_overloads!(Poise, dim=1)
 to_graphviz(Poise)
 ```
 
@@ -208,8 +208,8 @@ Poise = @decapode begin
 end
 
 Poise = expand_operators(Poise)
-infer_types!(Poise, op1_inf_rules_1D, op2_inf_rules_1D)
-resolve_overloads!(Poise, op1_res_rules_1D, op2_res_rules_1D)
+infer_types!(Poise, dim=1)
+resolve_overloads!(Poise, dim=1)
 to_graphviz(Poise)
 ```
 

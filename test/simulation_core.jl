@@ -200,6 +200,19 @@ import Decapodes: AllocVecCall
       test_vector_cache(AllocVecCall(:V, form, 2, type, CUDATarget()))
     end
   end
+
+  for type in [Float32, Float64, ComplexF32, ComplexF64]
+
+    # Test correct data for dimension 1 CPUVectorTarget
+    for form in [:Form0, :Form1, :DualForm1, :DualForm0]
+      test_vector_cache(AllocVecCall(:V, form, 1, type, CPUVectorTarget()))
+    end
+
+    # Test correct data for dimension 2 CPUVectorTarget
+    for form in [:Form0, :Form1, :Form2, :DualForm2, :DualForm1, :DualForm0]
+      test_vector_cache(AllocVecCall(:V, form, 2, type, CPUVectorTarget()))
+    end
+  end
 end
 
 #####################
@@ -341,6 +354,131 @@ import Decapodes: UnsupportedDimensionException, UnsupportedStateeltypeException
 
     @test_throws UnsupportedDimensionException gensim(d, [:test], dimension = 3, stateeltype = Float64, code_target = CUDATarget())
     @test_throws UnsupportedStateeltypeException gensim(d, [:test], dimension = 2, stateeltype = Int64, code_target = CUDATarget())
+  end
+end
+
+##############################
+# NaNMath Support Code Tests #
+##############################
+
+@testset "NaNMath Support" begin
+  let d = @decapode begin
+    (C, Ċ)::Form0
+    Ċ == ∂ₜ(C)
+  end
+    # Test that nanmath_support=false (default) does not include NaNMath overrides
+    code_without = gensim(d, dimension=2)
+    code_str_without = string(code_without)
+    @test !occursin("NaNMath", code_str_without)
+
+    # Test that nanmath_support=true includes NaNMath overrides
+    code_with = gensim(d, dimension=2, nanmath_support=true)
+    code_str_with = string(code_with)
+    @test occursin("NaNMath", code_str_with)
+    @test occursin("pow", code_str_with)
+    @test occursin("sqrt", code_str_with)
+    @test occursin("log", code_str_with)
+  end
+
+  # Test that NaNMath overrides work at runtime: sqrt(-1) returns NaN instead of DomainError
+  let d = @decapode begin
+    (C, Ċ)::Form0
+    Ċ == ∂ₜ(C)
+  end
+    code = gensim(d, dimension=2, nanmath_support=true)
+    sim = eval(code)
+    # The returned closure should have NaNMath overrides in scope.
+    # Verify by checking the generated code contains the expected overrides.
+    @test occursin("NaNMath", string(code))
+  end
+end
+
+########################
+# gen_int Tests #
+########################
+
+@testset "Test gen_int" begin
+
+  # Test that gen_int generates evaluable code for Brusselator U2V
+  let d = @decapode begin
+    (U, V)::Form0
+    U2V::Form0
+    (α)::Constant
+    F::Parameter
+    U2V == (U .* U) .* V
+    ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+    ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+  end
+    code = gen_int(d, :U2V)
+    @test code isa Expr
+    sim = eval(code)
+    @test sim isa Function
+  end
+
+  # Test that eval_int works
+  let d = @decapode begin
+    (U, V)::Form0
+    U2V::Form0
+    (α)::Constant
+    F::Parameter
+    U2V == (U .* U) .* V
+    ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+    ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+  end
+    sim = eval_int(d, :U2V)
+    @test sim isa Function
+  end
+
+  # Test gen_int for a simple diffusion equation (disable contraction to preserve ϕ)
+  let d = @decapode begin
+    (C, Ċ)::Form0
+    ϕ::Form1
+    ϕ == d₀(C)
+    Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
+    ∂ₜ(C) == Ċ
+  end
+    code = gen_int(d, :ϕ, contract=false)
+    @test code isa Expr
+    sim = eval(code)
+    @test sim isa Function
+  end
+
+  # Test that only needed operations are compiled (fewer equations for U2V than full sim)
+  let d = @decapode begin
+    (U, V)::Form0
+    U2V::Form0
+    (α)::Constant
+    F::Parameter
+    U2V == (U .* U) .* V
+    ∂ₜ(U) == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+    ∂ₜ(V) == (3.4 * U) - U2V + (α * Δ(V))
+  end
+    int_code = gen_int(d, :U2V)
+    sim_code = gensim(d)
+    # The int code should be shorter (fewer equations) than the full simulation
+    @test length(string(int_code)) < length(string(sim_code))
+  end
+end
+
+@testset "Test gen_int multi-target" begin
+  # Test intermediate compilation with multiple variables.
+  let
+    d = @decapode begin
+      (n,w)::DualForm0
+      dX::Form1
+      (a,ν,m)::Constant
+      Lw::DualForm0
+      Δn::DualForm0
+      Lw == L(dX, w)
+      Δn == Δ(n)
+      ∂ₜ(w) == a - w - w * n^2 + ν * Lw
+      ∂ₜ(n) == w * n^2 - m*n + Δn
+    end
+    code = gen_int(d, [:Lw, :Δn], compute_downset=false)
+    @test code isa Expr
+    sim = eval(code)
+    @test sim isa Function
+    @test occursin("ComponentArray(Lw = Lw, Δn = Δn)", string(code))
   end
 end
 

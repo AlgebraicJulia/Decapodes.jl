@@ -56,8 +56,10 @@ makedocs(
     "Overview" => "overview/overview.md",
     "Glacial Flow" => "ice_dynamics/ice_dynamics.md",
     "Concepts" => Any[
+        "ASCII and Unicode Operators" => "concepts/ascii.md",
         "Equations" => "concepts/equations.md",
         "Composition" => "concepts/composition.md",
+        "Variable Types" => "concepts/deca_types.md",
         "Meshes" => "concepts/meshes.md",
         "Custom Operators" => "concepts/generate.md",
     ],
@@ -67,6 +69,7 @@ makedocs(
         "Cahn-Hilliard" => "ch/cahn-hilliard.md",
         "Brusselator" => "brussel/brussel.md",
         "Klausmeier" => "klausmeier/klausmeier.md",
+        "Porous Convection" => "pconv/porous_convection.md",
         "CISM v2.1" => "cism/cism.md",
         "Grigoriev Ice Cap" => "grigoriev/grigoriev.md", # Requires ice_dynamics
         "Budyko-Sellers-Halfar" => "bsh/budyko_sellers_halfar.md", # Requires ice_dynamics
@@ -81,9 +84,9 @@ makedocs(
         "Oncology" => "examples/oncology/tumor_proliferation_invasion.md",
         "MHD" => "examples/mhd.md", # TODO convert original file to a docs page
     ],
+    "Calibration" => "calibrate/calibration.md",
     "Misc Features" => "bc/bc_debug.md", # Requires overview
     "FAQ" => "faq/faq.md",
-    "ASCII Operators" => "ascii.md",
     "Canonical Models" => "canon.md",
     "Library Reference" => "api.md"
   ],
@@ -94,4 +97,6 @@ deploydocs(
   target = "build",
   repo   = "github.com/AlgebraicJulia/Decapodes.jl.git",
   branch = "gh-pages",
+  push_preview = true,
+  deploy_config = Documenter.Buildkite(),
   devbranch = "main")
