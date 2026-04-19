@@ -18,6 +18,8 @@ using Decapodes
 using ComponentArrays
 using CoordRefSystems
 using CairoMakie
+using GeoMakie
+using GeometryBasics: Point2f, TriangleFace
 using LinearAlgebra
 using MLStyle
 using NearestNeighbors
@@ -329,6 +331,63 @@ update_cam!(ax.scene, Vec3f(0,0,0.8), Vec3f(0,0,0), Vec3f(0, 1, 1))
 msh = mesh!(ax, s_plots, color=soln.u[end].h, colorrange=extrema(soln.u[begin].h), colormap=Reverse(:redsblues))
 Colorbar(f[1,2], msh)
 f
+```
+
+## GeoMakie Visualization
+
+We can also view the simulation results on a geographic map projection using [GeoMakie.jl](https://github.com/MakieOrg/GeoMakie.jl). This provides a flat-map view of the sphere with continent outlines for geographic context.
+
+First, we convert the mesh vertex coordinates from Cartesian to geographic (longitude, latitude) and extract the triangle connectivity. Triangles that span the antimeridian (where longitude wraps from 180° to -180°) are filtered out to avoid rendering artifacts.
+
+``` @example DEC
+# Convert mesh vertices from Cartesian (x, y, z) to geographic (lon, lat).
+lonlat = map(point(s)) do p
+  x, y, z = Float64(p[1]), Float64(p[2]), Float64(p[3])
+  r = sqrt(x^2 + y^2 + z^2)
+  lat = rad2deg(asin(clamp(z / r, -1, 1)))
+  lon = rad2deg(atan(y, x))
+  Point2f(lon, lat)
+end
+
+# Extract triangle face indices from the simplicial set.
+# Each triangle has 3 edges; we collect the unique vertices from those edges.
+geo_faces = TriangleFace{Int}[]
+for t in 1:ntriangles(s_plots)
+  e0, e1, e2 = s_plots[t, :∂e0], s_plots[t, :∂e1], s_plots[t, :∂e2]
+  vs = unique([s_plots[e0, :∂v0], s_plots[e0, :∂v1],
+               s_plots[e1, :∂v0], s_plots[e1, :∂v1],
+               s_plots[e2, :∂v0], s_plots[e2, :∂v1]])
+  # Skip triangles that wrap across the antimeridian.
+  lons = [lonlat[v][1] for v in vs]
+  if maximum(lons) - minimum(lons) < 180
+    push!(geo_faces, TriangleFace(vs[1], vs[2], vs[3]))
+  end
+end
+
+geo_mesh = GeometryBasics.Mesh(lonlat, geo_faces)
+nothing # hide
+```
+
+### Initial ice height (Robinson projection)
+
+``` @example DEC
+fig = Figure(size=(1200, 600))
+ga = GeoAxis(fig[1,1]; dest="+proj=robin", title="Initial Ice Thickness (PIOMAS)")
+msh = mesh!(ga, geo_mesh, color=soln.u[begin].h, colormap=Reverse(:redsblues), shading=NoShading)
+lines!(ga, GeoMakie.coastlines(), color=:black, linewidth=0.5)
+Colorbar(fig[1,2], msh)
+fig
+```
+
+### Ice height after 100 years (Robinson projection)
+
+``` @example DEC
+fig = Figure(size=(1200, 600))
+ga = GeoAxis(fig[1,1]; dest="+proj=robin", title="Ice Thickness After 100 Years")
+msh = mesh!(ga, geo_mesh, color=soln.u[end].h, colorrange=extrema(soln.u[begin].h), colormap=Reverse(:redsblues), shading=NoShading)
+lines!(ga, GeoMakie.coastlines(), color=:black, linewidth=0.5)
+Colorbar(fig[1,2], msh)
+fig
 ```
 
 ```@example DEC
