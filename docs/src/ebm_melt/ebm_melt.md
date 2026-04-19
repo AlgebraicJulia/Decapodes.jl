@@ -340,12 +340,14 @@ We can also view the simulation results on a geographic map projection using [Ge
 First, we convert the mesh vertex coordinates from Cartesian to geographic (longitude, latitude) and extract the triangle connectivity. Triangles that span the antimeridian (where longitude wraps from 180° to -180°) are filtered out to avoid rendering artifacts.
 
 ``` @example DEC
-# Convert mesh vertices from Cartesian (x, y, z) to geographic (lon, lat).
+# Convert mesh vertices from Cartesian (x, y, z) to geographic (lon, lat)
+# using CoordRefSystems for coordinate conversion.
 lonlat = map(point(s)) do p
-  x, y, z = Float64(p[1]), Float64(p[2]), Float64(p[3])
-  r = sqrt(x^2 + y^2 + z^2)
-  lat = rad2deg(asin(clamp(z / r, -1, 1)))
-  lon = rad2deg(atan(y, x))
+  sph = convert(Spherical, Cartesian(p...))
+  lon = rad2deg(sph.ϕ).val
+  lat = 90 - rad2deg(sph.θ).val
+  # Wrap longitude from [0, 360] to [-180, 180] for GeoMakie.
+  lon = lon > 180 ? lon - 360 : lon
   Point2f(lon, lat)
 end
 
