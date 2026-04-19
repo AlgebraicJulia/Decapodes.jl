@@ -357,6 +357,7 @@ for t in 1:ntriangles(s_plots)
   vs = unique([s_plots[e0, :∂v0], s_plots[e0, :∂v1],
                s_plots[e1, :∂v0], s_plots[e1, :∂v1],
                s_plots[e2, :∂v0], s_plots[e2, :∂v1]])
+  length(vs) == 3 || continue
   # Skip triangles that wrap across the antimeridian.
   lons = [lonlat[v][1] for v in vs]
   if maximum(lons) - minimum(lons) < 180
