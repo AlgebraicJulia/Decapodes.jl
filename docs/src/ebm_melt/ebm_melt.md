@@ -376,19 +376,19 @@ nothing # hide
 ``` @example DEC
 fig = Figure(size=(1200, 600))
 ga = GeoAxis(fig[1,1]; dest="+proj=robin", title="Initial Ice Thickness (PIOMAS)")
-msh = mesh!(ga, geo_mesh, color=soln.u[begin].h, colormap=Reverse(:redsblues), shading=NoShading)
-lines!(ga, GeoMakie.coastlines(), color=:black, linewidth=0.5)
+msh = mesh!(ga, geo_mesh, color=soln.u[begin].h, colormap=:jet, shading=NoShading)
+lines!(ga, GeoMakie.coastlines(), color=:white, linewidth=1.0)
 Colorbar(fig[1,2], msh)
 fig
 ```
 
-### Ice height after 100 years (Robinson projection)
+### Final ice height minus initial ice height (Robinson projection)
 
 ``` @example DEC
 fig = Figure(size=(1200, 600))
 ga = GeoAxis(fig[1,1]; dest="+proj=robin", title="Ice Thickness After 100 Years")
-msh = mesh!(ga, geo_mesh, color=soln.u[end].h, colorrange=extrema(soln.u[begin].h), colormap=Reverse(:redsblues), shading=NoShading)
-lines!(ga, GeoMakie.coastlines(), color=:black, linewidth=0.5)
+msh = mesh!(ga, geo_mesh, color=soln.u[end].h - soln.u[begin].h, colormap=:jet, shading=NoShading)
+lines!(ga, GeoMakie.coastlines(), color=:white, linewidth=1.0)
 Colorbar(fig[1,2], msh)
 fig
 ```
