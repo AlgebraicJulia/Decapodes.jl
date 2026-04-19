@@ -10,6 +10,37 @@ bib = CitationBibliography(
     joinpath(@__DIR__, "../../docs", "src", "decapodes_documenter.bib");
     style=:numeric)
 
+"""
+    format_citation_key(entries, key)
+
+Format a single citation key as "Author (Year)" using the bibliography entries.
+Falls back to the raw key if it is not found.
+"""
+function format_citation_key(entries, key)
+  haskey(entries, key) || return key
+  entry = entries[key]
+  author = if !isempty(entry.authors)
+    entry.authors[1].last
+  else
+    key
+  end
+  year = entry.date.year
+  isempty(year) ? author : "$author ($year)"
+end
+
+"""
+    expand_citations(desc, entries)
+
+Replace DocumenterCitations `[key1, key2](@cite)` patterns in `desc` with
+formatted "Author (Year)" text so that docstrings render properly at runtime.
+"""
+function expand_citations(desc, entries)
+  replace(desc, r"\[([^\]]+)\]\(@cite\)" => function(m)
+    inner = match(r"\[([^\]]+)\]\(@cite\)", m).captures[1]
+    keys = strip.(split(inner, ","))
+    join([format_citation_key(entries, k) for k in keys], ", ")
+  end)
+end
 
 struct DecapodeModel
     value::Symbol
@@ -19,6 +50,7 @@ export @docapode
 
 function create_pode_expr(t) 
   modelname, source, desc, variable, pode = t
+  desc = expand_citations(desc, bib.entries)
   variable = Symbol(variable)
  
   modeldef = String[]; lnns = LineNumberNode[]
