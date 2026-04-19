@@ -13,9 +13,7 @@ using Markdown
 
 @docapode("TumorInvasion"
   ,"https://en.wikipedia.org/wiki/Cancer_cell#Causes"
-  ,"Eq. 35 from Yi et al.
-  A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance
-  Evolution of Solid Tumors"
+  ,"[yin_review_2019](@cite), Eq. 35."
   ,invasion
   ,begin
     (C,fC)::Form0
@@ -26,9 +24,7 @@ end)
 
 @docapode("Logistic"
   ,"https://en.wikipedia.org/wiki/Logistic_function"
-  ,"Eq. 5 from Yi et al.
-  A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance
-  Evolution of Solid Tumors"
+  ,"[yin_review_2019](@cite), Eq. 5."
   ,logistic
   ,begin
     (C,fC)::Form0
@@ -39,9 +35,7 @@ end)
 
 @docapode("Gompertz"
   ,"https://en.wikipedia.org/wiki/Gompertz_function"
-  ,"Eq. 6 from Yi et al.
-  A Review of Mathematical Models for Tumor Dynamics and Treatment Resistance
-  Evolution of Solid Tumors"
+  ,"[yin_review_2019](@cite), Eq. 6"
   ,gompertz
   ,begin
     (C,fC)::Form0
