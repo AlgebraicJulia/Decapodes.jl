@@ -35,8 +35,10 @@ Replace DocumenterCitations `[key1, key2](@cite)` patterns in `desc` with
 formatted "Author (Year)" text so that docstrings render properly at runtime.
 """
 function expand_citations(desc, entries)
-  replace(desc, r"\[([^\]]+)\]\(@cite\)" => function(m)
-    inner = match(r"\[([^\]]+)\]\(@cite\)", m).captures[1]
+  cite_re = r"\[([^\]]+)\]\(@cite\)"
+  replace(desc, cite_re => function(m)
+    # Strip surrounding "[" and "](@cite)" to get the inner key(s)
+    inner = m[2:end-8]  # remove leading '[' and trailing '](@cite)'
     keys = strip.(split(inner, ","))
     join([format_citation_key(entries, k) for k in keys], ", ")
   end)
