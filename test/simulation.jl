@@ -113,7 +113,7 @@ DiffusionWithLiteral = @decapode begin
 end
 
 k = 3
-DiffusionWithInterpolation = SummationDecapode(parse_decapode(quote
+DiffusionWithInterpolation = @decapode begin
   (C, Ċ)::Form0{X}
   ϕ::Form1{X}
 
@@ -122,7 +122,7 @@ DiffusionWithInterpolation = SummationDecapode(parse_decapode(quote
   # Diffusion equation
   Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
   ∂ₜ(C) == Ċ
-end))
+end
 
 # Verify the variable accessors.
 @test Decapodes.get_vars_code(DiffusionWithConstant, [:k], Float64, CPUTarget()).args[2] == :(k = __p__.k)

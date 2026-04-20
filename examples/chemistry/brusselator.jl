@@ -204,11 +204,11 @@ save_dynamics("brusselator_sphere_U.gif")
 
 # Demonstrate the Brusselator model using interpolated values.
 α = 0.001
-Brusselator = SummationDecapode(parse_decapode(quote
+Brusselator = @decapode begin
   (U, V)::Form0
 
   F::Parameter
 
   ∂ₜ(U) == 1 + (U .* U) .* V - (4.4 * U) + ($α * Δ(U)) + F
   ∂ₜ(V) == (3.4 * U) - (U .* U) .* V + ($α * Δ(V))
-end))
+end
