@@ -351,16 +351,10 @@ lonlat = map(point(s)) do p
   Point2f(lon, lat)
 end
 
-# Extract triangle face indices from the simplicial set.
-# Each triangle has 3 edges; we collect the unique vertices from those edges.
-geo_faces = TriangleFace{Int}[]
-for t in 1:ntriangles(s_plots)
-  e0, e1, e2 = s_plots[t, :∂e0], s_plots[t, :∂e1], s_plots[t, :∂e2]
-  vs = unique([s_plots[e0, :∂v0], s_plots[e0, :∂v1],
-               s_plots[e1, :∂v0], s_plots[e1, :∂v1],
-               s_plots[e2, :∂v0], s_plots[e2, :∂v1]])
-  length(vs) == 3 || continue
-  push!(geo_faces, TriangleFace(vs[1], vs[2], vs[3]))
+# Note that CombinatorialSpaces can convert to a GeometryBasics.Mesh automatically,
+# but we do so manually here to specify our longitude and latitude points instead.
+geo_faces = map(triangles(s_plots)) do t
+  TriangleFace(triangle_vertices(s_plots, t))
 end
 
 geo_mesh = GeometryBasics.Mesh(lonlat, geo_faces)
