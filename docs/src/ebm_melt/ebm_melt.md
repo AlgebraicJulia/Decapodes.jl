@@ -386,8 +386,21 @@ fig
 
 ``` @example DEC
 fig = Figure(size=(1200, 600))
-ga = GeoAxis(fig[1,1]; dest="+proj=robin", title="Ice Thickness After 100 Years")
+ga = GeoAxis(fig[1,1]; dest="+proj=robin", title="Final - Initial Thickness After 100 Years")
 msh = mesh!(ga, geo_mesh, color=soln.u[end].h - soln.u[begin].h, colormap=:jet, shading=NoShading)
+lines!(ga, GeoMakie.coastlines(), color=:white, linewidth=1.0)
+Colorbar(fig[1,2], msh)
+fig
+```
+
+``` @example DEC
+fig = Figure(size=(1200, 600))
+ga = GeoAxis(fig[1,1]; dest="+proj=robin", title="Final - Initial Ice Thickness After 100 Years")
+msh = mesh!(ga, geo_mesh, color=soln.u[end].h - soln.u[begin].h, colormap=:jet, shading=NoShading)
+western_hemisphere = (-180, 0)
+xlims!(ga, western_hemisphere...)
+arctic_circle = (66.5, 90)
+ylims!(ga, arctic_circle...)
 lines!(ga, GeoMakie.coastlines(), color=:white, linewidth=1.0)
 Colorbar(fig[1,2], msh)
 fig
