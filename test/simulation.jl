@@ -112,6 +112,18 @@ DiffusionWithLiteral = @decapode begin
   ∂ₜ(C) == Ċ
 end
 
+k = 3
+DiffusionWithInterpolation = @decapode begin
+  (C, Ċ)::Form0{X}
+  ϕ::Form1{X}
+
+  # Fick's first law
+  ϕ == $k * d₀(C)
+  # Diffusion equation
+  Ċ == ∘(⋆₁, dual_d₁, ⋆₀⁻¹)(ϕ)
+  ∂ₜ(C) == Ċ
+end
+
 # Verify the variable accessors.
 @test Decapodes.get_vars_code(DiffusionWithConstant, [:k], Float64, CPUTarget()).args[2] == :(k = __p__.k)
 @test infer_state_names(DiffusionWithConstant) == [:C, :k]
@@ -135,15 +147,21 @@ f_with_parameter = f(torus, generate)
 f = eval(gensim(expand_operators(DiffusionWithLiteral)))
 f_with_literal = f(torus, generate)
 
+f = eval(gensim(expand_operators(DiffusionWithInterpolation)))
+f_with_interpolation = f(torus, generate)
+
 f_with_constant(du, u₀, (k=3.0,), 0)
 fc_res = copy(du.C)
 f_with_parameter(du, u₀, (k=t->3.0,), 0)
 fp_res = copy(du.C)
 f_with_literal(du, u₀, NamedTuple(), 0)
 fl_res = copy(du.C)
+f_with_interpolation(du, u₀, NamedTuple(), 0)
+fi_res = copy(du.C)
 
 @test norm(fc_res - fp_res) < 1e-4
 @test norm(fc_res - fl_res) < 1e-4
+@test norm(fc_res - fi_res) < 1e-4
 
 # Test same but with no preallocating
 
