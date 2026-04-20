@@ -360,11 +360,7 @@ for t in 1:ntriangles(s_plots)
                s_plots[e1, :∂v0], s_plots[e1, :∂v1],
                s_plots[e2, :∂v0], s_plots[e2, :∂v1]])
   length(vs) == 3 || continue
-  # Skip triangles that wrap across the antimeridian.
-  lons = [lonlat[v][1] for v in vs]
-  if maximum(lons) - minimum(lons) < 180
-    push!(geo_faces, TriangleFace(vs[1], vs[2], vs[3]))
-  end
+  push!(geo_faces, TriangleFace(vs[1], vs[2], vs[3]))
 end
 
 geo_mesh = GeometryBasics.Mesh(lonlat, geo_faces)
