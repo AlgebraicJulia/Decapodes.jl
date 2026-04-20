@@ -10,7 +10,7 @@ using SparseArrays
 function default_dec_generate(fs::PrimalGeometricMapSeries, my_symbol::Symbol, hodge::DiscreteHodge)
   op = @match my_symbol begin
     # Inverse Laplacians
-    :Δ₀⁻¹ => dec_Δ⁻¹(Val{0}, fs)
+    :Δ₀⁻¹ => dec_Δ⁻¹(Val(0), fs)
     _ => default_dec_generate(finest_mesh(fs), my_symbol, hodge)
   end
 end
@@ -33,29 +33,29 @@ function default_dec_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::Discret
     :♭ᵈᵖ => dec_♭(sd)
 
     # Primal-Dual Wedge Products
-    :∧ᵖᵈ₁₁ => dec_wedge_product_pd(Tuple{1,1}, sd)
-    :∧ᵖᵈ₀₁ => dec_wedge_product_pd(Tuple{0,1}, sd)
-    :∧ᵈᵖ₁₁ => dec_wedge_product_dp(Tuple{1,1}, sd)
-    :∧ᵈᵖ₁₀ => dec_wedge_product_dp(Tuple{1,0}, sd)
+    :∧ᵖᵈ₁₁ => dec_wedge_product_pd(Val(1), Val(1), sd)
+    :∧ᵖᵈ₀₁ => dec_wedge_product_pd(Val(0), Val(1), sd)
+    :∧ᵈᵖ₁₁ => dec_wedge_product_dp(Val(1), Val(1), sd)
+    :∧ᵈᵖ₁₀ => dec_wedge_product_dp(Val(1), Val(0), sd)
 
     # Dual-Dual Wedge Products
-    :∧ᵈᵈ₁₁ => dec_wedge_product_dd(Tuple{1,1}, sd)
-    :∧ᵈᵈ₁₀ => dec_wedge_product_dd(Tuple{1,0}, sd)
-    :∧ᵈᵈ₀₁ => dec_wedge_product_dd(Tuple{0,1}, sd)
+    :∧ᵈᵈ₁₁ => dec_wedge_product_dd(Val(1), Val(1), sd)
+    :∧ᵈᵈ₁₀ => dec_wedge_product_dd(Val(1), Val(0), sd)
+    :∧ᵈᵈ₀₁ => dec_wedge_product_dd(Val(0), Val(1), sd)
 
     # Dual-Dual Interior Products
-    :ι₁₁ => interior_product_dd(Tuple{1,1}, sd)
-    :ι₁₂ => interior_product_dd(Tuple{1,2}, sd)
+    :ι₁₁ => interior_product_dd(Val(1), Val(1), sd)
+    :ι₁₂ => interior_product_dd(Val(1), Val(2), sd)
 
     # Dual-Dual Lie Derivatives
-    :ℒ₁ => ℒ_dd(Tuple{1,1}, sd)
+    :ℒ₁ => ℒ_dd(Val(1), Val(1), sd)
 
     # Dual Laplacians
-    :Δᵈ₀ => Δᵈ(Val{0}, sd)
-    :Δᵈ₁ => Δᵈ(Val{1}, sd)
+    :Δᵈ₀ => Δᵈ(Val(0), sd)
+    :Δᵈ₁ => Δᵈ(Val(1), sd)
 
     # Inverse Laplacians
-    :Δ₀⁻¹ => dec_inv_lap_solver(Val{0}, sd)
+    :Δ₀⁻¹ => dec_inv_lap_solver(Val(0), sd)
 
     _ => error("Unmatched operator $my_symbol")
   end
@@ -88,7 +88,7 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
 
     # Inverse Hodge Stars
     :⋆₀⁻¹ => dec_inv_hodge_star(0, sd, hodge) |> matmul
-    :⋆₁⁻¹ => dec_pair_inv_hodge(Val{1}, sd, hodge) # Special since Geo is a solver
+    :⋆₁⁻¹ => dec_pair_inv_hodge(Val(1), sd, hodge) # Special since Geo is a solver
     :⋆₂⁻¹ => dec_inv_hodge_star(1, sd, hodge) |> matmul
 
     # Differentials
@@ -100,11 +100,11 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
     :dual_d₁ || :d̃₁ => dec_dual_derivative(1, sd) |> matmul
 
     # Wedge Products
-    :∧₀₁ => dec_pair_wedge_product(Tuple{0,1}, sd)
-    :∧₁₀ => dec_pair_wedge_product(Tuple{1,0}, sd)
-    :∧₀₂ => dec_pair_wedge_product(Tuple{0,2}, sd)
-    :∧₂₀ => dec_pair_wedge_product(Tuple{2,0}, sd)
-    :∧₁₁ => dec_pair_wedge_product(Tuple{1,1}, sd)
+    :∧₀₁ => dec_pair_wedge_product(Val(0), Val(1), sd)
+    :∧₁₀ => dec_pair_wedge_product(Val(1), Val(0), sd)
+    :∧₀₂ => dec_pair_wedge_product(Val(0), Val(2), sd)
+    :∧₂₀ => dec_pair_wedge_product(Val(2), Val(0), sd)
+    :∧₁₁ => dec_pair_wedge_product(Val(1), Val(1), sd)
 
     :♭♯ => ♭♯_mat(sd) |> matmul
 
@@ -118,35 +118,35 @@ function default_dec_matrix_generate(sd::HasDeltaSet, my_symbol::Symbol, hodge::
 end
 
 # Special case for inverse hodge for DualForm1 to Form1
-function dec_pair_inv_hodge(::Type{Val{1}}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
+function dec_pair_inv_hodge(::Val{1}, sd::AbstractDeltaDualComplex2D, ::GeometricHodge)
   inv_hdg = LinearAlgebra.factorize(-1 * dec_hodge_star(1, sd, GeometricHodge()))
   ((y, x) -> ldiv!(y, inv_hdg, x), x -> inv_hdg \ x)
 end
 
-function dec_pair_inv_hodge(::Type{Val{1}}, sd::HasDeltaSet, ::DiagonalHodge)
+function dec_pair_inv_hodge(::Val{1}, sd::HasDeltaSet, ::DiagonalHodge)
   inv_hdg = dec_inv_hodge_star(1, sd, DiagonalHodge())
   ((y, x) -> mul!(y, inv_hdg, x), x -> inv_hdg * x)
 end
 
-function dec_pair_wedge_product(::Type{Tuple{k,0}}, sd::HasDeltaSet) where {k}
-  val_pack = cache_wedge(Tuple{0,k}, sd, Val{:CPU})
-  ((y, α, g) -> dec_c_wedge_product!(Tuple{0,k}, y, g, α, val_pack[1], val_pack[2]),
-    (α, g) -> dec_c_wedge_product(Tuple{0,k}, g, α, val_pack))
+function dec_pair_wedge_product(::Val{k}, ::Val{0}, sd::HasDeltaSet) where {k}
+  val_pack = cache_wedge(Val(0), Val(k), sd, Val(:CPU))
+  ((y, α, g) -> dec_c_wedge_product!(Val(0), Val(k), y, g, α, val_pack[1], val_pack[2]),
+    (α, g) -> dec_c_wedge_product(Val(0), Val(k), g, α, val_pack))
 end
 
-function dec_pair_wedge_product(::Type{Tuple{0,k}}, sd::HasDeltaSet) where {k}
-  val_pack = cache_wedge(Tuple{0,k}, sd, Val{:CPU})
-  ((y, f, β) -> dec_c_wedge_product!(Tuple{0,k}, y, f, β, val_pack[1], val_pack[2]),
-    (f, β) -> dec_c_wedge_product(Tuple{0,k}, f, β, val_pack))
+function dec_pair_wedge_product(::Val{0}, ::Val{k}, sd::HasDeltaSet) where {k}
+  val_pack = cache_wedge(Val(0), Val(k), sd, Val(:CPU))
+  ((y, f, β) -> dec_c_wedge_product!(Val(0), Val(k), y, f, β, val_pack[1], val_pack[2]),
+    (f, β) -> dec_c_wedge_product(Val(0), Val(k), f, β, val_pack))
 end
 
-function dec_pair_wedge_product(::Type{Tuple{1,1}}, sd::HasDeltaSet2D)
-  val_pack = cache_wedge(Tuple{1,1}, sd, Val{:CPU})
-  ((y, α, β) -> dec_c_wedge_product!(Tuple{1,1}, y, α, β, val_pack[1], val_pack[2]),
-    (α, β) -> dec_c_wedge_product(Tuple{1,1}, α, β, val_pack))
+function dec_pair_wedge_product(::Val{1}, ::Val{1}, sd::HasDeltaSet2D)
+  val_pack = cache_wedge(Val(1), Val(1), sd, Val(:CPU))
+  ((y, α, β) -> dec_c_wedge_product!(Val(1), Val(1), y, α, β, val_pack[1], val_pack[2]),
+    (α, β) -> dec_c_wedge_product(Val(1), Val(1), α, β, val_pack))
 end
 
-function dec_pair_wedge_product(::Type{Tuple{0,0}}, sd::HasDeltaSet)
+function dec_pair_wedge_product(::Val{0}, ::Val{0}, sd::HasDeltaSet)
   error("Replace me in compiled code with element-wise multiplication (.*)")
 end
 
@@ -177,7 +177,7 @@ function dec_♭(sd::HasDeltaSet2D)
   x -> ♭_m * x
 end
 
-function dec_inv_lap_solver(::Type{Val{0}}, sd::HasDeltaSet)
+function dec_inv_lap_solver(::Val{0}, sd::HasDeltaSet)
   inv_lap = LinearAlgebra.factorize(∇²(0, sd))
   x -> inv_lap \ x
 end
