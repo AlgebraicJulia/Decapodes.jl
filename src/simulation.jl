@@ -861,9 +861,21 @@ See also: [`gen_int`](@ref).
 """
 eval_int(args...; kwargs...) = eval(gen_int(args...; kwargs...))
 
+"""
+    split_tangent_state_names(d::SummationDecapode)
+
+Return the state variable names that appear on the source side of `∂ₜ` edges in
+`d`.
+"""
 split_tangent_state_names(d::SummationDecapode) =
   unique(map(e -> d[d[e, :src], :name], incident(d, :∂ₜ, :op1)))
 
+"""
+    validate_split_tangent_states(implicit_d::SummationDecapode, explicit_d::SummationDecapode)
+
+Ensure that the implicit and explicit split Decapodes define the same `∂ₜ`
+state variables.
+"""
 function validate_split_tangent_states(implicit_d::SummationDecapode, explicit_d::SummationDecapode)
   implicit_states = split_tangent_state_names(implicit_d)
   explicit_states = split_tangent_state_names(explicit_d)
@@ -875,6 +887,11 @@ function validate_split_tangent_states(implicit_d::SummationDecapode, explicit_d
   throw(ArgumentError("implicit and explicit Decapodes must define the same ∂ₜ states; got implicit=[$implicit_msg], explicit=[$explicit_msg]"))
 end
 
+"""
+    gather_split_inputs(implicit_d::SummationDecapode, explicit_d::SummationDecapode)
+
+Collect and deduplicate inferred input variables from both split Decapodes.
+"""
 gather_split_inputs(implicit_d::SummationDecapode, explicit_d::SummationDecapode) =
   unique(vcat(gather_inputs(implicit_d), gather_inputs(explicit_d)))
 

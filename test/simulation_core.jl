@@ -483,7 +483,7 @@ end
   end
 end
 
-@testset "Test gen_split" begin
+@testset "gen_split" begin
   let
     implicit_d = @decapode begin
       U::Form0
