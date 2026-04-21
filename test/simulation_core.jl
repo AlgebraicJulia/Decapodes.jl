@@ -502,7 +502,7 @@ end
     sim = eval(code)
     @test sim isa Function
 
-    f_implicit, f_explicit = sim(nothing, nothing)
+    f_implicit, f_explicit = Base.invokelatest(sim, nothing, nothing)
     @test f_implicit isa Function
     @test f_explicit isa Function
 
