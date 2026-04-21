@@ -496,13 +496,13 @@ end
       ∂ₜ(U) == β * U
     end
 
-    code = gen_split(implicit_d, explicit_d)
+    code = gen_split(implicit_d, explicit_d, preallocate=false)
     @test code isa Expr
 
     sim = eval(code)
     @test sim isa Function
 
-    f_implicit, f_explicit = Base.invokelatest(sim, nothing, nothing)
+    f_implicit, f_explicit = Base.invokelatest(sim, nothing, nothing, nothing)
     @test f_implicit isa Function
     @test f_explicit isa Function
 
@@ -510,8 +510,8 @@ end
     du_implicit = ComponentArray(U = zeros(2))
     du_explicit = ComponentArray(U = zeros(2))
 
-    f_implicit(du_implicit, u, (λ = 2.0, β = 3.0), 0.0)
-    f_explicit(du_explicit, u, (λ = 2.0, β = 3.0), 0.0)
+    Base.invokelatest(f_implicit, du_implicit, u, (λ = 2.0, β = 3.0), 0.0)
+    Base.invokelatest(f_explicit, du_explicit, u, (λ = 2.0, β = 3.0), 0.0)
 
     @test du_implicit.U == 2.0 .* u.U
     @test du_explicit.U == 3.0 .* u.U
