@@ -1336,3 +1336,60 @@ int_forms = eval(int_forms_code)
 g = int_forms(dualmesh, generate, DiagonalHodge())
 @test g(solution(150.0), cs_ps, 150.0) isa ComponentArray
 end
+
+# End-to-end test of gen_split with a real mesh and physics-meaningful split.
+# Physics: heat equation with linear source term: ∂ₜ(C) == κ*Δ(C) + S*C
+#   Implicit (stiff) part:     ∂ₜ(C) == κ*Δ(C)    (diffusion)
+#   Explicit (non-stiff) part: ∂ₜ(C) == S*C        (linear source)
+# Verification: f_implicit(du_i, u, p, t) + f_explicit(du_e, u, p, t) ≈ f_full(du_f, u, p, t)
+@testset "gen_split End-to-End" begin
+
+  heat_implicit = @decapode begin
+    C::Form0
+    κ::Constant
+    ∂ₜ(C) == κ * Δ(C)
+  end
+
+  heat_explicit = @decapode begin
+    C::Form0
+    S::Constant
+    ∂ₜ(C) == S * C
+  end
+
+  heat_full = @decapode begin
+    C::Form0
+    (κ, S)::Constant
+    ∂ₜ(C) == κ * Δ(C) + S * C
+  end
+
+  s  = triangulated_grid(10, 10, 1, 1, Point3D)
+  sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
+
+  # Generate split and full simulation functions.
+  f_implicit, f_explicit = eval(gen_split(heat_implicit, heat_explicit))(sd, nothing, DiagonalHodge())
+  f_full = evalsim(heat_full)(sd, nothing, DiagonalHodge())
+
+  # Set up initial conditions with a nontrivial profile.
+  C_vals = map(sd[:point]) do (x, y)
+    sin(pi * x / 10) * sin(pi * y / 10)
+  end
+
+  u₀ = ComponentArray(C = C_vals)
+  p  = (κ = 0.1, S = 2.0)
+
+  du_implicit = ComponentArray(C = zeros(nv(sd)))
+  du_explicit = ComponentArray(C = zeros(nv(sd)))
+  du_full     = ComponentArray(C = zeros(nv(sd)))
+
+  f_implicit(du_implicit, u₀, p, 0.0)
+  f_explicit(du_explicit, u₀, p, 0.0)
+  f_full(du_full, u₀, p, 0.0)
+
+  # The sum of the split parts should equal the full equation.
+  @test du_implicit.C .+ du_explicit.C ≈ du_full.C
+
+  # Sanity-check the explicit part independently: S*C == 2.0 * C_vals
+  @test du_explicit.C ≈ p.S .* C_vals
+
+end
