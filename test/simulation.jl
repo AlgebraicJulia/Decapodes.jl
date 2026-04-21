@@ -1364,7 +1364,8 @@ end
     ∂ₜ(C) == κ * Δ(C) + S * C
   end
 
-  s  = triangulated_grid(10, 10, 1, 1, Point3D)
+  grid_size = 10
+  s  = triangulated_grid(grid_size, grid_size, 1, 1, Point3D)
   sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
   subdivide_duals!(sd, Circumcenter())
 
@@ -1374,7 +1375,7 @@ end
 
   # Set up initial conditions with a nontrivial profile.
   C_vals = map(sd[:point]) do (x, y)
-    sin(pi * x / 10) * sin(pi * y / 10)
+    sin(pi * x / grid_size) * sin(pi * y / grid_size)
   end
 
   u₀ = ComponentArray(C = C_vals)
@@ -1415,7 +1416,8 @@ end
     ∂ₜ(C) == S * C
   end
 
-  s  = triangulated_grid(10, 10, 1, 1, Point3D)
+  grid_size = 10
+  s  = triangulated_grid(grid_size, grid_size, 1, 1, Point3D)
   sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
   subdivide_duals!(sd, Circumcenter())
 
@@ -1425,7 +1427,7 @@ end
   f_implicit, f_explicit = eval(gen_split(heat_implicit, heat_explicit, preallocate=false))(sd, nothing, DiagonalHodge())
 
   C_vals = map(sd[:point]) do (x, y)
-    sin(pi * x / 10) * sin(pi * y / 10)
+    sin(pi * x / grid_size) * sin(pi * y / grid_size)
   end
   u₀ = ComponentArray(C = C_vals)
   # S < 0 so the source term acts as a sink, ensuring stability.
