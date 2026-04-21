@@ -10,6 +10,8 @@ using LinearAlgebra
 using MLStyle
 using OrdinaryDiffEqTsit5
 using OrdinaryDiffEqPRK
+using OrdinaryDiffEqSDIRK
+using SciMLBase
 using Test
 using Random
 Point3D = Point3{Float64}
@@ -1391,5 +1393,49 @@ end
 
   # Sanity-check the explicit part independently: S*C == 2.0 * C_vals
   @test du_explicit.C ≈ p.S .* C_vals
+
+end
+
+# End-to-end test: solve a split ODE using an IMEX solver.
+# Physics: heat equation with linear decay: ∂ₜ(C) == κ*Δ(C) + S*C, S < 0.
+#   Implicit (stiff) part:     ∂ₜ(C) == κ*Δ(C)    (diffusion)
+#   Explicit (non-stiff) part: ∂ₜ(C) == S*C        (linear decay)
+# KenCarp4 is a 4-stage L-stable IMEX Runge-Kutta method.
+@testset "gen_split IMEX Solve" begin
+
+  heat_implicit = @decapode begin
+    C::Form0
+    κ::Constant
+    ∂ₜ(C) == κ * Δ(C)
+  end
+
+  heat_explicit = @decapode begin
+    C::Form0
+    S::Constant
+    ∂ₜ(C) == S * C
+  end
+
+  s  = triangulated_grid(10, 10, 1, 1, Point3D)
+  sd = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3D}(s)
+  subdivide_duals!(sd, Circumcenter())
+
+  # Use preallocate=false: KenCarp4 uses internal Newton iterations that may
+  # call the function with dual-number arguments; plain Vector allocations
+  # are compatible with ForwardDiff without wrapping in FixedSizeDiffCache.
+  f_implicit, f_explicit = eval(gen_split(heat_implicit, heat_explicit, preallocate=false))(sd, nothing, DiagonalHodge())
+
+  C_vals = map(sd[:point]) do (x, y)
+    sin(pi * x / 10) * sin(pi * y / 10)
+  end
+  u₀ = ComponentArray(C = C_vals)
+  # S < 0 so the source term acts as a sink, ensuring stability.
+  p  = (κ = 0.1, S = -1.0)
+
+  prob = SplitODEProblem(f_implicit, f_explicit, u₀, (0.0, 0.5), p)
+  soln = solve(prob, KenCarp4())
+
+  @test SciMLBase.successful_retcode(soln.retcode)
+  # With decay (S = -1) and diffusion, solution norm should decrease over time.
+  @test norm(soln.u[end].C) < norm(u₀.C)
 
 end
