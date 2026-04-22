@@ -125,7 +125,7 @@ vtk_save(vtk)
 
 A 1-form has one scalar value per edge. To visualize it in ParaView, we use the **sharp** operator (`♯`) to convert it into a vector field at vertices. The `AltPPSharp` interpolation method produces a primal-primal sharp suitable for visualization on 2D simplicial complexes.
 
-We first compute the flux 1-form `ϕ = k * d₀(C)` from the solution, then sharpen it. The resulting vector field has one vector per vertex and is exported as a `3 × N` matrix with `VTKPointData`. We define a small helper `vec_to_mat` to convert the vector of points into the matrix layout that WriteVTK expects.
+We first compute the flux 1-form `ϕ = k * d₀(C)` from the solution, then sharpen it. The resulting vector field has one vector per vertex and is exported as a `3 × N` matrix with `VTKPointData`. In the VTK XML format, a multi-component `DataArray` is not enough by itself: the enclosing `PointData` element should also mark which named array is the active vector field. We therefore set both `Scalars="C"` and `Vectors="flux"` so ParaView recognizes `flux` as a vector field directly.
 
 ```@example DEC
 vec_to_mat(vecs) = hcat(collect.(vecs)...)
@@ -139,6 +139,7 @@ sharp = ♯_mat(sd, AltPPSharp())
 vtk = vtk_grid("diffusion_flux", points, cells)
 vtk["C", VTKPointData()] = soln(tₑ).C
 vtk["flux", VTKPointData()] = vec_to_mat(ϕ_vec)
+vtk[VTKPointData()] = ("Scalars" => "C", "Vectors" => "flux")
 vtk_save(vtk)
 ```
 
@@ -165,7 +166,7 @@ vtk_save(vtk)
 
 ### Time Series with ParaView Collection
 
-For visualizing the full time evolution in ParaView, we export each timestep as a separate `.vtu` file and collect them into a `.pvd` (ParaView Data) file. ParaView can then load the `.pvd` file and animate through the timesteps. This example exports the 0-form, the sharpened 1-form, and the 2-form together.
+For visualizing the full time evolution in ParaView, we export each timestep as a separate `.vtu` file and collect them into a `.pvd` (ParaView Data) file. ParaView can then load the `.pvd` file and animate through the timesteps. This example exports the 0-form, the sharpened 1-form, and the 2-form together, and it marks `flux` as the active vector field in each file.
 
 ```@example DEC
 pvd = paraview_collection("diffusion_series")
@@ -179,6 +180,7 @@ for (i, t) in enumerate(timestamps)
   local vtk_step = vtk_grid("diffusion_series_$i", points, cells)
   vtk_step["C", VTKPointData()] = C_t
   vtk_step["flux", VTKPointData()] = vec_to_mat(sharp * ϕ_t)
+  vtk_step[VTKPointData()] = ("Scalars" => "C", "Vectors" => "flux")
   vtk_step["avg_C", VTKCellData()] = avg_C_t
   collection_add_timestep(pvd, vtk_step, t)
 end
