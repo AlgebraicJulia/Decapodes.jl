@@ -33,22 +33,17 @@ end
 
   test_interior_product_1 = @acset SummationDecapode{Any, Any, Symbol} begin
     Var = 5
-    name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2]
-    type = [:DualForm1, :Form1, :DualForm0, :Form0, :Form1]
     Op1 = 2
-    src = [1, 5]
-    tgt = [4, 3]
-    op1 = [:⋆₀⁻¹, :⋆₁]
     Op2 = 1
-    proj1 = [4]
-    proj2 = [2]
-    res = [5]
+    src = [3, 1]
+    tgt = [2, 4]
+    proj1 = [2]
+    proj2 = [5]
+    res = [1]
+    op1 = [:⋆₀⁻¹, :⋆₁]
     op2 = [:∧₀₁]
-    Σ = 0
-    sum = Int64[]
-    Summand = 0
-    summand = Int64[]
-    summation = Int64[]
+    type = [:Form1, :Form0, :DualForm1, :DualForm0, :Form1]
+    name = [Symbol("•1"), Symbol("•2"), :B, :C, :A]
   end
   @test interior_product_1 == test_interior_product_1
 
@@ -66,22 +61,17 @@ end
 
   test_lie_derivative_0 = @acset SummationDecapode{Any, Any, Symbol} begin
     Var = 6
-    name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]
-    type = [:DualForm0, :Form1, :DualForm0, :DualForm1, :Form0, :Form1]
     Op1 = 3
-    src = [1, 4, 6]
-    tgt = [4, 5, 3]
-    op1 = [:dual_d₀, :⋆₀⁻¹, :⋆₁]
     Op2 = 1
-    proj1 = [5]
-    proj2 = [2]
-    res = [6]
+    src = [1, 4, 2]
+    tgt = [4, 3, 5]
+    proj1 = [3]
+    proj2 = [6]
+    res = [2]
+    op1 = [:dual_d₀, :⋆₀⁻¹, :⋆₁]
     op2 = [:∧₀₁]
-    Σ = 0
-    sum = Int64[]
-    Summand = 0
-    summand = Int64[]
-    summation = Int64[]
+    type = [:DualForm0, :Form1, :Form0, :DualForm1, :DualForm0, :Form1]
+    name = [:A, Symbol("•1"), Symbol("•2"), Symbol("•1"), :C, :B]
   end
   @test lie_derivative_0 == test_lie_derivative_0
 
@@ -99,22 +89,17 @@ end
 
   test_lie_derivative_1 = @acset SummationDecapode{Any, Any, Symbol} begin
     Var = 6
-    name = [:A, :B, :C, :Gensim_Var_1, :Gensim_Var_2, :Gensim_Var_3]
-    type = [:DualForm1, :Form1, :DualForm1, :DualForm0, :Form0, :Form1]
     Op1 = 3
-    src = [1, 6, 4]
-    tgt = [5, 4, 3]
-    op1 = [:⋆₀⁻¹, :⋆₁, :dual_d₀]
     Op2 = 1
-    proj1 = [5]
-    proj2 = [2]
-    res = [6]
+    src = [5, 3, 1]
+    tgt = [4, 2, 5]
+    proj1 = [2]
+    proj2 = [6]
+    res = [1]
+    op1 = [:dual_d₀, :⋆₀⁻¹, :⋆₁]
     op2 = [:∧₀₁]
-    Σ = 0
-    sum = Int64[]
-    Summand = 0
-    summand = Int64[]
-    summation = Int64[]
+    type = [:Form1, :Form0, :DualForm1, :DualForm1, :DualForm0, :Form1]
+    name = [Symbol("•1"), Symbol("•2"), :A, :C, Symbol("•1"), :B]
   end
   @test lie_derivative_1 == test_lie_derivative_1
 
