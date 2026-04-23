@@ -21,8 +21,8 @@ end
 @testset "Opening 1D Operators" begin
   # Test for 1D Interior Product (Dual1, Primal1 -> Dual0)
   interior_product_1 = @decapode begin
-    A::DualForm1
-    B::Form1
+    A::Form1
+    B::DualForm1
     C::DualForm0
 
     C == i₁(A, B)

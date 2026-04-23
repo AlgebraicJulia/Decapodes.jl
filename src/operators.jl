@@ -188,6 +188,6 @@ function open_operators(d::SummationDecapode; kwargs...)
   return e
 end
 
-open_operators!(d::SummationDecapode; dimension::Int=2) =
-  rewrite!(d)
+open_operators!(d::SummationDecapode; dimension::Int = 2) =
+  rewrite!(d; dimension = dimension)
 
