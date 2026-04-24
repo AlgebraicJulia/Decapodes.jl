@@ -225,18 +225,18 @@ end
   resolve_overloads!(interior_product_2)
 
   test_interior_product_2 = @acset SummationDecapode{Any, Any, Symbol} begin
-    Var = 3
-    name = [:A, :B, :C]
-    type = [:Form1, :DualForm2, :DualForm1]
-    Op1 = 0
-    src = Int64[]
-    tgt = Int64[]
-    op1 = Any[]
+    Var = 5
+    name = [Symbol("•1"), Symbol("•2"), :B, :C, :A]
+    type = [:Form1, :Form0, :DualForm2, :DualForm1, :Form1]
+    Op1 = 2
+    src = [3, 1]
+    tgt = [2, 4]
+    op1 = [:⋆₀⁻¹, :⋆₁]
     Op2 = 1
-    proj1 = [1]
-    proj2 = [2]
-    res = [3]
-    op2 = [:i₂]
+    proj1 = [2]
+    proj2 = [5]
+    res = [1]
+    op2 = [:∧₀₁]
   end
   @test interior_product_2 == test_interior_product_2
 
@@ -281,22 +281,22 @@ end
   resolve_overloads!(lie_derivative_1)
 
   test_lie_derivative_1 = @acset SummationDecapode{Any, Any, Symbol} begin
-    Var = 11
-    name = [Symbol("•2"), Symbol("•3"), Symbol("•3"), :C, Symbol("•1"), :A, Symbol("•2"), Symbol("•4"), :B, Symbol("-1"), Symbol("•1")]
-    type = [:Form2, :DualForm1, :Form1, :DualForm1, :DualForm1, :DualForm1, :DualForm2, :DualForm0, :Form1, :Literal, :DualForm0]
-    Op1 = 4
-    src = [6, 8, 6, 1]
-    tgt = [7, 2, 3, 11]
-    op1 = [:dual_d₁, :dual_d₀, :⋆₁⁻¹, :⋆₂]
+    Var = 13
+    name = [Symbol("•2"), Symbol("•3"), Symbol("•3"), :C, Symbol("•1"), :A, Symbol("•2"), Symbol("•4"), Symbol("•2"), Symbol("-1"), Symbol("•1"), Symbol("•1"), :B]
+    type = [:Form2, :DualForm1, :Form1, :DualForm1, :Form1, :DualForm1, :Form0, :DualForm0, :DualForm2, :Literal, :DualForm0, :DualForm1, :Form1]
+    Op1 = 6
+    src = [6, 8, 6, 1, 9, 5]
+    tgt = [9, 2, 3, 11, 7, 12]
+    op1 = [:dual_d₁, :dual_d₀, :⋆₁⁻¹, :⋆₂, :⋆₀⁻¹, :⋆₁]
     Op2 = 3
-    proj1 = [10, 9, 3]
-    proj2 = [11, 7, 9]
+    proj1 = [10, 7, 3]
+    proj2 = [11, 13, 13]
     res = [8, 5, 1]
-    op2 = [:*, :i₂, :∧₁₁]
+    op2 = [:*, :∧₀₁, :∧₁₁]
     Σ = 1
     sum = [4]
     Summand = 2
-    summand = [5, 2]
+    summand = [12, 2]
     summation = [1, 1]
   end
   @test lie_derivative_1 == test_lie_derivative_1
@@ -314,18 +314,18 @@ end
   resolve_overloads!(lie_derivative_2)
 
   test_lie_derivative_2 = @acset SummationDecapode{Any, Any, Symbol} begin
-    Var = 4
-    name = [:A, Symbol("•1"), :B, :C]
-    type = [:DualForm2, :DualForm1, :Form1, :DualForm2]
-    Op1 = 1
-    src = [2]
-    tgt = [4]
-    op1 = [:dual_d₁]
+    Var = 6
+    name = [Symbol("•1"), Symbol("•2"), :A, :C, Symbol("•1"), :B]
+    type = [:Form1, :Form0, :DualForm2, :DualForm2, :DualForm1, :Form1]
+    Op1 = 3
+    src = [5, 3, 1]
+    tgt = [4, 2, 5]
+    op1 = [:dual_d₁, :⋆₀⁻¹, :⋆₁]
     Op2 = 1
-    proj1 = [3]
-    proj2 = [1]
-    res = [2]
-    op2 = [:i₂]
+    proj1 = [2]
+    proj2 = [6]
+    res = [1]
+    op2 = [:∧₀₁]
   end
   @test lie_derivative_2 == test_lie_derivative_2
 
