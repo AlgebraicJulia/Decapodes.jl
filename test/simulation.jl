@@ -389,106 +389,97 @@ end
 
 
   # Testing simple contract operations
-  single_contract = @decapode begin
-    (A,C,E)::Form0
-    (D,F)::Form2
+  simple_contract = @decapode begin
+    (A,C,D,E)::Form0
+    F::Form2
 
     B == ∂ₜ(A)
     D == ∂ₜ(C)
 
     B == ⋆(⋆(A))
-    D == d(d(C))
+    D == ⋆(d(⋆(d(C))))
     F == d(d(E))
   end
-  @test 4 == count_contractions(single_contract)
+  @test 6 == count_contractions(simple_contract)
 
-  @test 0 == count_contractions(gensim(single_contract; contract=false))
+  @test 0 == count_contractions(gensim(simple_contract; contract=false))
 
-  f = gensim(single_contract)
+  f = gensim(simple_contract)
   contracted_block = gensim_body_blocks(f)[3]
-  @test contracted_block.args[[2,4]] == [
-    :(var"GenSim-M_GenSim-ConMat_0" = var"GenSim-M_d₁" * var"GenSim-M_d₀"),
-    :(var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_⋆₀")]
+  @test contracted_block.args[[2,4,6]] == [
+    :(var"GenSim-M_GenSim-ConMat_0" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_dual_d₁" * var"GenSim-M_⋆₁" * var"GenSim-M_d₀"),
+    :(var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_⋆₀"),
+    :(var"GenSim-M_GenSim-ConMat_2" = var"GenSim-M_d₁" * var"GenSim-M_d₀")]
 
-  sim = eval(gensim(single_contract))
+  sim = eval(gensim(simple_contract))
   f = sim(earth, default_dec_generate)
   A = 2 * ones(nv(earth))
   C = ones(nv(earth))
   E = ones(nv(earth))
   u = ComponentArray(A=A, C=C, E=E)
-  du = ComponentArray(A=zeros(nv(earth)), C=zeros(ntriangles(earth)), E=zeros(ntriangles(earth)))
+  du = ComponentArray(A=zeros(nv(earth)), C=zeros(nv(earth)), E=zeros(nv(earth)))
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
   @test du.A ≈ 2 * ones(nv(earth))
-  @test du.C == zeros(ntriangles(earth))
-  @test du.E == zeros(ntriangles(earth))
+  @test all(isapprox.(du.C[interior(Val(0), earth)], 0, atol=1e-15))
+  @test all(isapprox.(du.E[interior(Val(0), earth)], 0, atol=1e-15))
 
   # Testing contraction interrupted by summation
   contract_with_summation = @decapode begin
-    (A)::Form0
-    (D)::Form2
+    (A, D)::Form0
 
-    C == ∂ₜ(E)
     D == ∂ₜ(A)
 
-    B == ⋆(⋆(A))
+    B == ⋆(d(d(A)))
     C == B + B
 
-    D == d(d(C))
+    D == ⋆(d(d(C)))
   end
   @test 4 == count_contractions(contract_with_summation)
 
   sim = eval(gensim(contract_with_summation))
   f = sim(earth, default_dec_generate)
   A = 2 * ones(nv(earth))
-  E_dec = ones(nv(earth))
-  u = ComponentArray(A=A, E=E_dec)
-  du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
+  u = ComponentArray(A=A)
+  du = ComponentArray(A=zeros(nv(earth)))
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == zeros(ntriangles(earth))
-  @test du.E ≈ 4 * ones(nv(earth))
+  @test du.A == zeros(nv(earth))
 
   # Testing contraction interrupted by op2
   contract_with_op2 = @decapode begin
-    (A)::Form0
-    (D)::Form2
+    (A, D)::Form0
 
-    C == ∂ₜ(E)
     D == ∂ₜ(A)
 
-    B == ⋆(⋆(A))
+    B == ⋆(d(d(A)))
     C == B * B
 
-    D == d(d(C))
+    D == ⋆(d(d(C)))
   end
   @test 4 == count_contractions(contract_with_op2)
 
   sim = eval(gensim(contract_with_op2, preallocate = false))
   f = sim(earth, default_dec_generate)
   A = 3 * ones(nv(earth))
-  E_dec = ones(nv(earth))
-  u = ComponentArray(A=A, E=E_dec)
-  du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
+  u = ComponentArray(A=A)
+  du = ComponentArray(A=zeros(nv(earth)))
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == zeros(ntriangles(earth))
-  @test du.E ≈ 9 * ones(nv(earth))
+  @test du.A == zeros(nv(earth))
 
   sim = eval(gensim(contract_with_op2, preallocate = true))
   f = sim(earth, default_dec_generate)
   A = 3 * ones(nv(earth))
-  E_dec = ones(nv(earth))
-  u = ComponentArray(A=A, E=E_dec)
-  du = ComponentArray(A=zeros(ntriangles(earth)), E=zeros(nv(earth)))
+  u = ComponentArray(A=A)
+  du = ComponentArray(A=zeros(nv(earth)))
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == zeros(ntriangles(earth))
-  @test du.E ≈ 9 * ones(nv(earth))
+  @test du.A == zeros(nv(earth))
 
 
   # Testing contract lines beyond the initial value
@@ -514,11 +505,10 @@ end
 
   # Testing no contraction of single operators
   no_contraction = @decapode begin
-    (A)::Form0
-    (D)::Form1
+    (A, D)::Form0
 
     D == ∂ₜ(A)
-    D == d(A)
+    D == -(A)
   end
   @test 0 == count_contractions(no_contraction)
 
@@ -526,19 +516,18 @@ end
   f = sim(earth, default_dec_generate)
   A = [i for i in 1:nv(earth)]
   u = ComponentArray(A=A)
-  du = ComponentArray(A=zeros(ne(earth)))
+  du = ComponentArray(A=zeros(nv(earth)))
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == CombinatorialSpaces.DiscreteExteriorCalculus.d(0, earth) * A
+  @test du.A == -A
 
   # Testing no contraction of unallowed operators
   no_unallowed = @decapode begin
-    (A)::Form0
-    (D)::Form1
+    (A, D)::Form0
 
     D == ∂ₜ(A)
-    D == d(k(A))
+    D == -(k(A))
   end
   @test 0 == count_contractions(no_unallowed)
 
@@ -554,26 +543,22 @@ end
   f = sim(earth, generate_no_unallowed)
   A = [i for i in 1:nv(earth)]
   u = ComponentArray(A=A)
-  du = ComponentArray(A=zeros(ne(earth)))
+  du = ComponentArray(A=zeros(nv(earth)))
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == CombinatorialSpaces.DiscreteExteriorCalculus.d(0, earth) * 20 * A
+  @test du.A == -1 * 20 * A
 
   # Testing wedge 01 operators function
   wedges01 = @decapode begin
-    (A, B)::Form0
-    (C, D, E)::Form1
+    (A, B, D, E)::Form0
+    C::Form1
 
     D == ∂ₜ(A)
     E == ∂ₜ(B)
-    F == ∂ₜ(C)
 
-
-    D == (A ∧ B) ∧ C
-    E == A ∧ (B ∧ C)
-
-    F == A ∧ (C ∧ B)
+    D == δ((A ∧ B) ∧ C)
+    E == δ(A ∧ (B ∧ C))
   end
 
   sim = eval(gensim(wedges01, preallocate=false))
@@ -582,12 +567,12 @@ end
   B = 2 * ones(nv(earth))
   C = 3 * ones(ne(earth))
   u = ComponentArray(A=A, B=B, C=C)
-  du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
+  du = ComponentArray(A=zeros(nv(earth)), B=zeros(nv(earth)))
 
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == du.B == du.C
+  @test du.A == du.B
 
   sim = eval(gensim(wedges01, preallocate=true))
   f = sim(earth, default_dec_generate)
@@ -595,23 +580,22 @@ end
   B = 2 * ones(nv(earth))
   C = 3 * ones(ne(earth))
   u = ComponentArray(A=A, B=B, C=C)
-  du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)), C=zeros(ne(earth)))
+  du = ComponentArray(A=zeros(nv(earth)), B=zeros(nv(earth)))
 
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test du.A == du.B == du.C
+  @test du.A == du.B
 
   # Testing wedge 11 operators function
   wedges11 = @decapode begin
-    (A, B)::Form1
-    (D, E)::Form2
+    (A, B, D, E)::Form1
 
     D == ∂ₜ(A)
     E == ∂ₜ(B)
 
-    D == A ∧ B
-    E == B ∧ A
+    D == δ(A ∧ B)
+    E == δ(B ∧ A)
   end
 
   sim = eval(gensim(wedges11))
@@ -620,34 +604,34 @@ end
   A = ones(ne(earth))
   B = ones(ne(earth))
   u = ComponentArray(A=A, B=B)
-  du = ComponentArray(A=zeros(ntriangles(earth)), B=zeros(ntriangles(earth)))
+  du = ComponentArray(A=zeros(ne(earth)), B=zeros(ne(earth)))
 
   constants_and_parameters = ()
   f(du, u, constants_and_parameters, 0)
 
-  @test all(isapprox.(du.A, zeros(ntriangles(earth)); atol = 1e-15))
-  @test all(isapprox.(du.B, zeros(ntriangles(earth)); atol = 1e-15))
+  @test all(isapprox.(du.A, zeros(ne(earth)); atol = 1e-15))
+  @test all(isapprox.(du.B, zeros(ne(earth)); atol = 1e-15))
   @test all(isapprox.(du.A, du.B; atol = 1e-15))
 
   # Testing wedge 02 operators function
   wedges02 = @decapode begin
-    A::Form0
-    B::Form2
-    (D, E)::Form2
+    C::Form0
+    (A, B, D, E)::Form2
 
     D == ∂ₜ(A)
     E == ∂ₜ(B)
 
-    D == A ∧ B
-    E == B ∧ A
+    D == C ∧ B
+    E == B ∧ C
   end
 
   sim = eval(gensim(wedges02))
 
   f = sim(earth, default_dec_generate)
-  A = ones(nv(earth))
+  A = ones(ntriangles(earth))
   B = ones(ntriangles(earth))
-  u = ComponentArray(A=A, B=B)
+  C = ones(nv(earth))
+  u = ComponentArray(A=A, B=B, C=C)
   du = ComponentArray(A=zeros(ntriangles(earth)), B=zeros(ntriangles(earth)))
 
   constants_and_parameters = ()
@@ -898,7 +882,7 @@ end
 
     𝑝ᵈ == P + 0.5 * ι₁₁(w,w)
 
-    ∂ₜ(𝐮) == μ * ∘(d, ⋆, d, ⋆)(w) + (-1)*⋆₁⁻¹(∧ᵈᵖ₁₀(w, ⋆(d(w)))) + d(𝑝ᵈ)
+    ∂ₜ(𝐮) == μ * ∘(d, ⋆, d, ⋆)(w) + (-1)*⋆₁(∧ᵈᵖ₁₀(w, ⋆(d(w)))) + d(𝑝ᵈ)
   end
 
   halfar_eq2 = @decapode begin
