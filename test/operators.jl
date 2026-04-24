@@ -19,7 +19,7 @@
 end
 
 @testset "Opening 1D Operators" begin
-  # Test for 1D Interior Product (Dual1, Primal1 -> Dual0)
+  # Test for 1D Interior Product (Primal1, Dual1 -> Dual0)
   interior_product_1 = @decapode begin
     A::Form1
     B::DualForm1
@@ -168,7 +168,7 @@ end
 
   test_laplace_de_rham_1 = @acset SummationDecapode{Any, Any, Symbol} begin
     Var = 5
-    type = [:Form1, :Form1, :Form0, :DualForm0, :DualForm1]    
+    type = [:Form1, :Form1, :Form0, :DualForm0, :DualForm1]
     Op1 = 4
     src = [3, 5, 1, 4]
     tgt = [2, 3, 4, 5]
@@ -184,7 +184,7 @@ end
 end
 
 @testset "Opening 2D Operators" begin
-  # Test for Interior Product (Dual1, Primal1 -> Dual0)
+  # Test for Interior Product (Primal1, Dual1 -> Dual0)
   interior_product_1 = @decapode begin
     A::Form1
     B::DualForm1
@@ -212,7 +212,7 @@ end
   end
   @test interior_product_1 == test_interior_product_1
 
-  # Test for Interior Product (Dual2, Primal1 -> Dual1)
+  # Test for Interior Product (Primal1, Dual2 -> Dual1)
   interior_product_2 = @decapode begin
     A::Form1
     B::DualForm2
@@ -468,7 +468,7 @@ end
   test_laplace_de_rham_2 = @acset SummationDecapode{Any, Any, Symbol} begin
     Var = 5
     name = [:B, :A, Symbol("•_1_1"), Symbol("•_2_1"), Symbol("•_2_2")]
-    type = [:Form2, :Form2, :Form1, :DualForm0, :DualForm1]    
+    type = [:Form2, :Form2, :Form1, :DualForm0, :DualForm1]
     Op1 = 4
     src = [3, 5, 2, 4]
     tgt = [1, 3, 4, 5]
