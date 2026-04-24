@@ -188,9 +188,43 @@ function open_operators(d::SummationDecapode; kwargs...)
   return e
 end
 
+function rewrite_fallback!(d::SummationDecapode; dimension::Int = 2)
+  if dimension == 1
+    replace_all_op1s!(d, :Δ₀, @decapode begin
+      p1::Form0
+      p2::Form0
+      p2 == ⋆₀⁻¹(dual_d₀(⋆₁(d₀(p1))))
+    end)
+  else
+    replace_all_op1s!(d, :Δ₀, @decapode begin
+      p1::Form0
+      p2::Form0
+      p2 == ⋆₀⁻¹(dual_d₁(⋆₁(d₀(p1))))
+    end)
+  end
+
+  replace_all_op1s!(d, :Δ, @decapode begin
+    p1::infer
+    p2::infer
+    p2 == ⋆(d(⋆(d(p1))))
+  end)
+  replace_all_op1s!(d, :∇², @decapode begin
+    p1::infer
+    p2::infer
+    p2 == ⋆(d(⋆(d(p1))))
+  end)
+  replace_all_op1s!(d, :lapl, @decapode begin
+    p1::infer
+    p2::infer
+    p2 == ⋆(d(⋆(d(p1))))
+  end)
+
+  d
+end
+
 function open_operators!(d::SummationDecapode; dimension::Int = 2)
   if isdefined(DiagrammaticEquations, :rewrite!)
     return DiagrammaticEquations.rewrite!(d; dimension = dimension)
   end
-  d
+  rewrite_fallback!(d; dimension = dimension)
 end

@@ -736,9 +736,10 @@ end
   d_rect = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}(rect)
   subdivide_duals!(d_rect, Circumcenter())
 
-  function generate(sd, my_symbol, hodge)
+  function generate(sd, my_symbol, hodge=GeometricHodge())
     op = @match my_symbol begin
-      end
+      _ => ((args...) -> nothing)
+    end
     return op
   end
 
@@ -769,6 +770,14 @@ end
     β⁻¹::Constant
     ∂ₜ(ρ) == (∘(⋆, d, ⋆))(d(Ψ) ∧ ρ) + β⁻¹ * Δ(ρ)
   end
+  # TODO(de-upstream, llm/rewrite1d): ensure Laplacian expansion rules cover this path.
+  # ```julia
+  # replace_all_op1s!(d, :Δ₀, @decapode begin
+  #   p1::Form0
+  #   p2::Form0
+  #   p2 == ⋆₀⁻¹(dual_d₁(⋆₁(d₀(p1))))
+  # end)
+  # ```
 
   sim_JKO = evalsim(Jordan_Kinderlehrer_Otto)
   @test sim_JKO(d_rect, generate, DiagonalHodge()) isa Any
@@ -814,6 +823,27 @@ end
     (v, V, q)::Form1
     c_up == (((-1 * (⋆)(L(v, (⋆)(c))) - (⋆)(L(V, (⋆)(c)))) - (⋆)(L(v, (⋆)(C)))) - (∘(⋆, d, ⋆))(q)) + F
   end
+  # TODO(de-upstream, llm/rewrite1d): ensure Lie-derivative rewrite rules cover L₀/L₁/L₂.
+  # ```julia
+  # replace_all_op2s!(d, :L₀, @decapode begin
+  #   p1::Form1
+  #   p2::DualForm0
+  #   p3::DualForm0
+  #   p3 == i₁(p1, dual_d₀(p2))
+  # end)
+  # replace_all_op2s!(d, :L₁, @decapode begin
+  #   p1::Form1
+  #   p2::DualForm1
+  #   p3::DualForm1
+  #   p3 == dual_d₀(i₂(p1, p2)) + i₁(p1, dual_d₁(p2))
+  # end)
+  # replace_all_op2s!(d, :L₂, @decapode begin
+  #   p1::Form1
+  #   p2::DualForm2
+  #   p3::DualForm2
+  #   p3 == dual_d₁(i₂(p1, p2))
+  # end)
+  # ```
 
   sim_Tracer = evalsim(Tracer)
   @test sim_Tracer(d_rect, generate, DiagonalHodge()) isa Any
@@ -1302,10 +1332,34 @@ end
 mesh,dualmesh = circle(9, 500)
 
 lap_mat = dec_hodge_star(1,dualmesh) * dec_differential(0,dualmesh) * dec_inv_hodge_star(0,dualmesh) * dec_dual_derivative(0,dualmesh)
+# TODO(de-upstream, llm/rewrite1d): add 1D dual-form rewrite coverage for this test path.
+# ```julia
+# replace_all_op2s!(d, :L₀, @decapode begin
+#   p1::Form1
+#   p2::DualForm0
+#   p3::DualForm0
+#   p3 == ⋆₀⁻¹((⋆₁(dual_d₀(p2))) ∧₀₁ p1)
+# end)
+# replace_all_op1s!(d, :Δᵈ₀, @decapode begin
+#   p1::DualForm0
+#   p2::DualForm0
+#   p2 == ⋆₁(d₀(⋆₀⁻¹(dual_d₀(p1))))
+# end)
+# ```
 function generate(sd, my_symbol; hodge=DiagonalHodge())
   op = @match my_symbol begin
     :Δ => x -> begin
       lap_mat * x
+    end
+    :Δᵈ₀ => x -> begin
+      lap_mat * x
+    end
+    :L₀ => begin
+      (_, duald0_op) = default_dec_matrix_generate(sd, :dual_d₀, hodge)
+      (_, star1_op) = default_dec_matrix_generate(sd, :⋆₁, hodge)
+      (_, star0inv_op) = default_dec_matrix_generate(sd, :⋆₀⁻¹, hodge)
+      (_, wedge01_op) = default_dec_matrix_generate(sd, :∧₀₁, hodge)
+      (x, y) -> star0inv_op(wedge01_op(star1_op(duald0_op(y)), x))
     end
     _ => default_dec_matrix_generate(sd, my_symbol, hodge)
   end
