@@ -188,6 +188,9 @@ function open_operators(d::SummationDecapode; kwargs...)
   return e
 end
 
-open_operators!(d::SummationDecapode; dimension::Int = 2) =
-  rewrite!(d; dimension = dimension)
-
+function open_operators!(d::SummationDecapode; dimension::Int = 2)
+  if isdefined(DiagrammaticEquations, :rewrite!)
+    return DiagrammaticEquations.rewrite!(d; dimension = dimension)
+  end
+  d
+end
