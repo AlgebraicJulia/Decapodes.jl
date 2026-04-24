@@ -13,4 +13,4 @@ VERSION=$1
 module load julia/$VERSION
 
 echo "Building documentation..."
-julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.status(); Pkg.instantiate(); include("docs/make.jl")'
+julia -e 'using Pkg; Pkg.activate("docs"); Pkg.develop(path="."); Pkg.status(); Pkg.up(); include("docs/make.jl")'
