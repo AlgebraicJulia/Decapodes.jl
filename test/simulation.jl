@@ -1370,8 +1370,10 @@ end
   subdivide_duals!(sd, Circumcenter())
 
   # Generate split and full simulation functions.
-  f_implicit, f_explicit = eval(gen_split(heat_implicit, heat_explicit))(sd, nothing, DiagonalHodge())
-  f_full = evalsim(heat_full)(sd, nothing, DiagonalHodge())
+  split_sim = eval_split(heat_implicit, heat_explicit)
+  f_implicit, f_explicit = split_sim(sd, nothing, DiagonalHodge())
+  full_sim = evalsim(heat_full)
+  f_full = full_sim(sd, nothing, DiagonalHodge())
 
   # Set up initial conditions with a nontrivial profile.
   C_vals = map(sd[:point]) do (x, y)
@@ -1424,7 +1426,8 @@ end
   # Use preallocate=false: KenCarp4 uses internal Newton iterations that may
   # call the function with dual-number arguments; plain Vector allocations
   # are compatible with ForwardDiff without wrapping in FixedSizeDiffCache.
-  f_implicit, f_explicit = eval(gen_split(heat_implicit, heat_explicit, preallocate=false))(sd, nothing, DiagonalHodge())
+  split_sim = eval_split(heat_implicit, heat_explicit, preallocate=false)
+  f_implicit, f_explicit = split_sim(sd, nothing, DiagonalHodge())
 
   C_vals = map(sd[:point]) do (x, y)
     sin(pi * x / grid_size) * sin(pi * y / grid_size)
