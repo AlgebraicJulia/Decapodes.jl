@@ -1,6 +1,7 @@
 module SimulationCoreTest
 
 using ACSets
+using ComponentArrays
 using Decapodes
 using DiagrammaticEquations
 using MLStyle
@@ -479,6 +480,56 @@ end
     sim = eval(code)
     @test sim isa Function
     @test occursin("ComponentArray(Lw = Lw, Δn = Δn)", string(code))
+  end
+end
+
+@testset "gen_split" begin
+  let
+    implicit_d = @decapode begin
+      U::Form0
+      λ::Constant
+      ∂ₜ(U) == λ * U
+    end
+    explicit_d = @decapode begin
+      U::Form0
+      β::Constant
+      ∂ₜ(U) == β * U
+    end
+
+    code = gen_split(implicit_d, explicit_d, preallocate=false)
+    @test code isa Expr
+
+    sim = eval(code)
+    @test sim isa Function
+
+    f_implicit, f_explicit = Base.invokelatest(sim, nothing, nothing, nothing)
+    @test f_implicit isa Function
+    @test f_explicit isa Function
+
+    u = ComponentArray(U = [1.0, 2.0])
+    du_implicit = ComponentArray(U = zeros(2))
+    du_explicit = ComponentArray(U = zeros(2))
+
+    Base.invokelatest(f_implicit, du_implicit, u, (λ = 2.0, β = 3.0), 0.0)
+    Base.invokelatest(f_explicit, du_explicit, u, (λ = 2.0, β = 3.0), 0.0)
+
+    @test du_implicit.U == 2.0 .* u.U
+    @test du_explicit.U == 3.0 .* u.U
+  end
+
+  let
+    implicit_d = @decapode begin
+      U::Form0
+      λ::Constant
+      ∂ₜ(U) == λ * U
+    end
+    explicit_d = @decapode begin
+      V::Form0
+      β::Constant
+      ∂ₜ(V) == β * V
+    end
+
+    @test_throws ArgumentError gen_split(implicit_d, explicit_d)
   end
 end
 
