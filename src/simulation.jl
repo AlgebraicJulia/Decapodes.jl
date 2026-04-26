@@ -732,6 +732,7 @@ When tangent assignments are present (`c.tars`), they are appended before the
 return expression.
 
 `c` is the NamedTuple returned by `_compile_decapode`.
+`c.tars` is `nothing` when `_compile_decapode(...; gen_tars=false)`.
 """
 function _gen_function_body(c)
   exprs = Any[c.vars, c.data]
