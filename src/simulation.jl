@@ -211,33 +211,40 @@ generator_function(code_target::AbstractGenerationTarget) = throw(InvalidCodeTar
 generator_function(::CPUBackend) = :default_dec_generate
 generator_function(::CUDABackend) = :default_dec_cu_generate
 
+"""    OperatorCategory
+
+Classifies an operator as optimizable, non-optimizable, or user-defined.
+
+An operator may not belong to both `optimizable_ops` and `non_optimizable_ops`;
+the constructor throws an `ArgumentError` if that invariant is violated.
+"""
+struct OperatorCategory
+  is_optimizable::Bool
+  is_non_optimizable::Bool
+
+  function OperatorCategory(op::Symbol, optimizable_ops::Set{Symbol}, non_optimizable_ops::Set{Symbol})
+    is_opt     = op in optimizable_ops
+    is_non_opt = op in non_optimizable_ops
+    is_opt && is_non_opt && throw(ArgumentError("operator $op cannot be both optimizable and non-optimizable"))
+    new(is_opt, is_non_opt)
+  end
+end
+
 """    compile_env(d::SummationDecapode, present_dec_ops::Vector{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
 
 Emit code to define functions given operator Symbols.
 
 Default operations return a tuple of an in-place and an out-of-place function. User-defined operations return an out-of-place function.
 """
-compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, optimizable_ops::Set{Symbol}, non_optimizable_ops::Set{Symbol}) =
-  let
-    _is_optimizable = Val(op in optimizable_ops)
-    _is_non_optimizable = Val(op in non_optimizable_ops)
-    compile_env_def(op, quote_op, code_target, _is_optimizable, _is_non_optimizable)
+function compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, cat::OperatorCategory)
+  if cat.is_optimizable
+    :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $quote_op, hodge))
+  elseif cat.is_non_optimizable
+    :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
+  else
+    :($op = operators(mesh, $quote_op))
   end
-
-"""Emit an optimizable operator binding using the target's matrix generator."""
-compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, _is_optimizable::Val{true}, _is_non_optimizable::Val{false}) =
-  :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $quote_op, hodge))
-
-compile_env_def(op::Symbol, ::QuoteNode, ::AbstractGenerationTarget, _is_optimizable::Val{true}, _is_non_optimizable::Val{true}) =
-  throw(ArgumentError("operator $op cannot be both optimizable and non-optimizable"))
-
-"""Emit a non-optimizable DEC operator binding using the target's generator."""
-compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, _is_optimizable::Val{false}, _is_non_optimizable::Val{true}) =
-  :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
-
-"""Emit a user-defined operator binding via the `operators` callback."""
-compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, _is_optimizable::Val{false}, _is_non_optimizable::Val{false}) =
-  :($op = operators(mesh, $quote_op))
+end
 
 function compile_env(d::SummationDecapode, present_dec_ops::Set{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
 
@@ -250,7 +257,8 @@ function compile_env(d::SummationDecapode, present_dec_ops::Set{Symbol}, contrac
 
   for op in setdiff(all_ops, avoid_ops)
     quote_op = QuoteNode(op)
-    def = compile_env_def(op, quote_op, code_target, optimizable_ops, non_optimizable_ops)
+    cat = OperatorCategory(op, optimizable_ops, non_optimizable_ops)
+    def = compile_env_def(op, quote_op, code_target, cat)
     push!(defs.args, def)
   end
 
