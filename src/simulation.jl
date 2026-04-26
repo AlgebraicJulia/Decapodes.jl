@@ -585,6 +585,16 @@ nested_mul(factors) =
 mat_def_expr(computation_name::Symbol, factors::Vector{Symbol}, ::CUDABackend) =
   :($(add_inplace_stub(computation_name)) = $(nested_mul(factors)))
 
+_multigrid_block = quote
+  mesh = finest_mesh(mesh)
+end 
+
+_nanmath_block = quote
+  ^(x, y) = Decapodes.NaNMath.pow(x, y)
+  sqrt(x) = Decapodes.NaNMath.sqrt(x)
+  log(x) = Decapodes.NaNMath.log(x)
+end
+
 struct UnsupportedDimensionException <: Exception
   dim::Int
 end
@@ -678,15 +688,8 @@ function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, out
   func_defs = compile_env(d, present_dec_ops, contracted_ops, code_target)
   vect_defs = quote $(Expr.(alloc_vectors)...) end
 
-  multigrid_defs = quote end
-  multigrid && push!(multigrid_defs.args, :(mesh = finest_mesh(mesh)))
-
-  nanmath_defs = quote end
-  if nanmath_support
-    push!(nanmath_defs.args, :(^(x, y) = Decapodes.NaNMath.pow(x, y)))
-    push!(nanmath_defs.args, :(sqrt(x) = Decapodes.NaNMath.sqrt(x)))
-    push!(nanmath_defs.args, :(log(x) = Decapodes.NaNMath.log(x)))
-  end
+  multigrid_defs = multigrid       ? _multigrid_block : quote end
+  nanmath_defs   = nanmath_support ? _nanmath_block   : quote end
 
   return_val = @match output_vars begin
     []     => :nothing
