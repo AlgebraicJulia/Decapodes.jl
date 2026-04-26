@@ -227,12 +227,15 @@ routes runtime set-membership checks through `Val`-based dispatch so each case
 compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, optimizable_ops::Set{Symbol}, non_optimizable_ops::Set{Symbol}) =
   compile_env_def(op, quote_op, code_target, Val(op in optimizable_ops), Val(op in non_optimizable_ops))
 
+"""Emit an optimizable operator binding using the target's matrix generator."""
 compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{true}, ::Val{false}) =
   :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $quote_op, hodge))
 
+"""Emit a non-optimizable DEC operator binding using the target's generator."""
 compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{false}, ::Val{true}) =
   :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
 
+"""Emit a user-defined operator binding via the `operators` callback."""
 compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{false}, ::Val{false}) =
   :($op = operators(mesh, $quote_op))
 
@@ -355,7 +358,7 @@ const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
                                     :./ => :./,
                                     :.^ => :.^,
                                     :.= => :.=)
-const PROMOTE_POSTPROCESS_BINARY_OPS = Set([:(*), :(-), :(/), :(^)])
+const ARITHMETIC_OPS_TO_PROMOTE = Set([:(*), :(-), :(/), :(^)])
 
 """
     compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
@@ -456,7 +459,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::
           end
         end
 
-        if operator in PROMOTE_POSTPROCESS_BINARY_OPS
+        if operator in ARITHMETIC_OPS_TO_PROMOTE
           operator = PROMOTE_ARITHMETIC_MAP[operator]
         end
 
@@ -783,6 +786,8 @@ signature `(__du__, __u__, __p__, __t__)`; otherwise it generates
 `(__u__, __p__, __t__)`.
 
 `c` is the NamedTuple returned by `_compile_decapode`.
+`include_nanmath` and `include_multigrid` control whether the optional NaNMath
+and multigrid setup blocks are emitted into the runtime preamble.
 """
 function _gen_mesh_closure(c; inplace::Bool=true, include_nanmath::Bool=false, include_multigrid::Bool=false)
   args = inplace ?
