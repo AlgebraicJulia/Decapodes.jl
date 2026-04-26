@@ -217,6 +217,13 @@ Emit code to define functions given operator Symbols.
 
 Default operations return a tuple of an in-place and an out-of-place function. User-defined operations return an out-of-place function.
 """
+"""
+    compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, optimizable_ops::Set{Symbol}, non_optimizable_ops::Set{Symbol})
+
+Emit the environment-binding expression for one operator symbol. This helper
+routes runtime set-membership checks through `Val`-based dispatch so each case
+(optimizable, non-optimizable, user-defined) is handled by a dedicated method.
+"""
 compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, optimizable_ops::Set{Symbol}, non_optimizable_ops::Set{Symbol}) =
   compile_env_def(op, quote_op, code_target, Val(op in optimizable_ops), Val(op in non_optimizable_ops))
 
@@ -641,8 +648,8 @@ The caller is expected to supply an already-prepared Decapode `d` (e.g. a
 `deepcopy` or a `downset` result). This function mutates `d` and returns a
 `NamedTuple` of compilation artifacts. When `gen_tars` is `true`, the tangent
 variable assignment code used by `gensim` and `gen_split` is also generated. When `multigrid`
-is `true`, the returned `multigrid_defs` block contains `mesh = finest_mesh(mesh)`.
-When `nanmath_support` is `true`, the returned `nanmath_defs` block overrides
+is `true`, the returned `multigrid_block` contains `mesh = finest_mesh(mesh)`.
+When `nanmath_support` is `true`, the returned `nanmath_block` overrides
 `^`, `sqrt`, and `log` with their NaNMath equivalents.
 """
 function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::Union{Symbol, AbstractArray}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
@@ -685,8 +692,8 @@ function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, out
   func_defs = compile_env(d, present_dec_ops, contracted_ops, code_target)
   vect_defs = quote $(Expr.(alloc_vectors)...) end
 
-  multigrid_defs = multigrid       ? multigrid_block_expr() : nothing
-  nanmath_defs   = nanmath_support ? nanmath_block_expr()   : nothing
+  multigrid_block = multigrid       ? multigrid_block_expr() : nothing
+  nanmath_block   = nanmath_support ? nanmath_block_expr()   : nothing
 
   return_val = @match output_vars begin
     []     => :nothing
@@ -696,8 +703,8 @@ function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, out
 
   (d = d, vars = vars, tars = tars, equations = equations,
    alloc_vectors = alloc_vectors, data = data,
-   func_defs = func_defs, contracted_defs = contracted_defs, vect_defs = vect_defs,
-   multigrid_defs = multigrid_defs, nanmath_defs = nanmath_defs, return_val = return_val)
+    func_defs = func_defs, contracted_defs = contracted_defs, vect_defs = vect_defs,
+    multigrid_block = multigrid_block, nanmath_block = nanmath_block, return_val = return_val)
 end
 
 """
@@ -755,9 +762,13 @@ allocations) for a generated closure.
 """
 function _gen_runtime_defs(c; include_nanmath::Bool, include_multigrid::Bool)
   exprs = Any[]
-  include_nanmath && c.nanmath_defs !== nothing && push!(exprs, c.nanmath_defs)
+  if include_nanmath && c.nanmath_block !== nothing
+    push!(exprs, c.nanmath_block)
+  end
   push!(exprs, c.func_defs, c.contracted_defs)
-  include_multigrid && c.multigrid_defs !== nothing && push!(exprs, c.multigrid_defs)
+  if include_multigrid && c.multigrid_block !== nothing
+    push!(exprs, c.multigrid_block)
+  end
   push!(exprs, c.vect_defs)
   Expr(:block, exprs...)
 end
