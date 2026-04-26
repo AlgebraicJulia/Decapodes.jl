@@ -700,6 +700,13 @@ function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, out
    multigrid_defs = multigrid_defs, nanmath_defs = nanmath_defs, return_val = return_val)
 end
 
+"""
+    _validate_codegen_inputs(dimension::Int, stateeltype::DataType)
+
+Validate shared code-generation options and throw:
+- `UnsupportedDimensionException` when `dimension ∉ {1,2}`
+- `UnsupportedStateeltypeException` when `stateeltype` is unsupported.
+"""
 function _validate_codegen_inputs(dimension::Int, stateeltype::DataType)
   (dimension == 1 || dimension == 2) ||
     throw(UnsupportedDimensionException(dimension))
@@ -708,6 +715,12 @@ function _validate_codegen_inputs(dimension::Int, stateeltype::DataType)
   return nothing
 end
 
+"""
+    _select_existing_vars(d::SummationDecapode, input_vars::Vector{Symbol})
+
+Return only those `input_vars` that appear in `d[:name]`, preserving the
+ordering from `input_vars`.
+"""
 _select_existing_vars(d::SummationDecapode, input_vars::Vector{Symbol}) =
   filter(v -> v in d[:name], input_vars)
 
