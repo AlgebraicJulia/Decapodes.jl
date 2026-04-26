@@ -218,21 +218,25 @@ Emit code to define functions given operator Symbols.
 Default operations return a tuple of an in-place and an out-of-place function. User-defined operations return an out-of-place function.
 """
 compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, optimizable_ops::Set{Symbol}, non_optimizable_ops::Set{Symbol}) =
-  compile_env_def(op, quote_op, code_target, Val(op in optimizable_ops), Val(op in non_optimizable_ops))
+  let
+    _is_optimizable = Val(op in optimizable_ops)
+    _is_non_optimizable = Val(op in non_optimizable_ops)
+    compile_env_def(op, quote_op, code_target, _is_optimizable, _is_non_optimizable)
+  end
 
 """Emit an optimizable operator binding using the target's matrix generator."""
-compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{true}, ::Val{false}) =
+compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, _is_optimizable::Val{true}, _is_non_optimizable::Val{false}) =
   :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $quote_op, hodge))
 
-compile_env_def(op::Symbol, ::QuoteNode, ::AbstractGenerationTarget, ::Val{true}, ::Val{true}) =
+compile_env_def(op::Symbol, ::QuoteNode, ::AbstractGenerationTarget, _is_optimizable::Val{true}, _is_non_optimizable::Val{true}) =
   throw(ArgumentError("operator $op cannot be both optimizable and non-optimizable"))
 
 """Emit a non-optimizable DEC operator binding using the target's generator."""
-compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{false}, ::Val{true}) =
+compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, _is_optimizable::Val{false}, _is_non_optimizable::Val{true}) =
   :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
 
 """Emit a user-defined operator binding via the `operators` callback."""
-compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{false}, ::Val{false}) =
+compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, _is_optimizable::Val{false}, _is_non_optimizable::Val{false}) =
   :($op = operators(mesh, $quote_op))
 
 function compile_env(d::SummationDecapode, present_dec_ops::Set{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
