@@ -708,13 +708,15 @@ function _validate_codegen_inputs(dimension::Int, stateeltype::DataType)
   return nothing
 end
 
-_filter_input_vars(d::SummationDecapode, input_vars::Vector{Symbol}) =
+_select_existing_vars(d::SummationDecapode, input_vars::Vector{Symbol}) =
   filter(v -> v in d[:name], input_vars)
 
 function _gen_function_body(c; include_tars::Bool)
   exprs = Any[c.vars, c.data]
   append!(exprs, c.equations)
-  include_tars && c.tars !== nothing && push!(exprs, c.tars)
+  if include_tars && c.tars !== nothing
+    push!(exprs, c.tars)
+  end
   push!(exprs, Expr(:return, c.return_val))
   Expr(:block, exprs...)
 end
@@ -858,7 +860,7 @@ function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractA
     downset(user_d, target_vars) :
     deepcopy(user_d)
 
-  sub_input_vars = _filter_input_vars(d, input_vars)
+  sub_input_vars = _select_existing_vars(d, input_vars)
 
   c = _compile_decapode(d, sub_input_vars, target_vars;
     dimension, stateeltype, code_target, preallocate, contract, cse)
@@ -941,8 +943,8 @@ function gen_split(user_implicit_d::SummationDecapode, user_explicit_d::Summatio
 
   validate_split_tangent_states(implicit_d, explicit_d)
 
-  implicit_input_vars = _filter_input_vars(implicit_d, input_vars)
-  explicit_input_vars = _filter_input_vars(explicit_d, input_vars)
+  implicit_input_vars = _select_existing_vars(implicit_d, input_vars)
+  explicit_input_vars = _select_existing_vars(explicit_d, input_vars)
 
   c_implicit = _compile_decapode(implicit_d, implicit_input_vars, [];
     dimension, stateeltype, code_target, preallocate, contract, cse,
