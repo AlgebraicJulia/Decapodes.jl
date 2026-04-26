@@ -804,6 +804,8 @@ Generate one named split branch assignment (`f_implicit` or `f_explicit`) as a
 `let` block that captures runtime defs and returns an in-place branch function.
 
 `c` is the NamedTuple returned by `_compile_decapode`.
+`include_nanmath` and `include_multigrid` control whether optional NaNMath and
+multigrid setup expressions are emitted for the branch.
 """
 function _gen_split_branch(name::Symbol, c; include_nanmath::Bool, include_multigrid::Bool)
   runtime_defs = _gen_runtime_defs(c; include_nanmath, include_multigrid)
