@@ -708,10 +708,8 @@ function _validate_codegen_inputs(dimension::Int, stateeltype::DataType)
   return nothing
 end
 
-function _select_existing_vars(d::SummationDecapode, input_vars::Vector{Symbol})
-  names_set = Set(d[:name])
-  filter(v -> v in names_set, input_vars)
-end
+_select_existing_vars(d::SummationDecapode, input_vars::Vector{Symbol}) =
+  filter(v -> v in d[:name], input_vars)
 
 """
     _gen_function_body(c)
@@ -719,6 +717,8 @@ end
 Build the inner generated-function body expression from compilation artifacts.
 When tangent assignments are present (`c.tars`), they are appended before the
 return expression.
+
+`c` is the NamedTuple returned by `_compile_decapode`.
 """
 function _gen_function_body(c)
   exprs = Any[c.vars, c.data]
@@ -736,6 +736,8 @@ end
 Build the runtime setup expression block (operator functions, contracted defs,
 optional NaNMath overrides, optional multigrid mesh conversion, and vector
 allocations) for a generated closure.
+
+`c` is the NamedTuple returned by `_compile_decapode`.
 """
 function _gen_runtime_defs(c; include_nanmath::Bool, include_multigrid::Bool)
   exprs = Any[]
@@ -753,6 +755,8 @@ Generate the outer `(mesh, operators, hodge) -> ...` closure and an inner
 simulation/intermediate function. `inplace=true` generates the in-place
 signature `(__du__, __u__, __p__, __t__)`; otherwise it generates
 `(__u__, __p__, __t__)`.
+
+`c` is the NamedTuple returned by `_compile_decapode`.
 """
 function _gen_mesh_closure(c; inplace::Bool=true, include_nanmath::Bool=false, include_multigrid::Bool=false)
   args = inplace ?
@@ -773,6 +777,8 @@ end
 
 Generate one named split branch assignment (`f_implicit` or `f_explicit`) as a
 `let` block that captures runtime defs and returns an in-place branch function.
+
+`c` is the NamedTuple returned by `_compile_decapode`.
 """
 function _gen_split_branch(name::Symbol, c)
   runtime_defs = _gen_runtime_defs(c; include_nanmath=true, include_multigrid=true)
