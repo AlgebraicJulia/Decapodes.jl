@@ -708,8 +708,10 @@ function _validate_codegen_inputs(dimension::Int, stateeltype::DataType)
   return nothing
 end
 
-_select_existing_vars(d::SummationDecapode, input_vars::Vector{Symbol}) =
-  filter(v -> v in d[:name], input_vars)
+function _select_existing_vars(d::SummationDecapode, input_vars::Vector{Symbol})
+  names_set = Set(d[:name])
+  filter(v -> v in names_set, input_vars)
+end
 
 function _gen_function_body(c; include_tars::Bool)
   exprs = Any[c.vars, c.data]
@@ -730,7 +732,7 @@ function _gen_runtime_defs(c; include_nanmath::Bool, include_multigrid::Bool)
   Expr(:block, exprs...)
 end
 
-function _gen_mesh_closure(c; inplace::Bool, include_tars::Bool, include_nanmath::Bool=false, include_multigrid::Bool=false)
+function _gen_mesh_closure(c; inplace::Bool=true, include_tars::Bool=true, include_nanmath::Bool=false, include_multigrid::Bool=false)
   args = inplace ?
     [:(__du__), :(__u__), :(__p__), :(__t__)] :
     [:(__u__), :(__p__), :(__t__)]
