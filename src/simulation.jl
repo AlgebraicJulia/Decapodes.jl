@@ -217,13 +217,6 @@ Emit code to define functions given operator Symbols.
 
 Default operations return a tuple of an in-place and an out-of-place function. User-defined operations return an out-of-place function.
 """
-"""
-    compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, optimizable_ops::Set{Symbol}, non_optimizable_ops::Set{Symbol})
-
-Emit the environment-binding expression for one operator symbol. This helper
-routes runtime set-membership checks through `Val`-based dispatch so each case
-(optimizable, non-optimizable, user-defined) is handled by a dedicated method.
-"""
 compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, optimizable_ops::Set{Symbol}, non_optimizable_ops::Set{Symbol}) =
   compile_env_def(op, quote_op, code_target, Val(op in optimizable_ops), Val(op in non_optimizable_ops))
 
@@ -651,8 +644,9 @@ The caller is expected to supply an already-prepared Decapode `d` (e.g. a
 `deepcopy` or a `downset` result). This function mutates `d` and returns a
 `NamedTuple` of compilation artifacts. When `gen_tars` is `true`, the tangent
 variable assignment code used by `gensim` and `gen_split` is also generated. When `multigrid`
-is `true`, the returned `multigrid_block` contains `mesh = finest_mesh(mesh)`.
-When `nanmath_support` is `true`, the returned `nanmath_block` overrides
+is `true`, the returned `NamedTuple` field `multigrid_block` contains
+`mesh = finest_mesh(mesh)`. When `nanmath_support` is `true`, field
+`nanmath_block` overrides
 `^`, `sqrt`, and `log` with their NaNMath equivalents.
 """
 function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, output_vars::Union{Symbol, AbstractArray}; dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool, contract::Bool, cse::Bool, gen_tars::Bool=false, multigrid::Bool=false, nanmath_support::Bool=false)
@@ -706,8 +700,8 @@ function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, out
 
   (d = d, vars = vars, tars = tars, equations = equations,
    alloc_vectors = alloc_vectors, data = data,
-    func_defs = func_defs, contracted_defs = contracted_defs, vect_defs = vect_defs,
-    multigrid_block = multigrid_block, nanmath_block = nanmath_block, return_val = return_val)
+   func_defs = func_defs, contracted_defs = contracted_defs, vect_defs = vect_defs,
+   multigrid_block = multigrid_block, nanmath_block = nanmath_block, return_val = return_val)
 end
 
 """
