@@ -211,27 +211,36 @@ generator_function(code_target::AbstractGenerationTarget) = throw(InvalidCodeTar
 generator_function(::CPUBackend) = :default_dec_generate
 generator_function(::CUDABackend) = :default_dec_cu_generate
 
-# TODO: This function should be handled with dispatch.
 """    compile_env(d::SummationDecapode, present_dec_ops::Vector{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
 
 Emit code to define functions given operator Symbols.
 
 Default operations return a tuple of an in-place and an out-of-place function. User-defined operations return an out-of-place function.
 """
+compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, optimizable_ops::Set{Symbol}, non_optimizable_ops::Set{Symbol}) =
+  compile_env_def(op, quote_op, code_target, Val(op in optimizable_ops), Val(op in non_optimizable_ops))
+
+compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{true}, ::Val{false}) =
+  :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $quote_op, hodge))
+
+compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{false}, ::Val{true}) =
+  :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
+
+compile_env_def(op::Symbol, quote_op::QuoteNode, ::AbstractGenerationTarget, ::Val{false}, ::Val{false}) =
+  :($op = operators(mesh, $quote_op))
+
 function compile_env(d::SummationDecapode, present_dec_ops::Set{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
 
   defs = quote end
 
+  optimizable_ops = optimizable(code_target)
+  non_optimizable_ops = non_optimizable(code_target)
   all_ops = d[:op1] ∪ d[:op2] ∪ present_dec_ops
   avoid_ops = contracted_ops ∪ [DerivOp] ∪ ARITHMETIC_OPS
 
   for op in setdiff(all_ops, avoid_ops)
     quote_op = QuoteNode(op)
-    def = @match op begin
-      if op in optimizable(code_target) end => :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $quote_op, hodge))
-      if op in non_optimizable(code_target) end => :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
-      _ => :($op = operators(mesh, $quote_op))
-    end
+    def = compile_env_def(op, quote_op, code_target, optimizable_ops, non_optimizable_ops)
     push!(defs.args, def)
   end
 
@@ -339,6 +348,7 @@ const PROMOTE_ARITHMETIC_MAP = Dict(:(+) => :.+,
                                     :./ => :./,
                                     :.^ => :.^,
                                     :.= => :.=)
+const PROMOTE_POSTPROCESS_BINARY_OPS = Set([:(*), :(-), :(/), :(^)])
 
 """
     compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::Set{Symbol}, dimension::Int, stateeltype::DataType, code_target::AbstractGenerationTarget, preallocate::Bool)
@@ -439,17 +449,7 @@ function compile(d::SummationDecapode, inputs::Vector{Symbol}, inplace_dec_ops::
           end
         end
 
-        # TODO: Clean this in another PR (with a @match maybe).
-        if operator == :(*)
-          operator = PROMOTE_ARITHMETIC_MAP[operator]
-        end
-        if operator == :(-)
-          operator = PROMOTE_ARITHMETIC_MAP[operator]
-        end
-        if operator == :(/)
-          operator = PROMOTE_ARITHMETIC_MAP[operator]
-        end
-        if operator == :(^)
+        if operator in PROMOTE_POSTPROCESS_BINARY_OPS
           operator = PROMOTE_ARITHMETIC_MAP[operator]
         end
 
@@ -585,11 +585,8 @@ nested_mul(factors) =
 mat_def_expr(computation_name::Symbol, factors::Vector{Symbol}, ::CUDABackend) =
   :($(add_inplace_stub(computation_name)) = $(nested_mul(factors)))
 
-_multigrid_block = quote
-  mesh = finest_mesh(mesh)
-end 
-
-_nanmath_block = quote
+multigrid_block_expr() = :(mesh = finest_mesh(mesh))
+nanmath_block_expr() = quote
   ^(x, y) = Decapodes.NaNMath.pow(x, y)
   sqrt(x) = Decapodes.NaNMath.sqrt(x)
   log(x) = Decapodes.NaNMath.log(x)
@@ -688,8 +685,8 @@ function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, out
   func_defs = compile_env(d, present_dec_ops, contracted_ops, code_target)
   vect_defs = quote $(Expr.(alloc_vectors)...) end
 
-  multigrid_defs = multigrid       ? _multigrid_block : quote end
-  nanmath_defs   = nanmath_support ? _nanmath_block   : quote end
+  multigrid_defs = multigrid       ? multigrid_block_expr() : nothing
+  nanmath_defs   = nanmath_support ? nanmath_block_expr()   : nothing
 
   return_val = @match output_vars begin
     []     => :nothing
@@ -758,9 +755,9 @@ allocations) for a generated closure.
 """
 function _gen_runtime_defs(c; include_nanmath::Bool, include_multigrid::Bool)
   exprs = Any[]
-  include_nanmath && push!(exprs, c.nanmath_defs)
+  include_nanmath && c.nanmath_defs !== nothing && push!(exprs, c.nanmath_defs)
   push!(exprs, c.func_defs, c.contracted_defs)
-  include_multigrid && push!(exprs, c.multigrid_defs)
+  include_multigrid && c.multigrid_defs !== nothing && push!(exprs, c.multigrid_defs)
   push!(exprs, c.vect_defs)
   Expr(:block, exprs...)
 end
@@ -797,8 +794,8 @@ Generate one named split branch assignment (`f_implicit` or `f_explicit`) as a
 
 `c` is the NamedTuple returned by `_compile_decapode`.
 """
-function _gen_split_branch(name::Symbol, c)
-  runtime_defs = _gen_runtime_defs(c; include_nanmath=true, include_multigrid=true)
+function _gen_split_branch(name::Symbol, c; include_nanmath::Bool, include_multigrid::Bool)
+  runtime_defs = _gen_runtime_defs(c; include_nanmath, include_multigrid)
   body = _gen_function_body(c)
   quote
     $name = let
@@ -848,7 +845,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
     dimension, stateeltype, code_target, preallocate, contract, cse,
     gen_tars = true, multigrid, nanmath_support)
 
-  _gen_mesh_closure(c; inplace = true, include_nanmath = true, include_multigrid = true)
+  _gen_mesh_closure(c; inplace = true, include_nanmath = nanmath_support, include_multigrid = multigrid)
 end
 
 gather_inputs(d::SummationDecapode) = vcat(infer_state_names(d), d[incident(d, :Literal, :type), :name])
@@ -1006,8 +1003,8 @@ function gen_split(user_implicit_d::SummationDecapode, user_explicit_d::Summatio
 
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
-      $(_gen_split_branch(:f_implicit, c_implicit))
-      $(_gen_split_branch(:f_explicit, c_explicit))
+      $(_gen_split_branch(:f_implicit, c_implicit; include_nanmath = nanmath_support, include_multigrid = multigrid))
+      $(_gen_split_branch(:f_explicit, c_explicit; include_nanmath = nanmath_support, include_multigrid = multigrid))
 
       return f_implicit, f_explicit
     end
