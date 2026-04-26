@@ -845,9 +845,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
     dimension, stateeltype, code_target, preallocate, contract, cse,
     gen_tars = true, multigrid, nanmath_support)
 
-  _gen_mesh_closure(c;
-    inplace = true,
-    include_nanmath = true, include_multigrid = true)
+  _gen_mesh_closure(c; inplace = true, include_nanmath = true, include_multigrid = true)
 end
 
 gather_inputs(d::SummationDecapode) = vcat(infer_state_names(d), d[incident(d, :Literal, :type), :name])
