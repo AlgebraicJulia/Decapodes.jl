@@ -27,7 +27,7 @@ DecapodesCUDAExt = "CUDA"
 [compat]
 ACSets = "0.2"
 Aqua = "0.8"
-CUDA = "5.2"
+CUDA = "5.2, 6"
 Catlab = "0.17.3, 0.17.4"
 CombinatorialSpaces = "0.10"
 ComponentArrays = "0.15"
