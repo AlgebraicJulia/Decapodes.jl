@@ -713,10 +713,10 @@ function _select_existing_vars(d::SummationDecapode, input_vars::Vector{Symbol})
   filter(v -> v in names_set, input_vars)
 end
 
-function _gen_function_body(c; include_tars::Bool)
+function _gen_function_body(c)
   exprs = Any[c.vars, c.data]
   append!(exprs, c.equations)
-  if include_tars && c.tars !== nothing
+  if c.tars !== nothing
     push!(exprs, c.tars)
   end
   push!(exprs, Expr(:return, c.return_val))
@@ -732,11 +732,11 @@ function _gen_runtime_defs(c; include_nanmath::Bool, include_multigrid::Bool)
   Expr(:block, exprs...)
 end
 
-function _gen_mesh_closure(c; inplace::Bool=true, include_tars::Bool=true, include_nanmath::Bool=false, include_multigrid::Bool=false)
+function _gen_mesh_closure(c; inplace::Bool=true, include_nanmath::Bool=false, include_multigrid::Bool=false)
   args = inplace ?
     [:(__du__), :(__u__), :(__p__), :(__t__)] :
     [:(__u__), :(__p__), :(__t__)]
-  body = _gen_function_body(c; include_tars)
+  body = _gen_function_body(c)
   runtime_defs = _gen_runtime_defs(c; include_nanmath, include_multigrid)
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
@@ -748,7 +748,7 @@ end
 
 function _gen_split_branch(name::Symbol, c)
   runtime_defs = _gen_runtime_defs(c; include_nanmath=true, include_multigrid=true)
-  body = _gen_function_body(c; include_tars=true)
+  body = _gen_function_body(c)
   quote
     $name = let
       $(runtime_defs)
@@ -798,7 +798,7 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
     gen_tars = true, multigrid, nanmath_support)
 
   _gen_mesh_closure(c;
-    inplace = true, include_tars = true,
+    inplace = true,
     include_nanmath = true, include_multigrid = true)
 end
 
@@ -867,7 +867,7 @@ function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractA
   c = _compile_decapode(d, sub_input_vars, target_vars;
     dimension, stateeltype, code_target, preallocate, contract, cse)
 
-  _gen_mesh_closure(c; inplace = false, include_tars = false)
+  _gen_mesh_closure(c; inplace = false)
 end
 
 gen_int(d::SummationDecapode, target_var::Symbol; kwargs...) =
