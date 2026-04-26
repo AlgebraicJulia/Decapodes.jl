@@ -233,7 +233,7 @@ compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGeneration
 compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{false}, ::Val{true}) =
   :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
 
-compile_env_def(op::Symbol, quote_op::QuoteNode, ::AbstractGenerationTarget, ::Val{false}, ::Val{false}) =
+compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{false}, ::Val{false}) =
   :($op = operators(mesh, $quote_op))
 
 function compile_env(d::SummationDecapode, present_dec_ops::Set{Symbol}, contracted_ops::Vector{Symbol}, code_target::AbstractGenerationTarget)
@@ -740,6 +740,7 @@ return expression.
 
 `c` is the NamedTuple returned by `_compile_decapode`.
 `c.tars` is `nothing` when `_compile_decapode(...; gen_tars=false)`.
+When present, `c.tars` contains tangent-variable assignment expressions.
 """
 function _gen_function_body(c)
   exprs = Any[c.vars, c.data]
