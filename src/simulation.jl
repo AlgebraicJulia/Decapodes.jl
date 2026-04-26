@@ -700,6 +700,59 @@ function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, out
    multigrid_defs = multigrid_defs, nanmath_defs = nanmath_defs, return_val = return_val)
 end
 
+function _validate_codegen_inputs(dimension::Int, stateeltype::DataType)
+  (dimension == 1 || dimension == 2) ||
+    throw(UnsupportedDimensionException(dimension))
+  supports_stateeltype(stateeltype) ||
+    throw(UnsupportedStateeltypeException(stateeltype))
+  return nothing
+end
+
+_filter_input_vars(d::SummationDecapode, input_vars::Vector{Symbol}) =
+  filter(v -> v in d[:name], input_vars)
+
+function _gen_function_body(c; include_tars::Bool)
+  exprs = Any[c.vars, c.data]
+  append!(exprs, c.equations)
+  include_tars && c.tars !== nothing && push!(exprs, c.tars)
+  push!(exprs, Expr(:return, c.return_val))
+  Expr(:block, exprs...)
+end
+
+function _gen_runtime_defs(c; include_nanmath::Bool, include_multigrid::Bool)
+  exprs = Any[]
+  include_nanmath && push!(exprs, c.nanmath_defs)
+  push!(exprs, c.func_defs, c.contracted_defs)
+  include_multigrid && push!(exprs, c.multigrid_defs)
+  push!(exprs, c.vect_defs)
+  Expr(:block, exprs...)
+end
+
+function _gen_mesh_closure(c; inplace::Bool, include_tars::Bool, include_nanmath::Bool=false, include_multigrid::Bool=false)
+  args = inplace ?
+    [:(__du__), :(__u__), :(__p__), :(__t__)] :
+    [:(__u__), :(__p__), :(__t__)]
+  body = _gen_function_body(c; include_tars)
+  runtime_defs = _gen_runtime_defs(c; include_nanmath, include_multigrid)
+  quote
+    (mesh, operators, hodge=GeometricHodge()) -> begin
+      $(runtime_defs)
+      f($(args...)) = $body
+    end
+  end
+end
+
+function _gen_split_branch(name::Symbol, c)
+  runtime_defs = _gen_runtime_defs(c; include_nanmath=true, include_multigrid=true)
+  body = _gen_function_body(c; include_tars=true)
+  quote
+    $name = let
+      $(runtime_defs)
+      (__du__, __u__, __p__, __t__) -> $body
+    end
+  end
+end
+
 """
     gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true)
 
@@ -731,11 +784,7 @@ to operator mappings to return a simulator that can be used to solve the represe
 `nanmath_support`: Enables(`true`)/disables(`false`) NaNMath mode. When enabled, the generated code will locally override `^`, `sqrt`, and `log` with their NaNMath equivalents (`NaNMath.pow`, `NaNMath.sqrt`, `NaNMath.log`). This is useful during calibration or optimization, where non-physical parameter sets might cause out-of-domain errors. With NaNMath, such calls return `NaN` instead of throwing errors, allowing optimization routines to reject those parameters and continue. (Defaults to `false`)
 """
 function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, multigrid::Bool = false, cse::Bool = true, nanmath_support::Bool = false)
-  (dimension == 1 || dimension == 2) ||
-    throw(UnsupportedDimensionException(dimension))
-
-  supports_stateeltype(stateeltype) ||
-    throw(UnsupportedStateeltypeException(stateeltype))
+  _validate_codegen_inputs(dimension, stateeltype)
 
   # Explicit copy for safety
   d = deepcopy(user_d)
@@ -744,22 +793,9 @@ function gensim(user_d::SummationDecapode, input_vars::Vector{Symbol}; dimension
     dimension, stateeltype, code_target, preallocate, contract, cse,
     gen_tars = true, multigrid, nanmath_support)
 
-  quote
-    (mesh, operators, hodge=GeometricHodge()) -> begin
-      $(c.nanmath_defs)
-      $(c.func_defs)
-      $(c.contracted_defs)
-      $(c.multigrid_defs)
-      $(c.vect_defs)
-      f(__du__, __u__, __p__, __t__) = begin
-        $(c.vars)
-        $(c.data)
-        $(c.equations...)
-        $(c.tars)
-        return $(c.return_val)
-      end;
-    end
-  end
+  _gen_mesh_closure(c;
+    inplace = true, include_tars = true,
+    include_nanmath = true, include_multigrid = true)
 end
 
 gather_inputs(d::SummationDecapode) = vcat(infer_state_names(d), d[incident(d, :Literal, :type), :name])
@@ -815,35 +851,19 @@ The downset computation can be skipped if `compute_downset` is `false` (defaults
 See also: [`gensim`](@ref), [`eval_int`](@ref).
 """
 function gen_int(user_d::SummationDecapode, target_vars::Union{Symbol, AbstractArray{Symbol}}, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, cse::Bool = true, compute_downset=true)
-  (dimension == 1 || dimension == 2) ||
-    throw(UnsupportedDimensionException(dimension))
-
-  supports_stateeltype(stateeltype) ||
-    throw(UnsupportedStateeltypeException(stateeltype))
+  _validate_codegen_inputs(dimension, stateeltype)
 
   # Compute the downset, or do an explicit deep copy for safety.
   d = compute_downset ?
     downset(user_d, target_vars) :
     deepcopy(user_d)
 
-  sub_input_vars = filter(v -> v in d[:name], input_vars)
+  sub_input_vars = _filter_input_vars(d, input_vars)
 
   c = _compile_decapode(d, sub_input_vars, target_vars;
     dimension, stateeltype, code_target, preallocate, contract, cse)
 
-  quote
-    (mesh, operators, hodge=GeometricHodge()) -> begin
-      $(c.func_defs)
-      $(c.contracted_defs)
-      $(c.vect_defs)
-      f(__u__, __p__, __t__) = begin
-        $(c.vars)
-        $(c.data)
-        $(c.equations...)
-        return $(c.return_val)
-      end;
-    end
-  end
+  _gen_mesh_closure(c; inplace = false, include_tars = false)
 end
 
 gen_int(d::SummationDecapode, target_var::Symbol; kwargs...) =
@@ -914,19 +934,15 @@ Both Decapodes must define the same `∂ₜ` state variables.
 See also: [`gensim`](@ref), [`gen_int`](@ref), [`eval_split`](@ref).
 """
 function gen_split(user_implicit_d::SummationDecapode, user_explicit_d::SummationDecapode, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType = Float64, code_target::AbstractGenerationTarget = CPUTarget(), preallocate::Bool = true, contract::Bool = true, multigrid::Bool = false, cse::Bool = true, nanmath_support::Bool = false)
-  (dimension == 1 || dimension == 2) ||
-    throw(UnsupportedDimensionException(dimension))
-
-  supports_stateeltype(stateeltype) ||
-    throw(UnsupportedStateeltypeException(stateeltype))
+  _validate_codegen_inputs(dimension, stateeltype)
 
   implicit_d = deepcopy(user_implicit_d)
   explicit_d = deepcopy(user_explicit_d)
 
   validate_split_tangent_states(implicit_d, explicit_d)
 
-  implicit_input_vars = filter(v -> v in implicit_d[:name], input_vars)
-  explicit_input_vars = filter(v -> v in explicit_d[:name], input_vars)
+  implicit_input_vars = _filter_input_vars(implicit_d, input_vars)
+  explicit_input_vars = _filter_input_vars(explicit_d, input_vars)
 
   c_implicit = _compile_decapode(implicit_d, implicit_input_vars, [];
     dimension, stateeltype, code_target, preallocate, contract, cse,
@@ -937,35 +953,8 @@ function gen_split(user_implicit_d::SummationDecapode, user_explicit_d::Summatio
 
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
-      f_implicit = let
-        $(c_implicit.nanmath_defs)
-        $(c_implicit.func_defs)
-        $(c_implicit.contracted_defs)
-        $(c_implicit.multigrid_defs)
-        $(c_implicit.vect_defs)
-        (__du__, __u__, __p__, __t__) -> begin
-          $(c_implicit.vars)
-          $(c_implicit.data)
-          $(c_implicit.equations...)
-          $(c_implicit.tars)
-          return $(c_implicit.return_val)
-        end
-      end
-
-      f_explicit = let
-        $(c_explicit.nanmath_defs)
-        $(c_explicit.func_defs)
-        $(c_explicit.contracted_defs)
-        $(c_explicit.multigrid_defs)
-        $(c_explicit.vect_defs)
-        (__du__, __u__, __p__, __t__) -> begin
-          $(c_explicit.vars)
-          $(c_explicit.data)
-          $(c_explicit.equations...)
-          $(c_explicit.tars)
-          return $(c_explicit.return_val)
-        end
-      end
+      $(_gen_split_branch(:f_implicit, c_implicit))
+      $(_gen_split_branch(:f_explicit, c_explicit))
 
       return f_implicit, f_explicit
     end
