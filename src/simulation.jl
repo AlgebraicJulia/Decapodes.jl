@@ -224,6 +224,9 @@ compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGeneration
 compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{true}, ::Val{false}) =
   :(($(add_inplace_stub(op)), $op) = $(opt_generator_function(code_target))(mesh, $quote_op, hodge))
 
+compile_env_def(op::Symbol, ::QuoteNode, ::AbstractGenerationTarget, ::Val{true}, ::Val{true}) =
+  throw(ArgumentError("operator $op cannot be both optimizable and non-optimizable"))
+
 """Emit a non-optimizable DEC operator binding using the target's generator."""
 compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, ::Val{false}, ::Val{true}) =
   :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
@@ -689,8 +692,8 @@ function _compile_decapode(d::SummationDecapode, input_vars::Vector{Symbol}, out
   func_defs = compile_env(d, present_dec_ops, contracted_ops, code_target)
   vect_defs = quote $(Expr.(alloc_vectors)...) end
 
-  multigrid_block = multigrid       ? multigrid_block_expr() : nothing
-  nanmath_block   = nanmath_support ? nanmath_block_expr()   : nothing
+  multigrid_block = multigrid ? multigrid_block_expr() : nothing
+  nanmath_block = nanmath_support ? nanmath_block_expr() : nothing
 
   return_val = @match output_vars begin
     []     => :nothing
