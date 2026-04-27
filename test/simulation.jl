@@ -352,13 +352,51 @@ end
 
 @testset "Gensim Transformations" begin
 
+  conmat_prefix = "GenSim-M_GenSim-ConMat_"
+
   function count_contractions(e::Expr)
-    blocks = gensim_body_blocks(e)
-    contracted_block = blocks[3]
-    length(contracted_block.args) - 1
+    n = Ref(0)
+    function walk(x)
+      if x isa Expr
+        if x.head == :(=) &&
+          x.args[1] isa Symbol &&
+          startswith(String(x.args[1]), conmat_prefix)
+          n[] += 1
+        elseif x.head == :call &&
+          x.args[1] == :mul! &&
+          length(x.args) ≥ 3 &&
+          x.args[3] isa Symbol &&
+          startswith(String(x.args[3]), conmat_prefix)
+          n[] += 1
+        end
+        foreach(walk, x.args)
+      elseif x isa AbstractVector
+        foreach(walk, x)
+      end
+      nothing
+    end
+    walk(e)
+    n[]
   end
 
   count_contractions(d::SummationDecapode) = count_contractions(gensim(d))
+
+  function contraction_assignments(e::Expr)
+    assigns = Expr[]
+    function walk(x)
+      if x isa Expr
+        if x.head == :(=) && x.args[1] isa Symbol && startswith(String(x.args[1]), conmat_prefix)
+          push!(assigns, x)
+        end
+        foreach(walk, x.args)
+      elseif x isa AbstractVector
+        foreach(walk, x)
+      end
+      nothing
+    end
+    walk(e)
+    assigns
+  end
 
   begin
     primal_earth = loadmesh(Icosphere(1))
@@ -407,8 +445,7 @@ end
   @test 0 == count_contractions(gensim(simple_contract; contract=false))
 
   f = gensim(simple_contract)
-  contracted_block = gensim_body_blocks(f)[3]
-  @test contracted_block.args[[2,4,6]] == [
+  @test contraction_assignments(f) == [
     :(var"GenSim-M_GenSim-ConMat_0" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_dual_d₁" * var"GenSim-M_⋆₁" * var"GenSim-M_d₀"),
     :(var"GenSim-M_GenSim-ConMat_1" = var"GenSim-M_⋆₀⁻¹" * var"GenSim-M_⋆₀"),
     :(var"GenSim-M_GenSim-ConMat_2" = var"GenSim-M_d₁" * var"GenSim-M_d₀")]
@@ -707,8 +744,27 @@ end
     B == ⋆(⋆(A))
   end
   g = gensim(DiagonalInvHodge1)
-  func_block = gensim_body_blocks(g)[2]
-  @test func_block.args[2].args[2].args[3].value == :⋆₁⁻¹
+  func_block = only(filter(block ->
+    block isa Expr && block.head == :(=) &&
+    block.args[1] isa Expr && block.args[1].head == :call && block.args[1].args[1] == :f,
+    gensim_body_blocks(g)))
+  function has_call_to(e::Expr, fn::Symbol)
+    found = Ref(false)
+    function walk(x)
+      if x isa Expr
+        if x.head == :call && !isempty(x.args) && x.args[1] == fn
+          found[] = true
+        end
+        foreach(walk, x.args)
+      elseif x isa AbstractVector
+        foreach(walk, x)
+      end
+      nothing
+    end
+    walk(e)
+    found[]
+  end
+  @test has_call_to(func_block, Symbol("GenSim-M_⋆₁⁻¹"))
   @test length(filter_lnn(func_block.args)) == 2
   sim = eval(g)
 
