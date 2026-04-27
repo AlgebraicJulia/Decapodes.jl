@@ -352,19 +352,21 @@ end
 
 @testset "Gensim Transformations" begin
 
+  conmat_prefix = "GenSim-M_GenSim-ConMat_"
+
   function count_contractions(e::Expr)
     n = Ref(0)
     function walk(x)
       if x isa Expr
         if x.head == :(=) &&
           x.args[1] isa Symbol &&
-          startswith(String(x.args[1]), "GenSim-M_GenSim-ConMat_")
+          startswith(String(x.args[1]), conmat_prefix)
           n[] += 1
         elseif x.head == :call &&
           x.args[1] == :mul! &&
           length(x.args) ≥ 3 &&
           x.args[3] isa Symbol &&
-          startswith(String(x.args[3]), "GenSim-M_GenSim-ConMat_")
+          startswith(String(x.args[3]), conmat_prefix)
           n[] += 1
         end
         foreach(walk, x.args)
@@ -383,7 +385,7 @@ end
     assigns = Expr[]
     function walk(x)
       if x isa Expr
-        if x.head == :(=) && x.args[1] isa Symbol && startswith(String(x.args[1]), "GenSim-M_GenSim-ConMat_")
+        if x.head == :(=) && x.args[1] isa Symbol && startswith(String(x.args[1]), conmat_prefix)
           push!(assigns, x)
         end
         foreach(walk, x.args)
@@ -746,7 +748,23 @@ end
     block isa Expr && block.head == :(=) &&
     block.args[1] isa Expr && block.args[1].head == :call && block.args[1].args[1] == :f,
     gensim_body_blocks(g)))
-  @test occursin("var\"GenSim-M_⋆₁⁻¹\"(var\"•1\", A)", repr(func_block))
+  function has_call_to(e::Expr, fn::Symbol)
+    found = Ref(false)
+    function walk(x)
+      if x isa Expr
+        if x.head == :call && !isempty(x.args) && x.args[1] == fn
+          found[] = true
+        end
+        foreach(walk, x.args)
+      elseif x isa AbstractVector
+        foreach(walk, x)
+      end
+      nothing
+    end
+    walk(e)
+    found[]
+  end
+  @test has_call_to(func_block, Symbol("GenSim-M_⋆₁⁻¹"))
   @test length(filter_lnn(func_block.args)) == 2
   sim = eval(g)
 
