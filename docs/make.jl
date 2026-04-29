@@ -62,6 +62,7 @@ makedocs(
         "Variable Types" => "concepts/deca_types.md",
         "Meshes" => "concepts/meshes.md",
         "Custom Operators" => "concepts/generate.md",
+        "DEC Op Table" => "dec_operator_table.md"
     ],
     "Zoo" => Any[
         "Vortices" => "navier_stokes/ns.md",
