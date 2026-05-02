@@ -77,7 +77,7 @@ end
 diffExpr = parse_decapode(AdvectionDiffusionExprBody)
 ddp = SummationDecapode(diffExpr)
 gensim(expand_operators(ddp), [:C, :V])
-f = evalsim(expand_operators(ddp), [:C, :V])
+sim = evalsim(expand_operators(ddp), [:C, :V])
 
 radius = 6371+90
 primal_earth = loadmesh(Icosphere(4, radius))
@@ -87,7 +87,8 @@ orient!(primal_earth)
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
 subdivide_duals!(earth, Circumcenter())
 
-fₘ = f(earth, generate)
+fₘ = sim(earth, generate)
+# `MvNormal(μ, σ::Vector)` treats `σ` as standard deviations; use `Diagonal(σ.^2)` to preserve that behavior explicitly.
 c_dist = MvNormal([nploc_point[1], nploc_point[2]], Diagonal([100.0, 100.0] .^ 2))
 c = [pdf(c_dist, [p[1], p[2]]./√radius) for p in earth[:point]]
 v = ones(Float64, ne(earth))

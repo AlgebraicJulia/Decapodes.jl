@@ -185,6 +185,7 @@ f = sim(sd, generate, GeometricHodge())
 
 # Initial heat distribution
 # Gaussian heat disturbance along with top and bottom elements
+# `MvNormal(μ, σ::Vector)` treats `σ` as standard deviations; use `Diagonal(σ.^2)` to preserve that behavior explicitly.
 T_dist = MvNormal([lx/2.0, ly/2.0], Diagonal([1/sqrt(2), 1/sqrt(2)] .^ 2))
 # XXX: Scaling by 2 * ΔT = 400 results in a maximum temperature of ~127. It would be simpler to present were this 100.
 T = [2 * ΔT * pdf(T_dist, [p[1], p[2]]) for p in sd[:point]]
@@ -223,7 +224,7 @@ matwrite("soln.mat",
         "time"    => soln.t,
         "nf"      => soln.stats.nf,
         "naccept" => soln.stats.naccept,
-        "nreject" => soln.stats.nreject])
+        "nreject" => soln.stats.nreject]))
 soln = matread("soln.mat")["soln"]
 
 all_solns_mat = matread("all_solns.mat")
@@ -244,4 +245,4 @@ function plot_rmse_over_time()
   fig
 end
 
-save("RMSE_over_time.svg", plot_rmse_over_time(soln)
+save("RMSE_over_time.svg", plot_rmse_over_time(soln))

@@ -97,6 +97,7 @@ end
 
 begin
 v = flatten_form(velocity, earth)
+# `MvNormal(μ, σ::Vector)` treats `σ` as standard deviations; use `Diagonal(σ.^2)` to preserve that behavior explicitly.
 c_dist = MvNormal([radius/√(2), radius/√(2)], Diagonal((20 .* [1.0, 1.0]) .^ 2))
 c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
 

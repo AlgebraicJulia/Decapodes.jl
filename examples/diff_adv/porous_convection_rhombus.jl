@@ -151,6 +151,7 @@ f = sim(sd, generate, DiagonalHodge())
 
 # Initial heat distribution
 # Gaussian heat disturbance along with top and bottom elements
+# `MvNormal(μ, σ::Vector)` treats `σ` as standard deviations; use `Diagonal(σ.^2)` to preserve that behavior explicitly.
 T_dist = MvNormal([lx/2.0, ly/2.0], Diagonal([1/sqrt(2), 1/sqrt(2)] .^ 2))
 T = [2 * ΔT * pdf(T_dist, [p[1], p[2]]) for p in sd[:point]]
 T[top_wall_idxs] .= -ΔT/2

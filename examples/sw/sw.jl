@@ -59,6 +59,7 @@ subdivide_duals!(earth, Circumcenter())
 
 
 fₘ = f(earth, generate)
+# `MvNormal(μ, σ::Vector)` treats `σ` as standard deviations; use `Diagonal(σ.^2)` to preserve that behavior explicitly.
 c_dist = MvNormal([nploc_point[1], nploc_point[2]], Diagonal([100.0, 100.0] .^ 2))
 c = [pdf(c_dist, [p[1], p[2]]./√RADIUS) for p in earth[:point]]
 
