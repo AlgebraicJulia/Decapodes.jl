@@ -76,7 +76,7 @@ subdivide_duals!(earth, Circumcenter())
 
 physics = SummationDecapode(parse_decapode(PressureFlow))
 gensim(expand_operators(physics), [:P, :V])
-sim = eval(gensim(expand_operators(physics), [:P, :V]))
+sim = evalsim(expand_operators(physics), [:P, :V])
 
 fₘ = sim(earth, generate)
 
@@ -97,7 +97,8 @@ end
 
 begin
 v = flatten_form(velocity, earth)
-c_dist = MvNormal([radius/√(2), radius/√(2)], 20*[1, 1])
+# `MvNormal(μ, σ::Vector)` treats `σ` as standard deviations; use `Diagonal(σ.^2)` to preserve that behavior explicitly.
+c_dist = MvNormal([radius/√(2), radius/√(2)], Diagonal((20 .* [1.0, 1.0]) .^ 2))
 c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
 
 theta_start = 45*pi/180
@@ -105,14 +106,14 @@ phi_start = 0*pi/180
 x = radius*cos(phi_start)*sin(theta_start)
 y = radius*sin(phi_start)*sin(theta_start)
 z = radius*cos(theta_start)
-c_dist₁ = MvNormal([x, y, z], 20*[1, 1, 1])
-c_dist₂ = MvNormal([x, y, -z], 20*[1, 1, 1])
+c_dist₁ = MvNormal([x, y, z], Diagonal((20 .* [1.0, 1.0, 1.0]) .^ 2))
+c_dist₂ = MvNormal([x, y, -z], Diagonal((20 .* [1.0, 1.0, 1.0]) .^ 2))
 
 c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 
 c = 100*[pdf(c_dist, [p[1], p[2], p[3]]) for p in earth[:point]]
 
-u₀ = ComponentArrays(P = c, V=collect(v))
+u₀ = ComponentArray(P = c, V=collect(v))
 mesh(primal_earth, color=u₀.P, colormap=:plasma)
 tₑ = 30.0
 
@@ -132,7 +133,7 @@ mass(soln, t, mesh, concentration=:P) = sum(⋆(0, mesh)*soln(t).concentration)
 @show extrema(mass(soln, t, earth, :P) for t in 0:tₑ/150:tₑ)
 end
 mesh(primal_earth, color=soln(0).P, colormap=:jet)
-mesh(primal_earth, color=soln(0) - soln(tₑ).P, colormap=:jet)
+mesh(primal_earth, color=soln(0).P - soln(tₑ).P, colormap=:jet)
 begin
 ## Plot the result
 times = range(0.0, tₑ, length=150)
@@ -191,5 +192,3 @@ end
 
 parse_decapode(NavierStokes)
 SummationDecapode(parse_decapode(NavierStokes))
-
-

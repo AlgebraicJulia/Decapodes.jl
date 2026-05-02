@@ -133,7 +133,7 @@ constants_and_parameters = (
 
 # Generate the simulation.
 gensim(expand_operators(Brusselator))
-sim = eval(gensim(expand_operators(Brusselator)))
+sim = evalsim(expand_operators(Brusselator))
 fₘ = sim(sd, generate)
 
 # Create problem and run sim for t ∈ [0,tₑ).
@@ -219,7 +219,7 @@ resolve_overloads!(Brusselator)
 to_graphviz(Brusselator)
 
 gensim(expand_operators(Brusselator))
-sim = eval(gensim(expand_operators(Brusselator)))
+sim = evalsim(expand_operators(Brusselator))
 fₘ = sim(sd, generate)
 
 L = fill(0.0, length(left_wall_idxs))

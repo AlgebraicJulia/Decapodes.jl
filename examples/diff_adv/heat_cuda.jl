@@ -6,7 +6,7 @@ using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
 using CUDA
-# using CairoMakie
+using CairoMakie
 using LinearAlgebra
 using SparseArrays
 Point2D = Point2{Float64}
@@ -23,7 +23,7 @@ Heat = @decapode begin
     ∂ₜ(U) == 100 * Δ(U)
 end
 
-sim = eval(gensim(Heat, code_target=CUDATarget()))
+sim = evalsim(Heat, code_target=CUDATarget())
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
     op = @match my_symbol begin

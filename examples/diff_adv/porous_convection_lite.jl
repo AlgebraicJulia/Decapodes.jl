@@ -178,15 +178,15 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return op
 end
 
-sim = eval(gensim(Porous_Convection))
+sim = evalsim(Porous_Convection)
 f = sim(sd, generate, GeometricHodge())
 
 ΔT = 200.0
 
 # Initial heat distribution
 # Gaussian heat disturbance along with top and bottom elements
-# XXX: This constructor (with a vector as the second argument) is deprecated.
-T_dist = MvNormal([lx/2.0, ly/2.0], [1/sqrt(2), 1/sqrt(2)])
+# `MvNormal(μ, σ::Vector)` treats `σ` as standard deviations; use `Diagonal(σ.^2)` to preserve that behavior explicitly.
+T_dist = MvNormal([lx/2.0, ly/2.0], Diagonal([1/sqrt(2), 1/sqrt(2)] .^ 2))
 # XXX: Scaling by 2 * ΔT = 400 results in a maximum temperature of ~127. It would be simpler to present were this 100.
 T = [2 * ΔT * pdf(T_dist, [p[1], p[2]]) for p in sd[:point]]
 T[top_wall_idxs] .= -ΔT/2
@@ -224,7 +224,7 @@ matwrite("soln.mat",
         "time"    => soln.t,
         "nf"      => soln.stats.nf,
         "naccept" => soln.stats.naccept,
-        "nreject" => soln.stats.nreject])
+        "nreject" => soln.stats.nreject]))
 soln = matread("soln.mat")["soln"]
 
 all_solns_mat = matread("all_solns.mat")
@@ -245,5 +245,4 @@ function plot_rmse_over_time()
   fig
 end
 
-save("RMSE_over_time.svg", plot_rmse_over_time(soln)
-
+save("RMSE_over_time.svg", plot_rmse_over_time(soln))

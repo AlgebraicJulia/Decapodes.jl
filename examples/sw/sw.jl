@@ -41,7 +41,7 @@ end
 diffExpr = parse_decapode(DiffusionExprBody)
 ddp = SummationDecapode(diffExpr)
 gensim(expand_operators(ddp), [:C])
-f = eval(gensim(expand_operators(ddp), [:C]))
+f = evalsim(expand_operators(ddp), [:C])
 
 include("coordinates.jl")
 
@@ -51,6 +51,7 @@ const RADIUS = 6371+90
 #primal_earth = loadmesh(ThermoIcosphere())
 primal_earth = loadmesh(Icosphere(4, RADIUS))
 nploc = argmax(x -> x[3], primal_earth[:point])
+nploc_point = primal_earth[nploc, :point]
 primal_earth[:edge_orientation] = false
 orient!(primal_earth)
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
@@ -58,7 +59,8 @@ subdivide_duals!(earth, Circumcenter())
 
 
 fₘ = f(earth, generate)
-c_dist = MvNormal(nploc[[1,2]], 100[1, 1])
+# `MvNormal(μ, σ::Vector)` treats `σ` as standard deviations; use `Diagonal(σ.^2)` to preserve that behavior explicitly.
+c_dist = MvNormal([nploc_point[1], nploc_point[2]], Diagonal([100.0, 100.0] .^ 2))
 c = [pdf(c_dist, [p[1], p[2]]./√RADIUS) for p in earth[:point]]
 
 u₀ = ComponentArray(C=c)
@@ -97,7 +99,7 @@ end
 advdiff = parse_decapode(AdvDiff)
 advdiffdp = SummationDecapode(advdiff)
 gensim(expand_operators(advdiffdp), [:C, :V])
-sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
+sim = evalsim(expand_operators(advdiffdp), [:C, :V])
 
 fₘ = sim(earth, generate)
 end
@@ -110,7 +112,7 @@ begin
   ps = earth[:point]
   ns = ((x->x) ∘ (x->Vec3f(x...))∘velocity).(ps)
 
-  GLMakie.arrows(
+  arrows(
       ps, ns, fxaa=true, ## turn on anti-aliasing
       linecolor = :gray, arrowcolor = :gray,
       linewidth = 20.1, arrowsize = 20*Vec3f(3, 3, 4),
@@ -120,7 +122,7 @@ end
 
 begin
 v = flatten(velocity, earth)
-c_dist = MvNormal([RADIUS/√(2), RADIUS/√(2)], 20*[1, 1])
+c_dist = MvNormal([RADIUS/√(2), RADIUS/√(2)], Diagonal((20 .* [1.0, 1.0]) .^ 2))
 c = 100*[pdf(c_dist, [p[1], p[2]]) for p in earth[:point]]
 
 theta_start = 45*pi/180
@@ -128,8 +130,8 @@ phi_start = 0*pi/180
 x = RADIUS*cos(phi_start)*sin(theta_start)
 y = RADIUS*sin(phi_start)*sin(theta_start)
 z = RADIUS*cos(theta_start)
-c_dist₁ = MvNormal([x, y, z], 20*[1, 1, 1])
-c_dist₂ = MvNormal([x, y, -z], 20*[1, 1, 1])
+c_dist₁ = MvNormal([x, y, z], Diagonal((20 .* [1.0, 1.0, 1.0]) .^ 2))
+c_dist₂ = MvNormal([x, y, -z], Diagonal((20 .* [1.0, 1.0, 1.0]) .^ 2))
 
 c_dist = MixtureModel([c_dist₁, c_dist₂], [0.6,0.4])
 

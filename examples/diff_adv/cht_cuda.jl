@@ -422,7 +422,6 @@ begin
   g = CuArray(♭(sd, DualVectorField(gravity.(sd[triangle_center(sd),:dual_point]))).data);
   p = CuArray([density for p in s[:point]] * (288.15 * R₀))
 end
-# sim = eval(gensim(HeatXFer, code_target=CUDATarget()))
 
 wedge_cache = init_wedge_ops(sd)
 v2comp = comp_support(sd);

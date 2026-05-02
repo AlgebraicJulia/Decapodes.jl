@@ -144,14 +144,15 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return op
 end
 
-sim = eval(gensim(Porous_Convection))
+sim = evalsim(Porous_Convection)
 f = sim(sd, generate, DiagonalHodge())
 
 ΔT = 200.0
 
 # Initial heat distribution
 # Gaussian heat disturbance along with top and bottom elements
-T_dist = MvNormal([lx/2.0, ly/2.0], [1/sqrt(2), 1/sqrt(2)])
+# `MvNormal(μ, σ::Vector)` treats `σ` as standard deviations; use `Diagonal(σ.^2)` to preserve that behavior explicitly.
+T_dist = MvNormal([lx/2.0, ly/2.0], Diagonal([1/sqrt(2), 1/sqrt(2)] .^ 2))
 T = [2 * ΔT * pdf(T_dist, [p[1], p[2]]) for p in sd[:point]]
 T[top_wall_idxs] .= -ΔT/2
 T[bottom_wall_idxs] .= ΔT/2
