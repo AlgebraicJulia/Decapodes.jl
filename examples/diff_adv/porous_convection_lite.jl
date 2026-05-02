@@ -185,8 +185,7 @@ f = sim(sd, generate, GeometricHodge())
 
 # Initial heat distribution
 # Gaussian heat disturbance along with top and bottom elements
-# XXX: This constructor (with a vector as the second argument) is deprecated.
-T_dist = MvNormal([lx/2.0, ly/2.0], [1/sqrt(2), 1/sqrt(2)])
+T_dist = MvNormal([lx/2.0, ly/2.0], Diagonal([1/sqrt(2), 1/sqrt(2)] .^ 2))
 # XXX: Scaling by 2 * ΔT = 400 results in a maximum temperature of ~127. It would be simpler to present were this 100.
 T = [2 * ΔT * pdf(T_dist, [p[1], p[2]]) for p in sd[:point]]
 T[top_wall_idxs] .= -ΔT/2

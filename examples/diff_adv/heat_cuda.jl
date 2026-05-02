@@ -6,7 +6,7 @@ using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
 using CUDA
-# using CairoMakie
+using CairoMakie
 using LinearAlgebra
 using SparseArrays
 Point2D = Point2{Float64}

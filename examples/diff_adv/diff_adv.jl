@@ -81,7 +81,7 @@ funcs[:⋆₁] = Dict(:operator => ⋆(Val{1}, periodic_mesh, hodge=DiagonalHodg
 func, code = gen_sim(explicit_ts, funcs, periodic_mesh; autodiff=false);
 
 using Distributions
-c_dist = MvNormal([7, 5], [1.5, 1.5])
+c_dist = MvNormal([7, 5], Diagonal([1.5, 1.5] .^ 2))
 c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
 
 fig, ax, ob = mesh(plot_mesh; color=c[point_map])

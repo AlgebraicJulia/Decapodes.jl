@@ -82,18 +82,19 @@ f = evalsim(expand_operators(ddp), [:C, :V])
 radius = 6371+90
 primal_earth = loadmesh(Icosphere(4, radius))
 nploc = argmax(x -> x[3], primal_earth[:point])
+nploc_point = primal_earth[nploc, :point]
 orient!(primal_earth)
 earth = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(primal_earth)
 subdivide_duals!(earth, Circumcenter())
 
 fₘ = f(earth, generate)
-c_dist = MvNormal(nploc[[1,2]], 100[1, 1])
+c_dist = MvNormal([nploc_point[1], nploc_point[2]], Diagonal([100.0, 100.0] .^ 2))
 c = [pdf(c_dist, [p[1], p[2]]./√radius) for p in earth[:point]]
 v = ones(Float64, ne(earth))
 
 wedge_product(Tuple{0,1}, earth, c, v)
 
-u₀ = ComponentArrays(C=c, V=v)
+u₀ = ComponentArray(C=c, V=v)
 tₑ = 1000
 prob = ODEProblem(fₘ,u₀,(0,tₑ))
 soln = solve(prob, Tsit5())

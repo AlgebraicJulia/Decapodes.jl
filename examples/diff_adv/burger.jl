@@ -86,7 +86,7 @@ sd = EmbeddedDeltaDualComplex1D{Bool, Float64, Point2D}(s)
 subdivide_duals!(sd, Circumcenter())
 
 # Set initial conditions and constants.
-c_dist = MvNormal([500, 5], [10.5, 10.5])
+c_dist = MvNormal([500, 5], Diagonal([10.5, 10.5] .^ 2))
 c = [pdf(c_dist, [p[1], p[2]]) for p in point(sd)]
 dX = ones(ne(sd))
 
