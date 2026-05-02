@@ -48,7 +48,7 @@ u₀ = ComponentArray(C=C)
 constants = (D = 0.5f0, γ = 0.5f0);
 
 println("Creating simulation code")
-sim = eval(gensim(CahnHilliard, code_target=CUDATarget(), stateeltype=Float32))
+sim = evalsim(CahnHilliard, code_target=CUDATarget(), stateeltype=Float32)
 fₘ = sim(sd, nothing, DiagonalHodge());
 
 println("Setting up problem")

@@ -436,7 +436,6 @@ begin
   g = ♭(sd, DualVectorField(gravity.(sd[triangle_center(sd),:dual_point]))).data;
   p = [density for p in s[:point]] * (288.15 * R₀)
 end
-# sim = eval(gensim(HeatXFer))
 
 wedge_cache = init_wedge_ops(sd)
 v2comp = comp_support(sd);

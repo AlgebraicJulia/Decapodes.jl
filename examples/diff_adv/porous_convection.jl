@@ -236,7 +236,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return op
 end
 
-sim = eval(gensim(Porous_Convection))
+sim = evalsim(Porous_Convection)
 f = sim(sd, generate, GeometricHodge())
 
 ΔT = 200.0
@@ -600,5 +600,4 @@ lines!(ax, (rmse_over_time_decgmg ./ rmse_over_time_gmres)[2:end])
 lines!(ax2, (log10.(rmse_over_time_decgmg)[2:end] ./ log10.(rmse_over_time_gmres)[2:end]));
 f
 save("rmse_ratios_and_ratios_of_logs.png", ans)
-
 

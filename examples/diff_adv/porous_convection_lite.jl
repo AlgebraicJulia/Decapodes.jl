@@ -178,7 +178,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return op
 end
 
-sim = eval(gensim(Porous_Convection))
+sim = evalsim(Porous_Convection)
 f = sim(sd, generate, GeometricHodge())
 
 ΔT = 200.0
@@ -246,4 +246,3 @@ function plot_rmse_over_time()
 end
 
 save("RMSE_over_time.svg", plot_rmse_over_time(soln)
-

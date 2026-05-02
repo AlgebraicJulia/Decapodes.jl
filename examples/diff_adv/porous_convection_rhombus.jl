@@ -144,7 +144,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge())
   return op
 end
 
-sim = eval(gensim(Porous_Convection))
+sim = evalsim(Porous_Convection)
 f = sim(sd, generate, DiagonalHodge())
 
 ΔT = 200.0

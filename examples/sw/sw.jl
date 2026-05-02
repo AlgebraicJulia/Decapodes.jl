@@ -41,7 +41,7 @@ end
 diffExpr = parse_decapode(DiffusionExprBody)
 ddp = SummationDecapode(diffExpr)
 gensim(expand_operators(ddp), [:C])
-f = eval(gensim(expand_operators(ddp), [:C]))
+f = evalsim(expand_operators(ddp), [:C])
 
 include("coordinates.jl")
 
@@ -97,7 +97,7 @@ end
 advdiff = parse_decapode(AdvDiff)
 advdiffdp = SummationDecapode(advdiff)
 gensim(expand_operators(advdiffdp), [:C, :V])
-sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
+sim = evalsim(expand_operators(advdiffdp), [:C, :V])
 
 fₘ = sim(earth, generate)
 end

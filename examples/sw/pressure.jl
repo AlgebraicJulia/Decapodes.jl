@@ -76,7 +76,7 @@ subdivide_duals!(earth, Circumcenter())
 
 physics = SummationDecapode(parse_decapode(PressureFlow))
 gensim(expand_operators(physics), [:P, :V])
-sim = eval(gensim(expand_operators(physics), [:P, :V]))
+sim = evalsim(expand_operators(physics), [:P, :V])
 
 fₘ = sim(earth, generate)
 
@@ -191,5 +191,4 @@ end
 
 parse_decapode(NavierStokes)
 SummationDecapode(parse_decapode(NavierStokes))
-
 

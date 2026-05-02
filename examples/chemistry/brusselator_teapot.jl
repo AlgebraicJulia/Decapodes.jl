@@ -54,7 +54,7 @@ u₀ = ComponentArray(U=U, V=V)
 
 # Run
 function generate(sd, my_symbol; hodge=GeometricHodge()) end
-sim = eval(gensim(Brusselator))
+sim = evalsim(Brusselator)
 fₘ = sim(sd, generate)
 tₑ = 1.15
 prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
@@ -79,4 +79,3 @@ record(fig, "brusselator_teapot.gif", range(0.0, tₑ; length=frames); framerate
 end
 
 end
-

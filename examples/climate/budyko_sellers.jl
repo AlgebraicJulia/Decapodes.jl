@@ -170,7 +170,7 @@ function generate(sd, my_symbol; hodge=GeometricHodge()) end
 
 # Generate simulation
 
-sim = eval(gensim(budyko_sellers, dimension=1))
+sim = evalsim(budyko_sellers, dimension=1)
 fₘ = sim(s, generate)
 
 # Run simulation

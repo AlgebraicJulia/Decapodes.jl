@@ -108,7 +108,7 @@ function generate(sd, my_symbol; hodge=DiagonalHodge())
 end
 
 # Generate simulation.
-sim = eval(gensim(Burger, dimension=1))
+sim = evalsim(Burger, dimension=1)
 fₘ = sim(sd, generate, DiagonalHodge())
 
 # Run simulation.

@@ -26,7 +26,7 @@ CahnHilliard = @decapode begin
     ∂ₜ(C) == 0.5 * Δ(C.^3 - C - 0.5 * Δ(C))
 end
 
-sim = eval(gensim(CahnHilliard, code_target=CUDATarget()))
+sim = evalsim(CahnHilliard, code_target=CUDATarget())
   
 fₘ = sim(d_rect, nothing)
 

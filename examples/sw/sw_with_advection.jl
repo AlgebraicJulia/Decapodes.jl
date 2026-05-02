@@ -77,7 +77,7 @@ end
 diffExpr = parse_decapode(AdvectionDiffusionExprBody)
 ddp = SummationDecapode(diffExpr)
 gensim(expand_operators(ddp), [:C, :V])
-f = eval(gensim(expand_operators(ddp), [:C, :V]))
+f = evalsim(expand_operators(ddp), [:C, :V])
 
 radius = 6371+90
 primal_earth = loadmesh(Icosphere(4, radius))
@@ -103,4 +103,3 @@ using CairoMakie
 mesh(primal_earth, color=soln(0).C, colormap=:plasma)
 mesh(primal_earth, color=soln(tₑ).C, colormap=:plasma)
 mesh(primal_earth, color=soln(tₑ)-soln(0).C, colormap=:plasma)
-
