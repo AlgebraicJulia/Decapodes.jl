@@ -44,7 +44,15 @@ eq10forN2 = @decapode begin
 
   ∂ₜ(𝐮) == μ * ∘(d, ⋆, d, ⋆)(w) + (-1)*⋆₁(∧ᵈᵖ₁₀(w, ⋆(d(w)))) + d(𝑝ᵈ)
 end
-to_graphviz(eq10forN2)
+@decapode_latex begin
+  (𝐮,w)::DualForm1
+  (P, 𝑝ᵈ)::DualForm0
+  μ::Constant
+
+  𝑝ᵈ == P + 0.5 * ι₁₁(w,w)
+
+  ∂ₜ(𝐮) == μ * ∘(d, ⋆, d, ⋆)(w) + (-1)*⋆₁(∧ᵈᵖ₁₀(w, ⋆(d(w)))) + d(𝑝ᵈ)
+end
 ```
 
 Halfar's equation and Glen's law are composed like so:
@@ -103,7 +111,12 @@ blocking = @decapode begin
 
   w == (1-σ(h)) ∧ᵖᵈ₀₁ 𝐮
 end
-to_graphviz(blocking)
+@decapode_latex begin
+  h::Form0
+  (𝐮,w)::DualForm1
+
+  w == (1-σ(h)) ∧ᵖᵈ₀₁ 𝐮
+end
 ```
 
 Here, `σ` is a sigmoid function that is 0 when d(h) is 0, and goes to 1 otherwise. We see that `w` is indeed defined as `𝐮`, after interacting with the ice boundary is considered.

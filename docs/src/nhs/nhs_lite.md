@@ -55,7 +55,27 @@ momentum =  @decapode begin
      ∂tuˢ +
      Fᵥ
 end
-to_graphviz(momentum)
+@decapode_latex begin
+  (v,V)::DualForm1
+  f::Form0
+  uˢ::DualForm1
+  ∂tuˢ::DualForm1
+  p::DualForm0
+  b::DualForm0
+  ĝ::DualForm1
+  Fᵥ::DualForm1
+  StressDivergence::DualForm1
+
+  ∂ₜ(v) ==
+    -ℒ₁(v,v) + 0.5*d(ι₁₁(v,v)) -
+     d(ι₁₁(v,V)) + ι₁₂(v,d(V)) + ι₁₂(V,d(v)) -
+     (f - ∘(d,⋆)(uˢ)) ∧ᵖᵈ₀₁ v -
+     d(p) +
+     b ∧ᵈᵈ₀₁ ĝ -
+     StressDivergence +
+     ∂tuˢ +
+     Fᵥ
+end
 ```
 
 Why did we write "StressDivergence" instead of ∇⋅τ, as in the linked equation? According to [this docs page](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/), the user makes a selection of what model to insert in place of the term ∇⋅τ. For example, in [the isotropic case](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity), Oceananigans.jl replaces this term with: ∇⋅τ = *ν*Δv. Thus, we write StressDivergence, and replace this term with a choice of "turbulence closure" model. Using the "constant isotropic diffusivity" case, we can operate purely in terms of scalar-valued forms.
@@ -74,7 +94,17 @@ tracer_conservation = @decapode begin
     FluxDivergence +
     F
 end
-to_graphviz(tracer_conservation)
+@decapode_latex begin
+  (c,C,F,FluxDivergence)::DualForm0
+  (v,V)::DualForm1
+
+  ∂ₜ(c) ==
+    -1*ι₁₁(v,d(c)) -
+    ι₁₁(V,d(c)) -
+    ι₁₁(v,d(C)) -
+    FluxDivergence +
+    F
+end
 ```
 
 This is [Equation 2: "Linear equation of state"](https://clima.github.io/OceananigansDocumentation/stable/physics/buoyancy_and_equations_of_state/#Linear-equation-of-state) of seawater buoyancy.
@@ -86,7 +116,12 @@ equation_of_state = @decapode begin
 
   b == g*(α*T - β*S)
 end
-to_graphviz(equation_of_state)
+@decapode_latex begin
+  (b,T,S)::DualForm0
+  (g,α,β)::Constant
+
+  b == g*(α*T - β*S)
+end
 ```
 
 This is [Equation 2: "Constant isotropic diffusivity"](https://clima.github.io/OceananigansDocumentation/stable/physics/turbulence_closures/#Constant-isotropic-diffusivity).
@@ -102,7 +137,16 @@ isotropic_diffusivity = @decapode begin
   StressDivergence == nu*Δᵈ₁(v)
   FluxDivergence == κ*Δᵈ₀(c)
 end
-to_graphviz(isotropic_diffusivity)
+@decapode_latex begin
+  v::DualForm1
+  c::DualForm0
+  StressDivergence::DualForm1
+  FluxDivergence::DualForm0
+  (κ,nu)::Constant
+
+  StressDivergence == nu*Δᵈ₁(v)
+  FluxDivergence == κ*Δᵈ₀(c)
+end
 ```
 
 ## Compatibility Guarantees via Operadic Composition

@@ -72,6 +72,29 @@ end
 nothing # hide
 ```
 
+Hydrodynamics equations:
+
+```@example DEC
+@decapode_latex begin
+  (n,w)::DualForm0
+  dX::Form1
+  (a,ν)::Constant
+
+  ∂ₜ(w) == a - w - w * n^2 + ν * L(dX, w)
+end
+```
+
+Phytodynamics equations:
+
+```@example DEC
+@decapode_latex begin
+  (n,w)::DualForm0
+  m::Constant
+
+  ∂ₜ(n) == w * n^2 - m*n + Δ(n)
+end
+```
+
 Now that we have our two component models, we can specify a means of composing them via a composition pattern.
 
 ```@example DEC

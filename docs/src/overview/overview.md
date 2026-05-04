@@ -223,19 +223,38 @@ nothing # hide
 The diffusion Decapode.
 
 ```@example DEC
-to_graphviz(Diffusion) 
+@decapode_latex begin
+  C::Form0
+  ϕ::Form1
+  k::Constant
+
+  ϕ == k*(d₀(C))
+end
 ```
 
 The advection Decapode.
 
 ```@example DEC
-to_graphviz(Advection) 
+@decapode_latex begin
+  C::Form0
+  ϕ::Form1
+  V::Form1
+
+  ϕ == ∧₀₁(C,V)
+end
 ```
 
 And the superposition Decapode.
 
 ```@example DEC
-to_graphviz(Superposition) 
+@decapode_latex begin
+  (C, Ċ)::Form0
+  (ϕ, ϕ₁, ϕ₂)::Form1
+
+  ϕ == ϕ₁ + ϕ₂
+  Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
+  ∂ₜ(C) == Ċ
+end
 ```
 
 Next, we define the pattern of composition which we want to compose these

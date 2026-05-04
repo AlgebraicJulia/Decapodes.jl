@@ -41,7 +41,11 @@ CahnHilliard = @decapode begin
     ∂ₜ(C) == D * Δ(C.^3 - C - γ * Δ(C))
 end
 
-to_graphviz(CahnHilliard)
+@decapode_latex begin
+    C::Form0
+    (D, γ)::Constant
+    ∂ₜ(C) == D * Δ(C.^3 - C - γ * Δ(C))
+end
 ```
 
 In this equation `C` will represent the concentration of the binary fluid, ranging from `-1` to `1` to differentiate between different phases. We also have a diffusion constant `D` and a constant `γ` whose square root is the length of the transition regions. This formulation of the Cahn-Hilliard equation was drawn from the Wikipedia page on the topic found [here](https://en.wikipedia.org/wiki/Cahn%E2%80%93Hilliard_equation).

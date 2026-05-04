@@ -60,7 +60,14 @@ halfar_eq2 = @decapode begin
   ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
 end
 
-to_graphviz(halfar_eq2)
+@decapode_latex begin
+  h::Form0
+  Γ::Form0
+  n::Constant
+
+  ḣ == ∂ₜ(h)
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
+end
 ```
 
 !["Glen's Law"](glens_law.png)
@@ -78,7 +85,12 @@ glens_law = @decapode begin
   Γ == (2/(n+2))*A*(ρ*g)^n
 end
 
-to_graphviz(glens_law)
+@decapode_latex begin
+  Γ::Form0
+  (A,ρ,g,n)::Constant
+  
+  Γ == (2/(n+2))*A*(ρ*g)^n
+end
 ```
 
 We now need some way to compose these physics equations together. Since this physics is rather small, and there are no naming conflicts of physical quantities, this composition is also rather simple.
