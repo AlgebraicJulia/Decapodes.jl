@@ -7,6 +7,7 @@ using DiagrammaticEquations
 using Distributions
 using GeometryBasics: Point2, Point3
 using LinearAlgebra
+using LazyArrays: @~
 using MLStyle
 using OrdinaryDiffEqTsit5
 using OrdinaryDiffEqPRK
@@ -463,6 +464,34 @@ end
   @test du.A ≈ 2 * ones(nv(earth))
   @test all(isapprox.(du.C[interior(Val(0), earth)], 0, atol=1e-15))
   @test all(isapprox.(du.E[interior(Val(0), earth)], 0, atol=1e-15))
+
+  @testset "LazyArrays heat equation PoC" begin
+    Heat = @decapode begin
+      U::Form0
+      κ::Constant
+      ∂ₜ(U) == κ * Δ(U)
+    end
+
+    function lazy_generate(sd, my_symbol; hodge=GeometricHodge())
+      M, op = default_dec_matrix_generate(sd, my_symbol, hodge)
+      return (@~ M), op
+    end
+
+    sim_lazy = evalsim(expand_operators(Heat))
+    f_lazy = sim_lazy(earth, lazy_generate)
+
+    sim_default = evalsim(Heat)
+    f_default = sim_default(earth, nothing)
+
+    u = ComponentArray(U=rand(nv(earth)))
+    du_lazy = ComponentArray(U=zeros(nv(earth)))
+    du_default = ComponentArray(U=zeros(nv(earth)))
+    constants_and_parameters = (κ=0.25,)
+    f_lazy(du_lazy, u, constants_and_parameters, 0.0)
+    f_default(du_default, u, constants_and_parameters, 0.0)
+
+    @test du_lazy.U ≈ du_default.U
+  end
 
   # Testing contraction interrupted by summation
   contract_with_summation = @decapode begin
