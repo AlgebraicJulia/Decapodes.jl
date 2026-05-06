@@ -30,10 +30,10 @@ end
 simulate = evalsim(expand_operators(Heat))
 fₘ = simulate(d_rect, lazy_generate)
 
-U = map(d_rect[:point]) do (x, _)
+U_initial = map(d_rect[:point]) do (x, _)
     x
 end
-u₀ = ComponentArray(U=U)
+u₀ = ComponentArray(U=U_initial)
 constants_and_parameters = (κ=100.0,)
 
 tₑ = 11.5
