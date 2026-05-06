@@ -30,12 +30,13 @@ end
 simulate = evalsim(expand_operators(Heat))
 fₘ = simulate(d_rect, lazy_generate)
 
-U_initial = map(d_rect[:point]) do (x_coord, _y_coord)
-    x_coord
+U_initial = map(d_rect[:point]) do (x, _)
+    x
 end
 u₀ = ComponentArray(U=U_initial)
 constants_and_parameters = (κ=100.0,)
 
+# Keep the same horizon as examples/diff_adv/heat.jl for direct comparison.
 final_time = 11.5
 prob = ODEProblem(fₘ, u₀, (0.0, final_time), constants_and_parameters)
 soln = solve(prob, Tsit5())
