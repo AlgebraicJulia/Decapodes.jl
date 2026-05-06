@@ -30,14 +30,14 @@ end
 simulate = evalsim(expand_operators(Heat))
 fₘ = simulate(d_rect, lazy_generate)
 
-U_initial = map(d_rect[:point]) do (x, _)
-    x
+U_initial = map(d_rect[:point]) do (x_coord, _y_coord)
+    x_coord
 end
 u₀ = ComponentArray(U=U_initial)
 constants_and_parameters = (κ=100.0,)
 
-tₑ = 11.5
-prob = ODEProblem(fₘ, u₀, (0.0, tₑ), constants_and_parameters)
+final_time = 11.5
+prob = ODEProblem(fₘ, u₀, (0.0, final_time), constants_and_parameters)
 soln = solve(prob, Tsit5())
 
 soln.retcode != :Unstable || error("Solver was not stable")
