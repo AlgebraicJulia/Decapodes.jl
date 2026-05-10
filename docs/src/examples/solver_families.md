@@ -4,4 +4,5 @@ Decapodes supports several types of differential equations solvers from the SciM
 
 - **Explicit solvers**: [`examples/diff_adv/heat.jl`](https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/examples/diff_adv/heat.jl)
 - **Implicit / semi-implicit solvers**: [`examples/chemistry/brusselator.jl`](https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/examples/chemistry/brusselator.jl)
+- **IMEX split solvers** (`gen_split`, `KenCarp4`): [`examples/diff_adv/heat_imex.jl`](https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/examples/diff_adv/heat_imex.jl)
 - **Parallel fixed-step solvers** (`KuttaPRK2p5`): [`examples/diff_adv/heat_parallel.jl`](https://github.com/AlgebraicJulia/Decapodes.jl/blob/main/examples/diff_adv/heat_parallel.jl)
