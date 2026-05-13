@@ -10,7 +10,6 @@ using Decapodes
 using Decapodes: SchSummationDecapode
 
 # External Dependencies
-using MLStyle
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
@@ -137,37 +136,34 @@ constants_and_parameters = (
 # Define how symbols map to Julia functions
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :♯ => x -> begin
-      ## This is an implementation of the "sharp" operator from the exterior
-      ## calculus, which takes co-vector fields to vector fields.
-      ## This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
-      ## this operation is not bespoke to this simulation.)
-      e_vecs = map(edges(sd)) do e
-        point(sd, sd[e, :∂v0]) - point(sd, sd[e, :∂v1])
-      end
-      neighbors = map(vertices(sd)) do v
-        union(incident(sd, v, :∂v0), incident(sd, v, :∂v1))
-      end
-      n_vecs = map(neighbors) do es
-        [e_vecs[e] for e in es]
-      end
-      map(neighbors, n_vecs) do es, nvs
-        sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
-      end
+  my_symbol == :♯ && return x -> begin
+    ## This is an implementation of the "sharp" operator from the exterior
+    ## calculus, which takes co-vector fields to vector fields.
+    ## This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
+    ## this operation is not bespoke to this simulation.)
+    e_vecs = map(edges(sd)) do e
+      point(sd, sd[e, :∂v0]) - point(sd, sd[e, :∂v1])
     end
-    :mag => x -> begin
-      norm.(x)
+    neighbors = map(vertices(sd)) do v
+      union(incident(sd, v, :∂v0), incident(sd, v, :∂v1))
     end
-    :^ => (x,y) -> x .^ y
-    :* => (x,y) -> x .* y
-    :show => x -> begin
-      @show x
-      x
+    n_vecs = map(neighbors) do es
+      [e_vecs[e] for e in es]
     end
-    x => error("Unmatched operator $my_symbol")
+    map(neighbors, n_vecs) do es, nvs
+      sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
+    end
   end
-  return (args...) -> op(args...)
+  my_symbol == :mag && return x -> begin
+    norm.(x)
+  end
+  my_symbol == :^ && return (x,y) -> x .^ y
+  my_symbol == :* && return (x,y) -> x .* y
+  my_symbol == :show && return x -> begin
+    @show x
+    x
+  end
+  error("Unmatched operator $my_symbol")
 end
 
 ## Generate simulation

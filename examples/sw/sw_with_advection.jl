@@ -5,7 +5,6 @@ using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 using Decapodes
 using OrdinaryDiffEq
-using MLStyle
 using Distributions
 using LinearAlgebra
 using ComponentArrays
@@ -32,27 +31,25 @@ my_wp(::Type{Tuple{0,k}}, s::HasDeltaSet, f, β, x::Int) where k =
 const my_wedge_product = my_wp
 
 function generate(sd, my_symbol)
-  op = @match my_symbol begin
-    :k => x->x/20
-    :⋆₀ => x->⋆(0,sd,hodge=DiagonalHodge())*x
-    :⋆₁ => x->⋆(1, sd, hodge=DiagonalHodge())*x
-    :⋆₀⁻¹ => x->inv_hodge_star(0,sd, x; hodge=DiagonalHodge())
-    :⋆₁⁻¹ => x->inv_hodge_star(1,sd,hodge=DiagonalHodge())*x
-    :d₀ => x->d(0,sd)*x
-    :dual_d₀ => x->dual_derivative(0,sd)*x
-    :dual_d₁ => x->dual_derivative(1,sd)*x
-    :∧₀₁ => (x,y)-> map(simplices(0+1, sd)) do z
-                        ##∧(Tuple{0,1}, sd, x, y, z)
+  my_symbol == :k && return x->x/20
+  my_symbol == :⋆₀ && return x->⋆(0,sd,hodge=DiagonalHodge())*x
+  my_symbol == :⋆₁ && return x->⋆(1, sd, hodge=DiagonalHodge())*x
+  my_symbol == :⋆₀⁻¹ && return x->inv_hodge_star(0,sd, x; hodge=DiagonalHodge())
+  my_symbol == :⋆₁⁻¹ && return x->inv_hodge_star(1,sd,hodge=DiagonalHodge())*x
+  my_symbol == :d₀ && return x->d(0,sd)*x
+  my_symbol == :dual_d₀ && return x->dual_derivative(0,sd)*x
+  my_symbol == :dual_d₁ && return x->dual_derivative(1,sd)*x
+  my_symbol == :∧₀₁ && return (x,y)-> map(simplices(0+1, sd)) do z
+                      ##∧(Tuple{0,1}, sd, x, y, z)
 
-                        subs = subsimplices(1, sd, z)
-                        vs = primal_vertex(1, sd, subs)
-                        coeffs = map(x′ -> dual_volume(1,sd,x′), subs) / volume(1,sd,z)
-                        dot(coeffs, x[vs]) * y[z] / factorial(1)
-                    end
-    :plus => (+)
-  end
+                      subs = subsimplices(1, sd, z)
+                      vs = primal_vertex(1, sd, subs)
+                      coeffs = map(x′ -> dual_volume(1,sd,x′), subs) / volume(1,sd,z)
+                      dot(coeffs, x[vs]) * y[z] / factorial(1)
+                  end
+  my_symbol == :plus && return (+)
   ## return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
-  return (args...) ->  op(args...)
+  error("Unmatched operator $my_symbol")
 end
 
 

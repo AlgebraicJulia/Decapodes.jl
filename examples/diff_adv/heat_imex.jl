@@ -3,7 +3,6 @@ using ComponentArrays
 using Decapodes
 using DiagrammaticEquations
 using GeometryBasics: Point3
-using MLStyle
 using OrdinaryDiffEq
 
 Point3D = Point3{Float64}

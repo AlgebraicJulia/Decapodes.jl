@@ -43,7 +43,6 @@ using StaticArrays
 using JLD2
 
 # other dependencies
-using MLStyle
 using Statistics: mean
 
 @info "Defining models"
@@ -76,16 +75,19 @@ end;
 @info "Allocating Mesh and Operators"
 const RADIUS = 1.0;
 sphere = :ICO7;
-s = @match sphere begin
-    :ICO5 => loadmesh(Icosphere(4, RADIUS));
-    :ICO6 => loadmesh(Icosphere(6, RADIUS));
-    :ICO7 => loadmesh(Icosphere(7, RADIUS));
-    :ICO8 => loadmesh(Icosphere(8, RADIUS));
-    :flat => triangulated_grid(10, 10, 0.2, 0.2, Point3d)
-    :UV => begin
-        s, _, _ = makeSphere(0, 180, 2.5, 0, 360, 2.5, RADIUS);
-        s;
-    end
+s = if sphere == :ICO5
+    loadmesh(Icosphere(4, RADIUS))
+elseif sphere == :ICO6
+    loadmesh(Icosphere(6, RADIUS))
+elseif sphere == :ICO7
+    loadmesh(Icosphere(7, RADIUS))
+elseif sphere == :ICO8
+    loadmesh(Icosphere(8, RADIUS))
+elseif sphere == :flat
+    triangulated_grid(10, 10, 0.2, 0.2, Point3d)
+else
+    s, _, _ = makeSphere(0, 180, 2.5, 0, 360, 2.5, RADIUS)
+    s
 end;
 dualmesh = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3d}(s);
 subdivide_duals!(dualmesh, Circumcenter());
@@ -101,14 +103,11 @@ s0inv = dec_inv_hodge_star(0,dualmesh,GeometricHodge());
 ♭♯_m = ♭♯_mat(dualmesh);
 
 function generate(dualmesh, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :Δ⁻¹ => x -> begin
-      y = fΔ0 \ x
-      y .- minimum(y)
-    end
-    _ => default_dec_matrix_generate(dualmesh, my_symbol, hodge)
+  my_symbol == :Δ⁻¹ && return x -> begin
+    y = fΔ0 \ x
+    y .- minimum(y)
   end
-  return (args...) -> op(args...)
+  return default_dec_matrix_generate(dualmesh, my_symbol, hodge)
 end;
 
 sim = evalsim(mhd);

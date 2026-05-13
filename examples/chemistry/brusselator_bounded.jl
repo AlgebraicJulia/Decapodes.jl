@@ -10,7 +10,6 @@ using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 using Decapodes
 using MultiScaleArrays
-using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
 using CairoMakie
@@ -87,19 +86,16 @@ max_x = maximum(x -> x[1], s[:point])
 left_wall_idxs = findall(x -> x[1] == min_x, s[:point])
 right_wall_idxs = findall(x -> x[1] == max_x, s[:point])
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :rbl => (x,y) -> begin
-      x[left_wall_idxs] .= y
-      x
-    end
-    :rbr => (x,y) -> begin
-      x[right_wall_idxs] .= y
-      x
-    end
-    :.* => (x,y) -> x .* y
-    x => error("Unmatched operator $my_symbol")
+  my_symbol == :rbl && return (x,y) -> begin
+    x[left_wall_idxs] .= y
+    x
   end
-  return (args...) -> op(args...)
+  my_symbol == :rbr && return (x,y) -> begin
+    x[right_wall_idxs] .= y
+    x
+  end
+  my_symbol == :.* && return (x,y) -> x .* y
+  error("Unmatched operator $my_symbol")
 end
 
 # Create initial data.

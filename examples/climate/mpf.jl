@@ -13,7 +13,6 @@ using Distributions
 using GeometryBasics: Point3
 using JLD2
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 using Random
 Point3D = Point3{Float64}
@@ -175,13 +174,10 @@ function simple_dual2form_bounds(form, bvals)
 end
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :bound_dual1form => simple_dual1form_bounds
-    :bound_dual2form => simple_dual2form_bounds
-    :exp => x -> exp.(x)
-    x => error("$x not matched")
-  end
-  return (args...) -> op(args...)
+  my_symbol == :bound_dual1form && return simple_dual1form_bounds
+  my_symbol == :bound_dual2form && return simple_dual2form_bounds
+  my_symbol == :exp && return x -> exp.(x)
+  error("$my_symbol not matched")
 end
 
 # Generate simulation 

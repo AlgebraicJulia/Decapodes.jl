@@ -26,7 +26,6 @@ using GeometryBasics: Point2
 using Interpolations
 using JLD2
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 using SparseArrays
 Point2D = Point2{Float64}

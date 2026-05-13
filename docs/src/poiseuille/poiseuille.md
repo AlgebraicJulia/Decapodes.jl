@@ -55,23 +55,19 @@ to_graphviz(Poise)
 In order to solve our equations, we will need numerical linear operators that give meaning to our symbolic operators. The `generate` function below assigns the necessary matrices as definitions for the symbols. In order to define the viscosity effect correctly we have to identify boundary edges and apply a mask. This is because the DEC has discrete dual cells at the boundaries that need to be handled specially for the viscosity term. We found empirically that if you allow nonzero viscosity at the boundary edges, the flows at the boundaries will be incorrect. You can find the file for boundary conditions [here](../boundary_helpers.jl).
 
 ```@example Poiseuille
-using MLStyle
 include("../boundary_helpers.jl")
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :∂q => x -> begin
-      x[boundary_edges(sd)] .= 0
-      x
-    end
-    :∂ρ => ρ -> begin
-      ρ[1] = 0
-      ρ[end] = 0
-      ρ
-    end
-    x => error("Unmatched operator $my_symbol")
+  my_symbol == :∂q && return x -> begin
+    x[boundary_edges(sd)] .= 0
+    x
   end
-  return op
+  my_symbol == :∂ρ && return ρ -> begin
+    ρ[1] = 0
+    ρ[end] = 0
+    ρ
+  end
+  error("Unmatched operator $my_symbol")
 end
 ```
 

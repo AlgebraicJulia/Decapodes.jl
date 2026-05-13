@@ -5,7 +5,6 @@ using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 using Decapodes
 using OrdinaryDiffEq
-using MLStyle
 using Distributions
 using LinearAlgebra
 using ComponentArrays
@@ -16,12 +15,8 @@ Point3D = Point3{Float64}
 flatten(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[triangle_center(mesh),:dual_point])))
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :k => x->2000x
-    _ => default_dec_generate(sd, my_symbol, hodge)
-  end
-
-  return (args...) ->  op(args...)
+  my_symbol == :k && return x->2000x
+  return default_dec_generate(sd, my_symbol, hodge)
 end
 
 

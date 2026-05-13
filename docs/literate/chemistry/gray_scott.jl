@@ -2,7 +2,6 @@ using Catlab
 using CombinatorialSpaces
 using DiagrammaticEquations
 using Decapodes
-using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
 using CairoMakie
@@ -50,13 +49,11 @@ bot_wall_idxs = findall(y -> y[2] == n, s[:point])
 
 wall_idxs = unique(vcat(left_wall_idxs, right_wall_idxs, top_wall_idxs, bot_wall_idxs))
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :mask => (x,y) -> begin
-      x[wall_idxs] .= y
-      x
-    end
-    _ => error("Unmatched operator $my_symbol")
+  my_symbol == :mask && return (x,y) -> begin
+    x[wall_idxs] .= y
+    x
   end
+  error("Unmatched operator $my_symbol")
 end
 
 fₘ = sim(sd, generate, DiagonalHodge())

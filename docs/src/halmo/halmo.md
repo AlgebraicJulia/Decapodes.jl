@@ -22,7 +22,6 @@ using ComponentArrays
 using GeometryBasics: Point3
 using JLD2
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 Point3D = Point3{Float64};
 nothing # hide
@@ -142,13 +141,10 @@ Let's demonstrate how to add operators by providing the definition of a sigmoid 
 ```@example DEC_halmo
 sigmoid(x) = (2 ./ (1 .+ exp.(-x*1e2)) .- 1)
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    # This is a new function.
-    :σ => sigmoid
-    # Remaining operations (such as our differential operators) are built-in.
-    _ => error("Unmatched operator $my_symbol")
-  end
-  return op
+  # This is a new function.
+  my_symbol == :σ && return sigmoid
+  # Remaining operations (such as our differential operators) are built-in.
+  error("Unmatched operator $my_symbol")
 end;
 ```
 

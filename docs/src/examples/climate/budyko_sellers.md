@@ -18,7 +18,6 @@ using Decapodes
 External Dependencies
 
 ````@example budyko_sellers
-using MLStyle
 using ComponentArrays
 using LinearAlgebra
 using OrdinaryDiffEq

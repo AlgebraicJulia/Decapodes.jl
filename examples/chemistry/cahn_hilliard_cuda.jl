@@ -3,7 +3,6 @@ using Catlab
 using DiagrammaticEquations
 using CombinatorialSpaces
 using GeometryBasics
-using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
 using LinearAlgebra

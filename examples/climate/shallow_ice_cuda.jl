@@ -8,7 +8,6 @@ using DiagrammaticEquations.Deca
 
 # External Dependencies
 using ComponentArrays
-using MLStyle
 using LinearAlgebra
 using OrdinaryDiffEq
 using JLD2
@@ -112,21 +111,18 @@ constants_and_parameters = (
 # This sharp operator, ♯, is scheduled to be upstreamed.
 function generate(sd, my_symbol; hodge=GeometricHodge())
   # We pre-allocate matrices that encode differential operators.
-  op = @match my_symbol begin
-    :♯ => begin 
-      # TODO: For some reason this works as a dense CuArray but not when sparse
-      ♯_m = CuArray(♯_mat(sd, LLSDDSharp()))
-      x -> ♯_m * x
-    end
-    :mag => x -> begin
-      CUDA.norm.(x)
-    end
-    :^ => (x,y) -> begin
-      x .^ y
-    end
-    x => error("Unmatched operator $my_symbol")
+  if my_symbol == :♯
+    # TODO: For some reason this works as a dense CuArray but not when sparse
+    ♯_m = CuArray(♯_mat(sd, LLSDDSharp()))
+    return x -> ♯_m * x
   end
-  return (args...) -> op(args...)
+  my_symbol == :mag && return x -> begin
+    CUDA.norm.(x)
+  end
+  my_symbol == :^ && return (x,y) -> begin
+    x .^ y
+  end
+  error("Unmatched operator $my_symbol")
 end
 
 #######################

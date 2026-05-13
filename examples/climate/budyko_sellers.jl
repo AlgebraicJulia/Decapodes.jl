@@ -9,7 +9,6 @@ using DiagrammaticEquations.Deca
 using Decapodes
 
 # External Dependencies
-using MLStyle
 using ComponentArrays
 using LinearAlgebra
 using OrdinaryDiffEq

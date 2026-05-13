@@ -10,7 +10,6 @@ using ComponentArrays
 using GeometryBasics: Point3
 using JLD2
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 Point3D = Point3{Float64};
 
@@ -110,10 +109,7 @@ subdivide_duals!(sd, Barycenter())
 
 @info "Generating Simulation"
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    _ => default_dec_matrix_generate(sd, my_symbol, hodge)
-  end
-  return op
+  return default_dec_matrix_generate(sd, my_symbol, hodge)
 end
 
 open("nhs_sim.jl", "w") do f

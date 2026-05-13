@@ -20,7 +20,6 @@ using ComponentArrays
 using GeometryBasics: Point2
 using JLD2
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 using SparseArrays
 Point2D = Point2{Float64};
@@ -278,28 +277,25 @@ The symbols along edges in our Decapode must be mapped to executable functions. 
 
 ``` @example DEC
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :♯ => x -> begin
-      # This is an implementation of the "sharp" operator from the exterior
-      # calculus, which takes co-vector fields to vector fields.
-      # This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
-      # this operation is not bespoke to this simulation.)
-      e_vecs = map(edges(sd)) do e
-        point(sd, sd[e, :∂v0]) - point(sd, sd[e, :∂v1])
-      end
-      neighbors = map(vertices(sd)) do v
-        union(incident(sd, v, :∂v0), incident(sd, v, :∂v1))
-      end
-      n_vecs = map(neighbors) do es
-        [e_vecs[e] for e in es]
-      end
-      map(neighbors, n_vecs) do es, nvs
-        sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
-      end
+  my_symbol == :♯ && return x -> begin
+    # This is an implementation of the "sharp" operator from the exterior
+    # calculus, which takes co-vector fields to vector fields.
+    # This could be up-streamed to the CombinatorialSpaces.jl library. (i.e.
+    # this operation is not bespoke to this simulation.)
+    e_vecs = map(edges(sd)) do e
+      point(sd, sd[e, :∂v0]) - point(sd, sd[e, :∂v1])
     end
-    x => default_dec_generate(sd, my_symbol, hodge)
+    neighbors = map(vertices(sd)) do v
+      union(incident(sd, v, :∂v0), incident(sd, v, :∂v1))
+    end
+    n_vecs = map(neighbors) do es
+      [e_vecs[e] for e in es]
+    end
+    map(neighbors, n_vecs) do es, nvs
+      sum([nv*norm(nv)*x[e] for (e,nv) in zip(es,nvs)]) / sum(norm.(nvs))
+    end
   end
-  return (args...) -> op(args...)
+  return default_dec_generate(sd, my_symbol, hodge)
 end
 ```
 

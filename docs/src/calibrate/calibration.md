@@ -22,7 +22,6 @@ using Decapodes
 using DiagrammaticEquations
 using JLD2
 using LinearAlgebra
-using MLStyle
 using NaNMath
 using Optim
 using Optimization
@@ -69,15 +68,12 @@ infer_types!(ice_dynamics2D)
 resolve_overloads!(ice_dynamics2D)
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
-    op = @match my_symbol begin
-        :♯ => begin
-            sharp_mat = ♯_mat(sd, AltPPSharp())
-            x -> sharp_mat * x
-        end
-        :mag => x -> norm.(x)
-        x => error("Unmatched operator $my_symbol")
+    if my_symbol == :♯
+        sharp_mat = ♯_mat(sd, AltPPSharp())
+        return x -> sharp_mat * x
     end
-    return (args...) -> op(args...)
+    my_symbol == :mag && return x -> norm.(x)
+    error("Unmatched operator $my_symbol")
 end
 ```
 Now we define the mesh and the dual mesh that the glacial flow equations will be solved on, along with initial conditions on the mesh and parameters for the model.

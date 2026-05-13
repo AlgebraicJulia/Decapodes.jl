@@ -13,7 +13,6 @@ using IterativeSolvers
 using Krylov
 using KrylovPreconditioners
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 using SparseArrays
 using StaticArrays
@@ -124,24 +123,21 @@ top_wall_idxs = findall(p -> p[2] == ly, s[:point]);
 apply_tb_bc(x) = begin x[bottom_wall_idxs] .= 0; x[top_wall_idxs] .= 0; return x; end
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :Δ⁻¹ => x -> begin
-      # y = fΔ0 \ x
-      # y, _ = Krylov.gmres(Δ0, x; M = pΔ0, ldiv = true)
-      y, _ = multi_solve(x)
-      # y = AlgebraicMultigrid._solve(mlΔ0, x)
-      y .-= minimum(y)
-    end
-    :adiabatic => x -> begin
-      x[left_wall_idxs] .= x[next_left_wall_idxs]
-      x[right_wall_idxs] .= x[next_right_wall_idxs]
-      return x
-    end
-    :tb_bc => apply_tb_bc
-    :interpolate => x -> mat * x
-    _ => error("No operator $my_symbol found.")
+  my_symbol == :Δ⁻¹ && return x -> begin
+    # y = fΔ0 \ x
+    # y, _ = Krylov.gmres(Δ0, x; M = pΔ0, ldiv = true)
+    y, _ = multi_solve(x)
+    # y = AlgebraicMultigrid._solve(mlΔ0, x)
+    y .-= minimum(y)
   end
-  return op
+  my_symbol == :adiabatic && return x -> begin
+    x[left_wall_idxs] .= x[next_left_wall_idxs]
+    x[right_wall_idxs] .= x[next_right_wall_idxs]
+    return x
+  end
+  my_symbol == :tb_bc && return apply_tb_bc
+  my_symbol == :interpolate && return x -> mat * x
+  error("No operator $my_symbol found.")
 end
 
 sim = evalsim(Porous_Convection)

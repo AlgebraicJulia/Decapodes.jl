@@ -7,7 +7,6 @@ using CUDA.CUSPARSE
 using CombinatorialSpaces
 using Distributions
 using LinearAlgebra
-using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
 using GeometryBasics: Point2
@@ -43,10 +42,8 @@ sim = evalsim(Klausmeier, dimension=1, code_target=CUDATarget())
 
 lap_mat = CuSparseMatrixCSC(hodge_star(1,sd) * d(0,sd) * inv_hodge_star(0,sd) * dual_derivative(0,sd))
 function generate(sd, my_symbol; hodge=DiagonalHodge())
-  op = @match my_symbol begin
-    :Δ => x -> lap_mat * x
-  end
-  return (args...) -> op(args...)
+  my_symbol == :Δ && return x -> lap_mat * x
+  error("Unmatched operator $my_symbol")
 end
 
 fₘ = sim(sd, generate, DiagonalHodge())

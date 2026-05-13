@@ -23,7 +23,6 @@ using Downloads
 using GeometryBasics: Point3
 using JLD2
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 Point3D = Point3{Float64};
 nothing # hide
