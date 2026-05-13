@@ -1,6 +1,5 @@
 ``` @example DEC
 using Decapodes
-import MLStyle: @match
 ```
 
 ## Custom Operators
@@ -17,15 +16,12 @@ Let's examine this generate function from the MHD example. Here this system intr
 
 ```
 function generate(dualmesh, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :Δ⁻¹ => x -> begin
-      y = fΔ0 \ x
-      y .- minimum(y)
-    end
-    :♭♯ => x -> ♭♯_m * x
-    _ => default_dec_matrix_generate(dualmesh, my_symbol, hodge)
+  my_symbol == :Δ⁻¹ && return x -> begin
+    y = fΔ0 \ x
+    y .- minimum(y)
   end
-  return (args...) -> op(args...)
+  my_symbol == :♭♯ && return x -> ♭♯_m * x
+  return default_dec_matrix_generate(dualmesh, my_symbol, hodge)
 end;
 ```
 
@@ -39,11 +35,7 @@ If this code seems too low level, do not worry. Decapodes defines and caches for
 lap_mat = dec_hodge_star(1,dualmesh) * dec_differential(0,dualmesh) * dec_inv_hodge_star(0,dualmesh) * dec_dual_derivative(0,dualmesh)
 
 function generate(dualmesh, my_symbol; hodge=DiagonalHodge())
-  op = @match my_symbol begin
-    :Δ => x -> begin
-      lap_mat * x
-    end
-  end
-  return (args...) -> op(args...)
+  my_symbol == :Δ && return x -> lap_mat * x
+  error("Unmatched operator $my_symbol")
 end
 ```

@@ -4,7 +4,6 @@ using ACSets
 using ComponentArrays
 using Decapodes
 using DiagrammaticEquations
-using MLStyle
 using Test
 
 const EQUALS = :(=)
@@ -95,20 +94,20 @@ import Decapodes: AllocVecCall
 @testset "Test AllocVecCall" begin
 
   function convert_form_to_simplex(form::Symbol, dimension::Int)
-    @match (form, dimension) begin
-      (:Form0, 2) => :V
-      (:Form1, 2) => :E
-      (:Form2, 2) => :Tri
-      (:DualForm0, 2) => :Tri
-      (:DualForm1, 2) => :E
-      (:DualForm2, 2) => :V
-
-      (:Form0, 1) => :V
-      (:Form1, 1) => :E
-      (:DualForm0, 1) => :E
-      (:DualForm1, 1) => :V
-      _ => @error("Unknown form type for form $(form) in dim $(dimension)")
-    end
+    lookup = Dict{Tuple{Symbol,Int}, Symbol}(
+      (:Form0, 2) => :V,
+      (:Form1, 2) => :E,
+      (:Form2, 2) => :Tri,
+      (:DualForm0, 2) => :Tri,
+      (:DualForm1, 2) => :E,
+      (:DualForm2, 2) => :V,
+      (:Form0, 1) => :V,
+      (:Form1, 1) => :E,
+      (:DualForm0, 1) => :E,
+      (:DualForm1, 1) => :V,
+    )
+    haskey(lookup, (form, dimension)) || @error("Unknown form type for form $(form) in dim $(dimension)")
+    lookup[(form, dimension)]
   end
 
   """

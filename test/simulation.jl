@@ -7,7 +7,6 @@ using DiagrammaticEquations
 using Distributions
 using GeometryBasics: Point2, Point3
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEqTsit5
 using OrdinaryDiffEqPRK
 using OrdinaryDiffEqSDIRK
@@ -61,13 +60,10 @@ function dec_laplace_beltrami(k, sd::HasDeltaSet)
 end
 
 function generate(sd, my_symbol)
-  op = @match my_symbol begin
-    :⋆₁ => test_hodge(1, sd, DiagonalHodge())
-    :⋆₀⁻¹ => test_inverse_hodge(0, sd, DiagonalHodge())
-    :dual_d₁ => test_dual_differential(1, sd)
-    _ => default_dec_generate_2D(sd, my_symbol)
-  end
-  return (args...) ->  op(args...)
+  my_symbol == :⋆₁    && return test_hodge(1, sd, DiagonalHodge())
+  my_symbol == :⋆₀⁻¹  && return test_inverse_hodge(0, sd, DiagonalHodge())
+  my_symbol == :dual_d₁ && return test_dual_differential(1, sd)
+  return default_dec_generate_2D(sd, my_symbol)
 end
 
 @testset "Simulation Generation" begin
@@ -189,12 +185,8 @@ end
 @testset "Brusselator Simulation" begin
 
   function generate(sd, my_symbol; hodge=GeometricHodge())
-    op = @match my_symbol begin
-      :Δ₀ => test_laplace_de_rham(0, sd)
-      _ => default_dec_generate_2D(sd, my_symbol, hodge)
-    end
-
-    return (args...) ->  op(args...)
+    my_symbol == :Δ₀ && return test_laplace_de_rham(0, sd)
+    return default_dec_generate_2D(sd, my_symbol, hodge)
   end
 
   begin
@@ -573,10 +565,8 @@ end
   sim = eval(gensim(no_unallowed))
 
   function generate_no_unallowed(sd, my_symbol; hodge=GeometricHodge())
-    op = @match my_symbol begin
-      :k => (x -> 20 * x)
-    end
-    op
+    my_symbol == :k && return x -> 20 * x
+    error("Unmatched operator $my_symbol")
   end
 
   f = sim(earth, generate_no_unallowed)
@@ -779,9 +769,7 @@ end
   subdivide_duals!(d_rect, Circumcenter())
 
   function generate(sd, my_symbol, hodge)
-    op = @match my_symbol begin
-      end
-    return op
+    error("Unmatched operator $my_symbol")
   end
 
   # tests that there is no variable shadowing for du, u, p, and t
@@ -891,11 +879,8 @@ end
   resolve_overloads!(infer_types!(halfar))
 
   function halfar_generate(sd, my_symbol; hodge=GeometricHodge())
-    op = @match my_symbol begin
-      :norm => x -> norm.(x)
-      x => error("Unmatched operator $my_symbol")
-    end
-    return op
+    my_symbol == :norm && return x -> norm.(x)
+    error("Unmatched operator $my_symbol")
   end
 
   sim_Halfar = evalsim(halfar)
@@ -922,11 +907,8 @@ end
   end
 
   function poisson_generate(sd, my_symbol; hodge=GeometricHodge())
-    op = @match my_symbol begin
-      :♭♯ => x -> nothing
-      x => error("Unmatched operator $my_symbol")
-    end
-    return op
+    my_symbol == :♭♯ && return x -> nothing
+    error("Unmatched operator $my_symbol")
   end
 
   sim_Poisson = evalsim(eq11_inviscid_poisson)
@@ -987,12 +969,9 @@ end
    Open(blocking,     [:h, :𝐮, :w])]))
 
   function halmo_generate(sd, my_symbol; hodge=GeometricHodge())
-    op = @match my_symbol begin
-      :σ => x -> nothing
-      :norm => x -> nothing
-      _ => error("Unmatched operator $my_symbol")
-    end
-    return op
+    my_symbol == :σ    && return x -> nothing
+    my_symbol == :norm && return x -> nothing
+    error("Unmatched operator $my_symbol")
   end
 
   resolve_overloads!(infer_types!(ice_water))
@@ -1019,9 +998,7 @@ end
   end
 
   function generate(fs, my_symbol; hodge=DiagonalHodge())
-    op = @match my_symbol begin
-      _ => default_dec_matrix_generate(fs, my_symbol, hodge)
-    end
+    return default_dec_matrix_generate(fs, my_symbol, hodge)
   end
 
   sim = eval(gensim(inv_lap))
@@ -1345,13 +1322,8 @@ mesh,dualmesh = circle(9, 500)
 
 lap_mat = dec_hodge_star(1,dualmesh) * dec_differential(0,dualmesh) * dec_inv_hodge_star(0,dualmesh) * dec_dual_derivative(0,dualmesh)
 function generate(sd, my_symbol; hodge=DiagonalHodge())
-  op = @match my_symbol begin
-    :Δ => x -> begin
-      lap_mat * x
-    end
-    _ => default_dec_matrix_generate(sd, my_symbol, hodge)
-  end
-  return (args...) -> op(args...)
+  my_symbol == :Δ && return x -> lap_mat * x
+  return default_dec_matrix_generate(sd, my_symbol, hodge)
 end
 fₘ = sim(dualmesh, generate, DiagonalHodge())
 
