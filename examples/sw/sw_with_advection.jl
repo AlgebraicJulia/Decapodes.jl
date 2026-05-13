@@ -40,13 +40,13 @@ function generate(sd, my_symbol)
   my_symbol == :dual_d₀ && return x->dual_derivative(0,sd)*x
   my_symbol == :dual_d₁ && return x->dual_derivative(1,sd)*x
   my_symbol == :∧₀₁ && return (x,y)-> map(simplices(0+1, sd)) do z
-                      ##∧(Tuple{0,1}, sd, x, y, z)
+    ##∧(Tuple{0,1}, sd, x, y, z)
 
-                      subs = subsimplices(1, sd, z)
-                      vs = primal_vertex(1, sd, subs)
-                      coeffs = map(x′ -> dual_volume(1,sd,x′), subs) / volume(1,sd,z)
-                      dot(coeffs, x[vs]) * y[z] / factorial(1)
-                  end
+    subs = subsimplices(1, sd, z)
+    vs = primal_vertex(1, sd, subs)
+    coeffs = map(x′ -> dual_volume(1,sd,x′), subs) / volume(1,sd,z)
+    dot(coeffs, x[vs]) * y[z] / factorial(1)
+  end
   my_symbol == :plus && return (+)
   ## return (args...) -> begin println("applying $my_symbol"); println("arg length $(length(args[1]))"); op(args...);end
   error("Unmatched operator $my_symbol")
