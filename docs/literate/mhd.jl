@@ -85,7 +85,7 @@ elseif sphere == :ICO8
     loadmesh(Icosphere(8, RADIUS))
 elseif sphere == :flat
     triangulated_grid(10, 10, 0.2, 0.2, Point3d)
-else
+else # :UV
     s, _, _ = makeSphere(0, 180, 2.5, 0, 360, 2.5, RADIUS)
     s
 end;
