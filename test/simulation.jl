@@ -176,6 +176,20 @@ f_al = copy(du.C)
 
 @test f_nal == f_al
 
+# Regression test for the Julia 1.12 world-age issue triggered by evaluating
+# gensim-generated code inside another function. On main, evalsim was just
+# eval(gensim(...)), and calling the returned simulation immediately from the
+# same function would throw a world-age MethodError.
+function run_evalsim_inside_function()
+  sim = evalsim(DiffusionWithConstant)
+  f = sim(torus, generate)
+  du_local = ComponentArray(C=zero(c))
+  f(du_local, u₀, (k=3.0,), 0.0)
+  du_local
+end
+
+@test run_evalsim_inside_function().C ≈ fc_res
+
 end
 
 # Testing done based on the original gensim
