@@ -804,10 +804,11 @@ function _gen_mesh_closure(c; inplace::Bool=true, include_nanmath::Bool=false, i
     [:(__u__), :(__p__), :(__t__)]
   body = _gen_function_body(c)
   runtime_defs = _gen_runtime_defs(c; include_nanmath, include_multigrid)
+  inner = Expr(:->, Expr(:tuple, args...), body)
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
       $(runtime_defs)
-      f($(args...)) = $body
+      $inner
     end
   end
 end
@@ -922,9 +923,11 @@ The returned function has the signature:
 See also: [`gensim`](@ref).
 """
 function evalsim(args...; kwargs...)
-  expr = gensim(args...; kwargs...)
-  inner = RuntimeGeneratedFunction(@__MODULE__, @__MODULE__, _strip_default_args(expr.args[end]); opaque_closures=false)
-  (mesh, operators, hodge=GeometricHodge()) -> inner(mesh, operators, hodge)
+  sim = eval(gensim(args...; kwargs...))
+  (mesh, operators, hodge=GeometricHodge()) -> begin
+    inner = Base.invokelatest(sim, mesh, operators, hodge)
+    (__du__, __u__, __p__, __t__) -> Base.invokelatest(inner, __du__, __u__, __p__, __t__)
+  end
 end
 
 """
@@ -1116,9 +1119,14 @@ The returned function has the signature:
 See also: [`gen_split`](@ref).
 """
 function eval_split(args...; kwargs...)
-  expr = gen_split(args...; kwargs...)
-  inner = @RuntimeGeneratedFunction(_strip_default_args(expr.args[end]))
-  (mesh, operators, hodge=GeometricHodge()) -> inner(mesh, operators, hodge)
+  sim = eval(gen_split(args...; kwargs...))
+  (mesh, operators, hodge=GeometricHodge()) -> begin
+    f_implicit, f_explicit = Base.invokelatest(sim, mesh, operators, hodge)
+    (
+      (__du__, __u__, __p__, __t__) -> Base.invokelatest(f_implicit, __du__, __u__, __p__, __t__),
+      (__du__, __u__, __p__, __t__) -> Base.invokelatest(f_explicit, __du__, __u__, __p__, __t__),
+    )
+  end
 end
 
 """
