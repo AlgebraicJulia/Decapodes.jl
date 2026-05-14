@@ -787,6 +787,34 @@ function _gen_runtime_defs(c; include_nanmath::Bool, include_multigrid::Bool)
 end
 
 """
+    _gen_flat_inplace_lambda(c; include_nanmath::Bool=false, include_multigrid::Bool=false) -> Expr
+
+Generate a flat 7-argument anonymous function expression:
+
+    (mesh, operators, hodge, __du__, __u__, __p__, __t__) -> begin
+        runtime_defs...
+        body
+    end
+
+Unlike `_gen_mesh_closure`, the body contains no nested closures, making it safe
+for use as a [`RuntimeGeneratedFunction`](https://github.com/SciML/RuntimeGeneratedFunctions.jl)
+body where the body is executed via opaque closures and inner closures would be
+type-specialized based on type inference, causing failures when callers pass
+argument types (e.g., `Int64` for time) that differ from the inferred specialization.
+
+`c` is the NamedTuple returned by `_compile_decapode`.
+`include_nanmath` and `include_multigrid` control whether optional NaNMath
+and multigrid setup expressions are emitted for the branch.
+"""
+function _gen_flat_inplace_lambda(c; include_nanmath::Bool=false, include_multigrid::Bool=false)
+  body = _gen_function_body(c)
+  runtime_defs = _gen_runtime_defs(c; include_nanmath, include_multigrid)
+  flat_params = Expr(:tuple, :mesh, :operators, :hodge, :__du__, :__u__, :__p__, :__t__)
+  flat_body = Expr(:block, runtime_defs, body)
+  Expr(:->, flat_params, flat_body)
+end
+
+"""
     _gen_mesh_closure(c; inplace::Bool=true, include_nanmath::Bool=false, include_multigrid::Bool=false)
 
 Generate the outer `(mesh, operators, hodge) -> ...` closure and an inner
@@ -923,11 +951,9 @@ The returned function has the signature:
 See also: [`gensim`](@ref).
 """
 function evalsim(args...; kwargs...)
-  sim = eval(gensim(args...; kwargs...))
-  (mesh, operators, hodge=GeometricHodge()) -> begin
-    inner = Base.invokelatest(sim, mesh, operators, hodge)
-    (__du__, __u__, __p__, __t__) -> Base.invokelatest(inner, __du__, __u__, __p__, __t__)
-  end
+  expr = gensim(args...; kwargs...)
+  inner = @RuntimeGeneratedFunction(_strip_default_args(expr.args[end]))
+  (mesh, operators, hodge=GeometricHodge()) -> inner(mesh, operators, hodge)
 end
 
 """
@@ -1119,14 +1145,9 @@ The returned function has the signature:
 See also: [`gen_split`](@ref).
 """
 function eval_split(args...; kwargs...)
-  sim = eval(gen_split(args...; kwargs...))
-  (mesh, operators, hodge=GeometricHodge()) -> begin
-    f_implicit, f_explicit = Base.invokelatest(sim, mesh, operators, hodge)
-    (
-      (__du__, __u__, __p__, __t__) -> Base.invokelatest(f_implicit, __du__, __u__, __p__, __t__),
-      (__du__, __u__, __p__, __t__) -> Base.invokelatest(f_explicit, __du__, __u__, __p__, __t__),
-    )
-  end
+  expr = gen_split(args...; kwargs...)
+  inner = @RuntimeGeneratedFunction(_strip_default_args(expr.args[end]))
+  (mesh, operators, hodge=GeometricHodge()) -> inner(mesh, operators, hodge)
 end
 
 """
