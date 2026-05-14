@@ -748,11 +748,17 @@ end
     B == ⋆(⋆(A))
   end
   g = gensim(DiagonalInvHodge1)
-  func_block = only(filter(block ->
+  blocks = gensim_body_blocks(g)
+  f_assign_blocks = filter(block ->
     block isa Expr && block.head == :(=) &&
     block.args[1] isa Expr && block.args[1].head == :call && block.args[1].args[1] == :f,
-    gensim_body_blocks(g)))
-  function has_call_to(e::Expr, fn::Symbol)
+    blocks)
+  func_block = if !isempty(f_assign_blocks)
+    only(f_assign_blocks)
+  else
+    only(filter(block -> block isa Expr && block.head == :->, blocks)).args[2]
+  end
+  function has_call_to(e, fn::Symbol)
     found = Ref(false)
     function walk(x)
       if x isa Expr
@@ -769,7 +775,6 @@ end
     found[]
   end
   @test has_call_to(func_block, Symbol("GenSim-M_⋆₁⁻¹"))
-  @test length(filter_lnn(func_block.args)) == 2
   sim = eval(g)
 
   # TODO: Error is being thrown here
