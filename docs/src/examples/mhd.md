@@ -70,6 +70,7 @@ using JLD2
 other dependencies
 
 ````@example mhd
+using MLStyle
 using Statistics: mean
 
 @info "Defining models"
@@ -110,19 +111,16 @@ end;
 @info "Allocating Mesh and Operators"
 const RADIUS = 1.0;
 sphere = :ICO7;
-s = if sphere == :ICO5
-    loadmesh(Icosphere(4, RADIUS))
-elseif sphere == :ICO6
-    loadmesh(Icosphere(6, RADIUS))
-elseif sphere == :ICO7
-    loadmesh(Icosphere(7, RADIUS))
-elseif sphere == :ICO8
-    loadmesh(Icosphere(8, RADIUS))
-elseif sphere == :flat
-    triangulated_grid(10, 10, 0.2, 0.2, Point3d)
-else # :UV
-    s, _, _ = makeSphere(0, 180, 2.5, 0, 360, 2.5, RADIUS)
-    s
+s = @match sphere begin
+    :ICO5 => loadmesh(Icosphere(4, RADIUS));
+    :ICO6 => loadmesh(Icosphere(6, RADIUS));
+    :ICO7 => loadmesh(Icosphere(7, RADIUS));
+    :ICO8 => loadmesh(Icosphere(8, RADIUS));
+    :flat => triangulated_grid(10, 10, 0.2, 0.2, Point3d)
+    :UV => begin
+        s, _, _ = makeSphere(0, 180, 2.5, 0, 360, 2.5, RADIUS);
+        s;
+    end
 end;
 dualmesh = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3d}(s);
 subdivide_duals!(dualmesh, Circumcenter());
@@ -288,4 +286,3 @@ function visualize_dynamics(file_name, soln)
 end
 visualize_dynamics("mhd.mp4", soln)
 ````
-
