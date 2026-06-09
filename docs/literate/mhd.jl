@@ -44,6 +44,7 @@ using JLD2
 
 # other dependencies
 using MLStyle
+using RuntimeGeneratedFunctions
 using Statistics: mean
 
 @info "Defining models"

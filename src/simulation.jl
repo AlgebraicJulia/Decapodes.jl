@@ -234,7 +234,7 @@ end
 
 Emit code to define functions given operator Symbols.
 
-Default operations return a tuple of an in-place and an out-of-place function. User-defined operations return an out-of-place function.
+Default operations return a tuple of an in-place and an out-of-place function. User-defined operations are resolved via `getfield(operators, :symbol)` where `operators` is a module containing the operator functions.
 """
 function compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, cat::OperatorCategory)
   if cat.is_optimizable
@@ -242,7 +242,7 @@ function compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractG
   elseif cat.is_non_optimizable
     :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
   else
-    :($op = operators(mesh, $quote_op))
+    :($op = getfield(operators, $quote_op))
   end
 end
 

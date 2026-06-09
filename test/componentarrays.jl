@@ -7,6 +7,7 @@ using Distributions
 using GeometryBasics: Point3
 using LinearAlgebra
 using OrdinaryDiffEqTsit5
+using RuntimeGeneratedFunctions
 using Test
 
 C = ones(Float64, 10)
@@ -21,9 +22,10 @@ end
 prob = ODEProblem(dynamics,u₀,(0,1))
 soln = solve(prob, Tsit5())
 
-function ca_generate(sd, my_symbol)
-  my_symbol == :k && return x -> x/20
-  return default_dec_generate(sd, my_symbol)
+module CAGenerateContext
+  using RuntimeGeneratedFunctions
+  RuntimeGeneratedFunctions.init(@__MODULE__)
+  k(x) = x/20
 end
 
 
@@ -54,7 +56,7 @@ diffExpr = parse_decapode(DiffusionExprBody)
 ddp = SummationDecapode(diffExpr)
 gensim(expand_operators(ddp), [:C])
 f = eval(gensim(expand_operators(ddp), [:C]))
-fₘ = f(periodic_mesh, ca_generate)
+fₘ = f(periodic_mesh, CAGenerateContext)
 c_dist = MvNormal([5, 5], LinearAlgebra.Diagonal(map(abs2, [1.5, 1.5])))
 c = [pdf(c_dist, [p[1], p[2]]) for p in periodic_mesh[:point]]
 
@@ -119,7 +121,7 @@ advdiffdp = SummationDecapode(advdiff)
 # gensim(expand_operators(advdiffdp), [:C, :V])
 
 sim = eval(gensim(expand_operators(advdiffdp), [:C, :V]))
-fₘ = sim(periodic_mesh, ca_generate)
+fₘ = sim(periodic_mesh, CAGenerateContext)
 velocity(p) = [-0.5, -0.5, 0.0]
 v = flat_op(periodic_mesh, DualVectorField(velocity.(periodic_mesh[triangle_center(periodic_mesh),:dual_point])); dims=[30, 10, Inf])
 c_dist = MvNormal([7, 5], LinearAlgebra.Diagonal(map(abs2, [1.5, 1.5])))

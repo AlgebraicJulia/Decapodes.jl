@@ -10,6 +10,7 @@ using LinearAlgebra
 using OrdinaryDiffEqTsit5
 using OrdinaryDiffEqPRK
 using OrdinaryDiffEqSDIRK
+using RuntimeGeneratedFunctions
 using SciMLBase
 using Test
 using Random
@@ -59,11 +60,9 @@ function dec_laplace_beltrami(k, sd::HasDeltaSet)
   x -> lpbt * x
 end
 
-function generate(sd, my_symbol)
-  my_symbol == :⋆₁    && return test_hodge(1, sd, DiagonalHodge())
-  my_symbol == :⋆₀⁻¹  && return test_inverse_hodge(0, sd, DiagonalHodge())
-  my_symbol == :dual_d₁ && return test_dual_differential(1, sd)
-  return default_dec_generate_2D(sd, my_symbol)
+module GenerateContext
+  using RuntimeGeneratedFunctions
+  RuntimeGeneratedFunctions.init(@__MODULE__)
 end
 
 @testset "Simulation Generation" begin
@@ -137,16 +136,16 @@ end
 
 # Test that simulations generated from these return the same result.
 f = evalsim(DiffusionWithConstant)
-f_with_constant = f(torus, generate)
+f_with_constant = f(torus, nothing)
 
 f = evalsim(DiffusionWithParameter)
-f_with_parameter = f(torus, generate)
+f_with_parameter = f(torus, nothing)
 
 f = eval(gensim(expand_operators(DiffusionWithLiteral)))
-f_with_literal = f(torus, generate)
+f_with_literal = f(torus, nothing)
 
 f = eval(gensim(expand_operators(DiffusionWithInterpolation)))
-f_with_interpolation = f(torus, generate)
+f_with_interpolation = f(torus, nothing)
 
 f_with_constant(du, u₀, (k=3.0,), 0)
 fc_res = copy(du.C)
@@ -164,10 +163,10 @@ fi_res = copy(du.C)
 # Test same but with no preallocating
 
 f = evalsim(DiffusionWithLiteral, preallocate=false)
-f_noalloc = f(torus, generate)
+f_noalloc = f(torus, nothing)
 
 f = evalsim(DiffusionWithLiteral)
-f_alloc = f(torus, generate)
+f_alloc = f(torus, nothing)
 
 f_noalloc(du, u₀, NamedTuple(), 0)
 f_nal = copy(du.C)
@@ -182,7 +181,7 @@ f_al = copy(du.C)
 # same function would throw a world-age MethodError.
 function run_evalsim_inside_function()
   sim = evalsim(DiffusionWithConstant)
-  f = sim(torus, generate)
+  f = sim(torus, nothing)
   du_local = ComponentArray(C=zero(c))
   f(du_local, u₀, (k=3.0,), 0.0)
   du_local
@@ -198,9 +197,9 @@ end
 # Testing Brusselator
 @testset "Brusselator Simulation" begin
 
-  function generate(sd, my_symbol; hodge=GeometricHodge())
-    my_symbol == :Δ₀ && return test_laplace_de_rham(0, sd)
-    return default_dec_generate_2D(sd, my_symbol, hodge)
+  module BrusselatorContext
+    using RuntimeGeneratedFunctions
+    RuntimeGeneratedFunctions.init(@__MODULE__)
   end
 
   begin
@@ -232,8 +231,7 @@ end
 
   function old_simulate(mesh, operators)
     begin
-        Δ₀ = generate(mesh, :Δ₀)
-        # (.*) = operators(mesh, :.*)
+        Δ₀ = test_laplace_de_rham(0, mesh)
     end
     return begin
             f(du, u, p, t) = begin
@@ -266,10 +264,10 @@ end
         end
   end
 
-  fₙ = old_simulate(earth, generate)
+  fₙ = old_simulate(earth, nothing)
 
   new_sim = evalsim(Brusselator)
-  fₘ = new_sim(earth, generate)
+  fₘ = new_sim(earth, nothing)
 
   begin
     U = map(earth[:point]) do (_,y,_)
@@ -425,7 +423,7 @@ end
   end
 
   sim = eval(gensim(neg_transform))
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = ones(nv(earth))
   u = ComponentArray(A=A)
   constants_and_parameters = ()
@@ -457,7 +455,7 @@ end
     :(var"GenSim-M_GenSim-ConMat_2" = var"GenSim-M_d₁" * var"GenSim-M_d₀")]
 
   sim = eval(gensim(simple_contract))
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = 2 * ones(nv(earth))
   C = ones(nv(earth))
   E = ones(nv(earth))
@@ -484,7 +482,7 @@ end
   @test 4 == count_contractions(contract_with_summation)
 
   sim = eval(gensim(contract_with_summation))
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = 2 * ones(nv(earth))
   u = ComponentArray(A=A)
   du = ComponentArray(A=zeros(nv(earth)))
@@ -507,7 +505,7 @@ end
   @test 4 == count_contractions(contract_with_op2)
 
   sim = eval(gensim(contract_with_op2, preallocate = false))
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = 3 * ones(nv(earth))
   u = ComponentArray(A=A)
   du = ComponentArray(A=zeros(nv(earth)))
@@ -517,7 +515,7 @@ end
   @test du.A == zeros(nv(earth))
 
   sim = eval(gensim(contract_with_op2, preallocate = true))
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = 3 * ones(nv(earth))
   u = ComponentArray(A=A)
   du = ComponentArray(A=zeros(nv(earth)))
@@ -539,7 +537,7 @@ end
   @test 2 == count_contractions(later_contraction)
 
   sim = eval(gensim(later_contraction))
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = 4 * ones(nv(earth))
   u = ComponentArray(A=A)
   du = ComponentArray(A=zeros(nv(earth)))
@@ -558,7 +556,7 @@ end
   @test 0 == count_contractions(no_contraction)
 
   sim = eval(gensim(no_contraction))
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = [i for i in 1:nv(earth)]
   u = ComponentArray(A=A)
   du = ComponentArray(A=zeros(nv(earth)))
@@ -578,12 +576,13 @@ end
 
   sim = eval(gensim(no_unallowed))
 
-  function generate_no_unallowed(sd, my_symbol; hodge=GeometricHodge())
-    my_symbol == :k && return x -> 20 * x
-    error("Unmatched operator $my_symbol")
+  module NoUnallowedContext
+    using RuntimeGeneratedFunctions
+    RuntimeGeneratedFunctions.init(@__MODULE__)
+    k(x) = 20 * x
   end
 
-  f = sim(earth, generate_no_unallowed)
+  f = sim(earth, NoUnallowedContext)
   A = [i for i in 1:nv(earth)]
   u = ComponentArray(A=A)
   du = ComponentArray(A=zeros(nv(earth)))
@@ -605,7 +604,7 @@ end
   end
 
   sim = eval(gensim(wedges01, preallocate=false))
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = ones(nv(earth))
   B = 2 * ones(nv(earth))
   C = 3 * ones(ne(earth))
@@ -618,7 +617,7 @@ end
   @test du.A == du.B
 
   sim = eval(gensim(wedges01, preallocate=true))
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = ones(nv(earth))
   B = 2 * ones(nv(earth))
   C = 3 * ones(ne(earth))
@@ -643,7 +642,7 @@ end
 
   sim = eval(gensim(wedges11))
 
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = ones(ne(earth))
   B = ones(ne(earth))
   u = ComponentArray(A=A, B=B)
@@ -670,7 +669,7 @@ end
 
   sim = eval(gensim(wedges02))
 
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = ones(ntriangles(earth))
   B = ones(ntriangles(earth))
   C = ones(nv(earth))
@@ -694,7 +693,7 @@ end
 
   sim = eval(gensim(GeoInvHodge1))
 
-  f = sim(earth, default_dec_generate)
+  f = sim(earth, nothing)
   A = ones(ne(earth))
   u = ComponentArray(A=A)
   du = ComponentArray(A=zeros(ne(earth)))
@@ -714,7 +713,7 @@ end
 
   sim = eval(gensim(DiagonalInvHodge1))
 
-  f = sim(earth, default_dec_generate, DiagonalHodge())
+  f = sim(earth, nothing, DiagonalHodge())
   A = ones(ne(earth))
   u = ComponentArray(A=A)
   du = ComponentArray(A=zeros(ne(earth)))
@@ -778,7 +777,7 @@ end
   sim = eval(g)
 
   # TODO: Error is being thrown here
-  @test f = sim(line, default_dec_generate, DiagonalHodge()) isa Any
+  @test f = sim(line, nothing, DiagonalHodge()) isa Any
 end
 
 @testset "GenSim Compilation" begin
@@ -786,10 +785,6 @@ end
   rect = triangulated_grid(100, 100, 50, 50, Point3{Float64})
   d_rect = EmbeddedDeltaDualComplex2D{Bool, Float64, Point3{Float64}}(rect)
   subdivide_duals!(d_rect, Circumcenter())
-
-  function generate(sd, my_symbol, hodge)
-    error("Unmatched operator $my_symbol")
-  end
 
   # tests that there is no variable shadowing for du, u, p, and t
   NoShadow = @decapode begin
@@ -802,7 +797,7 @@ end
   end
   symsim = gensim(NoShadow)
   sim_NS = eval(symsim)
-  @test sim_NS(d_rect, generate, DiagonalHodge()) isa Any
+  @test sim_NS(d_rect, nothing, DiagonalHodge()) isa Any
 
   HeatTransfer = @decapode begin
     (HT, Tₛ)::Form0
@@ -811,7 +806,7 @@ end
   end
 
   sim_HT = evalsim(HeatTransfer)
-  @test sim_HT(d_rect, generate, DiagonalHodge()) isa Any
+  @test sim_HT(d_rect, nothing, DiagonalHodge()) isa Any
 
   Jordan_Kinderlehrer_Otto = @decapode begin
     (ρ, Ψ)::Form0
@@ -820,7 +815,7 @@ end
   end
 
   sim_JKO = evalsim(Jordan_Kinderlehrer_Otto)
-  @test sim_JKO(d_rect, generate, DiagonalHodge()) isa Any
+  @test sim_JKO(d_rect, nothing, DiagonalHodge()) isa Any
 
   Schroedinger = @decapode begin
     (i, h, m)::Constant
@@ -829,10 +824,10 @@ end
     ∂ₜ(Ψ) == (((-1 * h ^ 2) / (2m)) * Δ(Ψ) + V * Ψ) / (i * h)
   end
   sim_Schroedinger = evalsim(Schroedinger)
-  @test sim_Schroedinger(d_rect, generate, DiagonalHodge()) isa Any
+  @test sim_Schroedinger(d_rect, nothing, DiagonalHodge()) isa Any
 
   sim_Schroedinger_complex = evalsim(Schroedinger; stateeltype=ComplexF64, preallocate=false)
-  @test sim_Schroedinger_complex(d_rect, generate, DiagonalHodge()) isa Any
+  @test sim_Schroedinger_complex(d_rect, nothing, DiagonalHodge()) isa Any
 
   Gray_Scott = @decapode begin
     (U, V)::Form0
@@ -847,7 +842,7 @@ end
   end
 
   sim_GS = evalsim(Gray_Scott)
-  @test sim_GS(d_rect, generate, DiagonalHodge()) isa Any
+  @test sim_GS(d_rect, nothing, DiagonalHodge()) isa Any
 
   Lejeune = @decapode begin
     ρ::Form0
@@ -856,7 +851,7 @@ end
   end
 
   sim_LJ = evalsim(Lejeune)
-  @test sim_LJ(d_rect, generate, DiagonalHodge()) isa Any
+  @test sim_LJ(d_rect, nothing, DiagonalHodge()) isa Any
 
   Tracer = @decapode begin
     (c, C, F, c_up)::Form0
@@ -865,7 +860,7 @@ end
   end
 
   sim_Tracer = evalsim(Tracer)
-  @test sim_Tracer(d_rect, generate, DiagonalHodge()) isa Any
+  @test sim_Tracer(d_rect, nothing, DiagonalHodge()) isa Any
 
   # Test for Halfar
   halfar_eq2 = @decapode begin
@@ -897,13 +892,8 @@ end
 
   resolve_overloads!(infer_types!(halfar))
 
-  function halfar_generate(sd, my_symbol; hodge=GeometricHodge())
-    my_symbol == :norm && return x -> norm.(x)
-    error("Unmatched operator $my_symbol")
-  end
-
   sim_Halfar = evalsim(halfar)
-  @test sim_Halfar(d_rect, halfar_generate, DiagonalHodge()) isa Any
+  @test sim_Halfar(d_rect, nothing, DiagonalHodge()) isa Any
 
   # Test that CSE eliminates:
   # 1. Allocation of diff cache.
@@ -925,13 +915,8 @@ end
     ∂ₜ(d𝐮) ==  (-1) * ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(𝐮, ⋆(d𝐮)))
   end
 
-  function poisson_generate(sd, my_symbol; hodge=GeometricHodge())
-    my_symbol == :♭♯ && return x -> nothing
-    error("Unmatched operator $my_symbol")
-  end
-
   sim_Poisson = evalsim(eq11_inviscid_poisson)
-  @test sim_Poisson(d_rect, poisson_generate, DiagonalHodge()) isa Any
+  @test sim_Poisson(d_rect, nothing, DiagonalHodge()) isa Any
 
   # Test for Halmo
   eq10forN2 = @decapode begin
@@ -987,16 +972,16 @@ end
    Open(eq10forN2,    [:𝐮, :w]),
    Open(blocking,     [:h, :𝐮, :w])]))
 
-  function halmo_generate(sd, my_symbol; hodge=GeometricHodge())
-    my_symbol == :σ    && return x -> nothing
-    my_symbol == :norm && return x -> nothing
-    error("Unmatched operator $my_symbol")
+  module HalmoContext
+    using RuntimeGeneratedFunctions
+    RuntimeGeneratedFunctions.init(@__MODULE__)
+    σ(x) = nothing
   end
 
   resolve_overloads!(infer_types!(ice_water))
 
   sim_Halmo = evalsim(ice_water)
-  @test sim_Halmo(d_rect, halmo_generate, DiagonalHodge()) isa Any
+  @test sim_Halmo(d_rect, HalmoContext, DiagonalHodge()) isa Any
 
 end
 
@@ -1016,15 +1001,11 @@ end
     ∂ₜ(U) == Δ₀⁻¹(U)
   end
 
-  function generate(fs, my_symbol; hodge=DiagonalHodge())
-    return default_dec_matrix_generate(fs, my_symbol, hodge)
-  end
-
   sim = eval(gensim(inv_lap))
   sim_mg = eval(gensim(inv_lap; multigrid=true))
 
-  f = sim(our_mesh, generate);
-  f_mg = sim_mg(series, generate);
+  f = sim(our_mesh, nothing);
+  f_mg = sim_mg(series, nothing);
 
   u = ComponentArray(U=b)
   du = similar(u)
@@ -1113,7 +1094,6 @@ end
   u₀ = ComponentArray(C=Csin,)
   constants_and_parameters = (D = 0.001,)
   # Run
-  function generate(sd, my_symbol; hodge=GeometricHodge()) end
   sim = eval(gensim(Heat,dimension=1))
   fₘ = sim(sd, nothing)
   tₑ = 1.15
@@ -1340,11 +1320,7 @@ end
 mesh,dualmesh = circle(9, 500)
 
 lap_mat = dec_hodge_star(1,dualmesh) * dec_differential(0,dualmesh) * dec_inv_hodge_star(0,dualmesh) * dec_dual_derivative(0,dualmesh)
-function generate(sd, my_symbol; hodge=DiagonalHodge())
-  my_symbol == :Δ && return x -> lap_mat * x
-  return default_dec_matrix_generate(sd, my_symbol, hodge)
-end
-fₘ = sim(dualmesh, generate, DiagonalHodge())
+fₘ = sim(dualmesh, nothing, DiagonalHodge())
 
 n_dist = Normal(pi)
 n = [pdf(n_dist, t)*(√(2pi))*7.2 + 0.08 - 5e-2 for t in range(0,2pi; length=ne(dualmesh))]
@@ -1366,7 +1342,7 @@ solution = solve(problem, Tsit5(), saveat=0.1)
 
 int_forms_code = gen_int(d, [:Lw, :Δn], dimension=1)
 int_forms = eval(int_forms_code)
-g = int_forms(dualmesh, generate, DiagonalHodge())
+g = int_forms(dualmesh, nothing, DiagonalHodge())
 @test g(solution(150.0), cs_ps, 150.0) isa ComponentArray
 end
 
