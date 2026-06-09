@@ -29,7 +29,6 @@ using CairoMakie
 using ComponentArrays
 using LinearAlgebra
 using LinearAlgebra: factorize
-using MLStyle
 using OrdinaryDiffEq
 using SparseArrays
 using StaticArrays
@@ -211,19 +210,16 @@ dᵦ = 0.5 * abs.(dd1) * spdiagm(dd0 * ones(ntriangles(sd)));
 @info "    Differential operators allocated"
 
 function generate(s, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :d₁⁻¹ => x -> fdd1 \ x
-    :Δ⁻¹ => x -> begin
-      y = fΔ0 \ x
-      y .- minimum(y)
-    end
-    :dsdinv => x -> dsd \ x
-    :dinv => x -> fd0 \ x
-    :♭♯ => x -> ♭♯_m * x
-    :dᵦ => x -> dᵦ * x
-    _ => error("Unmatched operator $my_symbol")
+  my_symbol == :d₁⁻¹ && return x -> fdd1 \ x
+  my_symbol == :Δ⁻¹ && return x -> begin
+    y = fΔ0 \ x
+    y .- minimum(y)
   end
-  return (args...) -> op(args...)
+  my_symbol == :dsdinv && return x -> dsd \ x
+  my_symbol == :dinv && return x -> fd0 \ x
+  my_symbol == :♭♯ && return x -> ♭♯_m * x
+  my_symbol == :dᵦ && return x -> dᵦ * x
+  error("Unmatched operator $my_symbol")
 end;
 
 end

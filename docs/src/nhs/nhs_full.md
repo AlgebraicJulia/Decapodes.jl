@@ -15,7 +15,6 @@ using ComponentArrays
 using GeometryBasics: Point3
 using JLD2
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 Point3D = Point3{Float64};
 nothing # hide
@@ -174,10 +173,7 @@ sd = EmbeddedDeltaDualComplex2D{Bool,Float64,Point3D}(s)
 subdivide_duals!(sd, Barycenter())
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    _ => error("Unmatched operator $my_symbol")
-  end
-  return op
+  error("Unmatched operator $my_symbol")
 end
 
 open("nhs.jl", "w") do f

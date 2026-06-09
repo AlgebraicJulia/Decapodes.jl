@@ -10,7 +10,6 @@ using CairoMakie
 using ComponentArrays
 using GeometryBasics
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 using Random
 using CUDA, CUDA.CUSPARSE

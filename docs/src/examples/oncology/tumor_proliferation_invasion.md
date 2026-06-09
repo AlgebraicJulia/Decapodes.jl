@@ -9,7 +9,6 @@ using CombinatorialSpaces
 using Decapodes
 using DiagrammaticEquations, DiagrammaticEquations.Deca
 using Distributions
-using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
 using ComponentArrays

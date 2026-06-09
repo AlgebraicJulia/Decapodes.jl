@@ -40,7 +40,6 @@ using Distributions
 using GeometryBasics: Point2
 using JLD2
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 Point2D = Point2{Float64}
 nothing # hide
@@ -131,13 +130,10 @@ Let's pass our mesh and methods of generating operators to our simulation code.
 lap_mat = dec_hodge_star(1,dualmesh) * dec_differential(0,dualmesh) * dec_inv_hodge_star(0,dualmesh) * dec_dual_derivative(0,dualmesh)
 
 function generate(sd, my_symbol; hodge=DiagonalHodge())
-  op = @match my_symbol begin
-    :Δ => x -> begin
-      lap_mat * x
-    end
-    _ => default_dec_matrix_generate(sd, my_symbol, hodge)
+  my_symbol == :Δ && return x -> begin
+    lap_mat * x
   end
-  return (args...) -> op(args...)
+  return default_dec_matrix_generate(sd, my_symbol, hodge)
 end
 
 

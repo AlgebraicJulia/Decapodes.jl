@@ -17,7 +17,6 @@ using ComponentArrays
 using DiagrammaticEquations
 using Decapodes
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 
 using GeometryBasics: Point2, Point3
@@ -140,13 +139,11 @@ right_wall_idxs = findall(x -> x[1] == max_x, s[:point])
 wall_idxs = vcat(left_wall_idxs, right_wall_idxs)
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :rlb => (x,y) -> begin
-      x[wall_idxs] .= y
-      x
-    end
-    _ => error("Unmatched operator $my_symbol")
+  my_symbol == :rlb && return (x,y) -> begin
+    x[wall_idxs] .= y
+    x
   end
+  error("Unmatched operator $my_symbol")
 end
 
 fig = Figure() 

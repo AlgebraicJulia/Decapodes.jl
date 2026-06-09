@@ -7,7 +7,6 @@ using CombinatorialSpaces.ExteriorCalculus
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 using Decapodes
-using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
 using ComponentArrays

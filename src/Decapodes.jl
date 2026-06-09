@@ -5,6 +5,8 @@ using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 using MLStyle
 using NaNMath
+using RuntimeGeneratedFunctions
+RuntimeGeneratedFunctions.init(@__MODULE__)
 
 export
 gensim, evalsim, compile, compile_env, default_dec_matrix_generate, default_dec_cu_matrix_generate, default_dec_generate,

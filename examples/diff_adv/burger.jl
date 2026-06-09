@@ -14,7 +14,6 @@ Point2D = Point2{Float64}
 using Distributions
 using CairoMakie
 using LinearAlgebra
-using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
 
@@ -97,15 +96,12 @@ cs_ps = (diffusion_ν = 0.0005,)
 
 # Describe mappings from symbols to discrete differential operators.
 function generate(sd, my_symbol; hodge=DiagonalHodge())
-  op = @match my_symbol begin
-    ## Specify which wedge product to use.
-    ## This should probably be the default.
-    :∧₀₁ => (x,y) -> begin
-      ∧(Tuple{0,1},sd,x,y)
-    end
-    x => error("Unmatched operator $my_symbol")
+  ## Specify which wedge product to use.
+  ## This should probably be the default.
+  my_symbol == :∧₀₁ && return (x,y) -> begin
+    ∧(Tuple{0,1},sd,x,y)
   end
-  return (args...) -> op(args...)
+  error("Unmatched operator $my_symbol")
 end
 
 # Generate simulation.

@@ -2,7 +2,6 @@ using Decapodes
 using DiagrammaticEquations
 using CombinatorialSpaces
 using GeometryBasics
-using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
 using CUDA
@@ -26,10 +25,7 @@ end
 sim = evalsim(Heat, code_target=CUDATarget())
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
-    op = @match my_symbol begin
-      x => error("Unmatched operator $my_symbol")
-    end
-    return op
+    error("Unmatched operator $my_symbol")
   end
   
 fₘ = sim(d_rect, generate)

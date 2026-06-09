@@ -276,7 +276,6 @@ We then run the simulation and create video out of the solution.
 
 ```@example DEC
 using LinearAlgebra
-using MLStyle
 using StaticArrays
 import CombinatorialSpaces.DiscreteExteriorCalculus: eval_constant_primal_form
 

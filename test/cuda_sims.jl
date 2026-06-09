@@ -7,7 +7,6 @@ using DiagrammaticEquations
 using DiffEqGPU
 using Distributions
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEqTsit5
 using Statistics
 using Test
@@ -188,10 +187,8 @@ end
   cpu_sim = eval(gensim(Klausmeier, dimension=1))
 
   function cpu_generate(sd, my_symbol; hodge=DiagonalHodge())
-    @match my_symbol begin
-      :Δᵈ₀ => x -> lap_mat * x
-      _ => error("Unmatched operator $my_symbol")
-    end
+    my_symbol == :Δᵈ₀ && return x -> lap_mat * x
+    error("Unmatched operator $my_symbol")
   end
 
   cpu_fₘ   = cpu_sim(sd, cpu_generate, DiagonalHodge())
@@ -203,10 +200,8 @@ end
   cuda_sim = eval(gensim(Klausmeier, dimension=1, code_target=CUDATarget()))
   cuda_lap_mat = CuSparseMatrixCSC(lap_mat)
   function cuda_generate(sd, my_symbol; hodge=DiagonalHodge())
-    @match my_symbol begin
-      :Δᵈ₀ => x -> cuda_lap_mat * x
-      _ => error("Unmatched operator $my_symbol")
-    end
+    my_symbol == :Δᵈ₀ && return x -> cuda_lap_mat * x
+    error("Unmatched operator $my_symbol")
   end
 
   cuda_fₘ   = cuda_sim(sd, cuda_generate, DiagonalHodge())
@@ -249,10 +244,8 @@ end
   cuda_sim = eval(gensim(Klausmeier, dimension=1, code_target=CUDATarget(), stateeltype=Float32))
   cuda_lap_mat = CuSparseMatrixCSC(lap_mat)
   function cuda_generate(sd, my_symbol; hodge=DiagonalHodge())
-    @match my_symbol begin
-      :Δᵈ₀ => x -> cuda_lap_mat * x
-      _ => error("Unmatched operator $my_symbol")
-    end
+    my_symbol == :Δᵈ₀ && return x -> cuda_lap_mat * x
+    error("Unmatched operator $my_symbol")
   end
 
   cuda_fₘ   = cuda_sim(sd, cuda_generate, DiagonalHodge())

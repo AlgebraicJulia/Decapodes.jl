@@ -2,7 +2,6 @@ using Decapodes
 using DiagrammaticEquations
 using CombinatorialSpaces
 using GeometryBasics
-using MLStyle
 using ComponentArrays
 using OrdinaryDiffEq
 Point2D = Point2{Float64}

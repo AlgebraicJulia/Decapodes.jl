@@ -27,7 +27,6 @@ using ComponentArrays
 using GeometryBasics: Point2, Point3
 using JLD2
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 using SparseArrays
 using Statistics

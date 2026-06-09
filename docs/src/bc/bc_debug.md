@@ -128,20 +128,16 @@ modified initial condition is shown below:
 ```@example Debug
 using LinearAlgebra
 using ComponentArrays
-using MLStyle
 include("../boundary_helpers.jl")
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :k => x -> 0.05*x
-    :∂C => x -> begin
-      boundary = boundary_inds(Val{0}, sd)
-      x[boundary] .= 0
-      x
-    end
-    x => error("Unmatched operator $my_symbol")
+  my_symbol == :k && return x -> 0.05*x
+  my_symbol == :∂C && return x -> begin
+    boundary = boundary_inds(Val{0}, sd)
+    x[boundary] .= 0
+    x
   end
-  return op
+  error("Unmatched operator $my_symbol")
 end
 
 using Distributions

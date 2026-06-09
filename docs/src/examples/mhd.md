@@ -136,14 +136,11 @@ s0inv = dec_inv_hodge_star(0,dualmesh,GeometricHodge());
 ♭♯_m = ♭♯_mat(dualmesh);
 
 function generate(dualmesh, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :Δ⁻¹ => x -> begin
-      y = fΔ0 \ x
-      y .- minimum(y)
-    end
-    _ => default_dec_matrix_generate(dualmesh, my_symbol, hodge)
+  my_symbol == :Δ⁻¹ && return x -> begin
+    y = fΔ0 \ x
+    y .- minimum(y)
   end
-  return (args...) -> op(args...)
+  return default_dec_matrix_generate(dualmesh, my_symbol, hodge)
 end;
 
 sim = evalsim(mhd);
@@ -289,4 +286,3 @@ function visualize_dynamics(file_name, soln)
 end
 visualize_dynamics("mhd.mp4", soln)
 ````
-

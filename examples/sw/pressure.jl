@@ -5,7 +5,6 @@ using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 using Decapodes
 using OrdinaryDiffEq
-using MLStyle
 using Distributions
 using LinearAlgebra
 using Catlab.ACSetInterface
@@ -49,17 +48,14 @@ flatten_form(vfield::Function, mesh) =  ♭(mesh, DualVectorField(vfield.(mesh[t
 
 function generate(sd, my_symbol; hodge=GeometricHodge())
   i0 = (v,x) -> ⋆(1, sd, hodge=hodge)*wedge_product(Tuple{0,1}, sd, v, inv_hodge_star(0,sd, hodge=DiagonalHodge())*x)
-  op = @match my_symbol begin
-    :k => x->2000x
-    :μ => x->-0.0001x
-    :α => x->0*x
-    :β => x->2000*x
-    :γ => x->1*x
-    :i₀ => i0 
-    :debug => (args...)->begin println(args[1], length.(args[2:end])) end
-    _ => default_dec_generate(sd, my_symbol, hodge)
-  end
-  return (args...) ->  op(args...)
+  my_symbol == :k && return x->2000x
+  my_symbol == :μ && return x->-0.0001x
+  my_symbol == :α && return x->0*x
+  my_symbol == :β && return x->2000*x
+  my_symbol == :γ && return x->1*x
+  my_symbol == :i₀ && return i0
+  my_symbol == :debug && return (args...)->begin println(args[1], length.(args[2:end])) end
+  return default_dec_generate(sd, my_symbol, hodge)
 end
 
 include("coordinates.jl")

@@ -12,7 +12,6 @@ global_logger(TerminalLogger())
 using Decapodes
 using DiagrammaticEquations
 using SparseArrays
-using MLStyle
 using ComponentArrays
 using GeometryBasics
 Point3D = Point3{Float64}
@@ -442,38 +441,35 @@ v2comp = comp_support(sd);
 cache_mat = Dict(:t2c => tri2comp(s, v2comp), :e2c => edge2comp(s, v2comp), :cross => changes(sd, v2comp),
                  :α_cache => zeros(ntriangles(sd)*3), :β_cache => zeros(ntriangles(sd)*3))
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :∂ₚ => (x) -> begin
-            x[∂ₑ₀₊] .= 0
-            x[cyl_inner] .= 0
-            x
-          end
-    :∂ₜₐ => (x) -> begin
-      x[cyl_inner] .= 0
-      x
-    end
-    :∂ᵥ => (x) -> begin
-      x[cyl_edge] .= 0
-      x[∂ₑ₁₊] .= 0
-      x
-    end
-    :∂ᵣ => (x) -> begin
-      x[∂ₑ₀₊] .= 0
-      x[∂ₒ₀] .= 0
-    end
-    :∧₁₀′ => (α, β) -> begin
-      x = zeros(ne(sd)) # TODO: Correct size?
-      cp_2_1!(x, β, α, cache_mat)
-      x
-    end
-    :∧₁₁′ => (α, β) -> begin
-      x = zeros(nv(sd)) # TODO: Correct size?
-      pd_wedge!(x, Val{(1,1)}, sd, α, β; wedge_cache...)
-      x
-    end
-    x => error("Unmatched operator $my_symbol")
+  my_symbol == :∂ₚ && return (x) -> begin
+    x[∂ₑ₀₊] .= 0
+    x[cyl_inner] .= 0
+    x
   end
-  return op
+  my_symbol == :∂ₜₐ && return (x) -> begin
+    x[cyl_inner] .= 0
+    x
+  end
+  my_symbol == :∂ᵥ && return (x) -> begin
+    x[cyl_edge] .= 0
+    x[∂ₑ₁₊] .= 0
+    x
+  end
+  my_symbol == :∂ᵣ && return (x) -> begin
+    x[∂ₑ₀₊] .= 0
+    x[∂ₒ₀] .= 0
+  end
+  my_symbol == :∧₁₀′ && return (α, β) -> begin
+    x = zeros(ne(sd)) # TODO: Correct size?
+    cp_2_1!(x, β, α, cache_mat)
+    x
+  end
+  my_symbol == :∧₁₁′ && return (α, β) -> begin
+    x = zeros(nv(sd)) # TODO: Correct size?
+    pd_wedge!(x, Val{(1,1)}, sd, α, β; wedge_cache...)
+    x
+  end
+  error("Unmatched operator $my_symbol")
 end
 
 fₘ = simulate(sd, generate)

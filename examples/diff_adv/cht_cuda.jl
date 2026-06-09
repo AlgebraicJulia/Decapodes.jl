@@ -12,7 +12,7 @@ global_logger(TerminalLogger())
 using Decapodes
 using DiagrammaticEquations
 using SparseArrays
-using MLStyle
+
 using ComponentArrays
 using GeometryBasics
 Point3D = Point3{Float64}
@@ -428,57 +428,54 @@ v2comp = comp_support(sd);
 cache_mat = Dict(:t2c => tri2comp(s, v2comp), :e2c => edge2comp(s, v2comp), :cross => changes(sd, v2comp),
                  :α_cache => CUDA.zeros(Float64, ntriangles(sd)*3), :β_cache => CUDA.zeros(Float64, ntriangles(sd)*3))
 function generate(sd, my_symbol; hodge=GeometricHodge())
-  op = @match my_symbol begin
-    :∂ₚ => begin 
+  if my_symbol == :∂ₚ
     boundary = vcat(∂ₑ₀₊, cyl_inner)
-      (x) -> begin
-            # x[∂ₑ₀₊] .= 0
-            # x[cyl_inner] .= 0
-            x[boundary] .= 0
-            x
-      end
-    end
-    :∂ₜₐ => (x) -> begin
-      x[cyl_inner] .= 0
+    return (x) -> begin
+      # x[∂ₑ₀₊] .= 0
+      # x[cyl_inner] .= 0
+      x[boundary] .= 0
       x
     end
-    :∂ᵥ => begin 
-    boundary = vcat(cyl_edge, cu_∂ₑ₁₊)
-      (x) -> begin
-        # x[cyl_edge] .= 0
-        # x[cu_∂ₑ₁₊] .= 0
-        x[boundary] .= 0
-        x
-      end
-    end
-    :∂ᵣ => begin 
-    boundary = vcat(∂ₑ₀₊, cu_∂ₒ₀)
-      (x) -> begin
-        # x[∂ₑ₀₊] .= 0
-        # x[cu_∂ₒ₀] .= 0
-        x[boundary] .= 0
-      end
-    end
-    #= :∧₁₀′ => (α, β) -> begin
-      x = CUDA.zeros(Float64, ne(sd))
-      cp_2_1!(x, β, α, cache_mat)
-      x
-    end
-    =#
-    :∧₁₀′ => (x, α, β) -> begin
-      cp_2_1!(x, β, α, cache_mat)
-    end
-    #= :∧₁₁′ => (α, β) -> begin
-      x = CUDA.zeros(Float64, nv(sd))
-      pd_wedge!(x, Val{(1,1)}, sd, α, β; wedge_cache...)
-      x
-    =#
-    :∧₁₁′ => (x, α, β) -> begin
-      pd_wedge!(x, Val{(1,1)}, sd, α, β; wedge_cache...)
-    end
-    x => error("Unmatched operator $my_symbol")
   end
-  return op
+  my_symbol == :∂ₜₐ && return (x) -> begin
+    x[cyl_inner] .= 0
+    x
+  end
+  if my_symbol == :∂ᵥ
+    boundary = vcat(cyl_edge, cu_∂ₑ₁₊)
+    return (x) -> begin
+      # x[cyl_edge] .= 0
+      # x[cu_∂ₑ₁₊] .= 0
+      x[boundary] .= 0
+      x
+    end
+  end
+  if my_symbol == :∂ᵣ
+    boundary = vcat(∂ₑ₀₊, cu_∂ₒ₀)
+    return (x) -> begin
+      # x[∂ₑ₀₊] .= 0
+      # x[cu_∂ₒ₀] .= 0
+      x[boundary] .= 0
+    end
+  end
+  #= :∧₁₀′ => (α, β) -> begin
+    x = CUDA.zeros(Float64, ne(sd))
+    cp_2_1!(x, β, α, cache_mat)
+    x
+  end
+  =#
+  my_symbol == :∧₁₀′ && return (x, α, β) -> begin
+    cp_2_1!(x, β, α, cache_mat)
+  end
+  #= :∧₁₁′ => (α, β) -> begin
+    x = CUDA.zeros(Float64, nv(sd))
+    pd_wedge!(x, Val{(1,1)}, sd, α, β; wedge_cache...)
+    x
+  =#
+  my_symbol == :∧₁₁′ && return (x, α, β) -> begin
+    pd_wedge!(x, Val{(1,1)}, sd, α, β; wedge_cache...)
+  end
+  error("Unmatched operator $my_symbol")
 end
 
 function simulate(mesh, operators, hodge = GeometricHodge())

@@ -25,7 +25,6 @@ using CairoMakie
 using ComponentArrays
 using GeometryBasics
 using LinearAlgebra
-using MLStyle
 using OrdinaryDiffEq
 using Random
 Point3D = Point3{Float64};

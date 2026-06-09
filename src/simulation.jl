@@ -234,7 +234,7 @@ end
 
 Emit code to define functions given operator Symbols.
 
-Default operations return a tuple of an in-place and an out-of-place function. User-defined operations return an out-of-place function.
+Default operations return a tuple of an in-place and an out-of-place function. User-defined operations are resolved via `getfield(operators, :symbol)` where `operators` is a module containing the operator functions.
 """
 function compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractGenerationTarget, cat::OperatorCategory)
   if cat.is_optimizable
@@ -242,7 +242,7 @@ function compile_env_def(op::Symbol, quote_op::QuoteNode, code_target::AbstractG
   elseif cat.is_non_optimizable
     :($op = $(generator_function(code_target))(mesh, $quote_op, hodge))
   else
-    :($op = operators(mesh, $quote_op))
+    :($op = getfield(operators, $quote_op))
   end
 end
 
@@ -787,6 +787,34 @@ function _gen_runtime_defs(c; include_nanmath::Bool, include_multigrid::Bool)
 end
 
 """
+    _gen_flat_inplace_lambda(c; include_nanmath::Bool=false, include_multigrid::Bool=false) -> Expr
+
+Generate a flat 7-argument anonymous function expression:
+
+    (mesh, operators, hodge, __du__, __u__, __p__, __t__) -> begin
+        runtime_defs...
+        body
+    end
+
+Unlike `_gen_mesh_closure`, the body contains no nested closures, making it safe
+for use as a [`RuntimeGeneratedFunction`](https://github.com/SciML/RuntimeGeneratedFunctions.jl)
+body where the body is executed via opaque closures and inner closures would be
+type-specialized based on type inference, causing failures when callers pass
+argument types (e.g., `Int64` for time) that differ from the inferred specialization.
+
+`c` is the NamedTuple returned by `_compile_decapode`.
+`include_nanmath` and `include_multigrid` control whether optional NaNMath
+and multigrid setup expressions are emitted for the branch.
+"""
+function _gen_flat_inplace_lambda(c; include_nanmath::Bool=false, include_multigrid::Bool=false)
+  body = _gen_function_body(c)
+  runtime_defs = _gen_runtime_defs(c; include_nanmath, include_multigrid)
+  flat_params = Expr(:tuple, :mesh, :operators, :hodge, :__du__, :__u__, :__p__, :__t__)
+  flat_body = Expr(:block, runtime_defs, body)
+  Expr(:->, flat_params, flat_body)
+end
+
+"""
     _gen_mesh_closure(c; inplace::Bool=true, include_nanmath::Bool=false, include_multigrid::Bool=false)
 
 Generate the outer `(mesh, operators, hodge) -> ...` closure and an inner
@@ -804,10 +832,11 @@ function _gen_mesh_closure(c; inplace::Bool=true, include_nanmath::Bool=false, i
     [:(__u__), :(__p__), :(__t__)]
   body = _gen_function_body(c)
   runtime_defs = _gen_runtime_defs(c; include_nanmath, include_multigrid)
+  inner = Expr(:->, Expr(:tuple, args...), body)
   quote
     (mesh, operators, hodge=GeometricHodge()) -> begin
       $(runtime_defs)
-      f($(args...)) = $body
+      $inner
     end
   end
 end
@@ -884,7 +913,107 @@ gensim(collate(c); dimension=dimension)
 gensim(d::SummationDecapode; kwargs...) =
   gensim(d, gather_inputs(d); kwargs...)
 
-evalsim(args...; kwargs...) = eval(gensim(args...; kwargs...))
+"""
+    _strip_default_args(lambda::Expr) -> Expr
+
+Strip default argument values from a lambda expression so it is compatible with
+[`RuntimeGeneratedFunctions`](https://github.com/SciML/RuntimeGeneratedFunctions.jl),
+which does not support default argument values. The returned expression has the same
+body but with all `name=default` argument patterns replaced by plain `name` symbols.
+
+This is an internal helper used by [`evalsim`](@ref), [`eval_int`](@ref), and
+[`eval_split`](@ref).
+"""
+function _strip_default_args(lambda::Expr)
+  args_expr = lambda.args[1]
+  body_expr = lambda.args[2]
+  raw_args = args_expr isa Expr && args_expr.head === :tuple ? args_expr.args : [args_expr]
+  new_args = map(raw_args) do arg
+    (arg isa Expr && arg.head === :(=)) ? arg.args[1] : arg
+  end
+  Expr(:->, Expr(:tuple, new_args...), body_expr)
+end
+
+"""
+    _extract_nested_flat_lambda(outer_lambda::Expr) -> Expr
+
+Given an outer lambda of the form `(outer_args...) -> begin; runtime_defs; inner_lambda; end`
+(as produced by `_gen_mesh_closure`), return a single flat lambda that combines all
+arguments: `(outer_args..., inner_args...) -> begin; runtime_defs; inner_body; end`.
+
+This avoids nested closures inside a `RuntimeGeneratedFunction` body, which would
+be compiled as opaque closures in Julia 1.12 and become type-specialized, causing
+`MethodError` when called with argument types that differ from the inferred
+specialization (e.g. passing `Int64` for a time argument inferred as `Float64`).
+
+The flat lambda is safe to pass to `@RuntimeGeneratedFunction`, and callers can
+wrap the resulting function in a plain Julia closure that re-separates the arguments.
+"""
+function _extract_nested_flat_lambda(outer_lambda::Expr)
+  outer_params_expr = outer_lambda.args[1]
+  outer_params = outer_params_expr isa Expr && outer_params_expr.head === :tuple ?
+    outer_params_expr.args : [outer_params_expr]
+  outer_body = outer_lambda.args[2]
+  stmts = filter(x -> !(x isa LineNumberNode), outer_body.args)
+  runtime_defs = stmts[1]
+  inner_lambda = stmts[end]
+  inner_params_expr = inner_lambda.args[1]
+  inner_params = inner_params_expr isa Expr && inner_params_expr.head === :tuple ?
+    inner_params_expr.args : [inner_params_expr]
+  inner_body = inner_lambda.args[2]
+  flat_params = Expr(:tuple, outer_params..., inner_params...)
+  Expr(:->, flat_params, Expr(:block, runtime_defs, inner_body))
+end
+
+"""
+    _extract_split_branch_flat_lambda(branch_block::Expr) -> Expr
+
+Given a branch block of the form `begin; name = let; runtime_defs; inner_lambda; end; end`
+(as produced by `_gen_split_branch`), return a flat lambda
+`(mesh, operators, hodge, inner_args...) -> begin; runtime_defs; inner_body; end`.
+
+Used by [`eval_split`](@ref) to build two flat `RuntimeGeneratedFunction`s.
+"""
+function _extract_split_branch_flat_lambda(branch_block::Expr)
+  stmts = filter(x -> !(x isa LineNumberNode), branch_block.args)
+  assign = stmts[1]
+  let_expr = assign.args[2]
+  let_body = let_expr.args[end]
+  let_stmts = filter(x -> !(x isa LineNumberNode), let_body.args)
+  runtime_defs = let_stmts[1]
+  inner_lambda = let_stmts[2]
+  inner_params_expr = inner_lambda.args[1]
+  inner_params = inner_params_expr isa Expr && inner_params_expr.head === :tuple ?
+    inner_params_expr.args : [inner_params_expr]
+  inner_body = inner_lambda.args[2]
+  flat_params = Expr(:tuple, :mesh, :operators, :hodge, inner_params...)
+  Expr(:->, flat_params, Expr(:block, runtime_defs, inner_body))
+end
+
+"""
+    evalsim(args...; kwargs...) -> Function
+
+Convenience wrapper that compiles the code generated by [`gensim`](@ref) into a
+callable simulation function using
+[`RuntimeGeneratedFunctions`](https://github.com/SciML/RuntimeGeneratedFunctions.jl).
+
+Unlike `eval(gensim(...))`, the returned function is immune to Julia world-age
+restrictions and can be called immediately inside another function without triggering
+a world-age error.
+
+The returned function has the signature:
+`(mesh, operators, hodge=GeometricHodge()) -> (__du__, __u__, __p__, __t__) -> nothing`
+
+See also: [`gensim`](@ref).
+"""
+function evalsim(args...; kwargs...)
+  flat_lambda = _extract_nested_flat_lambda(
+    _strip_default_args(gensim(args...; kwargs...).args[end]))
+  rgf = @RuntimeGeneratedFunction(flat_lambda)
+  (mesh, operators, hodge=GeometricHodge()) ->
+    (__du__, __u__, __p__, __t__) ->
+      rgf(mesh, operators, hodge, __du__, __u__, __p__, __t__)
+end
 
 """
     gen_int(user_d::SummationDecapode, target_vars::Symbol, input_vars::Vector{Symbol}; dimension::Int=2, stateeltype::DataType=Float64, code_target::AbstractGenerationTarget=CPUTarget(), preallocate::Bool=true, contract::Bool=true, cse::Bool=true)
@@ -951,13 +1080,29 @@ gen_int(d::SummationDecapode, target_vars::AbstractArray{Symbol}; kwargs...) =
   gen_int(d, target_vars, gather_inputs(d); kwargs...)
 
 """
-    eval_int(args...; kwargs...)
+    eval_int(args...; kwargs...) -> Function
 
-Convenience wrapper that evaluates the code generated by [`gen_int`](@ref).
+Convenience wrapper that compiles the code generated by [`gen_int`](@ref) into a
+callable function using
+[`RuntimeGeneratedFunctions`](https://github.com/SciML/RuntimeGeneratedFunctions.jl).
+
+Unlike `eval(gen_int(...))`, the returned function is immune to Julia world-age
+restrictions and can be called immediately inside another function without triggering
+a world-age error.
+
+The returned function has the signature:
+`(mesh, operators, hodge=GeometricHodge()) -> (__u__, __p__, __t__) -> value`
 
 See also: [`gen_int`](@ref).
 """
-eval_int(args...; kwargs...) = eval(gen_int(args...; kwargs...))
+function eval_int(args...; kwargs...)
+  flat_lambda = _extract_nested_flat_lambda(
+    _strip_default_args(gen_int(args...; kwargs...).args[end]))
+  rgf = @RuntimeGeneratedFunction(flat_lambda)
+  (mesh, operators, hodge=GeometricHodge()) ->
+    (__u__, __p__, __t__) ->
+      rgf(mesh, operators, hodge, __u__, __p__, __t__)
+end
 
 """
     split_tangent_state_names(d::SummationDecapode)
@@ -1046,13 +1191,35 @@ gen_split(implicit_c::Collage, explicit_c::Collage; kwargs...) =
   gen_split(collate(implicit_c), collate(explicit_c); kwargs...)
 
 """
-    eval_split(args...; kwargs...)
+    eval_split(args...; kwargs...) -> Function
 
-Convenience wrapper that evaluates the code generated by [`gen_split`](@ref).
+Convenience wrapper that compiles the code generated by [`gen_split`](@ref) into a
+callable function using
+[`RuntimeGeneratedFunctions`](https://github.com/SciML/RuntimeGeneratedFunctions.jl).
+
+Unlike `eval(gen_split(...))`, the returned function is immune to Julia world-age
+restrictions and can be called immediately inside another function without triggering
+a world-age error.
+
+The returned function has the signature:
+`(mesh, operators, hodge=GeometricHodge()) -> (f_implicit, f_explicit)`
 
 See also: [`gen_split`](@ref).
 """
-eval_split(args...; kwargs...) = eval(gen_split(args...; kwargs...))
+function eval_split(args...; kwargs...)
+  expr = gen_split(args...; kwargs...)
+  nested = _strip_default_args(expr.args[end])
+  outer_body = nested.args[2]
+  stmts = filter(x -> !(x isa LineNumberNode), outer_body.args)
+  flat_implicit = _extract_split_branch_flat_lambda(stmts[1])
+  flat_explicit = _extract_split_branch_flat_lambda(stmts[2])
+  rgf_implicit = @RuntimeGeneratedFunction(flat_implicit)
+  rgf_explicit = @RuntimeGeneratedFunction(flat_explicit)
+  (mesh, operators, hodge=GeometricHodge()) -> (
+    (__du__, __u__, __p__, __t__) -> rgf_implicit(mesh, operators, hodge, __du__, __u__, __p__, __t__),
+    (__du__, __u__, __p__, __t__) -> rgf_explicit(mesh, operators, hodge, __du__, __u__, __p__, __t__)
+  )
+end
 
 """
 function find_unreachable_tvars(d)

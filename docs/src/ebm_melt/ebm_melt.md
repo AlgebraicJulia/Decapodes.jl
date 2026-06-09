@@ -21,7 +21,6 @@ using CairoMakie
 using GeoMakie
 using GeometryBasics: Point2f, TriangleFace
 using LinearAlgebra
-using MLStyle
 using NearestNeighbors
 using NetCDF
 using OrdinaryDiffEq

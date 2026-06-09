@@ -2,7 +2,6 @@ using Catlab
 using CombinatorialSpaces
 using DiagrammaticEquations
 using Decapodes
-using MLStyle
 using OrdinaryDiffEq
 using LinearAlgebra
 using JLD2
