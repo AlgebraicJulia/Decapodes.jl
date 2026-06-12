@@ -1067,8 +1067,8 @@ end
   tₑ = 1.15
   ode_prob = ODEProblem(fₘ, u₀, (0, tₑ), constants_and_parameters)
   ens_prob = EnsembleProblem(ode_prob,
-    prob_func = (prob, i, repeat) ->
-      remake(prob, u0=ComponentArray(C=C[:,i])))
+    prob_func = (prob, ctx) ->
+      remake(prob, u0=ComponentArray(C=C[:, ctx.sim_id])))
   soln = solve(ens_prob, Tsit5(); trajectories=2)
   @test all(soln.u[1].u[1] .== Csin)
   @test all(soln.u[1].u[1] .!= Ccos)
