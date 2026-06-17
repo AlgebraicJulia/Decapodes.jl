@@ -58,6 +58,29 @@ Porous_Convection = @decapode begin
 
   ∂ₜ(T) == bound_Ṫ
 end
+
+@decapode_latex begin
+  (λ_ρ₀Cp, αρ₀, k_ηf, ϕ)::Constant
+  (P, T, Adv, bound_T, bound_Ṫ)::Form0
+  (g, qD)::Form1
+
+  bound_T == adiabatic(T)
+
+  # Darcy flux
+  ρ == g ∧ (αρ₀ * bound_T)
+  P == Δ⁻¹(δ(ρ))
+  qD == -k_ηf * (d(P) - ρ)
+
+  Adv == ⋆(interpolate(∧ᵈᵖ₁₁(⋆(d(bound_T)), qD)))
+  Ṫ == -1/ϕ * Adv + λ_ρ₀Cp * Δ(bound_T)
+
+  bound_Ṫ == tb_bc(Ṫ)
+
+  ∂ₜ(T) == bound_Ṫ
+end
+```
+
+```@example DEC
 infer_types!(Porous_Convection)
 resolve_overloads!(Porous_Convection)
 to_graphviz(Porous_Convection)

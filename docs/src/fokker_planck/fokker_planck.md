@@ -16,6 +16,12 @@ Fokker_Planck = @decapode begin
   β⁻¹::Constant
   ∂ₜ(ρ) == ∘(⋆,d,⋆)(d(Ψ)∧ρ) + β⁻¹*Δ(ρ)
 end
+
+@decapode_latex begin
+  (ρ,Ψ)::Form0
+  β⁻¹::Constant
+  ∂ₜ(ρ) == ∘(⋆,d,⋆)(d(Ψ)∧ρ) + β⁻¹*Δ(ρ)
+end
 ```
 
 Specify the domain

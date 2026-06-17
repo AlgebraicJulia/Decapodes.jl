@@ -11,7 +11,7 @@ the simulation debugger interface. To begin, we set up the same
 advection-diffusion problem presented in the [Overview](../overview/overview.md) section.
 As before, we define the Diffusion, Advection, and Superposition components,
 and now include a Boundary Condition (BC) component. By convention, BCs are encoded in Decapodes by using a `∂` symbol. Below we show the
-graphical rendering of this boundary condition diagram, which we will use to
+boundary condition equations, which we will use to
 impose a [Dirichlet condition](https://en.wikipedia.org/wiki/Dirichlet_boundary_condition) on the time derivative of concentration at the
 mesh boundary.
 
@@ -54,7 +54,15 @@ BoundaryConditions = @decapode begin
   Ċ == ∂C(C_up)
 end
 
-to_graphviz(BoundaryConditions)
+@decapode_latex begin
+  (C, C_up)::Form0
+
+  # Temporal boundary
+  ∂ₜ(C) == Ċ
+
+  # Spatial boundary
+  Ċ == ∂C(C_up)
+end
 ```
 
 As before, we compose these physics components over our wiring diagram.

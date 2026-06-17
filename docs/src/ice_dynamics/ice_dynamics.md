@@ -56,7 +56,15 @@ halfar_eq2 = @decapode begin
   ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
 end
 
-to_graphviz(halfar_eq2)
+@decapode_latex begin
+  h::Form0
+  Γ::Form0
+  n::Constant
+
+  ḣ == ∂ₜ(h)
+  ḣ == Γ * ∘(⋆, d, ⋆)(d(h) ∧₁₀ ((mag(♯ᵖᵖ(d(h)))^(n-1)) ∧₀₀ h^(n+2)))
+end
+end
 ```
 
 And here, a formulation of Glen's law from J.W. Glen's 1958 ["The flow law of ice"](http://go.owu.edu/~chjackso/Climate/papers/Glen_1958_The%20flow%20law%20of%20ice.pdf).
@@ -69,7 +77,12 @@ glens_law = @decapode begin
   Γ == (2/(n+2))*A*(ρ*g)^n
 end
 
-to_graphviz(glens_law)
+@decapode_latex begin
+  Γ::Form0
+  (A,ρ,g,n)::Constant
+  
+  Γ == (2/(n+2))*A*(ρ*g)^n
+end
 ```
 
 ## Composing models

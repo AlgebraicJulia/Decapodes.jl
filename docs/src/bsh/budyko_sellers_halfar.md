@@ -152,7 +152,12 @@ warming = @decapode begin
   A == 5.8282*10^(-0.236 * Tₛ)*1.65e7
 end
 
-to_graphviz(warming)
+@decapode_latex begin
+  Tₛ::Form0
+  A::Form0
+  
+  A == 5.8282*10^(-0.236 * Tₛ)*1.65e7
+end
 ```
 
 ## Composition
